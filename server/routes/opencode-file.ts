@@ -51,7 +51,7 @@ opencodeFile.get('/api/find/text', async (c) => {
 
 opencodeFile.get('/api/find/files', async (c) => {
     const pattern = c.req.query('pattern')
-    if (!pattern) return jsonError(c, 'pattern required', 400)
+    if (pattern === undefined) return jsonError(c, 'pattern required', 400)
     try {
         return c.json(await findFilesInProject(requestWorkingDir(c), pattern))
     } catch (err) {

@@ -9,6 +9,7 @@ import { showToast } from '../../lib/toast'
 import type { AssetCard, DraftAsset, PerformerNode } from '../../types'
 import { buildDanceSearchSections, formatChatAttachments } from './agent-frame-utils'
 import type { DanceSearchItem, TurnDanceSelection } from './agent-frame-utils'
+import { getDanceSlashMatch } from './performer-chat-slash'
 
 type Args = {
     performerId: string
@@ -72,14 +73,10 @@ export function usePerformerChatComposerState({
         setIsMentioning: setIsFileMentioning,
     } = useFileMentions(composerInputRef)
 
-    const danceSlashMatch = useMemo(() => {
-        if (activeCommand !== '/dance') return null
-        const trimmed = input.trimStart()
-        if (!trimmed.startsWith('/dance')) return null
-        const trailing = trimmed.slice('/dance'.length)
-        if (trailing.length > 0 && !trailing.startsWith(' ')) return null
-        return trailing.trim().toLowerCase()
-    }, [activeCommand, input])
+    const danceSlashMatch = useMemo(
+        () => getDanceSlashMatch(input, activeCommand),
+        [activeCommand, input],
+    )
 
     const danceSearchSections = useMemo(
         () => buildDanceSearchSections(danceAssets, danceSlashMatch, drafts, performer),

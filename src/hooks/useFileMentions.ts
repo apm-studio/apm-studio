@@ -8,6 +8,26 @@ export interface FileMention {
     type: string
 }
 
+export type ParsedFileMention = {
+    query: string
+    startIndex: number
+} | null
+
+export function parseFileMention(value: string, cursorPosition: number): ParsedFileMention {
+    const textBeforeCursor = value.slice(0, cursorPosition)
+    const match = /(^|\s)#\s*([^\n#]*)$/.exec(textBeforeCursor)
+
+    if (!match) return null
+
+    const prefix = match[1] || ''
+    const rawQuery = match[2] || ''
+
+    return {
+        query: rawQuery.trim(),
+        startIndex: match.index + prefix.length,
+    }
+}
+
 export function useFileMentions(externalInputRef?: RefObject<HTMLTextAreaElement | null>) {
     const [mentionQuery, setMentionQuery] = useState<string | null>(null)
     const [mentionResults, setMentionResults] = useState<FileMention[]>([])
@@ -16,19 +36,16 @@ export function useFileMentions(externalInputRef?: RefObject<HTMLTextAreaElement
     const fallbackRef = useRef<HTMLTextAreaElement>(null)
     const inputRef = externalInputRef || fallbackRef
 
-    const mentionRegex = /#([a-zA-Z0-9_./-]*)$/
-
     function checkMention(value?: string, cursorPosition?: number | null) {
         const input = inputRef.current
         const sourceValue = typeof value === 'string' ? value : input?.value
         const cursor = typeof cursorPosition === 'number' ? cursorPosition : input?.selectionStart
         if (typeof sourceValue !== 'string' || typeof cursor !== 'number') return
-        const textBeforeCursor = sourceValue.slice(0, cursor)
-        const match = mentionRegex.exec(textBeforeCursor)
+        const mention = parseFileMention(sourceValue, cursor)
 
-        if (match) {
+        if (mention) {
             setIsMentioning(true)
-            setMentionQuery(match[1])
+            setMentionQuery(mention.query)
         } else {
             setIsMentioning(false)
             setMentionQuery(null)
@@ -63,13 +80,11 @@ export function useFileMentions(externalInputRef?: RefObject<HTMLTextAreaElement
         if (!inputRef.current) return null
         const cursor = inputRef.current.selectionStart
         const text = inputRef.current.value
-        const textBeforeCursor = text.slice(0, cursor)
 
-        const match = mentionRegex.exec(textBeforeCursor)
-        if (!match) return null
+        const mention = parseFileMention(text, cursor)
+        if (!mention) return null
 
-        const startIndex = match.index
-        const newText = text.slice(0, startIndex) + text.slice(cursor)
+        const newText = text.slice(0, mention.startIndex) + text.slice(cursor)
 
         setIsMentioning(false)
         setMentionQuery(null)
