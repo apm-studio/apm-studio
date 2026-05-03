@@ -396,6 +396,13 @@
     box-shadow: var(--shadow-dropdown);
 }
 
+.model-variant-select__popover--floating {
+    position: fixed;
+    top: auto;
+    left: auto;
+    z-index: 10000;
+}
+
 .model-variant-select--top .model-variant-select__popover {
     top: auto;
     bottom: calc(100% + 6px);

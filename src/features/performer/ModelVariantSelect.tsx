@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { ChevronDown } from 'lucide-react'
 import { useModels } from '../../hooks/queries'
 import type { ModelConfig } from '../../types'
@@ -27,7 +28,9 @@ export default function ModelVariantSelect({
 }: ModelVariantSelectProps) {
     const { data: models = [] } = useModels(!!model)
     const wrapperRef = useRef<HTMLDivElement | null>(null)
+    const popoverRef = useRef<HTMLDivElement | null>(null)
     const [open, setOpen] = useState(false)
+    const [popoverRect, setPopoverRect] = useState<{ left: number; top: number; width: number } | null>(null)
     const selectedModel = useMemo(
         () => findRuntimeModel(models, model?.provider, model?.modelId),
         [models, model?.modelId, model?.provider],
@@ -48,7 +51,8 @@ export default function ModelVariantSelect({
         if (!open) return
 
         const handlePointerDown = (event: MouseEvent) => {
-            if (!wrapperRef.current?.contains(event.target as Node)) {
+            const target = event.target as Node
+            if (!wrapperRef.current?.contains(target) && !popoverRef.current?.contains(target)) {
                 setOpen(false)
             }
         }
@@ -58,6 +62,29 @@ export default function ModelVariantSelect({
             document.removeEventListener('mousedown', handlePointerDown)
         }
     }, [open])
+
+    useEffect(() => {
+        if (!open) return
+
+        const updatePopoverRect = () => {
+            const trigger = wrapperRef.current?.querySelector<HTMLButtonElement>('.model-variant-select__trigger')
+            if (!trigger) return
+            const rect = trigger.getBoundingClientRect()
+            setPopoverRect({
+                left: rect.left,
+                top: popoverPlacement === 'top' ? rect.top - 6 : rect.bottom + 6,
+                width: rect.width,
+            })
+        }
+
+        updatePopoverRect()
+        window.addEventListener('resize', updatePopoverRect)
+        window.addEventListener('scroll', updatePopoverRect, true)
+        return () => {
+            window.removeEventListener('resize', updatePopoverRect)
+            window.removeEventListener('scroll', updatePopoverRect, true)
+        }
+    }, [open, popoverPlacement])
 
     if (!model || variants.length === 0) {
         return null
@@ -84,8 +111,17 @@ export default function ModelVariantSelect({
                 <span className="model-variant-select__trigger-label">{value || 'Default'}</span>
                 <ChevronDown size={12} />
             </button>
-            {open ? (
-                <div className="model-variant-select__popover">
+            {open && popoverRect ? createPortal(
+                <div
+                    ref={popoverRef}
+                    className="model-variant-select__popover model-variant-select__popover--floating"
+                    style={{
+                        left: popoverRect.left,
+                        top: popoverRect.top,
+                        width: popoverRect.width,
+                        transform: popoverPlacement === 'top' ? 'translateY(-100%)' : undefined,
+                    }}
+                >
                     <div className="model-variant-select__options">
                         <button
                             type="button"
@@ -113,7 +149,8 @@ export default function ModelVariantSelect({
                             </button>
                         ))}
                     </div>
-                </div>
+                </div>,
+                document.body,
             ) : null}
         </div>
     )
