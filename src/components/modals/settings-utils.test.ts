@@ -7,6 +7,7 @@ import {
     buildProviderCards,
     buildVisibleProviderPromptInputs,
     createPromptValueDraft,
+    extractProviderDeviceCode,
     getConnectedProviderCards,
     getPopularProviderCards,
     shouldAutoCloseProviderConnectModal,
@@ -191,6 +192,16 @@ describe('provider auth prompts', () => {
                 accountId: 'acct_123',
             },
         })
+    })
+})
+
+describe('extractProviderDeviceCode', () => {
+    it('reads GitHub device codes from OpenCode instructions', () => {
+        expect(extractProviderDeviceCode('Enter code: E370-D5A6')).toBe('E370-D5A6')
+    })
+
+    it('returns null when instructions do not contain a device code', () => {
+        expect(extractProviderDeviceCode('Complete authorization in the opened browser window.')).toBeNull()
     })
 })
 

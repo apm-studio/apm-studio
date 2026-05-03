@@ -150,6 +150,11 @@ export function labelForAuthMethod(method: ProviderAuthMethod) {
     return `Connect with ${method.label}`
 }
 
+export function extractProviderDeviceCode(instructions: string | undefined) {
+    const match = instructions?.match(/\b(?:enter|use|copy)\s+(?:the\s+)?code\s*:\s*([A-Z0-9][A-Z0-9-]{3,})\b/i)
+    return match?.[1] || null
+}
+
 export function createPromptValueDraft(
     prompts: ProviderAuthPrompt[] | undefined,
     current: Record<string, string> = {},

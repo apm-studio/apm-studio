@@ -5,12 +5,13 @@
  * Shows auth method options and handles API key input and OAuth flows.
  */
 
-import { useEffect, useMemo, useRef } from 'react'
-import { X, Key, ExternalLink } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { X, Key, ExternalLink, Copy, Check } from 'lucide-react'
 import type { ProviderCard, ProviderAuthMethod, OauthFlow } from './settings-utils'
 import {
     areVisibleProviderPromptsComplete,
     buildProviderAuthOptions,
+    extractProviderDeviceCode,
     getVisibleProviderAuthPrompts,
     labelForAuthMethod,
 } from './settings-utils'
@@ -45,6 +46,7 @@ export default function ProviderConnectModal({
 }: ProviderConnectModalProps) {
     const availableMethods = buildProviderAuthOptions(provider)
     const defaultMethod = availableMethods.length === 1 ? availableMethods[0] : null
+    const [copiedDeviceCode, setCopiedDeviceCode] = useState<string | null>(null)
 
     // Determine current step
     const autoOpenedProviderRef = useRef<string | null>(null)
@@ -66,6 +68,9 @@ export default function ProviderConnectModal({
         autoOpenedProviderRef.current = null
     }, [provider.id])
 
+    const deviceCode = extractProviderDeviceCode(flow?.instructions)
+    const isDeviceCodeCopied = !!deviceCode && copiedDeviceCode === deviceCode
+
     function handleClose() {
         if (flow) dismissOauthFlow(provider.id)
         onClose()
@@ -83,6 +88,18 @@ export default function ProviderConnectModal({
     const promptsComplete = flow
         ? areVisibleProviderPromptsComplete(flow.prompts, flow.promptValues)
         : false
+
+    async function copyDeviceCode() {
+        if (!deviceCode) {
+            return
+        }
+        try {
+            await navigator.clipboard?.writeText(deviceCode)
+            setCopiedDeviceCode(deviceCode)
+        } catch {
+            setCopiedDeviceCode(null)
+        }
+    }
 
     function updatePromptValue(key: string, value: string) {
         if (!flow) {
@@ -249,6 +266,25 @@ export default function ProviderConnectModal({
                                 </>
                             ) : (
                                 <>
+                                    {flow.instructions && (
+                                        <div className="alert">
+                                            {flow.instructions}
+                                        </div>
+                                    )}
+                                    {deviceCode && (
+                                        <div className="provider-connect-modal__device-code-row">
+                                            <code className="provider-connect-modal__device-code">{deviceCode}</code>
+                                            <button
+                                                className="icon-btn"
+                                                type="button"
+                                                onClick={() => void copyDeviceCode()}
+                                                title="Copy code"
+                                                aria-label="Copy code"
+                                            >
+                                                {isDeviceCodeCopied ? <Check size={14} /> : <Copy size={14} />}
+                                            </button>
+                                        </div>
+                                    )}
                                     <div className="alert alert--muted">
                                         {flow.submitting
                                             ? 'Waiting for authorization callback…'
