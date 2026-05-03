@@ -69,6 +69,8 @@ export default function ProviderConnectModal({
     }, [provider.id])
 
     const deviceCode = extractProviderDeviceCode(flow?.instructions)
+    const canCopyDeviceCode = typeof navigator !== 'undefined'
+        && typeof navigator.clipboard?.writeText === 'function'
     const isDeviceCodeCopied = !!deviceCode && copiedDeviceCode === deviceCode
 
     function handleClose() {
@@ -90,11 +92,12 @@ export default function ProviderConnectModal({
         : false
 
     async function copyDeviceCode() {
-        if (!deviceCode) {
+        if (!deviceCode || !canCopyDeviceCode) {
+            setCopiedDeviceCode(null)
             return
         }
         try {
-            await navigator.clipboard?.writeText(deviceCode)
+            await navigator.clipboard.writeText(deviceCode)
             setCopiedDeviceCode(deviceCode)
         } catch {
             setCopiedDeviceCode(null)
@@ -278,7 +281,8 @@ export default function ProviderConnectModal({
                                                 className="icon-btn"
                                                 type="button"
                                                 onClick={() => void copyDeviceCode()}
-                                                title="Copy code"
+                                                disabled={!canCopyDeviceCode}
+                                                title={canCopyDeviceCode ? 'Copy code' : 'Copy unavailable'}
                                                 aria-label="Copy code"
                                             >
                                                 {isDeviceCodeCopied ? <Check size={14} /> : <Copy size={14} />}

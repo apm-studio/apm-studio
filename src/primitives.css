@@ -24,6 +24,12 @@
     color: var(--text-primary);
 }
 
+.icon-btn:disabled {
+    opacity: 0.45;
+    cursor: default;
+    pointer-events: none;
+}
+
 .icon-btn--active {
     background: var(--bg-selected);
     color: var(--accent);
