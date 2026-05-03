@@ -35,10 +35,14 @@ function ParticipantModelDropRow({
     const label = resolveActParticipantLabel(act, participantKey, performers)
     const modelLabel = performer?.model
         ? performer.model.modelId
-        : 'Drop model here'
+        : performer
+            ? 'Drop model here'
+            : 'No matching performer'
     const modelTitle = performer?.model
         ? `${performer.model.provider} / ${performer.model.modelId}`
-        : 'Drop a model from Asset Library onto this participant'
+        : performer
+            ? 'Drop a model from Asset Library onto this participant'
+            : 'Resolve this participant binding before assigning a model'
     const { isOver, setNodeRef } = useDroppable({
         id: `act-participant-model-${act.id}-${participantKey}`,
         data: { performerId: performer?.id || null, actId: act.id, type: 'model' },
