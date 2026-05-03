@@ -28,7 +28,9 @@ export default function ModelVariantSelect({
 }: ModelVariantSelectProps) {
     const { data: models = [] } = useModels(!!model)
     const wrapperRef = useRef<HTMLDivElement | null>(null)
+    const triggerRef = useRef<HTMLButtonElement | null>(null)
     const popoverRef = useRef<HTMLDivElement | null>(null)
+    const shouldRestoreFocusRef = useRef(false)
     const [open, setOpen] = useState(false)
     const [popoverRect, setPopoverRect] = useState<{ left: number; top: number; width: number } | null>(null)
     const selectedModel = useMemo(
@@ -53,13 +55,23 @@ export default function ModelVariantSelect({
         const handlePointerDown = (event: MouseEvent) => {
             const target = event.target as Node
             if (!wrapperRef.current?.contains(target) && !popoverRef.current?.contains(target)) {
+                shouldRestoreFocusRef.current = false
+                setOpen(false)
+            }
+        }
+
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                shouldRestoreFocusRef.current = true
                 setOpen(false)
             }
         }
 
         document.addEventListener('mousedown', handlePointerDown)
+        document.addEventListener('keydown', handleKeyDown)
         return () => {
             document.removeEventListener('mousedown', handlePointerDown)
+            document.removeEventListener('keydown', handleKeyDown)
         }
     }, [open])
 
@@ -67,7 +79,7 @@ export default function ModelVariantSelect({
         if (!open) return
 
         const updatePopoverRect = () => {
-            const trigger = wrapperRef.current?.querySelector<HTMLButtonElement>('.model-variant-select__trigger')
+            const trigger = triggerRef.current
             if (!trigger) return
             const rect = trigger.getBoundingClientRect()
             setPopoverRect({
@@ -86,6 +98,26 @@ export default function ModelVariantSelect({
         }
     }, [open, popoverPlacement])
 
+    useEffect(() => {
+        if (!open || !popoverRect) return
+
+        const frame = window.requestAnimationFrame(() => {
+            const options = Array.from(
+                popoverRef.current?.querySelectorAll<HTMLButtonElement>('.model-variant-select__option') ?? [],
+            )
+            const selectedOption = options.find((option) => option.dataset.variantId === (value || '')) || options[0]
+            selectedOption?.focus()
+        })
+
+        return () => window.cancelAnimationFrame(frame)
+    }, [open, popoverRect, value])
+
+    useEffect(() => {
+        if (open || !shouldRestoreFocusRef.current) return
+        shouldRestoreFocusRef.current = false
+        triggerRef.current?.focus()
+    }, [open])
+
     if (!model || variants.length === 0) {
         return null
     }
@@ -96,15 +128,27 @@ export default function ModelVariantSelect({
     const rootClassName = className
         ? `model-variant-select model-variant-select--${popoverPlacement} ${className}`
         : `model-variant-select model-variant-select--${popoverPlacement}`
+    const handleTriggerClick = () => {
+        shouldRestoreFocusRef.current = true
+        if (!open) {
+            setPopoverRect(null)
+        }
+        setOpen((current) => !current)
+    }
+    const closeWithFocusRestore = () => {
+        shouldRestoreFocusRef.current = true
+        setOpen(false)
+    }
 
     return (
         <div className={rootClassName} ref={wrapperRef}>
             {!compact ? <span>Variant</span> : null}
             <button
+                ref={triggerRef}
                 type="button"
                 className="model-variant-select__trigger"
                 disabled={disabled}
-                onClick={() => setOpen((current) => !current)}
+                onClick={handleTriggerClick}
                 title={buttonTitle}
                 aria-expanded={open}
             >
@@ -126,9 +170,10 @@ export default function ModelVariantSelect({
                         <button
                             type="button"
                             className={`model-variant-select__option ${!value ? 'is-selected' : ''}`}
+                            data-variant-id=""
                             onClick={() => {
                                 onChange(null)
-                                setOpen(false)
+                                closeWithFocusRestore()
                             }}
                             title={`${titlePrefix}: default`}
                         >
@@ -139,9 +184,10 @@ export default function ModelVariantSelect({
                                 key={variant.id}
                                 type="button"
                                 className={`model-variant-select__option ${value === variant.id ? 'is-selected' : ''}`}
+                                data-variant-id={variant.id}
                                 onClick={() => {
                                     onChange(variant.id)
-                                    setOpen(false)
+                                    closeWithFocusRestore()
                                 }}
                                 title={`${variant.id} · ${variant.summary}`}
                             >
