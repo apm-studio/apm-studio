@@ -133,6 +133,7 @@ Before execution:
 - if recovery from `Agent not found` would require dispose, do not force it while the working directory is busy
 - Act collaboration context is turn-scoped system prompt context
 - performer variant ownership belongs to projection and runtime config
+- prompt execution validates known provider/auth-incompatible model selections before calling OpenCode; Act auto-wakes should surface a model-selection error and open the participant circuit instead of streaming a doomed run
 - synced message metadata is display-only and must not become the execution source of truth
 
 ## Review And Wake Rules

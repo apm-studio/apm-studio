@@ -16,6 +16,7 @@ const prepareAssistantChatRequestMock = vi.fn()
 const countRunningSessionsMock = vi.fn()
 const publishProjectionConsumedMock = vi.fn()
 const listWorkspacePerformersForDirMock = vi.fn()
+const assertRuntimeModelPromptableMock = vi.fn()
 
 vi.mock('../lib/opencode.js', () => ({
     getOpencode: async () => ({
@@ -26,6 +27,10 @@ vi.mock('../lib/opencode.js', () => ({
             promptAsync: promptAsyncMock,
         },
     }),
+}))
+
+vi.mock('../lib/model-catalog.js', () => ({
+    assertRuntimeModelPromptable: assertRuntimeModelPromptableMock,
 }))
 
 vi.mock('./opencode-projection/stage-projection-service.js', () => ({
@@ -94,6 +99,7 @@ describe('sendStudioChatMessage', () => {
         countRunningSessionsMock.mockReset().mockResolvedValue({ runningSessions: 0 })
         publishProjectionConsumedMock.mockReset()
         listWorkspacePerformersForDirMock.mockReset().mockResolvedValue([])
+        assertRuntimeModelPromptableMock.mockReset().mockResolvedValue(undefined)
         prepareAssistantChatRequestMock.mockReset().mockResolvedValue({
             assistantAgentName: 'dot-studio/studio-assistant',
             capabilitySnapshot: null,
@@ -154,6 +160,35 @@ describe('sendStudioChatMessage', () => {
                 'playwright_*': true,
             },
         }))
+    })
+
+    it('blocks unsupported selected models before projection or prompt execution', async () => {
+        assertRuntimeModelPromptableMock.mockRejectedValueOnce(
+            new Error('The selected model (gpt-5.5-pro) is not supported when using Codex with a ChatGPT account.'),
+        )
+        const { sendStudioChatMessage } = await import('./chat-service.js')
+
+        await expect(sendStudioChatMessage(
+            '/tmp/workspace',
+            'session-1',
+            {
+                message: 'Run this turn.',
+                performer: {
+                    performerId: 'performer-1',
+                    performerName: 'Performer',
+                    talRef: null,
+                    danceRefs: [],
+                    model: {
+                        provider: 'openai',
+                        modelId: 'gpt-5.5-pro',
+                    },
+                    mcpServerNames: [],
+                },
+            },
+        )).rejects.toThrow('gpt-5.5-pro')
+
+        expect(ensurePerformerProjectionMock).not.toHaveBeenCalled()
+        expect(promptAsyncMock).not.toHaveBeenCalled()
     })
 
     it('publishes projection consumption after a successful execution-boundary dispose', async () => {

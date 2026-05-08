@@ -21,9 +21,10 @@ import { clearActSessionWaitUntilParked } from './wait-until-session-park.js'
 import { buildTextPromptParts } from '../turn-prompt-service.js'
 import { buildProjectionDirtyPatch } from '../opencode-projection/projection-dirty-patch.js'
 import { publishProjectionConsumed } from '../runtime-execution-events.js'
-import { unwrapOpencodeResult } from '../../lib/opencode-errors.js'
+import { StudioValidationError, unwrapOpencodeResult } from '../../lib/opencode-errors.js'
 import { retryOnAgentRegistryMiss } from '../../lib/opencode-prompt.js'
 import { buildActToolMap, ensureActToolFiles } from './act-tool-files.js'
+import { assertRuntimeModelPromptable } from '../../lib/model-catalog.js'
 
 // Module-level session queue (one per thread)
 const sessionQueues: Map<string, SessionQueue> = new Map()
@@ -330,6 +331,7 @@ async function injectWakeTarget(
         let projectedTools: Record<string, boolean> | undefined
 
         if (performerConfig?.model) {
+            await assertRuntimeModelPromptable(threadManager.workingDir, performerConfig.model)
             // Full performer projection — same as sendStudioChatMessage path
             try {
                 const { ensurePerformerProjection } = await import(
@@ -500,6 +502,9 @@ async function injectWakeTarget(
 
         return result
     } catch (error: unknown) {
+        if (error instanceof StudioValidationError && error.action === 'choose_model') {
+            tripParticipantCircuit(threadId, participantKey, formatActSessionError(error))
+        }
         await threadManager.setParticipantStatus(threadId, participantKey, {
             type: 'error',
             message: formatActSessionError(error),

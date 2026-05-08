@@ -32,21 +32,44 @@ async function resolveAuthStorePath() {
     return authStoreCandidates()[0]
 }
 
+async function readStoredAuthStore(): Promise<Record<string, unknown>> {
+    const authPath = await resolveAuthStorePath()
+    if (!authPath) {
+        return {}
+    }
+
+    try {
+        const raw = await fs.readFile(authPath, 'utf-8')
+        const parsed = JSON.parse(raw)
+        return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+            ? parsed as Record<string, unknown>
+            : {}
+    } catch (error: unknown) {
+        if (isErrnoException(error) && error.code === 'ENOENT') {
+            return {}
+        }
+        throw error
+    }
+}
+
+export async function readStoredProviderAuthType(providerId: string): Promise<'api' | 'oauth' | 'wellknown' | null> {
+    const store = await readStoredAuthStore()
+    const normalized = providerId.replace(/\/+$/, '')
+    const auth = store[providerId] || store[normalized] || store[`${normalized}/`]
+    if (!auth || typeof auth !== 'object') {
+        return null
+    }
+    const type = (auth as Record<string, unknown>).type
+    return type === 'api' || type === 'oauth' || type === 'wellknown' ? type : null
+}
+
 export async function clearStoredProviderAuth(providerId: string) {
     const authPath = await resolveAuthStorePath()
     if (!authPath) {
         return false
     }
 
-    let current: Record<string, unknown> = {}
-    try {
-        const raw = await fs.readFile(authPath, 'utf-8')
-        current = JSON.parse(raw)
-    } catch (error: unknown) {
-        if (!isErrnoException(error) || error.code !== 'ENOENT') {
-            throw error
-        }
-    }
+    const current = await readStoredAuthStore()
 
     const normalized = providerId.replace(/\/+$/, '')
     delete current[providerId]

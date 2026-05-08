@@ -2,6 +2,7 @@ import { getOpencode } from '../lib/opencode.js'
 import { buildStudioSessionTitle, deriveProvisionalThreadTitle } from '../../shared/session-metadata.js'
 import type { ChatSendRequest, ChatSessionCreateRequest } from '../../shared/chat-contracts.js'
 import { describeUnavailableRuntimeTools } from '../lib/runtime-tools.js'
+import { assertRuntimeModelPromptable } from '../lib/model-catalog.js'
 import { StudioValidationError, unwrapOpencodeResult } from '../lib/opencode-errors.js'
 import { retryOnAgentRegistryMiss } from '../lib/opencode-prompt.js'
 import { resolveActSessionPolicy } from '../lib/act-session-policy.js'
@@ -152,6 +153,8 @@ export async function sendStudioChatMessage(
         unavailableTools: [],
         unavailableDetails: [],
     }
+
+    await assertRuntimeModelPromptable(workingDir, performer.model!)
 
     if (isAssistant) {
         const prepared = await prepareAssistantChatRequest(workingDir, {

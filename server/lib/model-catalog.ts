@@ -1,4 +1,6 @@
 import { getOpencode } from './opencode.js'
+import { readStoredProviderAuthType } from './opencode-auth.js'
+import { StudioValidationError } from './opencode-errors.js'
 import {
     normalizeRuntimeVariants,
     type RuntimeModelCatalogEntry,
@@ -133,6 +135,43 @@ function readModalities(model: ProviderModelRecord) {
 
     return { input, output }
 }
+
+function isOpenAiProvider(providerId: string | null | undefined) {
+    return providerId === 'openai'
+}
+
+export function isUnsupportedOpenAiChatGptCodexModel(selection: { provider: string; modelId: string } | null | undefined) {
+    if (!selection || !isOpenAiProvider(selection.provider)) {
+        return false
+    }
+    return /^gpt-\d+(?:[.-]\d+)?-pro$/i.test(selection.modelId.trim())
+}
+
+async function isChatGptOAuthProvider(providerId: string) {
+    if (!isOpenAiProvider(providerId)) {
+        return false
+    }
+    return (await readStoredProviderAuthType(providerId).catch(() => null)) === 'oauth'
+}
+
+export async function assertRuntimeModelPromptable(
+    cwd: string,
+    selection: { provider: string; modelId: string } | null,
+) {
+    void cwd
+    if (!selection) {
+        return
+    }
+    if (
+        isUnsupportedOpenAiChatGptCodexModel(selection)
+        && await isChatGptOAuthProvider(selection.provider)
+    ) {
+        throw new StudioValidationError(
+            `The selected model (${selection.modelId}) is not supported when using Codex with a ChatGPT account. Choose a non-Pro model for this performer and try again.`,
+            'choose_model',
+        )
+    }
+}
 // ── Cached provider.list() ──────────────────────────────
 // Both /api/providers and /api/models need the same raw data from
 // oc.provider.list().  We cache for a short window to avoid duplicate
@@ -199,9 +238,16 @@ export async function listRuntimeModels(cwd: string): Promise<RuntimeModelCatalo
     const providers = buildProviderSnapshots(await fetchProviderListData(cwd))
     const models: RuntimeModelCatalogEntry[] = []
     for (const provider of providers) {
+        const hideOpenAiChatGptUnsupportedModels = await isChatGptOAuthProvider(provider.id)
         for (const record of provider.models) {
             const id = typeof record.id === 'string' ? record.id : ''
             if (!id) {
+                continue
+            }
+            if (
+                hideOpenAiChatGptUnsupportedModels
+                && isUnsupportedOpenAiChatGptCodexModel({ provider: provider.id, modelId: id })
+            ) {
                 continue
             }
 

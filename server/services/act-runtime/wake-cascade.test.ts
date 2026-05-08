@@ -13,6 +13,7 @@ const resolvePerformerForWake = vi.fn()
 const prepareRuntimeForExecution = vi.fn()
 const countRunningSessions = vi.fn()
 const ensurePerformerProjection = vi.fn()
+const assertRuntimeModelPromptable = vi.fn()
 
 vi.mock('../../lib/opencode.js', () => ({
     getOpencode: async () => ({
@@ -24,6 +25,10 @@ vi.mock('../../lib/opencode.js', () => ({
             messages: sessionMessages,
         },
     }),
+}))
+
+vi.mock('../../lib/model-catalog.js', () => ({
+    assertRuntimeModelPromptable,
 }))
 
 vi.mock('../../lib/chat-session.js', () => ({
@@ -105,6 +110,7 @@ describe('wake-cascade participant scheduling', () => {
             payload: await buildPayload(),
         }))
         countRunningSessions.mockReset().mockResolvedValue({ runningSessions: 0 })
+        assertRuntimeModelPromptable.mockReset().mockResolvedValue(undefined)
         tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'dot-studio-wake-cascade-'))
         resolveSessionExecutionContext.mockReset().mockResolvedValue({ workingDir: tempDir })
     })
@@ -456,6 +462,82 @@ describe('wake-cascade participant scheduling', () => {
                 text: expect.stringContaining('Please review this handoff.'),
             }],
         }))
+    })
+
+    it('opens a participant circuit when wake injection uses an unsupported selected model', async () => {
+        const { Mailbox } = await import('./mailbox.js')
+        const { StudioValidationError } = await import('../../lib/opencode-errors.js')
+        const { processWakeCascade } = await import('./wake-cascade.js')
+
+        const mailbox = new Mailbox()
+        const threadId = 'thread-unsupported-model'
+        mailbox.addMessage({
+            from: 'Lead',
+            to: 'Researcher',
+            content: 'Please review this handoff.',
+            threadId,
+        })
+
+        const event: MailboxEvent = {
+            id: 'evt-unsupported-model',
+            type: 'message.sent',
+            sourceType: 'performer',
+            source: 'Lead',
+            timestamp: Date.now(),
+            payload: {
+                from: 'Lead',
+                to: 'Researcher',
+                threadId,
+            },
+        }
+
+        resolvePerformerForWake.mockResolvedValue({
+            performerId: 'researcher-v1',
+            performerName: 'Researcher',
+            talRef: null,
+            danceRefs: [],
+            model: { provider: 'openai', modelId: 'gpt-5.5-pro' },
+            modelVariant: null,
+            mcpServerNames: [],
+        })
+        assertRuntimeModelPromptable.mockRejectedValueOnce(
+            new StudioValidationError(
+                'The selected model (gpt-5.5-pro) is not supported when using Codex with a ChatGPT account.',
+                'choose_model',
+            ),
+        )
+
+        const threadManager = {
+            workingDir: tempDir,
+            getRecentEvents: vi.fn().mockResolvedValue([]),
+            getPerformerSession: vi.fn().mockReturnValue('session-researcher'),
+            getOrCreateSession: vi.fn(),
+            setParticipantStatus: vi.fn().mockResolvedValue(undefined),
+        } as const
+
+        const cascade = await processWakeCascade(
+            event,
+            actDefinition,
+            mailbox,
+            threadManager as never,
+            threadId,
+            tempDir,
+        )
+
+        expect(cascade.injected).toEqual([])
+        expect(cascade.errors).toEqual([
+            expect.stringContaining('gpt-5.5-pro'),
+        ])
+        expect(ensurePerformerProjection).not.toHaveBeenCalled()
+        expect(promptAsync).not.toHaveBeenCalled()
+        expect(threadManager.setParticipantStatus).toHaveBeenCalledWith(
+            threadId,
+            'Researcher',
+            {
+                type: 'error',
+                message: expect.stringContaining('gpt-5.5-pro'),
+            },
+        )
     })
 
     it('disposes and retries once when a wake hits an act agent registry miss', async () => {
