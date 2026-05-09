@@ -301,6 +301,11 @@
     border-color: var(--status-danger);
 }
 
+.using-notice--warn {
+    color: var(--status-warning, #f59e0b);
+    border-color: var(--status-warning, #f59e0b);
+}
+
 .using-day-row {
     padding: 6px 12px;
 }
@@ -337,6 +342,30 @@
     width: 40px;
     text-align: right;
     flex-shrink: 0;
+}
+
+/* ── Quota rows ─────────────────────────────────────────── */
+.using-quota-row {
+    align-items: center;
+}
+
+.using-quota-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    flex-shrink: 0;
+    min-width: 120px;
+}
+
+.using-quota-pct {
+    font-size: var(--font-sm);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.using-bar-bg--wide {
+    width: 120px;
 }
 
 @keyframes spin {

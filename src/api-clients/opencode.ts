@@ -128,14 +128,21 @@ export const opencodeApi = {
         get: () => fetchJSON<{
             studio: { sessionCount: number }
             codex: {
-                daily: Array<{ date: string; inputTokens: number; outputTokens: number; requests: number }>
-                byModel: Array<{ modelId: string; inputTokens: number; outputTokens: number; requests: number }>
-                totalInputTokens: number
-                totalOutputTokens: number
-                totalRequests: number
+                connected: boolean
+                authType: 'oauth' | 'api' | null
+                fiveHour?: { percentUsed: number; resetsAt: string | null }
+                sevenDay?: { percentUsed: number; resetsAt: string | null }
+                weekly?: { percentUsed: number; resetsAt: string | null }
                 error?: string
-            } | null
-            error?: string
+            }
+            claudeCode: {
+                connected: boolean
+                authType: 'oauth' | 'api' | null
+                fiveHour?: { percentUsed: number; resetsAt: string | null }
+                sevenDay?: { percentUsed: number; resetsAt: string | null }
+                weekly?: { percentUsed: number; resetsAt: string | null }
+                error?: string
+            }
         }>('/api/usage'),
     },
 }

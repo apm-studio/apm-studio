@@ -1,164 +1,237 @@
 import { Hono } from 'hono'
-import { readStoredProviderApiKey } from '../lib/opencode-auth.js'
+import { readStoredProviderAuth } from '../lib/opencode-auth.js'
 import { getOpencode } from '../lib/opencode.js'
 
 const usage = new Hono()
 
-type OpenAIUsageBucketResult = {
-    object: string
-    input_tokens: number
-    output_tokens: number
-    num_model_requests: number
-    model_id?: string | null
-    project_id?: string | null
+// ── Types ────────────────────────────────────────────────
+
+export type QuotaWindow = {
+    percentUsed: number      // 0–100
+    resetsAt: string | null  // ISO 8601
 }
 
-type OpenAIUsageBucket = {
-    object: string
-    start_time: number
-    end_time: number
-    results: OpenAIUsageBucketResult[]
-}
-
-type OpenAIUsageResponse = {
-    object: string
-    data: OpenAIUsageBucket[]
-    has_more?: boolean
-}
-
-type DailyUsage = {
-    date: string
-    inputTokens: number
-    outputTokens: number
-    requests: number
-}
-
-type ModelSummary = {
-    modelId: string
-    inputTokens: number
-    outputTokens: number
-    requests: number
-}
-
-async function fetchOpenAIUsage(apiKey: string, isOAuth: boolean): Promise<{
-    daily: DailyUsage[]
-    byModel: ModelSummary[]
-    totalInputTokens: number
-    totalOutputTokens: number
-    totalRequests: number
+export type ProviderQuota = {
+    connected: boolean
+    authType: 'oauth' | 'api' | null
+    fiveHour?: QuotaWindow
+    sevenDay?: QuotaWindow
+    weekly?: QuotaWindow
     error?: string
-}> {
-    const now = Math.floor(Date.now() / 1000)
-    const thirtyDaysAgo = now - 30 * 24 * 60 * 60
+}
 
-    const params = new URLSearchParams({
-        start_time: String(thirtyDaysAgo),
-        end_time: String(now),
-        bucket_width: '1d',
-        limit: '31',
-        group_by: 'model',
+export type UsageResponse = {
+    studio: { sessionCount: number }
+    codex: ProviderQuota
+    claudeCode: ProviderQuota
+}
+
+// ── Helpers ──────────────────────────────────────────────
+
+function parseResetTime(value: unknown): string | null {
+    if (!value) return null
+    if (typeof value === 'string') {
+        // ISO string
+        const d = new Date(value)
+        return isNaN(d.getTime()) ? null : d.toISOString()
+    }
+    if (typeof value === 'number') {
+        // Unix seconds vs ms — ms is > year 2001 in seconds (> 1e9 * 1000)
+        const d = value > 1e12 ? new Date(value) : new Date(value * 1000)
+        return isNaN(d.getTime()) ? null : d.toISOString()
+    }
+    return null
+}
+
+function extractResetAt(obj: Record<string, unknown>): string | null {
+    return parseResetTime(obj.resets_at ?? obj.reset_at ?? obj.resetAt ?? obj.reset_time_ms ?? null)
+}
+
+// ── Codex (ChatGPT OAuth subscription) ──────────────────
+
+function toFinite(value: unknown, fallback = 0): number {
+    if (typeof value === 'number' && Number.isFinite(value)) return value
+    if (typeof value === 'string' && value.trim()) {
+        const n = Number(value)
+        if (Number.isFinite(n)) return n
+    }
+    return fallback
+}
+
+function parseCodexWindow(raw: Record<string, unknown>): QuotaWindow {
+    // Unwrap nested rate_limit if present
+    const body = raw.rate_limit && typeof raw.rate_limit === 'object'
+        ? raw.rate_limit as Record<string, unknown>
+        : raw
+    const used = Math.max(0, Math.min(100, toFinite(body.used_percent ?? body.percent_used, 0)))
+    return {
+        percentUsed: used,
+        resetsAt: extractResetAt(body),
+    }
+}
+
+function extractCodexWindows(rlBody: Record<string, unknown>, snapshot: Record<string, unknown>) {
+    const primary =
+        rlBody.primary_window ?? rlBody.primary ??
+        snapshot.primary_window ?? snapshot.primary
+    const secondary =
+        rlBody.secondary_window ?? rlBody.secondary ??
+        snapshot.secondary_window ?? snapshot.secondary
+    return {
+        primary: primary && typeof primary === 'object' ? primary as Record<string, unknown> : null,
+        secondary: secondary && typeof secondary === 'object' ? secondary as Record<string, unknown> : null,
+    }
+}
+
+async function fetchCodexQuota(accessToken: string): Promise<ProviderQuota> {
+    const res = await fetch('https://chatgpt.com/backend-api/wham/usage', {
+        headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Accept': 'application/json',
+            'Origin': 'https://chatgpt.com',
+            'Referer': 'https://chatgpt.com/',
+        },
+        signal: AbortSignal.timeout(10_000),
     })
 
-    const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
+    if (!res.ok) {
+        if (res.status === 401 || res.status === 403) {
+            return { connected: true, authType: 'oauth', error: 'token_expired' }
+        }
+        return { connected: true, authType: 'oauth', error: `http_${res.status}` }
     }
 
-    if (isOAuth) {
-        headers['Authorization'] = `Bearer ${apiKey}`
-    } else {
-        headers['Authorization'] = `Bearer ${apiKey}`
-    }
+    const data = await res.json() as Record<string, unknown>
 
-    const res = await fetch(
-        `https://api.openai.com/v1/organization/usage/completions?${params.toString()}`,
-        { headers },
-    )
+    // rate_limit > rate_limits > rate_limits_by_limit_id.codex
+    const snapshot = (
+        data.rate_limit
+        ?? data.rate_limits
+        ?? (data.rate_limits_by_limit_id as Record<string, unknown>)?.codex
+        ?? {}
+    ) as Record<string, unknown>
+
+    // Unwrap nested rate_limit body
+    const rlBody = snapshot.rate_limit && typeof snapshot.rate_limit === 'object'
+        ? snapshot.rate_limit as Record<string, unknown>
+        : snapshot
+
+    const { primary, secondary } = extractCodexWindows(rlBody, snapshot)
+
+    return {
+        connected: true,
+        authType: 'oauth',
+        // primary = session/5-hour window, secondary = weekly window
+        fiveHour: primary ? parseCodexWindow(primary) : undefined,
+        weekly: secondary ? parseCodexWindow(secondary) : undefined,
+    }
+}
+
+// ── Claude Code (Anthropic OAuth subscription) ───────────
+
+async function fetchClaudeCodeQuota(accessToken: string): Promise<ProviderQuota> {
+    const res = await fetch('https://api.anthropic.com/api/oauth/usage', {
+        headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'anthropic-beta': 'oauth-2025-04-20',
+            'anthropic-version': '2023-06-01',
+            'Accept': 'application/json',
+        },
+        signal: AbortSignal.timeout(10_000),
+    })
 
     if (!res.ok) {
-        const errText = await res.text().catch(() => '')
-        if (res.status === 403 || res.status === 401) {
-            return { daily: [], byModel: [], totalInputTokens: 0, totalOutputTokens: 0, totalRequests: 0, error: 'insufficient_permissions' }
+        if (res.status === 401 || res.status === 403) {
+            return { connected: true, authType: 'oauth', error: 'token_expired' }
         }
-        return { daily: [], byModel: [], totalInputTokens: 0, totalOutputTokens: 0, totalRequests: 0, error: errText || String(res.status) }
+        if (res.status === 429) {
+            return { connected: true, authType: 'oauth', error: 'rate_limited' }
+        }
+        return { connected: true, authType: 'oauth', error: `http_${res.status}` }
     }
 
-    const json = await res.json() as OpenAIUsageResponse
+    const data = await res.json() as Record<string, unknown>
 
-    const dailyMap = new Map<string, DailyUsage>()
-    const modelMap = new Map<string, ModelSummary>()
+    const fiveHourRaw = data.five_hour as Record<string, unknown> | undefined
+    const fiveHour: QuotaWindow | undefined = fiveHourRaw ? {
+        percentUsed: Number(fiveHourRaw.utilization ?? fiveHourRaw.percent_used ?? 0),
+        resetsAt: extractResetAt(fiveHourRaw),
+    } : undefined
 
-    for (const bucket of (json.data || [])) {
-        const date = new Date(bucket.start_time * 1000).toISOString().slice(0, 10)
-        const day = dailyMap.get(date) || { date, inputTokens: 0, outputTokens: 0, requests: 0 }
+    const sevenDayRaw = data.seven_day as Record<string, unknown> | undefined
+    const sevenDay: QuotaWindow | undefined = sevenDayRaw ? {
+        percentUsed: Number(sevenDayRaw.utilization ?? sevenDayRaw.percent_used ?? 0),
+        resetsAt: extractResetAt(sevenDayRaw),
+    } : undefined
 
-        for (const result of (bucket.results || [])) {
-            day.inputTokens += result.input_tokens || 0
-            day.outputTokens += result.output_tokens || 0
-            day.requests += result.num_model_requests || 0
-
-            const modelId = result.model_id || 'unknown'
-            const model = modelMap.get(modelId) || { modelId, inputTokens: 0, outputTokens: 0, requests: 0 }
-            model.inputTokens += result.input_tokens || 0
-            model.outputTokens += result.output_tokens || 0
-            model.requests += result.num_model_requests || 0
-            modelMap.set(modelId, model)
-        }
-
-        dailyMap.set(date, day)
+    return {
+        connected: true,
+        authType: 'oauth',
+        fiveHour,
+        sevenDay,
     }
-
-    const daily = Array.from(dailyMap.values()).sort((a, b) => a.date.localeCompare(b.date))
-    const byModel = Array.from(modelMap.values()).sort((a, b) => b.requests - a.requests)
-
-    const totalInputTokens = daily.reduce((s, d) => s + d.inputTokens, 0)
-    const totalOutputTokens = daily.reduce((s, d) => s + d.outputTokens, 0)
-    const totalRequests = daily.reduce((s, d) => s + d.requests, 0)
-
-    return { daily, byModel, totalInputTokens, totalOutputTokens, totalRequests }
 }
+
+// ── Studio session count ─────────────────────────────────
 
 async function fetchStudioSessionCount(directory: string): Promise<{ sessionCount: number }> {
     try {
         const oc = await getOpencode()
         const res = await oc.session.list({ directory })
-        const data = res && typeof res === 'object' && 'data' in res ? (res as { data?: unknown[] }).data : null
-        const count = Array.isArray(data) ? data.length : 0
-        return { sessionCount: count }
+        const data = res && typeof res === 'object' && 'data' in res
+            ? (res as { data?: unknown[] }).data
+            : null
+        return { sessionCount: Array.isArray(data) ? data.length : 0 }
     } catch {
         return { sessionCount: 0 }
     }
 }
 
+// ── Route ────────────────────────────────────────────────
+
 usage.get('/api/usage', async (c) => {
     const workingDir = c.req.header('x-working-dir') || process.cwd()
 
-    const [openaiKey, studioStats] = await Promise.all([
-        readStoredProviderApiKey('openai').catch(() => null),
+    const [openaiAuth, anthropicAuth, studioStats] = await Promise.all([
+        readStoredProviderAuth('openai').catch(() => null),
+        readStoredProviderAuth('anthropic').catch(() => null),
         fetchStudioSessionCount(workingDir),
     ])
 
-    if (!openaiKey) {
-        return c.json({
-            studio: studioStats,
-            codex: null,
-            error: 'no_openai_key',
-        })
+    // Codex quota — only meaningful when signed in via OAuth (ChatGPT subscription)
+    let codexQuota: ProviderQuota
+    if (!openaiAuth) {
+        codexQuota = { connected: false, authType: null }
+    } else if (openaiAuth.type === 'oauth') {
+        codexQuota = await fetchCodexQuota(openaiAuth.access).catch((err) => ({
+            connected: true,
+            authType: 'oauth' as const,
+            error: err instanceof Error ? err.message : String(err),
+        }))
+    } else {
+        // API key — wham/usage requires OAuth session token
+        codexQuota = { connected: true, authType: 'api', error: 'subscription_required' }
     }
 
-    const isOAuth = openaiKey.startsWith('ey') || openaiKey.length > 100
-    const codexUsage = await fetchOpenAIUsage(openaiKey, isOAuth).catch((err) => ({
-        daily: [] as DailyUsage[],
-        byModel: [] as ModelSummary[],
-        totalInputTokens: 0,
-        totalOutputTokens: 0,
-        totalRequests: 0,
-        error: err instanceof Error ? err.message : String(err),
-    }))
+    // Claude Code quota — Anthropic OAuth subscription
+    let claudeCodeQuota: ProviderQuota
+    if (!anthropicAuth) {
+        claudeCodeQuota = { connected: false, authType: null }
+    } else if (anthropicAuth.type === 'oauth') {
+        claudeCodeQuota = await fetchClaudeCodeQuota(anthropicAuth.access).catch((err) => ({
+            connected: true,
+            authType: 'oauth' as const,
+            error: err instanceof Error ? err.message : String(err),
+        }))
+    } else {
+        claudeCodeQuota = { connected: true, authType: 'api', error: 'subscription_required' }
+    }
 
     return c.json({
         studio: studioStats,
-        codex: codexUsage,
-    })
+        codex: codexQuota,
+        claudeCode: claudeCodeQuota,
+    } satisfies UsageResponse)
 })
 
 export default usage

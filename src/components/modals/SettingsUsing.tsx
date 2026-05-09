@@ -1,58 +1,156 @@
 import { useEffect, useState } from 'react'
-import { RefreshCw, AlertCircle, BarChart2, Zap } from 'lucide-react'
+import { RefreshCw, AlertCircle, Zap, Clock } from 'lucide-react'
 import { api } from '../../api'
 
-type DailyEntry = {
-    date: string
-    inputTokens: number
-    outputTokens: number
-    requests: number
+type QuotaWindow = {
+    percentUsed: number
+    resetsAt: string | null
 }
 
-type ModelEntry = {
-    modelId: string
-    inputTokens: number
-    outputTokens: number
-    requests: number
+type ProviderQuota = {
+    connected: boolean
+    authType: 'oauth' | 'api' | null
+    fiveHour?: QuotaWindow
+    sevenDay?: QuotaWindow
+    weekly?: QuotaWindow
+    error?: string
 }
 
 type UsageData = {
     studio: { sessionCount: number }
-    codex: {
-        daily: DailyEntry[]
-        byModel: ModelEntry[]
-        totalInputTokens: number
-        totalOutputTokens: number
-        totalRequests: number
-        error?: string
-    } | null
-    error?: string
+    codex: ProviderQuota
+    claudeCode: ProviderQuota
 }
 
-function formatTokens(n: number): string {
-    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
-    if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
-    return String(n)
+// ── Helpers ──────────────────────────────────────────────
+
+function formatResetAt(iso: string | null | undefined): string {
+    if (!iso) return '—'
+    const d = new Date(iso)
+    const now = new Date()
+    const diffMs = d.getTime() - now.getTime()
+    if (diffMs <= 0) return 'now'
+    const diffMin = Math.floor(diffMs / 60_000)
+    if (diffMin < 60) return `${diffMin}m`
+    const diffHr = Math.floor(diffMin / 60)
+    if (diffHr < 24) return `${diffHr}h ${diffMin % 60}m`
+    return `${Math.floor(diffHr / 24)}d ${diffHr % 24}h`
 }
 
-function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
+function quotaColor(percentUsed: number): string {
+    if (percentUsed >= 90) return 'var(--status-danger, #ef4444)'
+    if (percentUsed >= 70) return 'var(--status-warning, #f59e0b)'
+    return 'var(--status-success, #22c55e)'
+}
+
+// ── QuotaBar ─────────────────────────────────────────────
+
+function QuotaBar({ window: w, label }: { window: QuotaWindow; label: string }) {
+    const pct = Math.min(100, Math.max(0, w.percentUsed))
+    const remaining = 100 - pct
+    const color = quotaColor(pct)
+
     return (
-        <div className="using-stat-card">
-            <div className="using-stat-card__value">{value}</div>
-            <div className="using-stat-card__label">{label}</div>
-            {sub && <div className="using-stat-card__sub">{sub}</div>}
+        <div className="stg-row using-quota-row">
+            <div className="stg-row__text">
+                <span className="stg-row__title">{label}</span>
+                <span className="stg-row__desc">
+                    <Clock size={10} style={{ display: 'inline', verticalAlign: '-1px', marginRight: 3 }} />
+                    resets in {formatResetAt(w.resetsAt)}
+                </span>
+            </div>
+            <div className="using-quota-right">
+                <span className="using-quota-pct" style={{ color }}>
+                    {remaining.toFixed(0)}% left
+                </span>
+                <div className="using-bar-bg using-bar-bg--wide">
+                    <div
+                        className="using-bar-fill"
+                        style={{ width: `${pct}%`, background: color }}
+                    />
+                </div>
+            </div>
         </div>
     )
 }
 
-function MiniBar({ value, max }: { value: number; max: number }) {
-    const pct = max > 0 ? Math.round((value / max) * 100) : 0
+// ── ProviderSection ──────────────────────────────────────
+
+function ProviderSection({ title, quota }: { title: string; quota: ProviderQuota }) {
+    if (!quota.connected) {
+        return (
+            <div className="using-notice">
+                <AlertCircle size={13} style={{ flexShrink: 0 }} />
+                <span>
+                    {title} provider not connected.
+                    Go to <strong>Providers</strong> to connect.
+                </span>
+            </div>
+        )
+    }
+
+    if (quota.authType === 'api') {
+        return (
+            <div className="using-notice">
+                <AlertCircle size={13} style={{ flexShrink: 0 }} />
+                <span>
+                    Connected via API key — quota data requires a subscription login (OAuth).
+                </span>
+            </div>
+        )
+    }
+
+    if (quota.error === 'token_expired') {
+        return (
+            <div className="using-notice using-notice--warn">
+                <AlertCircle size={13} style={{ flexShrink: 0 }} />
+                <span>Session token expired. Reconnect {title} in <strong>Providers</strong>.</span>
+            </div>
+        )
+    }
+
+    if (quota.error === 'rate_limited') {
+        return (
+            <div className="using-notice using-notice--warn">
+                <AlertCircle size={13} style={{ flexShrink: 0 }} />
+                <span>Usage endpoint is rate-limited. Try again in a moment.</span>
+            </div>
+        )
+    }
+
+    if (quota.error) {
+        return (
+            <div className="using-notice using-notice--danger">
+                <AlertCircle size={13} style={{ flexShrink: 0 }} />
+                <span>Could not fetch usage: {quota.error}</span>
+            </div>
+        )
+    }
+
+    const windows = [
+        quota.fiveHour ? { w: quota.fiveHour, label: '5-hour window' } : null,
+        quota.sevenDay ? { w: quota.sevenDay, label: '7-day window' } : null,
+        quota.weekly   ? { w: quota.weekly,   label: 'Weekly window' } : null,
+    ].filter(Boolean) as { w: QuotaWindow; label: string }[]
+
+    if (windows.length === 0) {
+        return (
+            <div className="using-notice">
+                <span>No quota data returned. You may be on a plan without usage limits.</span>
+            </div>
+        )
+    }
+
     return (
-        <div className="using-bar-bg">
-            <div className="using-bar-fill" style={{ width: `${pct}%` }} />
+        <div className="stg-group">
+            {windows.map(({ w, label }) => (
+                <QuotaBar key={label} window={w} label={label} />
+            ))}
         </div>
     )
 }
+
+// ── Main component ───────────────────────────────────────
 
 export default function SettingsUsing() {
     const [data, setData] = useState<UsageData | null>(null)
@@ -63,8 +161,7 @@ export default function SettingsUsing() {
         setLoading(true)
         setFetchError(null)
         try {
-            const result = await api.usage.get()
-            setData(result)
+            setData(await api.usage.get())
         } catch (err) {
             setFetchError(err instanceof Error ? err.message : String(err))
         } finally {
@@ -72,18 +169,12 @@ export default function SettingsUsing() {
         }
     }
 
-    useEffect(() => {
-        void load()
-    }, [])
-
-    const maxDailyRequests = data?.codex
-        ? Math.max(...(data.codex.daily.map((d) => d.requests)), 1)
-        : 1
+    useEffect(() => { void load() }, [])
 
     return (
         <div className="stg-panel">
             <div className="stg-panel__header stg-panel__header--split">
-                <h2 className="stg-panel__title">Usage</h2>
+                <h2 className="stg-panel__title">Using</h2>
                 <button
                     className="icon-btn"
                     onClick={() => { void load() }}
@@ -104,109 +195,33 @@ export default function SettingsUsing() {
                 <div className="empty-state">Loading usage data…</div>
             ) : (
                 <>
-                    {/* dot-studio stats */}
+                    {/* dot-studio */}
                     <div className="stg-section">
                         <h3 className="stg-section__title">
-                            <Zap size={12} style={{ display: 'inline', verticalAlign: '-1px', marginRight: 4 }} />
+                            <Zap size={11} style={{ display: 'inline', verticalAlign: '-1px', marginRight: 4 }} />
                             dot-studio
                         </h3>
                         <div className="stg-group">
                             <div className="stg-row">
                                 <div className="stg-row__text">
                                     <span className="stg-row__title">Total sessions</span>
-                                    <span className="stg-row__desc">Chat sessions created in this workspace</span>
+                                    <span className="stg-row__desc">Chat sessions in this workspace</span>
                                 </div>
                                 <span className="using-badge">{data?.studio.sessionCount ?? 0}</span>
                             </div>
                         </div>
                     </div>
 
-                    {/* OpenAI Codex usage */}
+                    {/* Codex */}
                     <div className="stg-section">
-                        <h3 className="stg-section__title">
-                            <BarChart2 size={12} style={{ display: 'inline', verticalAlign: '-1px', marginRight: 4 }} />
-                            OpenAI — Last 30 days
-                        </h3>
+                        <h3 className="stg-section__title">Codex (ChatGPT)</h3>
+                        {data && <ProviderSection title="OpenAI" quota={data.codex} />}
+                    </div>
 
-                        {data?.error === 'no_openai_key' ? (
-                            <div className="using-notice">
-                                <AlertCircle size={14} />
-                                <span>Connect your OpenAI provider to see usage data.</span>
-                            </div>
-                        ) : data?.codex?.error === 'insufficient_permissions' ? (
-                            <div className="using-notice">
-                                <AlertCircle size={14} />
-                                <span>
-                                    Usage data requires an Admin-level API key.
-                                    Generate one in your OpenAI dashboard and reconnect the provider.
-                                </span>
-                            </div>
-                        ) : data?.codex?.error ? (
-                            <div className="using-notice using-notice--danger">
-                                <AlertCircle size={14} />
-                                <span>Could not fetch usage: {data.codex.error}</span>
-                            </div>
-                        ) : data?.codex ? (
-                            <>
-                                <div className="using-stat-row">
-                                    <StatCard
-                                        label="Total requests"
-                                        value={formatTokens(data.codex.totalRequests)}
-                                    />
-                                    <StatCard
-                                        label="Input tokens"
-                                        value={formatTokens(data.codex.totalInputTokens)}
-                                    />
-                                    <StatCard
-                                        label="Output tokens"
-                                        value={formatTokens(data.codex.totalOutputTokens)}
-                                    />
-                                </div>
-
-                                {data.codex.byModel.length > 0 && (
-                                    <div className="stg-group" style={{ marginTop: 16 }}>
-                                        <div className="stg-row" style={{ paddingBottom: 6, paddingTop: 6 }}>
-                                            <span className="stg-row__desc" style={{ fontWeight: 600 }}>Model</span>
-                                            <span className="stg-row__desc" style={{ fontWeight: 600, minWidth: 80, textAlign: 'right' }}>Requests</span>
-                                        </div>
-                                        {data.codex.byModel.map((m) => (
-                                            <div key={m.modelId} className="stg-row">
-                                                <div className="stg-row__text">
-                                                    <span className="stg-row__title" style={{ fontSize: 12 }}>{m.modelId}</span>
-                                                    <span className="stg-row__desc">
-                                                        {formatTokens(m.inputTokens)} in · {formatTokens(m.outputTokens)} out
-                                                    </span>
-                                                </div>
-                                                <span className="using-badge">{m.requests.toLocaleString()}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-
-                                {data.codex.daily.length > 0 && (
-                                    <>
-                                        <h3 className="stg-section__title" style={{ marginTop: 20 }}>Daily requests</h3>
-                                        <div className="stg-group">
-                                            {[...data.codex.daily].reverse().slice(0, 14).map((d) => (
-                                                <div key={d.date} className="stg-row using-day-row">
-                                                    <span className="using-day-label">{d.date.slice(5)}</span>
-                                                    <div className="using-day-bar">
-                                                        <MiniBar value={d.requests} max={maxDailyRequests} />
-                                                    </div>
-                                                    <span className="using-day-count">{d.requests.toLocaleString()}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </>
-                                )}
-
-                                {data.codex.totalRequests === 0 && (
-                                    <div className="using-notice">
-                                        <span>No usage in the last 30 days.</span>
-                                    </div>
-                                )}
-                            </>
-                        ) : null}
+                    {/* Claude Code */}
+                    <div className="stg-section">
+                        <h3 className="stg-section__title">Claude Code (Anthropic)</h3>
+                        {data && <ProviderSection title="Anthropic" quota={data.claudeCode} />}
                     </div>
                 </>
             )}
