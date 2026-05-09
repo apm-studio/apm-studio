@@ -63,6 +63,23 @@ export async function readStoredProviderAuthType(providerId: string): Promise<'a
     return type === 'api' || type === 'oauth' || type === 'wellknown' ? type : null
 }
 
+export async function readStoredProviderApiKey(providerId: string): Promise<string | null> {
+    const store = await readStoredAuthStore()
+    const normalized = providerId.replace(/\/+$/, '')
+    const auth = store[providerId] || store[normalized] || store[`${normalized}/`]
+    if (!auth || typeof auth !== 'object') {
+        return null
+    }
+    const entry = auth as Record<string, unknown>
+    if (entry.type === 'api' && typeof entry.key === 'string') {
+        return entry.key
+    }
+    if (entry.type === 'oauth' && typeof entry.access === 'string') {
+        return entry.access
+    }
+    return null
+}
+
 export async function clearStoredProviderAuth(providerId: string) {
     const authPath = await resolveAuthStorePath()
     if (!authPath) {
