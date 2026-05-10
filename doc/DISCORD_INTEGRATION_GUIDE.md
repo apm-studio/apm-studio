@@ -49,6 +49,8 @@ Workspace sync creates:
 - lazily-created thread channels under those performer and Act categories as threads are opened
 - `/act message` participant autocomplete for Act thread input, scoped to the mapped Act channel
 - Discord-visible category and channel names avoid Studio-specific text prefixes such as `dot`, `t-`, and `a-`
+- unnamed Discord-created thread channels use numbered `new-thread-N` names instead of Studio/OpenCode metadata ids
+- sync removes active-workspace Discord thread channels and adapter mappings when the corresponding Studio standalone performer session or Act thread no longer exists
 
 Asset Library is intentionally not projected to Discord.
 
