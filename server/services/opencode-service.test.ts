@@ -51,7 +51,7 @@ vi.mock('../lib/cache.js', () => ({
 }))
 
 vi.mock('../lib/config.js', () => ({
-    OPENCODE_URL: 'http://localhost:43102',
+    OPENCODE_URL: 'http://localhost:43202',
 }))
 
 vi.mock('../lib/project-config.js', () => ({

@@ -131,7 +131,8 @@ Every execution path should follow this order.
 - `OPENCODE_URL` is not an external runtime attachment switch; Studio derives the sidecar URL from its managed port
 - `dev:all` should preserve the same managed semantics
 - `dev:all` should check readiness through the Studio API managed health path
-- `dev:all` should force dev server mode and the dev API port instead of inheriting production CLI env
+- `dev:all` should force dev server mode plus the dev API and sidecar ports instead of inheriting production CLI env
+- dev ports should stay separate from published CLI ports so a released Studio can drive source changes safely
 - managed sidecar spawn must work without a Unix shell; package bin wrappers should be launched through Node when needed
 - managed process shutdown must account for Windows process trees as well as Unix signals
 - managed sidecar readiness should use OpenCode `/global/health`

@@ -42,11 +42,11 @@ The dev stack starts:
 
 | Service | Port |
 | --- | ---: |
-| Studio client | `43100` |
-| Studio API | `43101` |
-| Managed OpenCode sidecar | `43102` |
+| Studio client | `43200` |
+| Studio API | `43201` |
+| Managed OpenCode sidecar | `43202` |
 
-The published CLI uses port `43100` by default and scans upward when the port is busy unless you pass `--port`.
+The published CLI uses port `43100` by default, keeps its managed OpenCode sidecar on `43102`, and scans upward when the app port is busy unless you pass `--port`.
 
 ## Why Studio
 
@@ -207,9 +207,12 @@ Default local ports:
 | Runtime piece | Port |
 | --- | ---: |
 | Published CLI app and API | `43100` |
-| Dev client | `43100` |
-| Dev API | `43101` |
-| Managed OpenCode sidecar | `43102` |
+| Published CLI managed OpenCode sidecar | `43102` |
+| Dev client | `43200` |
+| Dev API | `43201` |
+| Dev managed OpenCode sidecar | `43202` |
+
+The dev scripts only clean up the dev port set, so a released Studio instance can stay open while you work on Studio from source.
 
 ## Discord Integration
 

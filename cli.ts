@@ -14,7 +14,7 @@ import {
     ensureOpenProjectDir,
     validateExistingProjectDir,
 } from './server/lib/cli-utils.js'
-import { STUDIO_APP_PORT, STUDIO_OPENCODE_PORT } from './shared/default-ports.js'
+import { STUDIO_RELEASE_APP_PORT, STUDIO_RELEASE_OPENCODE_PORT } from './shared/default-ports.js'
 
 type StudioPackageMeta = {
     name: string
@@ -63,7 +63,7 @@ type DoctorCheck = {
 
 class CliUsageError extends Error {}
 
-const DEFAULT_PORT = STUDIO_APP_PORT
+const DEFAULT_PORT = STUDIO_RELEASE_APP_PORT
 const MAX_PORT_SCAN = 20
 const MIN_PORT = 1
 const MAX_PORT = 65535
@@ -146,7 +146,7 @@ function parseOptionalEnvPort(name: 'PORT' | 'OPENCODE_PORT'): number | null {
 }
 
 function resolveSidecarPort() {
-    return parseOptionalEnvPort('OPENCODE_PORT') || STUDIO_OPENCODE_PORT
+    return parseOptionalEnvPort('OPENCODE_PORT') || STUDIO_RELEASE_OPENCODE_PORT
 }
 
 function parseAssetTargetUrn(value: string | undefined, kind: StartupAssetTarget['kind'], arg: string): StartupAssetTarget {

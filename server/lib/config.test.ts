@@ -1,6 +1,11 @@
 import path from 'path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { STUDIO_API_PORT, STUDIO_OPENCODE_PORT } from '../../shared/default-ports.js'
+import {
+    STUDIO_DEV_API_PORT,
+    STUDIO_DEV_OPENCODE_PORT,
+    STUDIO_RELEASE_APP_PORT,
+    STUDIO_RELEASE_OPENCODE_PORT,
+} from '../../shared/default-ports.js'
 
 describe('server config mode and port resolution', () => {
     afterEach(() => {
@@ -17,9 +22,23 @@ describe('server config mode and port resolution', () => {
         const config = await import('./config.js')
 
         expect(config.IS_PRODUCTION).toBe(false)
-        expect(config.PORT).toBe(STUDIO_API_PORT)
-        expect(config.OPENCODE_PORT).toBe(STUDIO_OPENCODE_PORT)
+        expect(config.PORT).toBe(STUDIO_DEV_API_PORT)
+        expect(config.OPENCODE_PORT).toBe(STUDIO_DEV_OPENCODE_PORT)
         expect(config.DEFAULT_PROJECT_DIR).toBe(path.resolve(process.cwd(), '..'))
+    })
+
+    it('defaults production mode to the published CLI port set', async () => {
+        vi.stubEnv('DOT_STUDIO_PRODUCTION', '1')
+        vi.stubEnv('PORT', '')
+        vi.stubEnv('PROJECT_DIR', '')
+        vi.stubEnv('OPENCODE_PORT', '')
+
+        const config = await import('./config.js')
+
+        expect(config.IS_PRODUCTION).toBe(true)
+        expect(config.PORT).toBe(STUDIO_RELEASE_APP_PORT)
+        expect(config.OPENCODE_PORT).toBe(STUDIO_RELEASE_OPENCODE_PORT)
+        expect(config.DEFAULT_PROJECT_DIR).toBe(path.resolve(process.cwd()))
     })
 
     it('uses production mode only for an explicit production flag', async () => {

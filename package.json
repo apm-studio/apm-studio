@@ -31,7 +31,7 @@
     "start": "node dist/cli.js",
     "dev": "npm run dev:all",
     "dev:client": "vite",
-    "kill-ports": "node scripts/kill-ports.mjs 43100 43101 43102",
+    "kill-ports": "node scripts/kill-ports.mjs 43200 43201 43202",
     "dev:all": "npm run kill-ports && tsx server/start.ts",
     "server": "node --import ./server/lib/dot-dev-alias-register.mjs ./node_modules/tsx/dist/cli.mjs server/index.ts",
     "server:dev": "node --import ./server/lib/dot-dev-alias-register.mjs ./node_modules/tsx/dist/cli.mjs --watch server/index.ts",
@@ -45,7 +45,7 @@
     "test": "vitest run",
     "lint": "eslint .",
     "preview": "vite preview",
-    "opencode": "opencode serve --port 43102",
+    "opencode": "opencode serve --port 43202",
     "prepublishOnly": "npm run build:all"
   },
   "bin": {

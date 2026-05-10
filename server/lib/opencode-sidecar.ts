@@ -1,8 +1,7 @@
 import { spawn, type ChildProcess } from 'child_process'
 import path from 'path'
-import { DEFAULT_PROJECT_DIR, OPENCODE_URL, STUDIO_OPENCODE_CONFIG_DIR } from './config.js'
+import { DEFAULT_PROJECT_DIR, OPENCODE_PORT, OPENCODE_URL, STUDIO_OPENCODE_CONFIG_DIR } from './config.js'
 import { resolvePackageBinCommand } from './package-bin.js'
-import { STUDIO_OPENCODE_PORT } from '../../shared/default-ports.js'
 
 const STARTUP_TIMEOUT_MS = 15_000
 const HEALTHCHECK_INTERVAL_MS = 250
@@ -24,7 +23,7 @@ function resolvePort(): number {
         }
         return url.protocol === 'https:' ? 443 : 80
     } catch {
-        return STUDIO_OPENCODE_PORT
+        return OPENCODE_PORT
     }
 }
 
