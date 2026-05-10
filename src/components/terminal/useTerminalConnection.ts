@@ -2,6 +2,7 @@ import { useEffect, useRef, useCallback, useState } from 'react'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import { WebglAddon } from '@xterm/addon-webgl'
+import { STUDIO_API_PORT, STUDIO_VITE_PORT } from '../../../shared/default-ports'
 
 interface TermSession {
     id: string
@@ -84,6 +85,11 @@ function stripTerminalNoise(value: string) {
 function buildTerminalWebSocketUrl(action: 'create' | 'attach', workingDir: string | null, targetId?: string) {
     const url = new URL('/ws/terminal', window.location.href)
     url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
+    const devHost = url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname === '[::1]'
+    if (devHost && url.port === String(STUDIO_VITE_PORT)) {
+        url.hostname = '127.0.0.1'
+        url.port = String(STUDIO_API_PORT)
+    }
     url.searchParams.set('action', action)
     if (targetId) {
         url.searchParams.set('id', targetId)

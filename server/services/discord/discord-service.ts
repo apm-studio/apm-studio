@@ -128,6 +128,8 @@ const ACT_THREAD_SYNC_TIMEOUT_MS = 30 * 60_000
 const ACT_THREAD_IDLE_CONFIRMATIONS = 80
 const PENDING_INTERACTION_TTL_MS = 24 * 60 * 60_000
 const DISCORD_SEND_RETRY_DELAYS_MS = [250, 1_000] as const
+const DISCORD_SYNC_OPERATION_TIMEOUT_MS = 8_000
+const DISCORD_SYNC_BEST_EFFORT_TIMEOUT_MS = 750
 
 function discordInviteUrl(applicationId: string) {
     const permissions = new PermissionsBitField([
@@ -141,6 +143,10 @@ function discordInviteUrl(applicationId: string) {
 
 function sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function timeoutError(label: string, timeoutMs: number) {
+    return new Error(`Timed out while ${label} after ${timeoutMs}ms`)
 }
 
 function chunkDiscordMessage(content: string) {
@@ -323,7 +329,7 @@ class DiscordIntegrationService {
                     mappings.activeCategoryId || workspaceMapping.categoryId,
                     workspaceCategoryName(snapshot.workingDir),
                 )
-                await activeCategory.setPosition(0).catch(() => {})
+                void this.runDiscordSyncBestEffort(`position active workspace category ${activeCategory.id}`, () => activeCategory.setPosition(0))
                 mappings.activeCategoryId = activeCategory.id
                 const obsoleteGenericCategoryIds = [
                     mappings.performerCategoryId,
@@ -487,7 +493,8 @@ class DiscordIntegrationService {
                         performerCategoryName(performer.name),
                     )
                     workspaceMapping.performerCategories[performer.id] = category.id
-                    await category.setPosition(categoryPosition++).catch(() => {})
+                    void this.runDiscordSyncBestEffort(`position performer category ${category.id}`, () => category.setPosition(categoryPosition))
+                    categoryPosition += 1
                     const threadChannelIds = Object.entries(workspaceMapping.performerThreadChannels || {})
                         .filter(([key]) => key.startsWith(`${performer.id}:`))
                         .map(([, channelId]) => channelId)
@@ -504,14 +511,15 @@ class DiscordIntegrationService {
                         actCategoryName(act.name),
                     )
                     workspaceMapping.actCategories[act.id] = category.id
-                    await category.setPosition(categoryPosition++).catch(() => {})
+                    void this.runDiscordSyncBestEffort(`position Act category ${category.id}`, () => category.setPosition(categoryPosition))
+                    categoryPosition += 1
                     const threadChannelIds = Object.entries(workspaceMapping.actThreadChannels || {})
                         .filter(([key]) => key.startsWith(`${act.id}:`))
                         .map(([, channelId]) => channelId)
                     await this.moveChannelsToCategory(guild, threadChannelIds, category.id)
                 }
                 await this.deleteCategories(guild, obsoleteGenericCategoryIds)
-                await archiveCategory.setPosition(categoryPosition).catch(() => {})
+                void this.runDiscordSyncBestEffort(`position archive category ${archiveCategory.id}`, () => archiveCategory.setPosition(categoryPosition))
 
                 const menuChannel = await this.ensureTextChannel(
                     guild,
@@ -520,7 +528,7 @@ class DiscordIntegrationService {
                     activeCategory.id,
                     `Dance of Tal Studio control for ${snapshot.workingDir}`,
                 )
-                await menuChannel.setPosition(0).catch(() => {})
+                void this.runDiscordSyncBestEffort(`position Discord workspace menu ${menuChannel.id}`, () => menuChannel.setPosition(0))
                 mappings.menuChannelId = menuChannel.id
                 workspaceMapping.menuChannelId = menuChannel.id
                 mappings.channels[menuChannel.id] = {
@@ -529,7 +537,10 @@ class DiscordIntegrationService {
                     workingDir: snapshot.workingDir,
                 }
 
-                await this.postWorkspaceMenu(menuChannel, workspaceId, snapshot, savedWorkspaces)
+                await this.runDiscordSyncBestEffort(
+                    `post Discord workspace menu ${menuChannel.id}`,
+                    () => this.postWorkspaceMenu(menuChannel, workspaceId, snapshot, savedWorkspaces),
+                )
             })
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error)
@@ -896,18 +907,52 @@ class DiscordIntegrationService {
         }
     }
 
+    private async withDiscordSyncTimeout<T>(
+        label: string,
+        operation: () => Promise<T>,
+        timeoutMs = DISCORD_SYNC_OPERATION_TIMEOUT_MS,
+    ) {
+        let timeout: ReturnType<typeof setTimeout> | null = null
+        try {
+            return await Promise.race([
+                operation(),
+                new Promise<T>((_, reject) => {
+                    timeout = setTimeout(() => reject(timeoutError(label, timeoutMs)), timeoutMs)
+                }),
+            ])
+        } finally {
+            if (timeout) {
+                clearTimeout(timeout)
+            }
+        }
+    }
+
+    private async runDiscordSyncBestEffort(
+        label: string,
+        operation: () => Promise<unknown>,
+        timeoutMs = DISCORD_SYNC_BEST_EFFORT_TIMEOUT_MS,
+    ) {
+        try {
+            await this.withDiscordSyncTimeout(label, operation, timeoutMs)
+        } catch (error) {
+            console.warn(`[discord] ${label} failed during workspace sync:`, error)
+        }
+    }
+
     private async ensureCategory(guild: Guild, channelId: string | undefined, name: string) {
-        const existing = channelId ? await guild.channels.fetch(channelId).catch(() => null) : null
+        const existing = channelId
+            ? await this.withDiscordSyncTimeout(`fetch Discord category ${channelId}`, () => guild.channels.fetch(channelId).catch(() => null))
+            : null
         if (existing?.type === ChannelType.GuildCategory) {
             if (existing.name !== name) {
-                await existing.setName(name).catch(() => {})
+                await this.runDiscordSyncBestEffort(`rename Discord category ${existing.id}`, () => existing.setName(name))
             }
             return existing
         }
-        return guild.channels.create({
+        return this.withDiscordSyncTimeout(`create Discord category ${name}`, () => guild.channels.create({
             name,
             type: ChannelType.GuildCategory,
-        })
+        }))
     }
 
     private async ensureTextChannel(
@@ -917,33 +962,38 @@ class DiscordIntegrationService {
         parentId: string,
         topic: string,
     ) {
-        const existing = channelId ? await guild.channels.fetch(channelId).catch(() => null) : null
+        const existing = channelId
+            ? await this.withDiscordSyncTimeout(`fetch Discord text channel ${channelId}`, () => guild.channels.fetch(channelId).catch(() => null))
+            : null
         if (existing?.type === ChannelType.GuildText) {
             const channel = existing as TextChannel
             if (channel.name !== name) {
-                await channel.setName(name).catch(() => {})
+                await this.runDiscordSyncBestEffort(`rename Discord text channel ${channel.id}`, () => channel.setName(name))
             }
             if (channel.parentId !== parentId) {
-                await channel.setParent(parentId).catch(() => {})
+                await this.runDiscordSyncBestEffort(`move Discord text channel ${channel.id}`, () => channel.setParent(parentId))
             }
             if (channel.topic !== topic) {
-                await channel.setTopic(topic).catch(() => {})
+                await this.runDiscordSyncBestEffort(`update Discord text channel topic ${channel.id}`, () => channel.setTopic(topic))
             }
             return channel
         }
-        return guild.channels.create({
+        return this.withDiscordSyncTimeout(`create Discord text channel ${name}`, () => guild.channels.create({
             name,
             type: ChannelType.GuildText,
             parent: parentId,
             topic,
-        })
+        }))
     }
 
     private async moveChannelsToCategory(guild: Guild, channelIds: string[], parentId: string) {
         for (const channelId of Array.from(new Set(channelIds))) {
-            const channel = await guild.channels.fetch(channelId).catch(() => null)
+            const channel = await this.withDiscordSyncTimeout(
+                `fetch Discord channel ${channelId}`,
+                () => guild.channels.fetch(channelId).catch(() => null),
+            ).catch(() => null)
             if (channel?.type === ChannelType.GuildText && channel.parentId !== parentId) {
-                await channel.setParent(parentId).catch(() => {})
+                await this.runDiscordSyncBestEffort(`move Discord text channel ${channel.id}`, () => channel.setParent(parentId))
             }
         }
     }
@@ -951,14 +1001,23 @@ class DiscordIntegrationService {
     private async deleteTextChannels(guild: Guild, channelIds: string[], reason: string) {
         const cleanedChannelIds = new Set<string>()
         for (const channelId of Array.from(new Set(channelIds))) {
-            const channel = await guild.channels.fetch(channelId).catch(() => null)
+            const channel = await this.withDiscordSyncTimeout(
+                `fetch stale Discord text channel ${channelId}`,
+                () => guild.channels.fetch(channelId).catch(() => null),
+            ).catch((error) => {
+                console.warn('[discord] Failed to fetch stale thread channel during workspace sync cleanup:', {
+                    channelId,
+                    error,
+                })
+                return null
+            })
             if (!channel) {
                 cleanedChannelIds.add(channelId)
                 continue
             }
             if (channel?.type === ChannelType.GuildText) {
                 try {
-                    await channel.delete(reason)
+                    await this.withDiscordSyncTimeout(`delete stale Discord text channel ${channel.id}`, () => channel.delete(reason))
                     cleanedChannelIds.add(channelId)
                 } catch (error) {
                     console.warn('[discord] Failed to delete stale thread channel during workspace sync cleanup:', {
@@ -975,9 +1034,15 @@ class DiscordIntegrationService {
 
     private async deleteCategories(guild: Guild, categoryIds: string[]) {
         for (const categoryId of Array.from(new Set(categoryIds))) {
-            const channel = await guild.channels.fetch(categoryId).catch(() => null)
+            const channel = await this.withDiscordSyncTimeout(
+                `fetch obsolete Discord category ${categoryId}`,
+                () => guild.channels.fetch(categoryId).catch(() => null),
+            ).catch(() => null)
             if (channel?.type === ChannelType.GuildCategory) {
-                await channel.delete('Dance of Tal Studio inactive workspace category cleanup').catch(() => {})
+                await this.runDiscordSyncBestEffort(
+                    `delete obsolete Discord category ${channel.id}`,
+                    () => channel.delete('Dance of Tal Studio inactive workspace category cleanup'),
+                )
             }
         }
     }
@@ -1046,7 +1111,7 @@ class DiscordIntegrationService {
     ) {
         const performerCount = snapshot.performers?.length || 0
         const actCount = snapshot.acts?.length || 0
-        await channel.send({
+        await this.withDiscordSyncTimeout(`post Discord workspace menu ${channel.id}`, () => channel.send({
             content: [
                 `**Dance of Tal Studio**`,
                 `Workspace: \`${snapshot.workingDir}\``,
@@ -1054,7 +1119,7 @@ class DiscordIntegrationService {
             ].join('\n'),
             components: this.buildWorkspaceMenuComponents(workspaceId, snapshot, savedWorkspaces),
             allowedMentions: { parse: [] },
-        })
+        }))
     }
 
     private async registerPendingInteraction(params: {
