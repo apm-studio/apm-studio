@@ -182,6 +182,7 @@ function extractProviderId(err: unknown, context: NormalizeErrorContext): string
 
 function isProviderAuthError(name: string, message: string, status?: number) {
     return name === 'ProviderAuthError'
+        || name === 'ProviderAuthOauthCallbackFailed'
         || status === 401
         || status === 403
         || /\b(unauthorized|forbidden|authentication|auth\b|api key|credentials?|token expired|provider auth)\b/i.test(message)
@@ -244,6 +245,19 @@ export function normalizeOpencodeError(
     const providerId = extractProviderId(err, context)
     const modelId = context.model?.modelId
     const retryable = readPath(err, 'data', 'isRetryable') === true || (!!status && status >= 500)
+
+    if (name === 'ProviderAuthOauthCallbackFailed' && providerId === 'anthropic') {
+        return {
+            error: 'Claude authorization failed. Paste the full callback URL or full code exactly as shown in the browser. If you already used that code, start the Claude Pro/Max login again and paste the new full value.',
+            detail,
+            code: 'provider_auth',
+            action: 'reconnect_provider',
+            retryable: false,
+            status: status || 400,
+            providerId,
+            ...(modelId ? { modelId } : {}),
+        }
+    }
 
     if (isProviderAuthError(name, detail, status)) {
         return {

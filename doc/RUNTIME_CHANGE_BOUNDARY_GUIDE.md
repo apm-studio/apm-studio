@@ -136,6 +136,7 @@ Every execution path should follow this order.
 - managed process shutdown must account for Windows process trees as well as Unix signals
 - managed sidecar readiness should use OpenCode `/global/health`
 - if a managed sidecar child is already alive, readiness retries must wait on that child rather than spawning a duplicate process
+- managed sidecar startup should seed Studio-owned OpenCode config defaults before spawning OpenCode; keep npm plugin specs pinned when a default plugin is required for provider auth behavior
 - dev sidecar/tooling paths should use the local `../dot` checkout for DOT imports and the runtime `dot` loader command
 - production sidecar/tooling paths should use the packaged `dance-of-tal` dependency
 - managed config root is `STUDIO_DIR/opencode`

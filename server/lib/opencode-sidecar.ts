@@ -1,6 +1,7 @@
 import { spawn, type ChildProcess } from 'child_process'
 import path from 'path'
 import { DEFAULT_PROJECT_DIR, OPENCODE_URL, STUDIO_OPENCODE_CONFIG_DIR } from './config.js'
+import { ensureGlobalConfigDefaults } from './global-config.js'
 import { resolvePackageBinCommand } from './package-bin.js'
 import { STUDIO_OPENCODE_PORT } from '../../shared/default-ports.js'
 
@@ -160,6 +161,7 @@ export async function ensureOpencodeSidecar(): Promise<void> {
     }
 
     startupPromise = (async () => {
+        await ensureGlobalConfigDefaults()
         const resolvedCommand = resolveCommand()
         const opencode = spawn(
             resolvedCommand.command,
