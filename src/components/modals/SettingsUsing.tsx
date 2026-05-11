@@ -19,7 +19,6 @@ type ProviderQuota = {
 type UsageData = {
     studio: { sessionCount: number }
     codex: ProviderQuota
-    claudeCode: ProviderQuota
 }
 
 // ── Helpers ──────────────────────────────────────────────
@@ -216,12 +215,6 @@ export default function SettingsUsing() {
                     <div className="stg-section">
                         <h3 className="stg-section__title">Codex (ChatGPT)</h3>
                         {data && <ProviderSection title="OpenAI" quota={data.codex} />}
-                    </div>
-
-                    {/* Claude Code */}
-                    <div className="stg-section">
-                        <h3 className="stg-section__title">Claude Code (Anthropic)</h3>
-                        {data && <ProviderSection title="Anthropic" quota={data.claudeCode} />}
                     </div>
                 </>
             )}

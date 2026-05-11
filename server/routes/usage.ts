@@ -23,7 +23,6 @@ export type ProviderQuota = {
 export type UsageResponse = {
     studio: { sessionCount: number }
     codex: ProviderQuota
-    claudeCode: ProviderQuota
 }
 
 // ── Helpers ──────────────────────────────────────────────
@@ -127,51 +126,6 @@ async function fetchCodexQuota(accessToken: string): Promise<ProviderQuota> {
     }
 }
 
-// ── Claude Code (Anthropic OAuth subscription) ───────────
-
-async function fetchClaudeCodeQuota(accessToken: string): Promise<ProviderQuota> {
-    const res = await fetch('https://api.anthropic.com/api/oauth/usage', {
-        headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'anthropic-beta': 'oauth-2025-04-20',
-            'anthropic-version': '2023-06-01',
-            'Accept': 'application/json',
-        },
-        signal: AbortSignal.timeout(10_000),
-    })
-
-    if (!res.ok) {
-        if (res.status === 401 || res.status === 403) {
-            return { connected: true, authType: 'oauth', error: 'token_expired' }
-        }
-        if (res.status === 429) {
-            return { connected: true, authType: 'oauth', error: 'rate_limited' }
-        }
-        return { connected: true, authType: 'oauth', error: `http_${res.status}` }
-    }
-
-    const data = await res.json() as Record<string, unknown>
-
-    const fiveHourRaw = data.five_hour as Record<string, unknown> | undefined
-    const fiveHour: QuotaWindow | undefined = fiveHourRaw ? {
-        percentUsed: Number(fiveHourRaw.utilization ?? fiveHourRaw.percent_used ?? 0),
-        resetsAt: extractResetAt(fiveHourRaw),
-    } : undefined
-
-    const sevenDayRaw = data.seven_day as Record<string, unknown> | undefined
-    const sevenDay: QuotaWindow | undefined = sevenDayRaw ? {
-        percentUsed: Number(sevenDayRaw.utilization ?? sevenDayRaw.percent_used ?? 0),
-        resetsAt: extractResetAt(sevenDayRaw),
-    } : undefined
-
-    return {
-        connected: true,
-        authType: 'oauth',
-        fiveHour,
-        sevenDay,
-    }
-}
-
 // ── Studio session count ─────────────────────────────────
 
 async function fetchStudioSessionCount(directory: string): Promise<{ sessionCount: number }> {
@@ -192,9 +146,8 @@ async function fetchStudioSessionCount(directory: string): Promise<{ sessionCoun
 usage.get('/api/usage', async (c) => {
     const workingDir = c.req.header('x-working-dir') || process.cwd()
 
-    const [openaiAuth, anthropicAuth, studioStats] = await Promise.all([
+    const [openaiAuth, studioStats] = await Promise.all([
         readStoredProviderAuth('openai').catch(() => null),
-        readStoredProviderAuth('anthropic').catch(() => null),
         fetchStudioSessionCount(workingDir),
     ])
 
@@ -213,24 +166,9 @@ usage.get('/api/usage', async (c) => {
         codexQuota = { connected: true, authType: 'api', error: 'subscription_required' }
     }
 
-    // Claude Code quota — Anthropic OAuth subscription
-    let claudeCodeQuota: ProviderQuota
-    if (!anthropicAuth) {
-        claudeCodeQuota = { connected: false, authType: null }
-    } else if (anthropicAuth.type === 'oauth') {
-        claudeCodeQuota = await fetchClaudeCodeQuota(anthropicAuth.access).catch((err) => ({
-            connected: true,
-            authType: 'oauth' as const,
-            error: err instanceof Error ? err.message : String(err),
-        }))
-    } else {
-        claudeCodeQuota = { connected: true, authType: 'api', error: 'subscription_required' }
-    }
-
     return c.json({
         studio: studioStats,
         codex: codexQuota,
-        claudeCode: claudeCodeQuota,
     } satisfies UsageResponse)
 })
 

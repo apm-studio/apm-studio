@@ -135,14 +135,6 @@ export const opencodeApi = {
                 weekly?: { percentUsed: number; resetsAt: string | null }
                 error?: string
             }
-            claudeCode: {
-                connected: boolean
-                authType: 'oauth' | 'api' | null
-                fiveHour?: { percentUsed: number; resetsAt: string | null }
-                sevenDay?: { percentUsed: number; resetsAt: string | null }
-                weekly?: { percentUsed: number; resetsAt: string | null }
-                error?: string
-            }
         }>('/api/usage'),
     },
 }
