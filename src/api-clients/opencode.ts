@@ -126,7 +126,12 @@ export const opencodeApi = {
 
     usage: {
         get: () => fetchJSON<{
-            studio: { sessionCount: number }
+            studio: {
+                totalCostUsd: number
+                inputTokens: number
+                outputTokens: number
+                reasoningTokens: number
+            }
             codex: {
                 connected: boolean
                 authType: 'oauth' | 'api' | null

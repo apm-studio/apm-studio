@@ -17,7 +17,12 @@ type ProviderQuota = {
 }
 
 type UsageData = {
-    studio: { sessionCount: number }
+    studio: {
+        totalCostUsd: number
+        inputTokens: number
+        outputTokens: number
+        reasoningTokens: number
+    }
     codex: ProviderQuota
 }
 
@@ -40,6 +45,16 @@ function quotaColor(percentUsed: number): string {
     if (percentUsed >= 90) return 'var(--status-danger, #ef4444)'
     if (percentUsed >= 70) return 'var(--status-warning, #f59e0b)'
     return 'var(--status-success, #22c55e)'
+}
+
+function formatTokenCount(value: number): string {
+    return Math.max(0, Math.round(value)).toLocaleString()
+}
+
+function formatCost(value: number): string {
+    if (!Number.isFinite(value) || value <= 0) return '$0.00'
+    if (value < 0.01) return `$${value.toFixed(4)}`
+    return `$${value.toFixed(2)}`
 }
 
 // ── QuotaBar ─────────────────────────────────────────────
@@ -149,6 +164,49 @@ function ProviderSection({ title, quota }: { title: string; quota: ProviderQuota
     )
 }
 
+// ── StudioSection ────────────────────────────────────────
+
+function StudioSection({ studio }: { studio: UsageData['studio'] }) {
+    return (
+        <div className="stg-section">
+            <h3 className="stg-section__title">
+                <Zap size={11} style={{ display: 'inline', verticalAlign: '-1px', marginRight: 4 }} />
+                dot-studio
+            </h3>
+            <div className="stg-group">
+                <div className="stg-row">
+                    <div className="stg-row__text">
+                        <span className="stg-row__title">Estimated cost</span>
+                        <span className="stg-row__desc">Recorded model spend in this workspace</span>
+                    </div>
+                    <span className="using-badge">{formatCost(studio.totalCostUsd)}</span>
+                </div>
+                <div className="stg-row">
+                    <div className="stg-row__text">
+                        <span className="stg-row__title">Input tokens</span>
+                        <span className="stg-row__desc">Prompt and context tokens sent</span>
+                    </div>
+                    <span className="using-badge">{formatTokenCount(studio.inputTokens)}</span>
+                </div>
+                <div className="stg-row">
+                    <div className="stg-row__text">
+                        <span className="stg-row__title">Output tokens</span>
+                        <span className="stg-row__desc">Assistant response tokens received</span>
+                    </div>
+                    <span className="using-badge">{formatTokenCount(studio.outputTokens)}</span>
+                </div>
+                <div className="stg-row">
+                    <div className="stg-row__text">
+                        <span className="stg-row__title">Reasoning tokens</span>
+                        <span className="stg-row__desc">Internal reasoning tokens reported</span>
+                    </div>
+                    <span className="using-badge">{formatTokenCount(studio.reasoningTokens)}</span>
+                </div>
+            </div>
+        </div>
+    )
+}
+
 // ── Main component ───────────────────────────────────────
 
 export default function SettingsUsing() {
@@ -194,22 +252,7 @@ export default function SettingsUsing() {
                 <div className="empty-state">Loading usage data…</div>
             ) : (
                 <>
-                    {/* dot-studio */}
-                    <div className="stg-section">
-                        <h3 className="stg-section__title">
-                            <Zap size={11} style={{ display: 'inline', verticalAlign: '-1px', marginRight: 4 }} />
-                            dot-studio
-                        </h3>
-                        <div className="stg-group">
-                            <div className="stg-row">
-                                <div className="stg-row__text">
-                                    <span className="stg-row__title">Total sessions</span>
-                                    <span className="stg-row__desc">Chat sessions in this workspace</span>
-                                </div>
-                                <span className="using-badge">{data?.studio.sessionCount ?? 0}</span>
-                            </div>
-                        </div>
-                    </div>
+                    {data && <StudioSection studio={data.studio} />}
 
                     {/* Codex */}
                     <div className="stg-section">

@@ -21,7 +21,12 @@ export type ProviderQuota = {
 }
 
 export type UsageResponse = {
-    studio: { sessionCount: number }
+    studio: {
+        totalCostUsd: number
+        inputTokens: number
+        outputTokens: number
+        reasoningTokens: number
+    }
     codex: ProviderQuota
 }
 
@@ -126,18 +131,73 @@ async function fetchCodexQuota(accessToken: string): Promise<ProviderQuota> {
     }
 }
 
-// ── Studio session count ─────────────────────────────────
+// ── Studio token usage ───────────────────────────────────
 
-async function fetchStudioSessionCount(directory: string): Promise<{ sessionCount: number }> {
+function emptyStudioUsage(): UsageResponse['studio'] {
+    return {
+        totalCostUsd: 0,
+        inputTokens: 0,
+        outputTokens: 0,
+        reasoningTokens: 0,
+    }
+}
+
+async function fetchStudioUsage(directory: string): Promise<UsageResponse['studio']> {
     try {
         const oc = await getOpencode()
-        const res = await oc.session.list({ directory })
-        const data = res && typeof res === 'object' && 'data' in res
-            ? (res as { data?: unknown[] }).data
+        const totals = emptyStudioUsage()
+        const listRes = await oc.session.list({ directory })
+        const sessions = listRes && typeof listRes === 'object' && 'data' in listRes
+            ? (listRes as { data?: unknown[] }).data
             : null
-        return { sessionCount: Array.isArray(data) ? data.length : 0 }
+
+        if (!Array.isArray(sessions)) {
+            return totals
+        }
+
+        await Promise.all(sessions.map(async (session) => {
+            if (!session || typeof session !== 'object') return
+            const id = typeof (session as Record<string, unknown>).id === 'string'
+                ? (session as Record<string, string>).id
+                : null
+            if (!id) return
+
+            const messageRes = await oc.session.messages({ directory, sessionID: id }).catch(() => null)
+            const messages = messageRes && typeof messageRes === 'object' && 'data' in messageRes
+                ? (messageRes as { data?: unknown[] }).data
+                : null
+            if (!Array.isArray(messages)) return
+
+            for (const message of messages) {
+                if (!message || typeof message !== 'object') continue
+                const parts = (message as Record<string, unknown>).parts
+                if (!Array.isArray(parts)) continue
+
+                for (const part of parts) {
+                    if (!part || typeof part !== 'object') continue
+                    const entry = part as Record<string, unknown>
+                    if (typeof entry.cost === 'number' && Number.isFinite(entry.cost)) {
+                        totals.totalCostUsd += entry.cost
+                    }
+                    const tokens = entry.tokens && typeof entry.tokens === 'object'
+                        ? entry.tokens as Record<string, unknown>
+                        : null
+                    if (!tokens) continue
+                    if (typeof tokens.input === 'number' && Number.isFinite(tokens.input)) totals.inputTokens += tokens.input
+                    if (typeof tokens.output === 'number' && Number.isFinite(tokens.output)) totals.outputTokens += tokens.output
+                    if (typeof tokens.reasoning === 'number' && Number.isFinite(tokens.reasoning)) totals.reasoningTokens += tokens.reasoning
+                }
+            }
+        }))
+
+        return {
+            totalCostUsd: Number(totals.totalCostUsd.toFixed(6)),
+            inputTokens: totals.inputTokens,
+            outputTokens: totals.outputTokens,
+            reasoningTokens: totals.reasoningTokens,
+        }
     } catch {
-        return { sessionCount: 0 }
+        return emptyStudioUsage()
     }
 }
 
@@ -148,7 +208,7 @@ usage.get('/api/usage', async (c) => {
 
     const [openaiAuth, studioStats] = await Promise.all([
         readStoredProviderAuth('openai').catch(() => null),
-        fetchStudioSessionCount(workingDir),
+        fetchStudioUsage(workingDir),
     ])
 
     // Codex quota — only meaningful when signed in via OAuth (ChatGPT subscription)
