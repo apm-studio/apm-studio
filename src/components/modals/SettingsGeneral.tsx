@@ -142,7 +142,7 @@ export default function SettingsGeneral() {
                     <div className="stg-row stg-row--top">
                         <div className="stg-row__text">
                             <span className="stg-row__title">Default shell</span>
-                            <span className="stg-row__desc">Used by OpenCode terminal sessions and agent shell commands.</span>
+                            <span className="stg-row__desc">Used by Studio terminal sessions and agent shell commands.</span>
                             {shellError ? <span className="stg-inline-error">{shellError}</span> : null}
                             {shellStatus ? <span className="stg-inline-status">{shellStatus}</span> : null}
                         </div>

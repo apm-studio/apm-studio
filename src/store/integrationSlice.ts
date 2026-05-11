@@ -47,6 +47,16 @@ type ChatEvent = {
     properties?: Record<string, unknown>
 }
 
+type SessionStatusSnapshot = {
+    type: 'idle' | 'busy' | 'retry' | 'error'
+    attempt?: number
+    message?: string
+}
+
+type SessionScopedRequest = {
+    sessionID?: string
+}
+
 type ActThreadRuntimeSnapshot = {
     id: string
     actId: string
@@ -478,6 +488,7 @@ export const createIntegrationSlice: StateCreator<
                 }
 
                 if (event.type === 'server.connected') {
+                    void rehydrateSessionRuntimeState()
                     const knownSessionIds = new Set<string>()
                     for (const sessionId of Object.keys(get().sessionToChatKey)) {
                         knownSessionIds.add(sessionId)
@@ -580,6 +591,128 @@ export const createIntegrationSlice: StateCreator<
         })
     }
 
+    async function keepRequestsForKnownOrResolvableSessions<T extends SessionScopedRequest>(requests: T[]) {
+        const accepted: T[] = []
+        for (const request of requests) {
+            const sessionId = request.sessionID
+            if (!sessionId) {
+                continue
+            }
+
+            const existingTarget = repairKnownSessionBinding(sessionId) || resolveSessionTarget(get(), sessionId)
+            if (existingTarget) {
+                accepted.push(request)
+                continue
+            }
+
+            await resolveSessionBindingFromServer(sessionId)
+            const resolvedTarget = repairKnownSessionBinding(sessionId) || resolveSessionTarget(get(), sessionId)
+            if (resolvedTarget) {
+                accepted.push(request)
+            }
+        }
+        return accepted
+    }
+
+    function reconcileRehydratedSessions(sessionIds: Iterable<string>) {
+        for (const sessionId of sessionIds) {
+            const target = repairKnownSessionBinding(sessionId) || resolveSessionTarget(get(), sessionId)
+            if (!target) {
+                continue
+            }
+            ensureSessionRuntimeActor(set, get, streamTargetToChatKey(target), sessionId)
+            reconcileSessionRuntimeActor(set, get, streamTargetToChatKey(target), sessionId)
+        }
+    }
+
+    async function rehydrateSessionRuntimeState() {
+        const [permissionsResult, questionsResult] = await Promise.all([
+            api.chat.listPendingPermissions().catch(() => null),
+            api.chat.listPendingQuestions().catch(() => null),
+        ])
+
+        const permissions = permissionsResult
+            ? await keepRequestsForKnownOrResolvableSessions(permissionsResult)
+            : null
+        const questions = questionsResult
+            ? await keepRequestsForKnownOrResolvableSessions(questionsResult)
+            : null
+
+        const sessionIds = new Set<string>(Object.keys(get().sessionToChatKey))
+        for (const permission of permissions || []) {
+            if (permission.sessionID) {
+                sessionIds.add(permission.sessionID)
+            }
+        }
+        for (const question of questions || []) {
+            if (question.sessionID) {
+                sessionIds.add(question.sessionID)
+            }
+        }
+
+        const statusEntries = await Promise.all(Array.from(sessionIds, async (sessionId) => {
+            try {
+                const result = await api.chat.status(sessionId)
+                return { sessionId, status: result.status as SessionStatusSnapshot | null, ok: true }
+            } catch {
+                return { sessionId, status: null, ok: false }
+            }
+        }))
+        const todoEntries = await Promise.all(Array.from(sessionIds, async (sessionId) => {
+            try {
+                return { sessionId, todos: await api.chat.todos(sessionId), ok: true }
+            } catch {
+                return { sessionId, todos: [], ok: false }
+            }
+        }))
+
+        set((state) => {
+            const next: Partial<StudioState> = {}
+
+            if (permissions) {
+                next.sePermissions = Object.fromEntries(
+                    permissions.map((permission) => [permission.sessionID, permission]),
+                ) as StudioState['sePermissions']
+            }
+
+            if (questions) {
+                next.seQuestions = Object.fromEntries(
+                    questions.map((question) => [question.sessionID, question]),
+                ) as StudioState['seQuestions']
+            }
+
+            const nextStatuses = { ...state.seStatuses }
+            for (const entry of statusEntries) {
+                if (!entry.ok) {
+                    continue
+                }
+                if (entry.status) {
+                    nextStatuses[entry.sessionId] = entry.status
+                } else {
+                    delete nextStatuses[entry.sessionId]
+                }
+            }
+            next.seStatuses = nextStatuses
+
+            const nextTodos = { ...state.seTodos }
+            for (const entry of todoEntries) {
+                if (!entry.ok) {
+                    continue
+                }
+                if (entry.todos.length > 0) {
+                    nextTodos[entry.sessionId] = entry.todos
+                } else {
+                    delete nextTodos[entry.sessionId]
+                }
+            }
+            next.seTodos = nextTodos
+
+            return next
+        })
+
+        reconcileRehydratedSessions(sessionIds)
+    }
+
     const eventIngest = createEventIngest({
         get,
         set,
@@ -638,21 +771,7 @@ export const createIntegrationSlice: StateCreator<
     return ({
         initRealtimeEvents: () => {
             reconnectEventSource()
-            api.chat.listPendingPermissions().then((permissions) => {
-                if (permissions.length === 0) {
-                    return
-                }
-
-                set((state) => {
-                    const entity = { ...state.sePermissions }
-                    for (const permission of permissions) {
-                        entity[permission.sessionID] = permission
-                    }
-                    return {
-                        sePermissions: entity,
-                    }
-                })
-            }).catch(() => { /* ignore rehydration failures */ })
+            void rehydrateSessionRuntimeState()
         },
 
         forceReconnectRealtimeEvents: () => {

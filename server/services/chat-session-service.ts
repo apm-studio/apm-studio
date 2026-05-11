@@ -1,4 +1,4 @@
-import type { QuestionAnswer, PermissionRequest, QuestionRequest } from '@opencode-ai/sdk/v2'
+import type { QuestionAnswer, PermissionRequest, QuestionRequest, Todo } from '@opencode-ai/sdk/v2'
 import { getOpencode } from '../lib/opencode.js'
 import {
     isSessionStatusActive,
@@ -62,6 +62,10 @@ type ListSessionMessagesOptions = {
 type ListSessionMessagesResult = {
     messages: SessionMessageLike[]
     nextCursor: string | null
+}
+
+type SessionScopedRequest = {
+    sessionID: string
 }
 
 function readResponseHeader(result: unknown, name: string): string | null {
@@ -171,42 +175,58 @@ export async function abortStudioChatSession(workingDir: string, sessionId: stri
 export async function respondSessionPermission(workingDir: string, sessionId: string, permissionId: string, response: 'once' | 'always' | 'reject') {
     const oc = await getOpencode()
     const directoryQuery = await directoryQueryForSession(workingDir, sessionId)
-    unwrapOpencodeResult(await oc.permission.respond({
+    unwrapOpencodeResult(await oc.permission.reply({
         ...directoryQuery,
-        sessionID: sessionId,
-        permissionID: permissionId,
-        response,
+        requestID: permissionId,
+        reply: response,
     }))
     return { ok: true as const }
 }
 
-export async function respondQuestion(questionId: string, answers: QuestionAnswer[]) {
+export async function respondQuestion(workingDir: string, questionId: string, answers: QuestionAnswer[]) {
     const oc = await getOpencode()
     unwrapOpencodeResult(await oc.question.reply({
+        directory: workingDir,
         requestID: questionId,
         answers,
     }))
     return { ok: true as const }
 }
 
-export async function rejectQuestion(questionId: string) {
+export async function rejectQuestion(workingDir: string, questionId: string) {
     const oc = await getOpencode()
     unwrapOpencodeResult(await oc.question.reject({
+        directory: workingDir,
         requestID: questionId,
     }))
     return { ok: true as const }
 }
 
+async function filterRequestsForWorkingDir<T extends SessionScopedRequest>(workingDir: string, requests: T[]) {
+    const ownerships = await listSessionOwnershipsForWorkingDir(workingDir)
+    const sessionIds = new Set(ownerships.map((ownership) => ownership.sessionId))
+    return requests.filter((request) => sessionIds.has(request.sessionID))
+}
+
 export async function listPendingPermissions(workingDir: string) {
     const oc = await getOpencode()
     const res = await oc.permission.list({ directory: workingDir })
-    return responseData<PermissionRequest[]>(res, [])
+    return filterRequestsForWorkingDir(workingDir, responseData<PermissionRequest[]>(res, []))
 }
 
 export async function listPendingQuestions(workingDir: string) {
     const oc = await getOpencode()
     const res = await oc.question.list({ directory: workingDir })
-    return responseData<QuestionRequest[]>(res, [])
+    return filterRequestsForWorkingDir(workingDir, responseData<QuestionRequest[]>(res, []))
+}
+
+export async function listStudioSessionTodos(workingDir: string, sessionId: string) {
+    const oc = await getOpencode()
+    const directoryQuery = await directoryQueryForSession(workingDir, sessionId)
+    return unwrapOpencodeResult<Todo[]>(await oc.session.todo({
+        sessionID: sessionId,
+        ...directoryQuery,
+    })) || []
 }
 
 export async function listStudioSessionMessages(

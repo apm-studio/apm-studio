@@ -21,6 +21,7 @@ import { readGlobalMcpCatalog, readProjectMcpServerNames, summarizeMcpCatalog } 
 import type { McpLiveStatusMap } from '../lib/mcp-catalog.js'
 import { invalidateProviderListCache } from '../lib/model-catalog.js'
 import { clearStoredProviderAuth } from '../lib/opencode-auth.js'
+import { listStudioTerminalShells } from './terminal-service.js'
 import {
     extractMcpCatalog,
     isMcpCatalog,
@@ -153,10 +154,9 @@ export async function getFileStatus(directory: string) {
     return responseData(res, [])
 }
 
-export async function listTerminalShells(directory: string) {
-    const oc = await getOpencode()
-    const res = await oc.pty.shells({ directory })
-    return responseData(res, [])
+export async function listTerminalShells(_directory: string) {
+    void _directory
+    return listStudioTerminalShells()
 }
 
 export async function findTextInProject(directory: string, pattern: string) {

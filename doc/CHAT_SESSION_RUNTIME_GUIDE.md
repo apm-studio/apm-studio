@@ -116,6 +116,11 @@ Key rules:
 - integration manages connection lifecycle and transport intake only
 - per-session xstate actors own optimistic, syncing, mutation, and supervision orchestration
 - session event files own session state reduction
+- Studio should consume OpenCode's global event stream and filter by working directory; do not rely on per-directory `/event` streams for permission/question delivery
+- the server chat event stream owns OpenCode SSE subscription cancellation; do not pass the request `AbortSignal` directly into SDK event subscriptions
+- OpenCode event reconnect cadence should remain bounded by Studio's refresh loop so failed SSE streams cannot recursively accumulate abort listeners
+- client reconnect should rehydrate pending permissions, questions, status, and todos from OpenCode so missed interactive or status events cannot leave Studio stuck
+- permission responses must use `permission.reply`; do not add new calls to the deprecated session-scoped `permission.respond`
 - optimistic mirrors and stream reconciliation belong in the session layer, not ad hoc UI patches
 - owner-derived realtime binding must not steal a chat key that the user already rebound to a different session
 - coalesced streaming must not drop `message.part.delta` content

@@ -16,6 +16,8 @@ import {
     summarizeStudioChatSession,
     unrevertStudioChatSession,
     listPendingPermissions,
+    listPendingQuestions,
+    listStudioSessionTodos,
 } from '../services/chat-session-service.js'
 import { requestWorkingDir } from './route-errors.js'
 
@@ -41,6 +43,14 @@ chatSessions.get('/api/chat/sessions', async (c) => {
 chatSessions.get('/api/chat/sessions/:id/status', async (c) => {
     try {
         return c.json(await getStudioChatSessionStatus(requestWorkingDir(c), c.req.param('id')))
+    } catch (err) {
+        return jsonOpencodeError(c, err)
+    }
+})
+
+chatSessions.get('/api/chat/sessions/:id/todos', async (c) => {
+    try {
+        return c.json(await listStudioSessionTodos(requestWorkingDir(c), c.req.param('id')))
     } catch (err) {
         return jsonOpencodeError(c, err)
     }
@@ -121,6 +131,14 @@ chatSessions.post('/api/chat/sessions/:id/unrevert', async (c) => {
 chatSessions.get('/api/chat/permissions', async (c) => {
     try {
         return c.json(await listPendingPermissions(requestWorkingDir(c)))
+    } catch (err) {
+        return jsonOpencodeError(c, err)
+    }
+})
+
+chatSessions.get('/api/chat/questions', async (c) => {
+    try {
+        return c.json(await listPendingQuestions(requestWorkingDir(c)))
     } catch (err) {
         return jsonOpencodeError(c, err)
     }

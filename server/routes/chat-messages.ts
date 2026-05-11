@@ -75,7 +75,7 @@ chatMessages.post('/api/chat/sessions/:id/send', async (c) => {
 chatMessages.post('/api/chat/questions/:qid/respond', async (c) => {
     const { answers } = await c.req.json<{ answers: QuestionAnswer[] }>()
     try {
-        return c.json(await respondQuestion(c.req.param('qid'), answers))
+        return c.json(await respondQuestion(requestWorkingDir(c), c.req.param('qid'), answers))
     } catch (err) {
         return jsonOpencodeError(c, err)
     }
@@ -83,7 +83,7 @@ chatMessages.post('/api/chat/questions/:qid/respond', async (c) => {
 
 chatMessages.post('/api/chat/questions/:qid/reject', async (c) => {
     try {
-        return c.json(await rejectQuestion(c.req.param('qid')))
+        return c.json(await rejectQuestion(requestWorkingDir(c), c.req.param('qid')))
     } catch (err) {
         return jsonOpencodeError(c, err)
     }

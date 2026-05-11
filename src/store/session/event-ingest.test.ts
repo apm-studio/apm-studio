@@ -104,6 +104,25 @@ describe('Event Ingest', () => {
 
             ingest.dispose()
         })
+
+        it('applies streaming deltas exactly once on RAF flush', () => {
+            const ingest = createEventIngest({ get, set })
+
+            state.seMessages[SESSION_ID] = [
+                { id: 'msg-1', role: 'assistant', content: '', timestamp: 1000 },
+            ]
+
+            ingest.enqueue({
+                type: 'message.part.delta',
+                properties: { sessionID: SESSION_ID, messageID: 'msg-1', partID: 'p1', field: 'text', delta: 'Hello' },
+            })
+
+            flushRAF()
+
+            expect(state.seMessages[SESSION_ID]![0].content).toBe('Hello')
+
+            ingest.dispose()
+        })
     })
 
     describe('coalescing', () => {

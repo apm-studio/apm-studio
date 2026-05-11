@@ -3,7 +3,7 @@ import { buildDraftAssetCards } from '../components/panels/asset-library-authori
 import { api } from '../api'
 import type { DraftAsset } from '../types'
 import type { StudioState } from './types'
-import { createMarkdownEditorImpl, saveMarkdownDraftImpl, upsertDraftImpl } from './workspace-draft-actions'
+import { createMarkdownEditorImpl, openDraftEditorImpl, saveMarkdownDraftImpl, upsertDraftImpl } from './workspace-draft-actions'
 
 function createDraftState(): StudioState {
     return {
@@ -177,5 +177,74 @@ describe('tal draft lifecycle', () => {
 
         expect(cards).toHaveLength(1)
         expect(cards[0]?.draftId).toBe('visible')
+    })
+
+    it('opens saved tal drafts near the current canvas center', () => {
+        const harness = createHarness({
+            ...createDraftState(),
+            canvasCenter: { x: 2400, y: 1800 },
+            drafts: {
+                'tal-draft-1': {
+                    id: 'tal-draft-1',
+                    kind: 'tal',
+                    name: 'Saved Tal',
+                    content: '# Tal',
+                    updatedAt: 1,
+                    saveState: 'saved',
+                },
+            },
+        })
+        const counter = { value: 0 }
+
+        const editorId = openDraftEditorImpl(harness.get, harness.set, counter, 'tal-draft-1')
+
+        expect(editorId).toBe('markdown-editor-1')
+        expect(harness.read().markdownEditors[0]).toMatchObject({
+            id: 'markdown-editor-1',
+            draftId: 'tal-draft-1',
+            position: { x: 2120, y: 1610 },
+            hidden: false,
+        })
+        expect(harness.read().canvasRevealTarget).toMatchObject({
+            id: 'markdown-editor-1',
+            type: 'markdownEditor',
+        })
+    })
+
+    it('reveals an already-open tal draft editor from the asset library edit action', () => {
+        const harness = createHarness({
+            ...createDraftState(),
+            drafts: {
+                'tal-draft-1': {
+                    id: 'tal-draft-1',
+                    kind: 'tal',
+                    name: 'Saved Tal',
+                    content: '# Tal',
+                    updatedAt: 1,
+                    saveState: 'saved',
+                },
+            },
+            markdownEditors: [{
+                id: 'markdown-editor-7',
+                kind: 'tal',
+                position: { x: -1200, y: -900 },
+                width: 560,
+                height: 380,
+                draftId: 'tal-draft-1',
+                baseline: null,
+                hidden: true,
+            }],
+        })
+        const counter = { value: 7 }
+
+        const editorId = openDraftEditorImpl(harness.get, harness.set, counter, 'tal-draft-1')
+
+        expect(editorId).toBe('markdown-editor-7')
+        expect(harness.read().selectedMarkdownEditorId).toBe('markdown-editor-7')
+        expect(harness.read().markdownEditors[0]?.hidden).toBe(false)
+        expect(harness.read().canvasRevealTarget).toMatchObject({
+            id: 'markdown-editor-7',
+            type: 'markdownEditor',
+        })
     })
 })

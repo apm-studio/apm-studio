@@ -24,6 +24,7 @@ import {
     reducePermissionAsked,
     reducePermissionReplied,
     reduceQuestionAsked,
+    reduceQuestionReplied,
     reduceTodoUpdated,
     reduceToolCallStatusByCallId,
 } from './event-reducer'
@@ -489,11 +490,7 @@ export function createEventIngest(options: EventIngestOptions) {
             case 'question.rejected': {
                 const sessionId = readSessionId(props)
                 if (!sessionId) return
-                set((state) => {
-                    const rest = { ...state.seQuestions }
-                    delete rest[sessionId]
-                    return { seQuestions: rest }
-                })
+                reduceQuestionReplied(sessionId, get, set)
                 return
             }
 

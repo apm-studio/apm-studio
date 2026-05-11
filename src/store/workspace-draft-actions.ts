@@ -569,6 +569,11 @@ export function createMarkdownEditorImpl(
             selectedMarkdownEditorId: editorId,
             selectedPerformerId: null,
             selectedPerformerSessionId: null,
+            canvasRevealTarget: {
+                id: editorId,
+                type: 'markdownEditor',
+                nonce: (state.canvasRevealTarget?.nonce || 0) + 1,
+            },
             inspectorFocus: null,
             workspaceDirty: true,
         }
@@ -584,17 +589,30 @@ export function openDraftEditorImpl(
     markdownEditorIdCounter: { value: number },
     draftId: string,
 ) {
-    // If an editor for this draft already exists, just select it
+    // If an editor for this draft already exists, bring it back into view.
     const existing = get().markdownEditors.find((e) => e.draftId === draftId)
     if (existing) {
-        const state = get()
-        const focusExit = buildExitFocusModeState(state)
-        set({
-            ...(focusExit || buildCanvasViewResetState(state.splitView)),
-            selectedMarkdownEditorId: existing.id,
-            selectedPerformerId: null,
-            selectedPerformerSessionId: null,
-            inspectorFocus: null,
+        set((state: StudioState) => {
+            const focusExit = buildExitFocusModeState(state)
+            const markdownEditors = (focusExit?.markdownEditors as StudioState['markdownEditors'] | undefined) || state.markdownEditors
+
+            return {
+                ...(focusExit || buildCanvasViewResetState(state.splitView)),
+                markdownEditors: markdownEditors.map((entry) => (
+                    entry.id === existing.id
+                        ? { ...entry, hidden: false }
+                        : entry
+                )),
+                selectedMarkdownEditorId: existing.id,
+                selectedPerformerId: null,
+                selectedPerformerSessionId: null,
+                canvasRevealTarget: {
+                    id: existing.id,
+                    type: 'markdownEditor',
+                    nonce: (state.canvasRevealTarget?.nonce || 0) + 1,
+                },
+                inspectorFocus: null,
+            }
         })
         return existing.id
     }
@@ -612,6 +630,12 @@ export function openDraftEditorImpl(
     set((state: StudioState) => {
         const focusExit = buildExitFocusModeState(state)
         const markdownEditors = (focusExit?.markdownEditors as StudioState['markdownEditors'] | undefined) || state.markdownEditors
+        const position = resolveCanvasSpawnPosition({
+            canvasCenter: state.canvasCenter,
+            existingCount: markdownEditors.length,
+            width: 560,
+            height: 380,
+        })
 
         return {
             ...(focusExit || buildCanvasViewResetState(state.splitView)),
@@ -620,10 +644,7 @@ export function openDraftEditorImpl(
                 {
                     id: editorId,
                     kind,
-                    position: {
-                        x: 160 + (markdownEditors.length * 28),
-                        y: 140 + (markdownEditors.length * 24),
-                    },
+                    position,
                     width: 560,
                     height: 380,
                     draftId,
@@ -641,6 +662,11 @@ export function openDraftEditorImpl(
             selectedMarkdownEditorId: editorId,
             selectedPerformerId: null,
             selectedPerformerSessionId: null,
+            canvasRevealTarget: {
+                id: editorId,
+                type: 'markdownEditor',
+                nonce: (state.canvasRevealTarget?.nonce || 0) + 1,
+            },
             inspectorFocus: null,
             workspaceDirty: true,
         }

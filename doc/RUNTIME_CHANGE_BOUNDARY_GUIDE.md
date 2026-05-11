@@ -131,7 +131,8 @@ Every execution path should follow this order.
 - `OPENCODE_URL` is not an external runtime attachment switch; Studio derives the sidecar URL from its managed port
 - `dev:all` should preserve the same managed semantics
 - `dev:all` should check readiness through the Studio API managed health path
-- `dev:all` should force dev server mode and the dev API port instead of inheriting production CLI env
+- `dev:all` should force dev server mode plus the dev API and sidecar ports instead of inheriting production CLI env
+- dev ports should stay separate from published CLI ports so a released Studio can drive source changes safely
 - managed sidecar spawn must work without a Unix shell; package bin wrappers should be launched through Node when needed
 - managed process shutdown must account for Windows process trees as well as Unix signals
 - managed sidecar readiness should use OpenCode `/global/health`
@@ -144,14 +145,15 @@ Every execution path should follow this order.
 
 ## Terminal Runtime Boundary
 
-- Studio terminal PTYs are owned by the Studio server, not OpenCode
+- Studio terminal PTYs are owned by the Studio Hono server, not OpenCode
 - OpenCode `instance.dispose` must not close pinned or canvas terminal sessions
-- terminal exit and kill behavior belongs to `server/terminal.ts`
+- terminal exit and kill behavior belongs to `server/services/terminal-service.ts`
+- terminal WebSocket routing belongs to the Hono route in `server/routes/terminal.ts`
 - terminal shell selection follows this order:
   - `DOT_STUDIO_TERMINAL_SHELL`
   - Studio-owned OpenCode global config `shell`
   - platform default (`SHELL`/`zsh` on Unix, `ComSpec`/`cmd.exe` on Windows)
-- Studio terminal WebSocket disconnects should reconnect to the existing OpenCode PTY when the PTY itself is still alive
+- Studio terminal WebSocket disconnects should reconnect to the existing Studio-owned PTY when the PTY itself is still alive
 
 ## Do Not Reintroduce
 

@@ -42,11 +42,11 @@ The dev stack starts:
 
 | Service | Port |
 | --- | ---: |
-| Studio client | `43100` |
-| Studio API | `43101` |
-| Managed OpenCode sidecar | `43102` |
+| Studio client | `43200` |
+| Studio API | `43201` |
+| Managed OpenCode sidecar | `43202` |
 
-The published CLI uses port `43100` by default and scans upward when the port is busy unless you pass `--port`.
+The published CLI uses port `43100` by default, keeps its managed OpenCode sidecar on `43102`, and scans upward when the app port is busy unless you pass `--port`.
 
 ## Why Studio
 
@@ -178,7 +178,9 @@ Examples:
 
 ```bash
 dot-studio
+dot-studio --openai-oauth
 dot-studio ~/projects/dance-of-tal
+dot-studio --openai-oauth --act act/@acme/workflows/review-flow
 dot-studio ~/projects/dance-of-tal --performer performer/@acme/workflows/reviewer
 dot-studio open . --no-open
 dot-studio open . --act act/@acme/workflows/review-flow
@@ -191,8 +193,9 @@ Behavior:
 
 - `dot-studio` opens the current directory as a workspace.
 - `dot-studio <path>` opens that directory as a workspace.
-- `--performer <urn>` focuses a performer already on the canvas, or installs and imports it when needed.
-- `--act <urn>` focuses an Act already on the canvas, or installs and imports it when needed.
+- `--openai-oauth` connects OpenAI through browser OAuth before the Studio browser opens. It can be combined with `--performer` or `--act`.
+- `--performer <urn>` prepares the performer before the browser opens, then focuses it in Studio. If needed, Studio installs and imports it first.
+- `--act <urn>` prepares the Act before the browser opens, then focuses it in Studio. If needed, Studio installs and imports it first.
 - startup restore is scoped by working directory.
 - uninitialized target directories are initialized automatically.
 - `dot-studio doctor` checks Node.js, workspace path, Studio port, and OpenCode readiness.
@@ -207,9 +210,12 @@ Default local ports:
 | Runtime piece | Port |
 | --- | ---: |
 | Published CLI app and API | `43100` |
-| Dev client | `43100` |
-| Dev API | `43101` |
-| Managed OpenCode sidecar | `43102` |
+| Published CLI managed OpenCode sidecar | `43102` |
+| Dev client | `43200` |
+| Dev API | `43201` |
+| Dev managed OpenCode sidecar | `43202` |
+
+The dev scripts only clean up the dev port set, so a released Studio instance can stay open while you work on Studio from source.
 
 ## Discord Integration
 

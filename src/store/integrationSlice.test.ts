@@ -11,17 +11,21 @@ type FakeEventSource = {
 const {
     chatEventsMock,
     listPendingPermissionsMock,
+    listPendingQuestionsMock,
     resolveSessionMock,
     chatMessagesMock,
     statusMock,
+    todosMock,
     compileMock,
     currentSources,
 } = vi.hoisted(() => ({
     chatEventsMock: vi.fn(),
     listPendingPermissionsMock: vi.fn(),
+    listPendingQuestionsMock: vi.fn(),
     resolveSessionMock: vi.fn(),
     chatMessagesMock: vi.fn(),
     statusMock: vi.fn(),
+    todosMock: vi.fn(),
     compileMock: vi.fn(),
     currentSources: {
         chat: null as FakeEventSource | null,
@@ -33,9 +37,11 @@ vi.mock('../api', () => ({
         chat: {
             events: chatEventsMock,
             listPendingPermissions: listPendingPermissionsMock,
+            listPendingQuestions: listPendingQuestionsMock,
             resolveSession: resolveSessionMock,
             messages: chatMessagesMock,
             status: statusMock,
+            todos: todosMock,
         },
         compile: compileMock,
     },
@@ -191,6 +197,12 @@ function flushRAF() {
     }
 }
 
+async function flushPromises(count = 8) {
+    for (let index = 0; index < count; index += 1) {
+        await Promise.resolve()
+    }
+}
+
 describe('integrationSlice act participant sync', () => {
     beforeEach(() => {
         vi.useFakeTimers()
@@ -209,6 +221,7 @@ describe('integrationSlice act participant sync', () => {
             return source as unknown as EventSource
         })
         listPendingPermissionsMock.mockReset().mockResolvedValue([])
+        listPendingQuestionsMock.mockReset().mockResolvedValue([])
         resolveSessionMock.mockReset().mockResolvedValue({ found: false })
         chatMessagesMock.mockReset().mockResolvedValue({
             messages: [
@@ -231,6 +244,7 @@ describe('integrationSlice act participant sync', () => {
             nextCursor: null,
         })
         statusMock.mockReset().mockResolvedValue({ status: { type: 'idle' } })
+        todosMock.mockReset().mockResolvedValue([])
         compileMock.mockReset()
     })
 
@@ -305,6 +319,104 @@ describe('integrationSlice act participant sync', () => {
             draftIds: ['draft-1'],
             workspaceWide: false,
         })
+
+        harness.get().cleanupRealtimeEvents()
+    })
+
+    it('rehydrates pending interactions, status, and todos when the realtime stream reconnects', async () => {
+        listPendingPermissionsMock
+            .mockResolvedValueOnce([])
+            .mockResolvedValueOnce([{
+                id: 'permission-1',
+                sessionID: 'session-1',
+                metadata: {},
+            }])
+        listPendingQuestionsMock
+            .mockResolvedValueOnce([])
+            .mockResolvedValueOnce([{
+                id: 'question-1',
+                sessionID: 'session-1',
+            }])
+        statusMock
+            .mockResolvedValueOnce({ status: { type: 'idle' } })
+            .mockResolvedValueOnce({ status: { type: 'busy' } })
+        todosMock
+            .mockResolvedValueOnce([])
+            .mockResolvedValueOnce([{ content: 'Fix bug', status: 'pending', priority: 'medium' }])
+        const loadThreads = vi.fn(async () => {})
+        const harness = createHarness(loadThreads)
+        harness.get().registerBinding('performer-1', 'session-1')
+
+        harness.get().initRealtimeEvents()
+
+        await vi.waitFor(() => {
+            expect(harness.get().seStatuses['session-1']?.type).toBe('idle')
+        })
+
+        expect(harness.get().sePermissions).toEqual({})
+        expect(harness.get().seQuestions).toEqual({})
+
+        emitEvent(currentSources.chat, {
+            type: 'server.connected',
+        })
+
+        await vi.waitFor(() => {
+            expect(harness.get().seStatuses['session-1']?.type).toBe('busy')
+        })
+
+        expect(listPendingPermissionsMock).toHaveBeenCalledTimes(2)
+        expect(listPendingQuestionsMock).toHaveBeenCalledTimes(2)
+        expect(harness.get().sePermissions['session-1']?.id).toBe('permission-1')
+        expect(harness.get().seQuestions['session-1']?.id).toBe('question-1')
+        expect(harness.get().seTodos['session-1']?.[0]?.content).toBe('Fix bug')
+
+        harness.get().cleanupRealtimeEvents()
+    })
+
+    it('clears stale pending interactions when OpenCode reports none', async () => {
+        const loadThreads = vi.fn(async () => {})
+        const harness = createHarness(loadThreads)
+        harness.get().sePermissions['session-1'] = {
+            id: 'stale-permission',
+            sessionID: 'session-1',
+            metadata: {},
+        } as never
+        harness.get().seQuestions['session-1'] = {
+            id: 'stale-question',
+            sessionID: 'session-1',
+        } as never
+
+        harness.get().initRealtimeEvents()
+
+        await flushPromises()
+
+        expect(harness.get().sePermissions).toEqual({})
+        expect(harness.get().seQuestions).toEqual({})
+
+        harness.get().cleanupRealtimeEvents()
+    })
+
+    it('does not surface pending interactions for unresolved sessions', async () => {
+        listPendingPermissionsMock.mockResolvedValue([{
+            id: 'permission-1',
+            sessionID: 'unknown-session',
+            metadata: {},
+        }])
+        listPendingQuestionsMock.mockResolvedValue([{
+            id: 'question-1',
+            sessionID: 'unknown-session',
+        }])
+        resolveSessionMock.mockResolvedValue({ found: false })
+        const loadThreads = vi.fn(async () => {})
+        const harness = createHarness(loadThreads)
+
+        harness.get().initRealtimeEvents()
+
+        await flushPromises()
+
+        expect(resolveSessionMock).toHaveBeenCalledWith('unknown-session')
+        expect(harness.get().sePermissions).toEqual({})
+        expect(harness.get().seQuestions).toEqual({})
 
         harness.get().cleanupRealtimeEvents()
     })

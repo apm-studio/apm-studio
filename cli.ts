@@ -14,7 +14,8 @@ import {
     ensureOpenProjectDir,
     validateExistingProjectDir,
 } from './server/lib/cli-utils.js'
-import { STUDIO_APP_PORT, STUDIO_OPENCODE_PORT } from './shared/default-ports.js'
+import { STUDIO_RELEASE_APP_PORT, STUDIO_RELEASE_OPENCODE_PORT } from './shared/default-ports.js'
+import type { ProviderAuthMethod, ProviderAuthMethodMap, ProviderAuthPrompt } from './shared/provider-auth.js'
 
 type StudioPackageMeta = {
     name: string
@@ -26,6 +27,7 @@ type StudioPackageMeta = {
 
 type OpenCommand = {
     kind: 'open'
+    openaiOauth: boolean
     openBrowser: boolean
     projectDir: string
     port: number | null
@@ -63,10 +65,13 @@ type DoctorCheck = {
 
 class CliUsageError extends Error {}
 
-const DEFAULT_PORT = STUDIO_APP_PORT
+const DEFAULT_PORT = STUDIO_RELEASE_APP_PORT
 const MAX_PORT_SCAN = 20
 const MIN_PORT = 1
 const MAX_PORT = 65535
+const STUDIO_READY_TIMEOUT_MS = 30_000
+const STUDIO_READY_POLL_MS = 250
+const OPENAI_PROVIDER_ID = 'openai'
 const STATUS_PREFIX: Record<DoctorCheck['status'], string> = {
     ok: 'OK',
     warn: 'WARN',
@@ -94,12 +99,13 @@ Arguments:
 
 Options:
   -p, --port <port>     Port for the Studio server. Defaults to 43100.
+      --openai-oauth    Connect OpenAI through browser OAuth before Studio opens.
       --performer <urn>
-                        Focus a canvas performer or install/import the performer from the registry.
+                        Prepare and focus a canvas performer, installing/importing it when needed.
       --act <urn>
-                        Focus a canvas act or install/import the act from the registry.
-      --no-open         Do not open the browser window.
-      --open            Explicitly open the browser window after startup.
+                        Prepare and focus a canvas act, installing/importing it when needed.
+      --no-open         Do not open the Studio browser window.
+      --open            Explicitly open the Studio browser window after startup.
       --verbose         Print extra startup details.
   -h, --help            Show this help message.
   -v, --version         Show the installed DOT Studio version.
@@ -107,6 +113,8 @@ Options:
 Examples:
   dot-studio
   dot-studio .
+  dot-studio --openai-oauth
+  dot-studio --openai-oauth --act act/@acme/workflows/review-flow
   dot-studio ~/projects/dance-of-tal
   dot-studio ~/projects/dance-of-tal --performer performer/@acme/workflows/reviewer
   dot-studio open ~/projects/dance-of-tal --port 3010
@@ -146,7 +154,17 @@ function parseOptionalEnvPort(name: 'PORT' | 'OPENCODE_PORT'): number | null {
 }
 
 function resolveSidecarPort() {
-    return parseOptionalEnvPort('OPENCODE_PORT') || STUDIO_OPENCODE_PORT
+    return parseOptionalEnvPort('OPENCODE_PORT') || STUDIO_RELEASE_OPENCODE_PORT
+}
+
+function sleep(ms: number) {
+    return new Promise<void>((resolvePromise) => {
+        setTimeout(resolvePromise, ms)
+    })
+}
+
+function isInteractiveTerminal() {
+    return Boolean(process.stdin.isTTY && process.stdout.isTTY)
 }
 
 function parseAssetTargetUrn(value: string | undefined, kind: StartupAssetTarget['kind'], arg: string): StartupAssetTarget {
@@ -168,6 +186,7 @@ function parseCliArgs(argv: string[]): CliCommand {
     let command: CliCommand['kind'] = 'open'
     let commandExplicit = false
     let openBrowser = true
+    let openaiOauth = false
     let projectDir: string | null = null
     let port: number | null = null
     let startupAssetTarget: StartupAssetTarget | null = null
@@ -202,6 +221,11 @@ function parseCliArgs(argv: string[]): CliCommand {
 
         if (arg === '--verbose') {
             verbose = true
+            continue
+        }
+
+        if (arg === '--openai-oauth') {
+            openaiOauth = true
             continue
         }
 
@@ -248,6 +272,9 @@ function parseCliArgs(argv: string[]): CliCommand {
         if (startupAssetTarget) {
             failUsage('--performer and --act can only be used with the open command')
         }
+        if (openaiOauth) {
+            failUsage('--openai-oauth can only be used with the open command')
+        }
         return {
             kind: 'doctor',
             projectDir: resolvedProjectDir,
@@ -258,6 +285,7 @@ function parseCliArgs(argv: string[]): CliCommand {
 
     return {
         kind: 'open',
+        openaiOauth,
         openBrowser,
         projectDir: resolvedProjectDir,
         port,
@@ -593,6 +621,179 @@ function buildStudioLaunchUrl(baseUrl: string, startupAssetTarget: StartupAssetT
     return url.toString()
 }
 
+async function waitForStudioReady(healthUrl: string) {
+    const deadline = Date.now() + STUDIO_READY_TIMEOUT_MS
+    let lastFailure = 'no response'
+
+    while (Date.now() < deadline) {
+        try {
+            const response = await fetch(healthUrl)
+            if (response.ok) {
+                return
+            }
+            lastFailure = `HTTP ${response.status}`
+        } catch (error) {
+            lastFailure = error instanceof Error ? error.message : String(error)
+        }
+
+        await sleep(STUDIO_READY_POLL_MS)
+    }
+
+    throw new Error(`DOT Studio did not become ready in time (${lastFailure}).`)
+}
+
+function isPromptVisible(prompt: ProviderAuthPrompt, values: Record<string, string>) {
+    if (!prompt.when) {
+        return true
+    }
+
+    const actual = values[prompt.when.key] || ''
+    return prompt.when.op === 'eq'
+        ? actual === prompt.when.value
+        : actual !== prompt.when.value
+}
+
+async function promptLine(message: string) {
+    const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+    })
+    try {
+        return (await rl.question(message)).trim()
+    } finally {
+        rl.close()
+    }
+}
+
+async function collectOauthPromptInputs(providerName: string, method: ProviderAuthMethod) {
+    const prompts = method.prompts || []
+    if (prompts.length === 0) {
+        return undefined
+    }
+
+    const values: Record<string, string> = {}
+    const interactive = isInteractiveTerminal()
+
+    console.log(`OpenAI OAuth needs a little setup for ${providerName}.`)
+    for (const prompt of prompts) {
+        if (!isPromptVisible(prompt, values)) {
+            continue
+        }
+
+        if (prompt.type === 'select') {
+            const defaultOption = prompt.options[0]
+            if (!defaultOption) {
+                continue
+            }
+
+            if (!interactive) {
+                values[prompt.key] = defaultOption.value
+                continue
+            }
+
+            console.log(prompt.message)
+            prompt.options.forEach((option, index) => {
+                const suffix = option.hint ? ` - ${option.hint}` : ''
+                console.log(`  ${index + 1}. ${option.label}${suffix}`)
+            })
+
+            const answer = await promptLine(`Select [1]: `)
+            const numericChoice = answer ? Number.parseInt(answer, 10) : 1
+            const selected = Number.isInteger(numericChoice)
+                ? prompt.options[numericChoice - 1]
+                : prompt.options.find((option) => option.value === answer)
+            if (!selected) {
+                failUsage(`Invalid OAuth prompt selection for ${prompt.key}.`)
+            }
+            values[prompt.key] = selected.value
+            continue
+        }
+
+        if (!interactive) {
+            throw new Error(`OpenAI OAuth requires interactive input for: ${prompt.message}`)
+        }
+
+        values[prompt.key] = await promptLine(`${prompt.message}${prompt.placeholder ? ` (${prompt.placeholder})` : ''}: `)
+    }
+
+    const entries = Object.entries(values)
+        .map(([key, value]) => [key, value.trim()] as const)
+        .filter(([, value]) => value.length > 0)
+
+    return entries.length > 0 ? Object.fromEntries(entries) : undefined
+}
+
+async function promptForOauthCode(providerName: string) {
+    if (!isInteractiveTerminal()) {
+        throw new Error(`${providerName} OAuth requires an authorization code, but this terminal is not interactive.`)
+    }
+
+    const code = await promptLine(`Paste ${providerName} authorization code: `)
+    if (!code) {
+        throw new Error(`${providerName} OAuth authorization code is required.`)
+    }
+    return code
+}
+
+async function isProviderAlreadyConnected(directory: string, providerId: string) {
+    const { listProviderSummaries } = await import('./server/lib/model-catalog.js')
+    const providers = await listProviderSummaries(directory).catch(() => [])
+    const provider = providers.find((entry) => entry.id === providerId)
+    return provider?.connected === true
+}
+
+async function findOpenAiOauthMethod(directory: string) {
+    const { getProviderAuthMethods } = await import('./server/services/opencode-service.js')
+    const authMethods = await getProviderAuthMethods(directory) as ProviderAuthMethodMap
+    const methods = authMethods[OPENAI_PROVIDER_ID] || []
+    const browserOauthIndex = methods.findIndex((method) => (
+        method.type === 'oauth'
+        && /browser|oauth/i.test(method.label)
+    ))
+    const methodIndex = browserOauthIndex >= 0
+        ? browserOauthIndex
+        : methods.findIndex((method) => method.type === 'oauth')
+    const method = methods[methodIndex]
+
+    if (methodIndex < 0 || !method || method.type !== 'oauth') {
+        throw new Error('OpenAI OAuth is not available from the current OpenCode provider auth methods.')
+    }
+
+    return { methodIndex, method }
+}
+
+async function runOpenAiOauthSetup(directory: string) {
+    if (await isProviderAlreadyConnected(directory, OPENAI_PROVIDER_ID)) {
+        console.log('OpenAI provider is already connected.')
+        return
+    }
+
+    const { authorizeProviderOauth, completeProviderOauth } = await import('./server/services/opencode-service.js')
+    const { methodIndex, method } = await findOpenAiOauthMethod(directory)
+    const inputs = await collectOauthPromptInputs('OpenAI', method)
+    const authorization = await authorizeProviderOauth(directory, OPENAI_PROVIDER_ID, methodIndex, inputs)
+
+    if (authorization.instructions) {
+        console.log(authorization.instructions)
+    }
+
+    if (authorization.url) {
+        console.log(`Opening OpenAI OAuth: ${authorization.url}`)
+        const open = await import('open')
+        await open.default(authorization.url)
+    }
+
+    if (authorization.method === 'code') {
+        const code = await promptForOauthCode('OpenAI')
+        await completeProviderOauth(directory, OPENAI_PROVIDER_ID, methodIndex, code)
+    } else {
+        console.log('Waiting for OpenAI OAuth to complete...')
+        await completeProviderOauth(directory, OPENAI_PROVIDER_ID, methodIndex)
+    }
+
+    console.log('OpenAI provider connected.')
+}
+
 async function runOpen(command: OpenCommand, packageMeta: StudioPackageMeta) {
     const updated = await promptForNpmUpdate(packageMeta)
     if (updated) {
@@ -612,6 +813,7 @@ async function runOpen(command: OpenCommand, packageMeta: StudioPackageMeta) {
 
     const studioUrl = `http://localhost:${resolvedPort}`
     const launchUrl = buildStudioLaunchUrl(studioUrl, command.startupAssetTarget)
+    const healthUrl = `http://127.0.0.1:${resolvedPort}/api/health`
 
     if (command.verbose) {
         console.log(`Opening DOT Studio for ${resolvedProjectDir}`)
@@ -622,6 +824,19 @@ async function runOpen(command: OpenCommand, packageMeta: StudioPackageMeta) {
     }
 
     await import('./server/index.js')
+    await waitForStudioReady(healthUrl)
+
+    if (command.openaiOauth) {
+        await runOpenAiOauthSetup(resolvedProjectDir)
+    }
+
+    if (command.startupAssetTarget) {
+        const { prepareStartupAssetTarget } = await import('./server/services/startup-asset-service.js')
+        const prepared = await prepareStartupAssetTarget(resolvedProjectDir, command.startupAssetTarget)
+        if (command.verbose) {
+            console.log(`${prepared.created ? 'Prepared' : 'Found'} startup ${prepared.kind}: ${prepared.urn}`)
+        }
+    }
 
     console.log(`DOT Studio running at ${studioUrl}`)
     console.log(`Workspace: ${resolvedProjectDir}`)

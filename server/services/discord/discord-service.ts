@@ -40,6 +40,7 @@ import {
     writeDiscordConfig,
     type DiscordChannelTarget,
     type DiscordIntegrationConfig,
+    type DiscordMappings,
     type RedactedDiscordIntegrationConfig,
 } from './config-store.js'
 import {
@@ -49,7 +50,10 @@ import {
     controlChannelName,
     performerCategoryName,
     performerThreadMappingKey,
+    pruneStaleDiscordThreadMappings,
+    isStudioEntityCategoryName,
     threadChannelName,
+    unnamedThreadNameFor,
     workspaceCategoryName,
 } from './sync-plan.js'
 import {
@@ -126,6 +130,8 @@ const ACT_THREAD_SYNC_TIMEOUT_MS = 30 * 60_000
 const ACT_THREAD_IDLE_CONFIRMATIONS = 80
 const PENDING_INTERACTION_TTL_MS = 24 * 60 * 60_000
 const DISCORD_SEND_RETRY_DELAYS_MS = [250, 1_000] as const
+const DISCORD_SYNC_OPERATION_TIMEOUT_MS = 8_000
+const DISCORD_SYNC_BEST_EFFORT_TIMEOUT_MS = 750
 
 function discordInviteUrl(applicationId: string) {
     const permissions = new PermissionsBitField([
@@ -139,6 +145,10 @@ function discordInviteUrl(applicationId: string) {
 
 function sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function timeoutError(label: string, timeoutMs: number) {
+    return new Error(`Timed out while ${label} after ${timeoutMs}ms`)
 }
 
 function chunkDiscordMessage(content: string) {
@@ -286,7 +296,10 @@ class DiscordIntegrationService {
         await this.ensureReady()
         const workspaces = await listSavedWorkspaces()
         const mappings = await readDiscordMappings()
-        const targetWorkspaceId = mappings.activeWorkspaceId || workspaces[0]?.id
+        const savedWorkspaceIds = new Set(workspaces.map((workspace) => workspace.id))
+        const targetWorkspaceId = mappings.activeWorkspaceId && savedWorkspaceIds.has(mappings.activeWorkspaceId)
+            ? mappings.activeWorkspaceId
+            : workspaces[0]?.id
         if (!targetWorkspaceId) {
             return { ok: true, syncedWorkspaces: 0, failedWorkspaces: [] }
         }
@@ -313,12 +326,17 @@ class DiscordIntegrationService {
                 mappings.version = 2
                 const archiveCategory = await this.ensureCategory(guild, mappings.archiveCategoryId, archiveCategoryName())
                 mappings.archiveCategoryId = archiveCategory.id
+                const workspaceCategoryIdUseCounts = this.workspaceCategoryIdUseCounts(mappings)
+                const reusableWorkspaceCategoryId = workspaceMapping.categoryId
+                    && workspaceCategoryIdUseCounts.get(workspaceMapping.categoryId) === 1
+                    ? workspaceMapping.categoryId
+                    : undefined
                 const activeCategory = await this.ensureCategory(
                     guild,
-                    mappings.activeCategoryId || workspaceMapping.categoryId,
+                    reusableWorkspaceCategoryId,
                     workspaceCategoryName(snapshot.workingDir),
                 )
-                await activeCategory.setPosition(0).catch(() => {})
+                void this.runDiscordSyncBestEffort(`position active workspace category ${activeCategory.id}`, () => activeCategory.setPosition(0))
                 mappings.activeCategoryId = activeCategory.id
                 const obsoleteGenericCategoryIds = [
                     mappings.performerCategoryId,
@@ -332,23 +350,177 @@ class DiscordIntegrationService {
                 workspaceMapping.performerCategories ||= {}
                 workspaceMapping.actCategories ||= {}
                 workspaceMapping.performerThreadChannels ||= {}
+                workspaceMapping.actThreadChannels ||= {}
+                const menuChannel = await this.ensureTextChannel(
+                    guild,
+                    mappings.menuChannelId || workspaceMapping.menuChannelId,
+                    controlChannelName(),
+                    activeCategory.id,
+                    `Dance of Tal Studio control for ${snapshot.workingDir}`,
+                )
+                void this.runDiscordSyncBestEffort(`position Discord workspace menu ${menuChannel.id}`, () => menuChannel.setPosition(0))
+                mappings.menuChannelId = menuChannel.id
+                workspaceMapping.menuChannelId = menuChannel.id
+                mappings.channels[menuChannel.id] = {
+                    kind: 'menu',
+                    workspaceId,
+                    workingDir: snapshot.workingDir,
+                }
+
+                const originalPerformerThreadChannels = { ...(workspaceMapping.performerThreadChannels || {}) }
+                const originalActThreadChannels = { ...(workspaceMapping.actThreadChannels || {}) }
+                const originalBackfilledMessageIds = { ...(workspaceMapping.backfilledMessageIds || {}) }
+                const [performerThreadEntries, actThreadEntries] = await Promise.all([
+                    Promise.all((snapshot.performers || []).map(async (performer) => {
+                        const threads = await listStandaloneThreadsForDiscord(snapshot.workingDir, performer.id)
+                            .catch((error) => {
+                                console.warn('[discord] Failed to list performer threads during workspace sync cleanup:', {
+                                    workspaceId,
+                                    performerId: performer.id,
+                                    error,
+                                })
+                                return null
+                            })
+                        return [performer.id, threads?.map((thread) => thread.id) || null] as const
+                    })),
+                    Promise.all((snapshot.acts || []).map(async (act) => {
+                        const result = await listActThreadsForDiscord(snapshot.workingDir, act.id)
+                            .catch((error) => {
+                                console.warn('[discord] Failed to list Act threads during workspace sync cleanup:', {
+                                    workspaceId,
+                                    actId: act.id,
+                                    error,
+                                })
+                                return null
+                            })
+                        return [act.id, result?.threads.map((thread) => thread.id) || null] as const
+                    })),
+                ])
+                const performerThreadIds = Object.fromEntries(performerThreadEntries)
+                const actThreadIds = Object.fromEntries(actThreadEntries)
+                const performerIds = new Set((snapshot.performers || []).map((performer) => performer.id))
+                const actIds = new Set((snapshot.acts || []).map((act) => act.id))
+                const obsoletePerformerCategoryEntries = Object.entries(workspaceMapping.performerCategories)
+                    .filter(([performerId]) => !performerIds.has(performerId))
+                const obsoleteActCategoryEntries = Object.entries(workspaceMapping.actCategories)
+                    .filter(([actId]) => !actIds.has(actId))
+                const obsoleteWorkspaceCategoryIds = [
+                    ...obsoletePerformerCategoryEntries.map(([, categoryId]) => categoryId),
+                    ...obsoleteActCategoryEntries.map(([, categoryId]) => categoryId),
+                ].filter((categoryId): categoryId is string => !!categoryId)
+                // Workspace sync is the authoritative Discord cleanup pass for channels whose Studio thread is gone.
+                const staleChannelIds = new Set(pruneStaleDiscordThreadMappings({
+                    mapping: workspaceMapping,
+                    performerThreadIds,
+                    actThreadIds,
+                }).staleChannelIds)
+                for (const [performerId, channelId] of Object.entries(workspaceMapping.performerChannels || {})) {
+                    if (performerIds.has(performerId)) {
+                        continue
+                    }
+                    staleChannelIds.add(channelId)
+                    delete workspaceMapping.performerChannels?.[performerId]
+                }
+                for (const [channelId, target] of Object.entries(mappings.channels)) {
+                    if (target.workspaceId !== workspaceId) {
+                        continue
+                    }
+                    if (target.kind === 'performer') {
+                        const liveThreadIds = performerThreadIds[target.performerId] || []
+                        if (!performerIds.has(target.performerId) || (target.sessionId && !liveThreadIds.includes(target.sessionId))) {
+                            staleChannelIds.add(channelId)
+                        }
+                    } else if (target.kind === 'act-thread') {
+                        const liveThreadIds = actThreadIds[target.actId] || []
+                        if (!actIds.has(target.actId) || !liveThreadIds.includes(target.threadId)) {
+                            staleChannelIds.add(channelId)
+                        }
+                    }
+                }
+                const cleanedChannelIds = await this.deleteTextChannels(
+                    guild,
+                    Array.from(staleChannelIds),
+                    'Dance of Tal Studio stale thread cleanup',
+                )
+                for (const [key, channelId] of Object.entries(originalPerformerThreadChannels)) {
+                    if (!cleanedChannelIds.has(channelId)) {
+                        workspaceMapping.performerThreadChannels[key] = channelId
+                    }
+                }
+                for (const [key, channelId] of Object.entries(originalActThreadChannels)) {
+                    if (!cleanedChannelIds.has(channelId)) {
+                        workspaceMapping.actThreadChannels[key] = channelId
+                    }
+                }
+                for (const [performerId, channelId] of Object.entries(workspaceMapping.performerChannels || {})) {
+                    if (cleanedChannelIds.has(channelId)) {
+                        delete workspaceMapping.performerChannels?.[performerId]
+                    }
+                }
+                for (const [key, channelId] of Object.entries(workspaceMapping.performerThreadChannels || {})) {
+                    if (cleanedChannelIds.has(channelId)) {
+                        delete workspaceMapping.performerThreadChannels?.[key]
+                    }
+                }
+                for (const [key, channelId] of Object.entries(workspaceMapping.actThreadChannels || {})) {
+                    if (cleanedChannelIds.has(channelId)) {
+                        delete workspaceMapping.actThreadChannels?.[key]
+                    }
+                }
+                for (const channelId of cleanedChannelIds) {
+                    delete mappings.channels[channelId]
+                    delete workspaceMapping.backfilledMessageIds?.[channelId]
+                    for (const [pendingId, pending] of Object.entries(mappings.pendingInteractions || {})) {
+                        if (pending.channelId === channelId) {
+                            delete mappings.pendingInteractions?.[pendingId]
+                        }
+                    }
+                }
+                for (const [channelId, messageIds] of Object.entries(originalBackfilledMessageIds)) {
+                    if (!cleanedChannelIds.has(channelId) && !workspaceMapping.backfilledMessageIds?.[channelId]) {
+                        workspaceMapping.backfilledMessageIds ||= {}
+                        workspaceMapping.backfilledMessageIds[channelId] = messageIds
+                    }
+                }
+                const cleanedWorkspaceCategoryIds = await this.deleteCategories(guild, obsoleteWorkspaceCategoryIds)
+                for (const [performerId, categoryId] of obsoletePerformerCategoryEntries) {
+                    if (cleanedWorkspaceCategoryIds.has(categoryId)) {
+                        delete workspaceMapping.performerCategories?.[performerId]
+                    }
+                }
+                for (const [actId, categoryId] of obsoleteActCategoryEntries) {
+                    if (cleanedWorkspaceCategoryIds.has(categoryId)) {
+                        delete workspaceMapping.actCategories?.[actId]
+                    }
+                }
 
                 for (const [mappedWorkspaceId, mappedWorkspace] of Object.entries(mappings.workspaces)) {
                     if (mappedWorkspaceId === workspaceId) continue
                     const channelIds = [
-                        mappedWorkspace.menuChannelId,
+                        mappedWorkspace.menuChannelId === menuChannel.id ? undefined : mappedWorkspace.menuChannelId,
                         ...Object.values(mappedWorkspace.performerChannels || {}),
                         ...Object.values(mappedWorkspace.performerThreadChannels || {}),
                         ...Object.values(mappedWorkspace.actThreadChannels || {}),
                     ].filter((channelId): channelId is string => !!channelId)
                     await this.moveChannelsToCategory(guild, channelIds, archiveCategory.id)
-                    await this.deleteCategories(guild, [
-                        ...Object.values(mappedWorkspace.performerCategories || {}),
-                        ...Object.values(mappedWorkspace.actCategories || {}),
+                    const performerCategoryEntries = Object.entries(mappedWorkspace.performerCategories || {})
+                    const actCategoryEntries = Object.entries(mappedWorkspace.actCategories || {})
+                    const cleanedCategoryIds = await this.deleteCategories(guild, [
+                        ...performerCategoryEntries.map(([, categoryId]) => categoryId),
+                        ...actCategoryEntries.map(([, categoryId]) => categoryId),
                     ])
-                    mappedWorkspace.performerCategories = {}
-                    mappedWorkspace.actCategories = {}
+                    for (const [performerId, categoryId] of performerCategoryEntries) {
+                        if (cleanedCategoryIds.has(categoryId)) {
+                            delete mappedWorkspace.performerCategories?.[performerId]
+                        }
+                    }
+                    for (const [actId, categoryId] of actCategoryEntries) {
+                        if (cleanedCategoryIds.has(categoryId)) {
+                            delete mappedWorkspace.actCategories?.[actId]
+                        }
+                    }
                 }
+                await this.deleteUnmappedEmptyEntityCategories(guild, mappings)
 
                 let categoryPosition = 1
                 for (const performer of snapshot.performers || []) {
@@ -358,7 +530,8 @@ class DiscordIntegrationService {
                         performerCategoryName(performer.name),
                     )
                     workspaceMapping.performerCategories[performer.id] = category.id
-                    await category.setPosition(categoryPosition++).catch(() => {})
+                    void this.runDiscordSyncBestEffort(`position performer category ${category.id}`, () => category.setPosition(categoryPosition))
+                    categoryPosition += 1
                     const threadChannelIds = Object.entries(workspaceMapping.performerThreadChannels || {})
                         .filter(([key]) => key.startsWith(`${performer.id}:`))
                         .map(([, channelId]) => channelId)
@@ -375,32 +548,31 @@ class DiscordIntegrationService {
                         actCategoryName(act.name),
                     )
                     workspaceMapping.actCategories[act.id] = category.id
-                    await category.setPosition(categoryPosition++).catch(() => {})
+                    void this.runDiscordSyncBestEffort(`position Act category ${category.id}`, () => category.setPosition(categoryPosition))
+                    categoryPosition += 1
                     const threadChannelIds = Object.entries(workspaceMapping.actThreadChannels || {})
                         .filter(([key]) => key.startsWith(`${act.id}:`))
                         .map(([, channelId]) => channelId)
                     await this.moveChannelsToCategory(guild, threadChannelIds, category.id)
                 }
                 await this.deleteCategories(guild, obsoleteGenericCategoryIds)
-                await archiveCategory.setPosition(categoryPosition).catch(() => {})
-
-                const menuChannel = await this.ensureTextChannel(
-                    guild,
-                    mappings.menuChannelId || workspaceMapping.menuChannelId,
-                    controlChannelName(),
-                    activeCategory.id,
-                    `Dance of Tal Studio control for ${snapshot.workingDir}`,
+                await this.runDiscordSyncBestEffort(
+                    `position archive category ${archiveCategory.id} at bottom`,
+                    () => this.moveCategoryToBottom(guild, archiveCategory.id),
+                    3_000,
                 )
-                await menuChannel.setPosition(0).catch(() => {})
-                mappings.menuChannelId = menuChannel.id
-                workspaceMapping.menuChannelId = menuChannel.id
-                mappings.channels[menuChannel.id] = {
-                    kind: 'menu',
+                await this.deleteInactiveWorkspaceRootCategories(
+                    guild,
+                    mappings,
                     workspaceId,
-                    workingDir: snapshot.workingDir,
-                }
+                    activeCategory.id,
+                    archiveCategory.id,
+                )
 
-                await this.postWorkspaceMenu(menuChannel, workspaceId, snapshot, savedWorkspaces)
+                await this.runDiscordSyncBestEffort(
+                    `post Discord workspace menu ${menuChannel.id}`,
+                    () => this.postWorkspaceMenu(menuChannel, workspaceId, snapshot, savedWorkspaces),
+                )
             })
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error)
@@ -767,18 +939,52 @@ class DiscordIntegrationService {
         }
     }
 
+    private async withDiscordSyncTimeout<T>(
+        label: string,
+        operation: () => Promise<T>,
+        timeoutMs = DISCORD_SYNC_OPERATION_TIMEOUT_MS,
+    ) {
+        let timeout: ReturnType<typeof setTimeout> | null = null
+        try {
+            return await Promise.race([
+                operation(),
+                new Promise<T>((_, reject) => {
+                    timeout = setTimeout(() => reject(timeoutError(label, timeoutMs)), timeoutMs)
+                }),
+            ])
+        } finally {
+            if (timeout) {
+                clearTimeout(timeout)
+            }
+        }
+    }
+
+    private async runDiscordSyncBestEffort(
+        label: string,
+        operation: () => Promise<unknown>,
+        timeoutMs = DISCORD_SYNC_BEST_EFFORT_TIMEOUT_MS,
+    ) {
+        try {
+            await this.withDiscordSyncTimeout(label, operation, timeoutMs)
+        } catch (error) {
+            console.warn(`[discord] ${label} failed during workspace sync:`, error)
+        }
+    }
+
     private async ensureCategory(guild: Guild, channelId: string | undefined, name: string) {
-        const existing = channelId ? await guild.channels.fetch(channelId).catch(() => null) : null
+        const existing = channelId
+            ? await this.withDiscordSyncTimeout(`fetch Discord category ${channelId}`, () => guild.channels.fetch(channelId, { force: true }).catch(() => null))
+            : null
         if (existing?.type === ChannelType.GuildCategory) {
             if (existing.name !== name) {
-                await existing.setName(name).catch(() => {})
+                await this.runDiscordSyncBestEffort(`rename Discord category ${existing.id}`, () => existing.setName(name), 3_000)
             }
             return existing
         }
-        return guild.channels.create({
+        return this.withDiscordSyncTimeout(`create Discord category ${name}`, () => guild.channels.create({
             name,
             type: ChannelType.GuildCategory,
-        })
+        }))
     }
 
     private async ensureTextChannel(
@@ -788,44 +994,263 @@ class DiscordIntegrationService {
         parentId: string,
         topic: string,
     ) {
-        const existing = channelId ? await guild.channels.fetch(channelId).catch(() => null) : null
+        const existing = channelId
+            ? await this.withDiscordSyncTimeout(`fetch Discord text channel ${channelId}`, () => guild.channels.fetch(channelId, { force: true }).catch(() => null))
+            : null
         if (existing?.type === ChannelType.GuildText) {
-            const channel = existing as TextChannel
+            let channel = existing as TextChannel
             if (channel.name !== name) {
-                await channel.setName(name).catch(() => {})
+                await this.runDiscordSyncBestEffort(`rename Discord text channel ${channel.id}`, () => channel.setName(name))
             }
             if (channel.parentId !== parentId) {
-                await channel.setParent(parentId).catch(() => {})
+                const moved = await this.withDiscordSyncTimeout(
+                    `move Discord text channel ${channel.id}`,
+                    () => channel.setParent(parentId),
+                ).catch((error) => {
+                    console.warn(`[discord] move Discord text channel ${channel.id} failed during workspace sync:`, error)
+                    return null
+                })
+                if (moved?.type === ChannelType.GuildText) {
+                    channel = moved
+                }
             }
             if (channel.topic !== topic) {
-                await channel.setTopic(topic).catch(() => {})
+                await this.runDiscordSyncBestEffort(`update Discord text channel topic ${channel.id}`, () => channel.setTopic(topic))
             }
             return channel
         }
-        return guild.channels.create({
+        return this.withDiscordSyncTimeout(`create Discord text channel ${name}`, () => guild.channels.create({
             name,
             type: ChannelType.GuildText,
             parent: parentId,
             topic,
-        })
+        }))
     }
 
     private async moveChannelsToCategory(guild: Guild, channelIds: string[], parentId: string) {
         for (const channelId of Array.from(new Set(channelIds))) {
-            const channel = await guild.channels.fetch(channelId).catch(() => null)
+            const channel = await this.withDiscordSyncTimeout(
+                `fetch Discord channel ${channelId}`,
+                () => guild.channels.fetch(channelId, { force: true }).catch(() => null),
+            ).catch(() => null)
             if (channel?.type === ChannelType.GuildText && channel.parentId !== parentId) {
-                await channel.setParent(parentId).catch(() => {})
+                await this.runDiscordSyncBestEffort(`move Discord text channel ${channel.id}`, () => channel.setParent(parentId))
             }
         }
     }
 
-    private async deleteCategories(guild: Guild, categoryIds: string[]) {
-        for (const categoryId of Array.from(new Set(categoryIds))) {
-            const channel = await guild.channels.fetch(categoryId).catch(() => null)
-            if (channel?.type === ChannelType.GuildCategory) {
-                await channel.delete('Dance of Tal Studio inactive workspace category cleanup').catch(() => {})
+    private async moveCategoryToBottom(guild: Guild, categoryId: string) {
+        const channels = await this.withDiscordSyncTimeout(
+            `fetch Discord channels before positioning category ${categoryId}`,
+            () => guild.channels.fetch(),
+        )
+        const categories = Array.from(channels.values())
+            .filter((channel) => channel?.type === ChannelType.GuildCategory)
+        const category = categories.find((channel) => channel.id === categoryId)
+        if (!category || categories.length <= 1) {
+            return
+        }
+        await category.setPosition(categories.length - 1)
+    }
+
+    private async deleteTextChannels(guild: Guild, channelIds: string[], reason: string) {
+        const cleanedChannelIds = new Set<string>()
+        for (const channelId of Array.from(new Set(channelIds))) {
+            const channel = await this.withDiscordSyncTimeout(
+                `fetch stale Discord text channel ${channelId}`,
+                () => guild.channels.fetch(channelId, { force: true }).catch(() => null),
+            ).catch((error) => {
+                console.warn('[discord] Failed to fetch stale thread channel during workspace sync cleanup:', {
+                    channelId,
+                    error,
+                })
+                return null
+            })
+            if (!channel) {
+                cleanedChannelIds.add(channelId)
+                continue
+            }
+            if (channel?.type === ChannelType.GuildText) {
+                try {
+                    await this.withDiscordSyncTimeout(`delete stale Discord text channel ${channel.id}`, () => channel.delete(reason))
+                    cleanedChannelIds.add(channelId)
+                } catch (error) {
+                    console.warn('[discord] Failed to delete stale thread channel during workspace sync cleanup:', {
+                        channelId,
+                        error,
+                    })
+                }
+            } else {
+                cleanedChannelIds.add(channelId)
             }
         }
+        return cleanedChannelIds
+    }
+
+    private workspaceCategoryIdUseCounts(mappings: DiscordMappings) {
+        const counts = new Map<string, number>()
+        for (const mapping of Object.values(mappings.workspaces)) {
+            if (!mapping.categoryId) {
+                continue
+            }
+            counts.set(mapping.categoryId, (counts.get(mapping.categoryId) || 0) + 1)
+        }
+        return counts
+    }
+
+    private mappedDiscordEntityCategoryIds(mappings: DiscordMappings) {
+        const ids = new Set<string>()
+        for (const mapping of Object.values(mappings.workspaces)) {
+            for (const categoryId of Object.values(mapping.performerCategories || {})) {
+                ids.add(categoryId)
+            }
+            for (const categoryId of Object.values(mapping.actCategories || {})) {
+                ids.add(categoryId)
+            }
+        }
+        if (mappings.activeCategoryId) {
+            ids.add(mappings.activeCategoryId)
+        }
+        if (mappings.archiveCategoryId) {
+            ids.add(mappings.archiveCategoryId)
+        }
+        return ids
+    }
+
+    private async fetchCategoryChildCounts(guild: Guild, label: string) {
+        const channels = await this.withDiscordSyncTimeout(
+            `fetch Discord channels for ${label}`,
+            () => guild.channels.fetch(),
+        ).catch((error) => {
+            console.warn(`[discord] Failed to fetch channels during ${label}:`, error)
+            return null
+        })
+        if (!channels) {
+            return null
+        }
+        const childCounts = new Map<string, number>()
+        for (const channel of channels.values()) {
+            if (!channel) {
+                continue
+            }
+            const parentId = 'parentId' in channel ? channel.parentId : null
+            if (parentId) {
+                childCounts.set(parentId, (childCounts.get(parentId) || 0) + 1)
+            }
+        }
+        return childCounts
+    }
+
+    private async deleteUnmappedEmptyEntityCategories(guild: Guild, mappings: DiscordMappings) {
+        const channels = await this.withDiscordSyncTimeout(
+            'fetch Discord channels for orphan entity category cleanup',
+            () => guild.channels.fetch(),
+        ).catch((error) => {
+            console.warn('[discord] Failed to fetch channels during orphan category cleanup:', error)
+            return null
+        })
+        if (!channels) {
+            return
+        }
+        const knownCategoryIds = this.mappedDiscordEntityCategoryIds(mappings)
+        const childCounts = new Map<string, number>()
+        for (const channel of channels.values()) {
+            if (!channel) {
+                continue
+            }
+            const parentId = 'parentId' in channel ? channel.parentId : null
+            if (parentId) {
+                childCounts.set(parentId, (childCounts.get(parentId) || 0) + 1)
+            }
+        }
+        const orphanCategoryIds: string[] = []
+        for (const channel of channels.values()) {
+            if (!channel || channel.type !== ChannelType.GuildCategory) {
+                continue
+            }
+            if (!isStudioEntityCategoryName(channel.name)) {
+                continue
+            }
+            if (knownCategoryIds.has(channel.id)) {
+                continue
+            }
+            if ((childCounts.get(channel.id) || 0) > 0) {
+                continue
+            }
+            orphanCategoryIds.push(channel.id)
+        }
+        await this.deleteCategories(
+            guild,
+            orphanCategoryIds,
+            'Dance of Tal Studio orphan entity category cleanup',
+        )
+    }
+
+    private async deleteInactiveWorkspaceRootCategories(
+        guild: Guild,
+        mappings: DiscordMappings,
+        activeWorkspaceId: string,
+        activeCategoryId: string,
+        archiveCategoryId: string,
+    ) {
+        const inactiveCategoryEntries = Object.entries(mappings.workspaces)
+            .filter(([workspaceId]) => workspaceId !== activeWorkspaceId)
+            .map(([workspaceId, mapping]) => [workspaceId, mapping.categoryId] as const)
+            .filter((entry): entry is readonly [string, string] => {
+                const categoryId = entry[1]
+                return !!categoryId && categoryId !== activeCategoryId && categoryId !== archiveCategoryId
+            })
+        const childCounts = await this.fetchCategoryChildCounts(guild, 'inactive workspace root category cleanup')
+        if (!childCounts) {
+            return
+        }
+        const emptyInactiveCategoryEntries = inactiveCategoryEntries
+            .filter(([, categoryId]) => (childCounts.get(categoryId) || 0) === 0)
+        const cleanedCategoryIds = await this.deleteCategories(
+            guild,
+            emptyInactiveCategoryEntries.map(([, categoryId]) => categoryId),
+            'Dance of Tal Studio inactive workspace root category cleanup',
+        )
+        for (const [workspaceId, categoryId] of emptyInactiveCategoryEntries) {
+            if (cleanedCategoryIds.has(categoryId)) {
+                delete mappings.workspaces[workspaceId]?.categoryId
+            }
+        }
+    }
+
+    private async deleteCategories(
+        guild: Guild,
+        categoryIds: string[],
+        reason = 'Dance of Tal Studio inactive workspace category cleanup',
+    ) {
+        const cleanedCategoryIds = new Set<string>()
+        for (const categoryId of Array.from(new Set(categoryIds))) {
+            const channel = await this.withDiscordSyncTimeout(
+                `fetch obsolete Discord category ${categoryId}`,
+                () => guild.channels.fetch(categoryId, { force: true }).catch(() => null),
+            ).catch(() => null)
+            if (!channel) {
+                cleanedCategoryIds.add(categoryId)
+                continue
+            }
+            if (channel?.type === ChannelType.GuildCategory) {
+                try {
+                    await this.withDiscordSyncTimeout(
+                        `delete obsolete Discord category ${channel.id}`,
+                        () => channel.delete(reason),
+                    )
+                    cleanedCategoryIds.add(categoryId)
+                } catch (error) {
+                    console.warn('[discord] Failed to delete obsolete category during workspace sync cleanup:', {
+                        categoryId,
+                        error,
+                    })
+                }
+            } else {
+                cleanedCategoryIds.add(categoryId)
+            }
+        }
+        return cleanedCategoryIds
     }
 
     private buildWorkspaceMenuComponents(
@@ -892,7 +1317,7 @@ class DiscordIntegrationService {
     ) {
         const performerCount = snapshot.performers?.length || 0
         const actCount = snapshot.acts?.length || 0
-        await channel.send({
+        await this.withDiscordSyncTimeout(`post Discord workspace menu ${channel.id}`, () => channel.send({
             content: [
                 `**Dance of Tal Studio**`,
                 `Workspace: \`${snapshot.workingDir}\``,
@@ -900,7 +1325,7 @@ class DiscordIntegrationService {
             ].join('\n'),
             components: this.buildWorkspaceMenuComponents(workspaceId, snapshot, savedWorkspaces),
             allowedMentions: { parse: [] },
-        })
+        }))
     }
 
     private async registerPendingInteraction(params: {
@@ -1649,7 +2074,7 @@ class DiscordIntegrationService {
                         .setCustomId(`dot:act-thread:${workspaceId}:${act.id}`)
                         .setPlaceholder('Open saved Act thread')
                         .addOptions(threads.map((thread) => ({
-                            label: (thread.name || `Thread ${thread.id.slice(0, 6)}`).slice(0, 100),
+                            label: (thread.name || unnamedThreadNameFor(threads, thread.id)).slice(0, 100),
                             value: thread.id,
                             description: thread.status,
                         }))),
@@ -1803,7 +2228,7 @@ class DiscordIntegrationService {
             return
         }
         const afterMessageId = await getLatestDiscordAssistantMessageId(pending.workingDir, pending.sessionId).catch(() => null)
-        await respondDiscordQuestion(questionId, answers)
+        await respondDiscordQuestion(pending.workingDir, questionId, answers)
         await this.clearPendingInteraction(pendingId)
         await interaction.editReply('Answer submitted.')
         if (interaction.channel?.isTextBased() && interaction.channel instanceof TextChannel) {
@@ -2001,7 +2426,7 @@ class DiscordIntegrationService {
             await interaction.editReply('That question request is missing its id.')
             return
         }
-        await rejectDiscordQuestion(questionId)
+        await rejectDiscordQuestion(pending.workingDir, questionId)
         await this.clearPendingInteraction(pendingId)
         await interaction.editReply('Question cancelled.')
     }
@@ -2094,10 +2519,11 @@ class DiscordIntegrationService {
         mappings.activeWorkspaceId = workspaceId
         const threads = await listActThreadsForDiscord(snapshot.workingDir, act.id)
         const thread = threads.threads.find((entry) => entry.id === threadId)
+        const threadName = thread?.name?.trim() || unnamedThreadNameFor(threads.threads, threadId)
         const channel = await this.ensureTextChannel(
             guild,
             workspaceMapping.actThreadChannels[actThreadMappingKey(act.id, threadId)],
-            threadChannelName(thread?.name, threadId),
+            threadChannelName(threadName, threadId),
             categoryId,
             `Studio Act thread: ${act.name}`,
         )
@@ -2161,7 +2587,8 @@ class DiscordIntegrationService {
     ) {
         const threads = await listActThreadsForDiscord(target.workingDir, target.actId).catch(() => ({ threads: [] }))
         const thread = threads.threads.find((entry) => entry.id === target.threadId)
-        const nextName = threadChannelName(thread?.name, target.threadId)
+        const threadName = thread?.name?.trim() || unnamedThreadNameFor(threads.threads, target.threadId)
+        const nextName = threadChannelName(threadName, target.threadId)
         if (nextName && channel.name !== nextName) {
             await channel.setName(nextName).catch(() => {})
         }

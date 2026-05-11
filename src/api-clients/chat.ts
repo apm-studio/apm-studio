@@ -1,4 +1,4 @@
-import type { QuestionAnswer, PermissionRequest } from '@opencode-ai/sdk/v2'
+import type { QuestionAnswer, PermissionRequest, QuestionRequest, Todo } from '@opencode-ai/sdk/v2'
 import type { ChatSendRequest, ChatSessionCreateResponse } from '../../shared/chat-contracts'
 import { createApiEventSource, deleteJSON, fetchApiResponse, fetchJSON, postJSON, putJSON } from '../api-core'
 import type { SessionMessageLike } from '../lib/chat-messages'
@@ -26,6 +26,9 @@ export const chatApi = {
 
     status: (id: string) =>
         fetchJSON<{ status: { type: 'idle' | 'busy' | 'retry' | 'error' } | null }>(`/api/chat/sessions/${id}/status`),
+
+    todos: (id: string) =>
+        fetchJSON<Todo[]>(`/api/chat/sessions/${id}/todos`),
 
     abort: (id: string) =>
         postJSON<{ ok: boolean }>(`/api/chat/sessions/${id}/abort`),
@@ -87,6 +90,9 @@ export const chatApi = {
 
     listPendingPermissions: () =>
         fetchJSON<PermissionRequest[]>('/api/chat/permissions'),
+
+    listPendingQuestions: () =>
+        fetchJSON<QuestionRequest[]>('/api/chat/questions'),
 
     respondQuestion: (questionId: string, answers: QuestionAnswer[]) =>
         postJSON<{ ok: boolean }>(`/api/chat/questions/${questionId}/respond`, { answers }),

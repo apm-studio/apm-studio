@@ -1,6 +1,6 @@
 import type { PermissionRequest } from '@opencode-ai/sdk/v2'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { formatDiscordBackfillMessages, waitForAssistantReply } from './studio-runtime.js'
+import { formatDiscordBackfillMessages, listStandaloneThreadsForDiscord, waitForAssistantReply } from './studio-runtime.js'
 
 const chatSessionMocks = vi.hoisted(() => ({
     status: vi.fn(),
@@ -11,6 +11,10 @@ const chatSessionMocks = vi.hoisted(() => ({
     respondPermission: vi.fn(),
     respondQuestion: vi.fn(),
     rejectQuestion: vi.fn(),
+}))
+
+const ownershipMocks = vi.hoisted(() => ({
+    list: vi.fn(),
 }))
 
 vi.mock('../chat-session-service.js', () => ({
@@ -24,12 +28,18 @@ vi.mock('../chat-session-service.js', () => ({
     respondSessionPermission: chatSessionMocks.respondPermission,
 }))
 
+vi.mock('../session-ownership-service.js', () => ({
+    listSessionOwnershipsForWorkingDir: ownershipMocks.list,
+}))
+
 beforeEach(() => {
     vi.clearAllMocks()
     chatSessionMocks.permissions.mockResolvedValue([])
     chatSessionMocks.questions.mockResolvedValue([])
     chatSessionMocks.messages.mockResolvedValue({ messages: [], nextCursor: null })
     chatSessionMocks.status.mockResolvedValue({ status: { type: 'idle' } })
+    chatSessionMocks.sessions.mockResolvedValue([])
+    ownershipMocks.list.mockResolvedValue([])
 })
 
 afterEach(() => {
@@ -86,6 +96,92 @@ describe('formatDiscordBackfillMessages', () => {
 
         expect(messages).toEqual([
             { id: 'session-1:assistant-1', content: '**[Reviewer]**\nI reviewed the draft.' },
+        ])
+    })
+})
+
+describe('listStandaloneThreadsForDiscord', () => {
+    it('does not expose orphan ownership records as saved performer threads', async () => {
+        ownershipMocks.list.mockResolvedValue([
+            {
+                sessionId: 'session-live',
+                ownerKind: 'performer',
+                ownerId: 'performer-1',
+                workingDir: '/tmp/workspace',
+                sidebarTitle: 'Live thread',
+                updatedAt: 20,
+            },
+            {
+                sessionId: 'session-orphan',
+                ownerKind: 'performer',
+                ownerId: 'performer-1',
+                workingDir: '/tmp/workspace',
+                sidebarTitle: 'Orphan thread',
+                updatedAt: 30,
+            },
+        ])
+        chatSessionMocks.sessions.mockResolvedValue([
+            {
+                id: 'session-live',
+                title: 'Live session',
+                updatedAt: 10,
+            },
+        ])
+
+        await expect(listStandaloneThreadsForDiscord('/tmp/workspace', 'performer-1')).resolves.toEqual([
+            {
+                id: 'session-live',
+                name: 'Live thread',
+                updatedAt: 10,
+            },
+        ])
+    })
+
+    it('uses numbered default names instead of Studio metadata titles', async () => {
+        ownershipMocks.list.mockResolvedValue([
+            {
+                sessionId: 'session-older',
+                ownerKind: 'performer',
+                ownerId: 'performer-1',
+                workingDir: '/tmp/workspace',
+                updatedAt: 10,
+            },
+            {
+                sessionId: 'session-newer',
+                ownerKind: 'performer',
+                ownerId: 'performer-1',
+                workingDir: '/tmp/workspace',
+                updatedAt: 20,
+            },
+        ])
+        chatSessionMocks.sessions.mockResolvedValue([
+            {
+                id: 'session-older',
+                title: 'DOT Studio: Planner [studio:performer-1:hash-a]',
+                createdAt: 100,
+                updatedAt: 10,
+            },
+            {
+                id: 'session-newer',
+                title: 'DOT Studio: Planner [studio:performer-1:hash-b]',
+                createdAt: 200,
+                updatedAt: 20,
+            },
+        ])
+
+        await expect(listStandaloneThreadsForDiscord('/tmp/workspace', 'performer-1')).resolves.toEqual([
+            {
+                id: 'session-newer',
+                name: 'New thread (2)',
+                createdAt: 200,
+                updatedAt: 20,
+            },
+            {
+                id: 'session-older',
+                name: 'New thread (1)',
+                createdAt: 100,
+                updatedAt: 10,
+            },
         ])
     })
 })

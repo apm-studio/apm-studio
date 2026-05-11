@@ -3,6 +3,7 @@ import type { ActThreadSummary } from '../../../shared/act-types.js'
 import { buildActParticipantChatKey } from '../../../shared/chat-targets.js'
 import type { ChatSendRequest, SharedAssetRef } from '../../../shared/chat-contracts.js'
 import { buildActDefinition, resolvePerformerFromActBindingInput } from '../../../shared/act-definition-builder.js'
+import { parseStudioSessionTitle } from '../../../shared/session-metadata.js'
 import {
     buildPerformerConfigHash,
     resolvePerformerRuntimeConfig,
@@ -21,6 +22,7 @@ import {
 import { createStudioChatSession, sendStudioChatMessage } from '../chat-service.js'
 import { getActRuntimeService } from '../act-runtime/act-runtime-service.js'
 import { listSessionOwnershipsForWorkingDir } from '../session-ownership-service.js'
+import { unnamedThreadNameFor } from './sync-plan.js'
 
 export type DiscordWorkspaceSnapshot = {
     schemaVersion?: number
@@ -81,6 +83,7 @@ export type DiscordStandaloneThreadSummary = {
     id: string
     name: string
     status?: string
+    createdAt?: number
     updatedAt?: number
 }
 
@@ -239,24 +242,34 @@ export function formatDiscordBackfillMessages(params: {
 export async function listStandaloneThreadsForDiscord(workingDir: string, performerId: string): Promise<DiscordStandaloneThreadSummary[]> {
     const [ownerships, sessions] = await Promise.all([
         listSessionOwnershipsForWorkingDir(workingDir, 'performer'),
-        listStudioChatSessions(workingDir).catch(() => []),
+        listStudioChatSessions(workingDir).catch(() => null),
     ])
-    const sessionsById = new Map(sessions.map((session) => [session.id, session]))
-    return ownerships
+    const sessionsById = sessions ? new Map(sessions.map((session) => [session.id, session])) : null
+    const threads = ownerships
         .filter((ownership) => ownership.ownerId === performerId)
-        .map((ownership) => {
-            const session = sessionsById.get(ownership.sessionId)
-            const name = ownership.sidebarTitle
-                || session?.sidebarTitle
-                || session?.title
-                || `Thread ${ownership.sessionId.slice(0, 6)}`
+        .map((ownership): DiscordStandaloneThreadSummary | null => {
+            const session = sessionsById?.get(ownership.sessionId) || null
+            if (sessionsById && !session) {
+                return null
+            }
+            const metadataTitle = parseStudioSessionTitle(session?.title)
+            const name = ownership.sidebarTitle?.trim()
+                || session?.sidebarTitle?.trim()
+                || (!metadataTitle ? session?.title?.trim() : undefined)
             return {
                 id: ownership.sessionId,
-                name,
+                name: name || '',
                 ...(session?.status ? { status: session.status } : {}),
+                ...(session?.createdAt ? { createdAt: session.createdAt } : {}),
                 updatedAt: session?.updatedAt || ownership.updatedAt,
             }
         })
+        .filter((thread): thread is DiscordStandaloneThreadSummary => !!thread)
+    return threads
+        .map((thread) => ({
+            ...thread,
+            name: thread.name.trim() || unnamedThreadNameFor(threads, thread.id),
+        }))
         .sort((left, right) => (right.updatedAt || 0) - (left.updatedAt || 0))
 }
 
@@ -369,12 +382,12 @@ export async function respondDiscordPermission(params: {
     return respondSessionPermission(params.workingDir, params.sessionId, params.permissionId, params.response)
 }
 
-export async function respondDiscordQuestion(questionId: string, answers: QuestionAnswer[]) {
-    return respondQuestion(questionId, answers)
+export async function respondDiscordQuestion(workingDir: string, questionId: string, answers: QuestionAnswer[]) {
+    return respondQuestion(workingDir, questionId, answers)
 }
 
-export async function rejectDiscordQuestion(questionId: string) {
-    return rejectQuestion(questionId)
+export async function rejectDiscordQuestion(workingDir: string, questionId: string) {
+    return rejectQuestion(workingDir, questionId)
 }
 
 export async function ensureStandaloneSession(params: {

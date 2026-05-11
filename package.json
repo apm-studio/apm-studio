@@ -1,6 +1,6 @@
 {
   "name": "dot-studio",
-  "version": "0.2.4",
+  "version": "0.2.11",
   "description": "DOT Studio visual workspace for composing and running Dance of Tal performers and acts on top of OpenCode.",
   "license": "MIT",
   "author": "monarchjuno",
@@ -31,7 +31,7 @@
     "start": "node dist/cli.js",
     "dev": "npm run dev:all",
     "dev:client": "vite",
-    "kill-ports": "node scripts/kill-ports.mjs 43100 43101 43102",
+    "kill-ports": "node scripts/kill-ports.mjs 43200 43201 43202",
     "dev:all": "npm run kill-ports && tsx server/start.ts",
     "server": "node --import ./server/lib/dot-dev-alias-register.mjs ./node_modules/tsx/dist/cli.mjs server/index.ts",
     "server:dev": "node --import ./server/lib/dot-dev-alias-register.mjs ./node_modules/tsx/dist/cli.mjs --watch server/index.ts",
@@ -45,7 +45,7 @@
     "test": "vitest run",
     "lint": "eslint .",
     "preview": "vite preview",
-    "opencode": "opencode serve --port 43102",
+    "opencode": "opencode serve --port 43202",
     "prepublishOnly": "npm run build:all"
   },
   "bin": {
@@ -62,6 +62,7 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@hono/node-server": "^2.0.1",
+    "@lydell/node-pty": "^1.2.0-beta.12",
     "@opencode-ai/sdk": "^1.14.39",
     "@tanstack/react-query": "^5.90.21",
     "@xterm/addon-fit": "^0.11.0",

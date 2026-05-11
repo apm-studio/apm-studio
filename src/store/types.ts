@@ -71,7 +71,7 @@ export interface SplitViewPlacement {
 
 export interface CanvasRevealTarget {
     id: string
-    type: FullscreenNodeType
+    type: FullscreenNodeType | 'markdownEditor' | 'canvasTerminal'
     nonce: number
 }
 

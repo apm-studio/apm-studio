@@ -4,7 +4,12 @@ import fs from 'fs/promises'
 import path from 'path'
 import os from 'os'
 import { createHash } from 'crypto'
-import { STUDIO_API_PORT, STUDIO_OPENCODE_PORT } from '../../shared/default-ports.js'
+import {
+    STUDIO_DEV_API_PORT,
+    STUDIO_DEV_OPENCODE_PORT,
+    STUDIO_RELEASE_APP_PORT,
+    STUDIO_RELEASE_OPENCODE_PORT,
+} from '../../shared/default-ports.js'
 
 const MIN_PORT = 1
 const MAX_PORT = 65535
@@ -40,14 +45,17 @@ function resolveDefaultProjectDir() {
 }
 
 // ── Constants ───────────────────────────────────────────
-export const PORT = resolvePort('PORT', process.env.PORT, STUDIO_API_PORT)
+export const IS_PRODUCTION = process.env.DOT_STUDIO_PRODUCTION === '1'
+const DEFAULT_PORT = IS_PRODUCTION ? STUDIO_RELEASE_APP_PORT : STUDIO_DEV_API_PORT
+const DEFAULT_OPENCODE_PORT = IS_PRODUCTION ? STUDIO_RELEASE_OPENCODE_PORT : STUDIO_DEV_OPENCODE_PORT
+
+export const PORT = resolvePort('PORT', process.env.PORT, DEFAULT_PORT)
 export const DEFAULT_PROJECT_DIR = resolveDefaultProjectDir()
 export const STUDIO_DIR = process.env.STUDIO_DIR || path.join(os.homedir(), '.dot-studio')
 export const STUDIO_OPENCODE_CONFIG_DIR = path.join(STUDIO_DIR, 'opencode')
-export const OPENCODE_PORT = resolvePort('OPENCODE_PORT', process.env.OPENCODE_PORT, STUDIO_OPENCODE_PORT)
+export const OPENCODE_PORT = resolvePort('OPENCODE_PORT', process.env.OPENCODE_PORT, DEFAULT_OPENCODE_PORT)
 export const OPENCODE_URL = `http://localhost:${OPENCODE_PORT}`
 export const STUDIO_CONFIG_PATH = path.join(STUDIO_DIR, 'studio-config.json')
-export const IS_PRODUCTION = process.env.DOT_STUDIO_PRODUCTION === '1'
 
 // ── Mutable Active Project Dir ──────────────────────────
 let _activeProjectDir: string | null = null

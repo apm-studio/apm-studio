@@ -57,4 +57,19 @@ describe('dot-studio CLI', () => {
         expect(result.code).toBe(1)
         expect(result.stdout).toContain('FAIL Studio port: Port 43110 is reserved for the managed OpenCode sidecar')
     })
+
+    it('documents OpenAI OAuth startup setup in help', async () => {
+        const result = await runCli(['--help'])
+
+        expect(result.code).toBe(0)
+        expect(result.stdout).toContain('--openai-oauth')
+        expect(result.stdout).toContain('dot-studio --openai-oauth --act act/@acme/workflows/review-flow')
+    })
+
+    it('rejects OpenAI OAuth setup on doctor because it only applies to open', async () => {
+        const result = await runCli(['doctor', '.', '--openai-oauth'])
+
+        expect(result.code).toBe(1)
+        expect(result.stderr).toContain('--openai-oauth can only be used with the open command')
+    })
 })
