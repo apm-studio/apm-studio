@@ -204,7 +204,7 @@ async function fetchStudioUsage(directory: string): Promise<UsageResponse['studi
 // ── Route ────────────────────────────────────────────────
 
 usage.get('/api/usage', async (c) => {
-    const workingDir = c.req.header('x-working-dir') || process.cwd()
+    const workingDir = c.req.query('workingDir') || c.req.header('x-working-dir') || process.cwd()
 
     const [openaiAuth, studioStats] = await Promise.all([
         readStoredProviderAuth('openai').catch(() => null),
