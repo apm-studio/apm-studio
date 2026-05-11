@@ -42,16 +42,6 @@ function buildApiInstructions(provider: ProviderCard, method?: ProviderAuthMetho
     return `Provide the required details for ${provider.name}. OpenCode will store the credential and provider metadata in its auth store.`
 }
 
-function buildOauthInstructions(provider: ProviderCard, method: ProviderAuthMethod, instructions: string | undefined) {
-    if (provider.id === 'anthropic' && /claude pro\/max/i.test(method.label)) {
-        return [
-            instructions || 'Paste the authorization code shown in the browser.',
-            'Paste the full callback URL or full code exactly as shown. Authorization codes can only be used once.',
-        ].join(' ')
-    }
-    return instructions || ''
-}
-
 function findProviderMethod(
     providers: ProviderCard[],
     providerId: string,
@@ -222,7 +212,7 @@ export function useProviderAuth(options: UseProviderAuthOptions) {
                     label: method.label,
                     mode: authorization.method,
                     url: authorization.url,
-                    instructions: buildOauthInstructions(provider, method, authorization.instructions),
+                    instructions: authorization.instructions || '',
                     code: '',
                     submitting: authorization.method === 'auto',
                     error: undefined,
