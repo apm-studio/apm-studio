@@ -123,6 +123,7 @@ Key rules:
 - permission responses must use `permission.reply`; do not add new calls to the deprecated session-scoped `permission.respond`
 - optimistic mirrors and stream reconciliation belong in the session layer, not ad hoc UI patches
 - owner-derived realtime binding must not steal a chat key that the user already rebound to a different session
+- unknown session ownership resolution is a quiet realtime miss and should return `{ found: false }` without an HTTP error status
 - coalesced streaming must not drop `message.part.delta` content
 - if OpenCode stops reporting a status but the assistant snapshot is settled, Studio should treat the session as settled
 - a direct OpenCode `busy` or `retry` status remains authoritative and abortable even if the latest assistant step has a `step-finish`; intermediate step finishes must not flicker the composer back to send mode

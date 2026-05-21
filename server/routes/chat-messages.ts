@@ -120,7 +120,7 @@ chatMessages.get('/api/chat/sessions/:id/diff', async (c) => {
 chatMessages.get('/api/chat/sessions/:id/resolve', async (c) => {
     const context = await resolveSessionOwnership(c.req.param('id'))
     if (!context) {
-        return c.json({ found: false }, 404)
+        return c.json({ found: false })
     }
     return c.json({
         found: true,

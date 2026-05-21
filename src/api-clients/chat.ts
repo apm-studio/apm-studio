@@ -8,6 +8,10 @@ export type ChatSessionMessagesResponse = {
     nextCursor: string | null
 }
 
+export type ChatSessionResolveResponse =
+    | { found: false }
+    | { found: true; sessionId: string; ownerId: string; ownerKind: string }
+
 export const chatApi = {
     createSession: (performerId: string, performerName: string, configHash: string, actId?: string) =>
         postJSON<ChatSessionCreateResponse>('/api/chat/sessions', { performerId, performerName, configHash, actId }),
@@ -83,7 +87,7 @@ export const chatApi = {
     events: () => createApiEventSource('/api/chat/events'),
 
     resolveSession: (id: string) =>
-        fetchJSON<{ found: boolean; sessionId: string; ownerId: string; ownerKind: string }>(`/api/chat/sessions/${id}/resolve`),
+        fetchJSON<ChatSessionResolveResponse>(`/api/chat/sessions/${id}/resolve`),
 
     respondPermission: (sessionId: string, permissionId: string, response: 'once' | 'always' | 'reject') =>
         postJSON<{ ok: boolean }>(`/api/chat/sessions/${sessionId}/permission/${permissionId}/respond`, { response }),

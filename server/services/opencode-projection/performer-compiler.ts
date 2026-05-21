@@ -234,6 +234,16 @@ function sanitizeCodexAgentSegment(value: string) {
         .replace(/^_+|_+$/g, '')
 }
 
+function buildCodexAgentName(performerName: string, performerId: string) {
+    const suffix = createHash('sha1').update(performerId).digest('hex').slice(0, 8)
+    const baseCandidate = sanitizeCodexAgentSegment(performerName)
+        || sanitizeCodexAgentSegment(performerId)
+        || 'performer'
+    const maxBaseLength = Math.max(1, 64 - suffix.length - 1)
+    const base = baseCandidate.slice(0, maxBaseLength).replace(/_+$/g, '') || 'performer'
+    return `${base}_${suffix}`
+}
+
 function tomlString(value: string) {
     return JSON.stringify(value)
 }
@@ -494,10 +504,7 @@ function buildCodexAgentFile(input: {
     skills: CompiledSkill[]
     mcpServers?: McpCatalog
 }): AgentFile {
-    const sanitizedName = sanitizeCodexAgentSegment(input.performerName)
-    const fallbackId = sanitizeCodexAgentSegment(input.performerId)
-        || createHash('sha1').update(input.performerId).digest('hex').slice(0, 8)
-    const agentName = (sanitizedName || fallbackId).slice(0, 64)
+    const agentName = buildCodexAgentName(input.performerName, input.performerId)
     const fileName = `dot_studio_${agentName}.toml`
     const filePath = path.join(input.executionDir, '.codex', 'agents', fileName)
     const instructions = buildCodexDeveloperInstructions(input.talContent)

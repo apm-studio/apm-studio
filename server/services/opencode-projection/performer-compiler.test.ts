@@ -83,9 +83,9 @@ describe('compilePerformer scope boundaries', () => {
             bundleChanged: false,
         }])
 
-        expect(compiled.codexAgentName).toBe('review_performer')
-        expect(compiled.codexAgentRelativePath).toBe('.codex/agents/dot_studio_review_performer.toml')
-        expect(compiled.allFiles).toContain('.codex/agents/dot_studio_review_performer.toml')
+        expect(compiled.codexAgentName).toMatch(/^review_performer_[0-9a-f]{8}$/)
+        expect(compiled.codexAgentRelativePath).toMatch(/^\.codex\/agents\/dot_studio_review_performer_[0-9a-f]{8}\.toml$/)
+        expect(compiled.allFiles).toContain(compiled.codexAgentRelativePath)
         expect(compiled.codexAgentContent).toContain(`name = "${compiled.codexAgentName}"`)
         expect(compiled.codexAgentContent).toContain('model = "gpt-5.4"')
         expect(compiled.codexAgentContent).toContain('model_reasoning_effort = "medium"')
@@ -149,9 +149,46 @@ describe('compilePerformer scope boundaries', () => {
             relationPromptSection: null,
         }, [])
 
-        expect(compiled.codexAgentName).toBe('spark_reviewer')
+        expect(compiled.codexAgentName).toMatch(/^spark_reviewer_[0-9a-f]{8}$/)
         expect(compiled.codexAgentContent).toContain('model = "gpt-5.3-codex-spark"')
         expect(compiled.codexAgentContent).toContain('model_reasoning_effort = "high"')
+    })
+
+    it('keeps Codex project agent identities distinct after name sanitization', async () => {
+        const { compilePerformer } = await import('./performer-compiler.js')
+
+        const first = await compilePerformer('/tmp/workspace', {
+            performerId: 'performer-alpha',
+            performerName: 'QA Lead',
+            talRef: null,
+            model: { provider: 'openai', modelId: 'gpt-5.4' },
+            modelVariant: null,
+            workspaceHash: 'workspace-hash',
+            executionDir: '/tmp/workspace',
+            scope: 'stage',
+            skillNames: [],
+            toolMap: {},
+            relationPromptSection: null,
+        }, [])
+        const second = await compilePerformer('/tmp/workspace', {
+            performerId: 'performer-beta',
+            performerName: 'QA-Lead',
+            talRef: null,
+            model: { provider: 'openai', modelId: 'gpt-5.4' },
+            modelVariant: null,
+            workspaceHash: 'workspace-hash',
+            executionDir: '/tmp/workspace',
+            scope: 'stage',
+            skillNames: [],
+            toolMap: {},
+            relationPromptSection: null,
+        }, [])
+
+        expect(first.codexAgentName).toMatch(/^qa_lead_[0-9a-f]{8}$/)
+        expect(second.codexAgentName).toMatch(/^qa_lead_[0-9a-f]{8}$/)
+        expect(first.codexAgentName).not.toBe(second.codexAgentName)
+        expect(first.codexAgentRelativePath).not.toBe(second.codexAgentRelativePath)
+        expect(first.codexAgentName).not.toContain('dot_studio')
     })
 
     it('projects reasoning effort from the selected model variant into Codex project agents', async () => {
