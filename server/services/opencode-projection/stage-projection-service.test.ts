@@ -7,6 +7,7 @@ const compileDanceMock = vi.fn()
 const compilePerformerMock = vi.fn()
 const resolveRuntimeToolsMock = vi.fn()
 const resolveRuntimeModelMock = vi.fn()
+const readGlobalMcpCatalogMock = vi.fn()
 const mcpStatusMock = vi.fn()
 const instanceDisposeMock = vi.fn()
 
@@ -16,6 +17,14 @@ vi.mock('./dance-compiler.js', () => ({
 
 vi.mock('./performer-compiler.js', () => ({
     compilePerformer: compilePerformerMock,
+    resolveCodexProjectAgentModelId: (model: { provider?: string; modelId?: string } | null | undefined) => {
+        if (!model || model.provider !== 'openai') {
+            return null
+        }
+        return model.modelId === 'gpt-5.4' || model.modelId === 'gpt-5.3-codex-spark'
+            ? model.modelId
+            : null
+    },
 }))
 
 vi.mock('../../lib/runtime-tools.js', () => ({
@@ -24,6 +33,10 @@ vi.mock('../../lib/runtime-tools.js', () => ({
 
 vi.mock('../../lib/model-catalog.js', () => ({
     resolveRuntimeModel: resolveRuntimeModelMock,
+}))
+
+vi.mock('../../lib/mcp-catalog.js', () => ({
+    readGlobalMcpCatalog: readGlobalMcpCatalogMock,
 }))
 
 vi.mock('../../lib/opencode.js', () => ({
@@ -70,6 +83,7 @@ describe('ensurePerformerProjection source boundaries', () => {
             unavailableDetails: [],
         })
         resolveRuntimeModelMock.mockReset().mockResolvedValue(null)
+        readGlobalMcpCatalogMock.mockReset().mockResolvedValue({})
         mcpStatusMock.mockReset().mockResolvedValue({ data: {} })
         instanceDisposeMock.mockReset().mockResolvedValue({})
     })
@@ -119,6 +133,10 @@ describe('ensurePerformerProjection source boundaries', () => {
     })
 
     it('projects performer MCP access as server glob patterns', async () => {
+        const githubMcpConfig = {
+            type: 'local' as const,
+            command: ['npx', '-y', '@modelcontextprotocol/server-github'],
+        }
         resolveRuntimeToolsMock.mockResolvedValueOnce({
             selectedMcpServers: ['github'],
             requestedTools: ['github_*'],
@@ -126,6 +144,9 @@ describe('ensurePerformerProjection source boundaries', () => {
             resolvedTools: ['github_*'],
             unavailableTools: [],
             unavailableDetails: [],
+        })
+        readGlobalMcpCatalogMock.mockResolvedValueOnce({
+            github: githubMcpConfig,
         })
 
         const { ensurePerformerProjection } = await import('./stage-projection-service.js')
@@ -148,9 +169,300 @@ describe('ensurePerformerProjection source boundaries', () => {
                 toolMap: {
                     'github_*': true,
                 },
+                codexMcpServers: {
+                    github: githubMcpConfig,
+                },
             }),
             expect.any(Array),
         )
+    })
+
+    it('keeps Codex MCP projection catalog-based even when OpenCode tool resolution fails', async () => {
+        const githubMcpConfig = {
+            type: 'local' as const,
+            command: ['npx', '-y', '@modelcontextprotocol/server-github'],
+        }
+        resolveRuntimeToolsMock.mockResolvedValueOnce({
+            selectedMcpServers: ['github'],
+            requestedTools: ['github_*'],
+            availableTools: [],
+            resolvedTools: [],
+            unavailableTools: ['github_*'],
+            unavailableDetails: [{
+                serverName: 'github',
+                reason: 'connect_failed',
+                detail: 'OpenCode could not connect.',
+            }],
+        })
+        readGlobalMcpCatalogMock.mockResolvedValueOnce({
+            github: githubMcpConfig,
+        })
+
+        const { ensurePerformerProjection } = await import('./stage-projection-service.js')
+
+        const result = await ensurePerformerProjection({
+            performerId: 'performer-1',
+            performerName: 'Performer',
+            talRef: null,
+            danceRefs: [],
+            model: { provider: 'openai', modelId: 'gpt-5.4' },
+            modelVariant: null,
+            mcpServerNames: ['github'],
+            workingDir,
+        })
+
+        expect(result.toolMap).toEqual({})
+        expect(compilePerformerMock).toHaveBeenCalledWith(
+            workingDir,
+            expect.objectContaining({
+                toolMap: {},
+                codexMcpServers: {
+                    github: githubMcpConfig,
+                },
+            }),
+            expect.any(Array),
+        )
+    })
+
+    it('writes Codex project agent definitions without forcing OpenCode runtime adoption', async () => {
+        const buildContent = '---\ndescription: "Agent: Performer"\nmode: primary\n---\n\nbody'
+        const buildPath = path.join(workingDir, '.opencode', 'agents', 'dot-studio', 'workspace', 'hash', 'performer-1--build.md')
+        const codexRelativePath = '.codex/agents/dot_studio_performer_1_deadbeef.toml'
+        const codexPath = path.join(workingDir, codexRelativePath)
+        const codexContent = [
+            'name = "dot_studio_performer_1_deadbeef"',
+            'description = "Studio performer: Performer"',
+            'sandbox_mode = "workspace-write"',
+            'developer_instructions = "Follow Studio performer instructions."',
+            '',
+        ].join('\n')
+
+        await fs.mkdir(path.dirname(buildPath), { recursive: true })
+        await fs.writeFile(buildPath, buildContent, 'utf-8')
+        compilePerformerMock.mockResolvedValueOnce({
+            performerId: 'performer-1',
+            agentNames: { build: 'dot-studio/workspace/hash/performer-1--build' },
+            agentPaths: {
+                build: buildPath,
+            },
+            agentContents: {
+                build: buildContent,
+            },
+            codexAgentName: 'dot_studio_performer_1_deadbeef',
+            codexAgentPath: codexPath,
+            codexAgentContent: codexContent,
+            codexAgentRelativePath: codexRelativePath,
+            skills: [],
+            projectionHash: 'hash',
+            allFiles: [
+                '.opencode/agents/dot-studio/workspace/hash/performer-1--build.md',
+                codexRelativePath,
+            ],
+        })
+
+        const { ensurePerformerProjection } = await import('./stage-projection-service.js')
+
+        const result = await ensurePerformerProjection({
+            performerId: 'performer-1',
+            performerName: 'Performer',
+            talRef: null,
+            danceRefs: [],
+            model: { provider: 'openai', modelId: 'gpt-5.4' },
+            modelVariant: null,
+            mcpServerNames: [],
+            workingDir,
+        })
+
+        expect(result.changed).toBe(false)
+        expect(result.codexChanged).toBe(true)
+        await expect(fs.readFile(codexPath, 'utf-8')).resolves.toBe(codexContent)
+
+        const manifest = JSON.parse(await fs.readFile(path.join(workingDir, '.opencode', 'dot-studio.manifest.json'), 'utf-8'))
+        expect(manifest.groups['performer:performer-1']).toContain(codexRelativePath)
+        expect(manifest.runtime).toBeUndefined()
+    })
+
+    it('syncs Codex project agents immediately without rewriting OpenCode agent files', async () => {
+        const buildPath = path.join(workingDir, '.opencode', 'agents', 'dot-studio', 'workspace', 'hash', 'performer-1--build.md')
+        const oldCodexRelativePath = '.codex/agents/dot_studio_old_name.toml'
+        const oldCodexPath = path.join(workingDir, oldCodexRelativePath)
+        const codexRelativePath = '.codex/agents/dot_studio_performer.toml'
+        const codexPath = path.join(workingDir, codexRelativePath)
+        const skillPath = path.join(workingDir, '.opencode', 'skills', 'draft-dance', 'SKILL.md')
+
+        await fs.mkdir(path.dirname(buildPath), { recursive: true })
+        await fs.mkdir(path.dirname(oldCodexPath), { recursive: true })
+        await fs.writeFile(buildPath, 'existing OpenCode build', 'utf-8')
+        await fs.writeFile(oldCodexPath, 'old codex', 'utf-8')
+        await fs.writeFile(
+            path.join(workingDir, '.opencode', 'dot-studio.manifest.json'),
+            JSON.stringify({
+                version: 1,
+                owner: 'dot-studio',
+                workspaceHash: 'hash',
+                groups: {
+                    'performer:performer-1': [
+                        '.opencode/agents/dot-studio/workspace/hash/performer-1--build.md',
+                        oldCodexRelativePath,
+                    ],
+                },
+            }, null, 2),
+            'utf-8',
+        )
+
+        compileDanceMock.mockResolvedValueOnce({
+            logicalName: 'draft-dance',
+            description: 'Draft dance',
+            filePath: skillPath,
+            relativePath: '.opencode/skills/draft-dance/SKILL.md',
+            content: '---\nname: "draft-dance"\n---\n\nupdated skill',
+            additionalFiles: [],
+            bundleChanged: false,
+        })
+        compilePerformerMock.mockResolvedValueOnce({
+            performerId: 'performer-1',
+            agentNames: { build: 'dot-studio/workspace/hash/performer-1--build' },
+            agentPaths: {
+                build: buildPath,
+            },
+            agentContents: {
+                build: 'new OpenCode build that should not be written',
+            },
+            codexAgentName: 'performer',
+            codexAgentPath: codexPath,
+            codexAgentContent: 'name = "performer"\n',
+            codexAgentRelativePath: codexRelativePath,
+            skills: [],
+            projectionHash: 'hash',
+            allFiles: [
+                '.opencode/agents/dot-studio/workspace/hash/performer-1--build.md',
+                '.opencode/skills/draft-dance/SKILL.md',
+                codexRelativePath,
+            ],
+        })
+
+        const { ensureCodexPerformerProjection } = await import('./stage-projection-service.js')
+        const result = await ensureCodexPerformerProjection({
+            performerId: 'performer-1',
+            performerName: 'Performer',
+            talRef: null,
+            danceRefs: [{ kind: 'draft', draftId: 'dance-1' }],
+            model: { provider: 'openai', modelId: 'gpt-5.4' },
+            modelVariant: null,
+            mcpServerNames: [],
+            workingDir,
+        })
+
+        expect(result).toEqual(expect.objectContaining({
+            changed: true,
+            codexChanged: true,
+            skillChanged: true,
+            skipped: false,
+        }))
+        await expect(fs.readFile(buildPath, 'utf-8')).resolves.toBe('existing OpenCode build')
+        await expect(fs.readFile(codexPath, 'utf-8')).resolves.toBe('name = "performer"\n')
+        await expect(fs.readFile(skillPath, 'utf-8')).resolves.toContain('updated skill')
+        await expect(fs.access(oldCodexPath)).rejects.toBeTruthy()
+        const projectedSkill = compilePerformerMock.mock.calls[0][2][0]
+        expect(projectedSkill.codexFilePath).toContain(`${path.sep}.agents${path.sep}skills${path.sep}dot-studio-performer-1-draft-dance-`)
+        expect(projectedSkill.codexFilePath).toMatch(/SKILL\.md$/)
+        expect(projectedSkill.codexLinkRelativePath).toMatch(/^\.agents\/skills\/dot-studio-performer-1-draft-dance-/)
+        const linkStat = await fs.lstat(projectedSkill.codexLinkPath)
+        expect(linkStat.isSymbolicLink()).toBe(true)
+        await expect(fs.realpath(projectedSkill.codexLinkPath)).resolves.toBe(await fs.realpath(path.dirname(skillPath)))
+
+        const manifest = JSON.parse(await fs.readFile(path.join(workingDir, '.opencode', 'dot-studio.manifest.json'), 'utf-8'))
+        expect(manifest.groups['performer:performer-1']).toEqual(expect.arrayContaining([
+            '.opencode/agents/dot-studio/workspace/hash/performer-1--build.md',
+            '.opencode/skills/draft-dance/SKILL.md',
+            projectedSkill.codexLinkRelativePath,
+            codexRelativePath,
+        ]))
+        expect(manifest.groups['performer:performer-1']).not.toContain(oldCodexRelativePath)
+        expect(manifest.runtime).toBeUndefined()
+    })
+
+    it('projects selected MCP catalog entries into Codex agents without requiring OpenCode runtime resolution', async () => {
+        const githubMcpConfig = {
+            type: 'local' as const,
+            command: ['npx', '-y', '@modelcontextprotocol/server-github'],
+        }
+        readGlobalMcpCatalogMock.mockResolvedValueOnce({
+            github: githubMcpConfig,
+        })
+
+        const { ensureCodexPerformerProjection } = await import('./stage-projection-service.js')
+        await ensureCodexPerformerProjection({
+            performerId: 'performer-1',
+            performerName: 'Performer',
+            talRef: null,
+            danceRefs: [],
+            model: { provider: 'openai', modelId: 'gpt-5.4' },
+            modelVariant: null,
+            mcpServerNames: ['github'],
+            workingDir,
+        })
+
+        expect(resolveRuntimeToolsMock).not.toHaveBeenCalled()
+        expect(compilePerformerMock).toHaveBeenCalledWith(
+            workingDir,
+            expect.objectContaining({
+                codexMcpServers: {
+                    github: githubMcpConfig,
+                },
+            }),
+            expect.any(Array),
+        )
+    })
+
+    it('removes stale Codex project agents immediately when the performer model is unsupported', async () => {
+        const oldCodexRelativePath = '.codex/agents/dot_studio_old_name.toml'
+        const oldCodexPath = path.join(workingDir, oldCodexRelativePath)
+        const oldSkillLinkRelativePath = '.agents/skills/dot-studio-old-skill'
+        const oldSkillLinkPath = path.join(workingDir, oldSkillLinkRelativePath)
+
+        await fs.mkdir(path.dirname(oldCodexPath), { recursive: true })
+        await fs.mkdir(oldSkillLinkPath, { recursive: true })
+        await fs.mkdir(path.join(workingDir, '.opencode'), { recursive: true })
+        await fs.writeFile(oldCodexPath, 'old codex', 'utf-8')
+        await fs.writeFile(
+            path.join(workingDir, '.opencode', 'dot-studio.manifest.json'),
+            JSON.stringify({
+                version: 1,
+                owner: 'dot-studio',
+                workspaceHash: 'hash',
+                groups: {
+                    'performer:performer-1': [oldCodexRelativePath, oldSkillLinkRelativePath],
+                },
+            }, null, 2),
+            'utf-8',
+        )
+
+        const { ensureCodexPerformerProjection } = await import('./stage-projection-service.js')
+        const result = await ensureCodexPerformerProjection({
+            performerId: 'performer-1',
+            performerName: 'Performer',
+            talRef: null,
+            danceRefs: [{ kind: 'draft', draftId: 'dance-1' }],
+            model: { provider: 'anthropic', modelId: 'claude-sonnet-4' },
+            modelVariant: null,
+            mcpServerNames: [],
+            workingDir,
+        })
+
+        expect(result).toEqual(expect.objectContaining({
+            changed: true,
+            codexChanged: true,
+            skillChanged: false,
+            skipped: true,
+        }))
+        expect(compileDanceMock).not.toHaveBeenCalled()
+        expect(compilePerformerMock).not.toHaveBeenCalled()
+        await expect(fs.access(oldCodexPath)).rejects.toBeTruthy()
+        await expect(fs.access(oldSkillLinkPath)).rejects.toBeTruthy()
+
+        const manifest = JSON.parse(await fs.readFile(path.join(workingDir, '.opencode', 'dot-studio.manifest.json'), 'utf-8'))
+        expect(manifest.groups['performer:performer-1']).toBeUndefined()
     })
 
     it('keeps act collaboration context out of projected agent files', async () => {

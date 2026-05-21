@@ -114,12 +114,27 @@ Every execution path should follow this order.
 - preview or prewarm may materialize projection files
 - preview or prewarm must not clear `projectionDirty`
 - files may exist in a `projection pending adoption` state until a later dispose
+- workspace saves should sync generated Codex subagent files immediately because Codex project-agent discovery is file-based and does not share OpenCode instance dispose constraints
+- server startup sync should prewarm generated Codex subagent files for saved workspace performers without clearing client-side dirty hints
+- workspace performer projection also materializes generated Codex project subagents at `.codex/agents/dot_studio_*.toml` when the performer uses a Codex-supported OpenAI model
+- Codex-supported projection models are kept conservative and follow the local Codex model catalog, including Codex Spark when available
+- generated Codex subagent names are derived from the performer name
+- generated Codex subagent files use the `dot_studio_*.toml` filename namespace for local cleanup, but the Codex-visible `name` should not include that namespace
+- generated Codex subagent `developer_instructions` must contain only the raw performer TAL content
+- generated Codex subagent Dance access must use Codex-native `[[skills.config]]` entries that point at Codex-discoverable `.agents/skills/dot-studio-*` skill links backed by Studio's projected `.opencode/skills/...` files
+- generated Codex subagents must project the performer's selected MCP servers directly from Studio's MCP catalog, using Codex `[mcp_servers.<name>]` TOML tables; do not require OpenCode runtime tool resolution for Codex-only MCP projection
+- generated Codex subagent MCP projection should use Codex-native `bearer_token_env_var` and `env_http_headers` when Studio remote header values are environment references such as `$TOKEN` or `${TOKEN}`
+- generated Codex subagent MCP projection should use Codex-native `env_vars` when a local MCP environment value forwards the same variable name, such as `TOKEN=$TOKEN`
+- Codex project subagent files are generated from Studio performer state and should be treated as local projection output, not hand-authored source
+- Codex-only projection writes do not require OpenCode `dispose`
+- Codex-only projection may write Codex TOML, Dance skill files, and `.agents/skills/dot-studio-*` symlinks needed by `[[skills.config]]`, but must not rewrite projected OpenCode agent markdown files or mark `projectionPending`
 
 ## Act Rules
 
 - Act thread create and runtime sync may prewarm projections
 - prewarm must not call `dispose`
 - Act participant execution should reuse the standalone performer projection
+- Act-scoped participant projection must not create transient Codex project subagents
 - Act collaboration context belongs in turn-scoped system prompt context
 - merely targeting an Act participant must not widen adoption scope by itself
 - if projection adoption is blocked by a busy working directory, defer and retry the wake instead of dropping it

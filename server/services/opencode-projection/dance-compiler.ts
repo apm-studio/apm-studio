@@ -20,6 +20,10 @@ export interface CompiledSkill {
     description: string
     filePath: string
     relativePath: string
+    codexFilePath?: string
+    codexRelativePath?: string
+    codexLinkPath?: string
+    codexLinkRelativePath?: string
     content: string
     /** Additional files projected from bundle (relative paths) */
     additionalFiles: string[]

@@ -4,6 +4,7 @@ import { serve } from '@hono/node-server'
 import { WebSocketServer } from 'ws'
 import { createServerApp } from './app.js'
 import { refreshAssistantProjectionOnServerStartup } from './services/studio-assistant/assistant-startup-service.js'
+import { syncPerformerProjectionsOnServerStartup } from './services/opencode-projection/performer-startup-service.js'
 
 // Config
 import { PORT, OPENCODE_URL, STUDIO_DIR, IS_PRODUCTION, getActiveProjectDir } from './lib/config.js'
@@ -53,6 +54,9 @@ await ensureOpencodeSidecar().catch((err) => {
 })
 await refreshAssistantProjectionOnServerStartup().catch((err) => {
     console.warn(`Studio Assistant projection refresh failed on startup: ${err instanceof Error ? err.message : String(err)}`)
+})
+await syncPerformerProjectionsOnServerStartup().catch((err) => {
+    console.warn(`Performer projection sync failed on startup: ${err instanceof Error ? err.message : String(err)}`)
 })
 await discordIntegrationService.initialize().catch((err) => {
     console.warn(`Discord integration startup failed: ${err instanceof Error ? err.message : String(err)}`)

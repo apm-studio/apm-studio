@@ -4,10 +4,12 @@ import path from 'node:path'
 import fs from 'node:fs/promises'
 
 const pruneStalePerformerProjectionsMock = vi.fn()
+const syncCodexPerformerProjectionsForWorkspaceMock = vi.fn()
 const ensureAssistantAgentMock = vi.fn()
 
 vi.mock('./opencode-projection/stage-projection-service.js', () => ({
     pruneStalePerformerProjections: pruneStalePerformerProjectionsMock,
+    syncCodexPerformerProjectionsForWorkspace: syncCodexPerformerProjectionsForWorkspaceMock,
 }))
 
 vi.mock('./studio-assistant/assistant-service.js', () => ({
@@ -21,6 +23,15 @@ describe('saveWorkspaceSnapshot', () => {
         studioDir = await fs.mkdtemp(path.join(os.tmpdir(), 'dot-studio-workspace-service-'))
         process.env.STUDIO_DIR = studioDir
         pruneStalePerformerProjectionsMock.mockReset().mockResolvedValue(false)
+        syncCodexPerformerProjectionsForWorkspaceMock.mockReset().mockResolvedValue({
+            performerCount: 0,
+            projectedCount: 0,
+            skippedCount: 0,
+            failedCount: 0,
+            changedCount: 0,
+            codexChangedCount: 0,
+            results: [],
+        })
         ensureAssistantAgentMock.mockReset().mockResolvedValue('studio-assistant')
         vi.resetModules()
     })
@@ -43,6 +54,10 @@ describe('saveWorkspaceSnapshot', () => {
 
         expect(result.ok).toBe(true)
         expect(pruneStalePerformerProjectionsMock).toHaveBeenCalledWith(workingDir, ['performer-1', 'performer-2'])
+        expect(syncCodexPerformerProjectionsForWorkspaceMock).toHaveBeenCalledWith(workingDir, [
+            { id: 'performer-1' },
+            { id: 'performer-2' },
+        ])
     })
 
     it('lists workspace performers from the saved workspace snapshot', async () => {

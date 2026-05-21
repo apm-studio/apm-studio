@@ -119,6 +119,8 @@ export async function updateGitExclude(executionDir: string) {
         '.opencode/agents/dot-studio/',
         '.opencode/skills/dot-studio/',
         '.opencode/dot-studio.manifest.json',
+        '.codex/agents/dot_studio_*.toml',
+        '.agents/skills/dot-studio-*',
     ]
 
     let content = ''
@@ -128,11 +130,21 @@ export async function updateGitExclude(executionDir: string) {
         // ignore missing exclude file
     }
 
-    if (content.includes(marker)) {
+    const lines = content.split(/\r?\n/)
+    const existing = new Set(lines)
+    const missingPatterns = patterns.filter((pattern) => !existing.has(pattern))
+    if (missingPatterns.length === 0) {
         return
     }
 
     await fs.mkdir(path.dirname(excludePath), { recursive: true })
+    if (existing.has(marker)) {
+        const markerIndex = lines.indexOf(marker)
+        lines.splice(markerIndex + 1, 0, ...missingPatterns.filter((pattern) => pattern !== marker))
+        await fs.writeFile(excludePath, lines.join('\n').replace(/\n*$/, '\n'), 'utf-8')
+        return
+    }
+
     const separator = content === '' || content.endsWith('\n') ? '' : '\n'
     await fs.writeFile(excludePath, content + separator + patterns.join('\n') + '\n', 'utf-8')
 }
