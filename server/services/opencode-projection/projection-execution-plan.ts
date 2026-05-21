@@ -8,7 +8,7 @@ import {
     listWorkspacePerformersForDir,
     type WorkspacePerformerSnapshot,
 } from '../workspace-service.js'
-import type { PerformerProjectionInput } from './stage-projection-service.js'
+import type { PerformerProjectionInput } from './performer-projection-types.js'
 
 type ProjectionTargetInput = {
     performerId: string

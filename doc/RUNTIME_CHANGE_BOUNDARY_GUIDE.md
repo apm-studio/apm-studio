@@ -118,6 +118,8 @@ Every execution path should follow this order.
 - server startup sync should prewarm generated Codex subagent files for saved workspace performers without clearing client-side dirty hints
 - workspace performer projection also materializes generated Codex project subagents at `.codex/agents/dot_studio_*.toml` when the performer uses a Codex-supported OpenAI model
 - Codex-supported projection models are kept conservative and follow the local Codex model catalog, including Codex Spark when available
+- generated Codex subagents should project Studio model variant reasoning effort to Codex-native `model_reasoning_effort` when the selected variant exposes `reasoning.effort`
+- when Studio stores the model variant as `null`/Default, generated Codex subagents should still write the Codex model's default `model_reasoning_effort` so the performer does not accidentally inherit the parent Codex session's effort
 - generated Codex subagent names are derived from the performer name
 - generated Codex subagent files use the `dot_studio_*.toml` filename namespace for local cleanup, but the Codex-visible `name` should not include that namespace
 - generated Codex subagent `developer_instructions` must contain only the raw performer TAL content

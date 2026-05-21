@@ -2,13 +2,12 @@ import { getActiveProjectDir } from '../../lib/config.js'
 import {
     listSavedWorkspaces,
     listWorkspacePerformersForDir,
-    type WorkspacePerformerSnapshot,
 } from '../workspace-service.js'
 import {
     ensureCodexPerformerProjection,
     pruneStalePerformerProjections,
-    type PerformerProjectionInput,
 } from './stage-projection-service.js'
+import { performerSnapshotToCodexProjectionInput } from './codex-projection-helpers.js'
 
 export type PerformerProjectionStartupSummary = {
     workspaceCount: number
@@ -56,27 +55,6 @@ function uniqueNonEmptyDirs(directories: Array<string | null | undefined>) {
     ))
 }
 
-function performerToProjectionInput(
-    performer: WorkspacePerformerSnapshot,
-    workingDir: string,
-): PerformerProjectionInput | null {
-    if (!performer.model) {
-        return null
-    }
-
-    return {
-        performerId: performer.id,
-        performerName: performer.name,
-        talRef: performer.talRef || null,
-        danceRefs: performer.danceRefs || [],
-        model: performer.model,
-        modelVariant: performer.modelVariant || null,
-        mcpServerNames: performer.mcpServerNames || [],
-        workingDir,
-        scope: 'workspace',
-    }
-}
-
 export async function syncWorkspacePerformerProjectionsOnStartup(
     workingDir: string,
 ): Promise<PerformerProjectionStartupSummary> {
@@ -99,7 +77,7 @@ export async function syncWorkspacePerformerProjectionsOnStartup(
     }
 
     for (const performer of performers) {
-        const projectionInput = performerToProjectionInput(performer, workingDir)
+        const projectionInput = performerSnapshotToCodexProjectionInput(workingDir, performer)
         if (!projectionInput) {
             summary.skippedCount += 1
             continue

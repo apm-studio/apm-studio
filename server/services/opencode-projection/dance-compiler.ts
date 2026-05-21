@@ -8,10 +8,7 @@ import {
     readBundleSkillContent,
 } from '../dance-bundle-service.js'
 import { syncSkillBundleSiblings } from './skill-bundle-sync.js'
-
-type AssetRef =
-    | { kind: 'registry'; urn: string }
-    | { kind: 'draft'; draftId: string }
+import type { AssetRef } from './performer-projection-types.js'
 
 
 

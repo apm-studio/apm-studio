@@ -3,7 +3,7 @@ import { createHash } from 'crypto'
 import path from 'path'
 import { getAssetPayload } from '../../lib/dot-source.js'
 import { resolveRuntimeModel } from '../../lib/model-catalog.js'
-import { findRuntimeModelVariant } from '../../../shared/model-variants.js'
+import { findRuntimeModelVariant, type RuntimeModelVariant } from '../../../shared/model-variants.js'
 import { toRelativePath, resolveAgentIdentity } from './projection-manifest.js'
 import type { Posture } from './projection-manifest.js'
 export type { Posture } from './projection-manifest.js'
@@ -13,10 +13,7 @@ import { readDraftTextContent } from '../draft-service.js'
 import { COLLABORATION_TOOL_NAMES, STALE_COLLABORATION_TOOL_NAMES } from '../act-runtime/act-tools.js'
 import { ASSISTANT_TOOL_NAMES } from '../studio-assistant/assistant-tools.js'
 import type { McpCatalog, McpEntryConfig } from '../../../shared/mcp-catalog.js'
-
-type AssetRef =
-    | { kind: 'registry'; urn: string }
-    | { kind: 'draft'; draftId: string }
+import type { AssetRef } from './performer-projection-types.js'
 
 
 
@@ -54,6 +51,16 @@ const CODEX_PROJECT_AGENT_MODEL_IDS = new Set([
     'gpt-5.3-codex-spark',
     'gpt-5.2',
 ])
+
+const CODEX_REASONING_EFFORTS = new Set(['low', 'medium', 'high', 'xhigh'])
+const CODEX_DEFAULT_REASONING_EFFORT_BY_MODEL_ID: Record<string, string> = {
+    'gpt-5.5': 'medium',
+    'gpt-5.4': 'medium',
+    'gpt-5.4-mini': 'medium',
+    'gpt-5.3-codex': 'medium',
+    'gpt-5.3-codex-spark': 'high',
+    'gpt-5.2': 'medium',
+}
 
 export interface CompiledPerformer {
     performerId: string
@@ -414,6 +421,31 @@ function buildCodexMcpServerEntryLines(serverName: string, config: McpEntryConfi
     return lines
 }
 
+function normalizeCodexReasoningEffort(value: unknown) {
+    if (typeof value !== 'string') {
+        return null
+    }
+
+    const normalized = value.trim().toLowerCase()
+    return CODEX_REASONING_EFFORTS.has(normalized) ? normalized : null
+}
+
+function resolveCodexReasoningEffort(codexModelId: string, variant: RuntimeModelVariant | null) {
+    const options = variant?.options || {}
+    const direct = normalizeCodexReasoningEffort(options.model_reasoning_effort)
+        || normalizeCodexReasoningEffort(options.reasoning_effort)
+    if (direct) {
+        return direct
+    }
+
+    const reasoning = options.reasoning
+    if (reasoning && typeof reasoning === 'object' && !Array.isArray(reasoning)) {
+        return normalizeCodexReasoningEffort((reasoning as Record<string, unknown>).effort)
+    }
+
+    return CODEX_DEFAULT_REASONING_EFFORT_BY_MODEL_ID[codexModelId] || null
+}
+
 export function resolveCodexProjectAgentModelId(selection: ModelSelection) {
     if (!selection || selection.provider !== 'openai') {
         return null
@@ -436,8 +468,8 @@ function buildCodexDeveloperInstructions(talContent: string | null) {
 function buildCodexSkillConfigLines(skills: CompiledSkill[]) {
     const skillPaths = Array.from(new Set(
         skills
-            .map((skill) => skill.codexFilePath || skill.filePath)
-            .filter(Boolean),
+            .map((skill) => skill.codexFilePath)
+            .filter((skillPath): skillPath is string => typeof skillPath === 'string' && skillPath.length > 0),
     )).sort((left, right) => left.localeCompare(right))
 
     if (skillPaths.length === 0) {
@@ -457,6 +489,7 @@ function buildCodexAgentFile(input: {
     performerName: string
     executionDir: string
     codexModelId: string
+    codexReasoningEffort?: string | null
     talContent: string | null
     skills: CompiledSkill[]
     mcpServers?: McpCatalog
@@ -472,6 +505,9 @@ function buildCodexAgentFile(input: {
         `name = ${tomlString(agentName)}`,
         `description = ${tomlString(`Custom agent for ${input.performerName}.`)}`,
         `model = ${tomlString(input.codexModelId)}`,
+        ...(input.codexReasoningEffort
+            ? [`model_reasoning_effort = ${tomlString(input.codexReasoningEffort)}`]
+            : []),
         'sandbox_mode = "workspace-write"',
         `developer_instructions = ${tomlMultilineString(instructions)}`,
         ...buildCodexSkillConfigLines(input.skills),
@@ -495,16 +531,17 @@ export async function compilePerformer(
     const talContent = await resolveTalContent(cwd, input.talRef)
 
     let resolvedVariantId: string | null = null
+    let resolvedVariant: RuntimeModelVariant | null = null
     if (input.model) {
         const runtimeModel = await resolveRuntimeModel(cwd, input.model)
         if (runtimeModel) {
-            const selectedVariant = findRuntimeModelVariant(
+            resolvedVariant = findRuntimeModelVariant(
                 [runtimeModel],
                 input.model.provider,
                 input.model.modelId,
                 input.modelVariant || null,
             )
-            resolvedVariantId = selectedVariant?.id || null
+            resolvedVariantId = resolvedVariant?.id || null
         } else {
             resolvedVariantId = input.modelVariant || null
         }
@@ -522,6 +559,7 @@ export async function compilePerformer(
             performerName: input.performerName,
             executionDir: input.executionDir,
             codexModelId,
+            codexReasoningEffort: resolveCodexReasoningEffort(codexModelId, resolvedVariant),
             talContent,
             skills,
             mcpServers: input.codexMcpServers,

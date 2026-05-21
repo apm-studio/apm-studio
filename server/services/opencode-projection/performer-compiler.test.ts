@@ -2,9 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const getAssetPayloadMock = vi.fn()
 const readDraftTextContentMock = vi.fn()
+const resolveRuntimeModelMock = vi.fn()
 
 vi.mock('../../lib/model-catalog.js', () => ({
-    resolveRuntimeModel: vi.fn().mockResolvedValue(null),
+    resolveRuntimeModel: resolveRuntimeModelMock,
 }))
 
 vi.mock('../draft-service.js', () => ({
@@ -19,6 +20,7 @@ describe('compilePerformer scope boundaries', () => {
     beforeEach(() => {
         getAssetPayloadMock.mockReset().mockResolvedValue(null)
         readDraftTextContentMock.mockReset().mockResolvedValue(null)
+        resolveRuntimeModelMock.mockReset().mockResolvedValue(null)
     })
 
     it('explicitly disables act collaboration tools for workspace performers', async () => {
@@ -72,6 +74,10 @@ describe('compilePerformer scope boundaries', () => {
             description: 'Dance one',
             filePath: '/tmp/workspace/.opencode/skills/dance-one/SKILL.md',
             relativePath: '.opencode/skills/dance-one/SKILL.md',
+            codexFilePath: '/tmp/workspace/.agents/skills/dot-studio-review-dance-one/SKILL.md',
+            codexRelativePath: '.agents/skills/dot-studio-review-dance-one/SKILL.md',
+            codexLinkPath: '/tmp/workspace/.agents/skills/dot-studio-review-dance-one',
+            codexLinkRelativePath: '.agents/skills/dot-studio-review-dance-one',
             content: '---\nname: "dance-one"\n---\n\nDance body',
             additionalFiles: [],
             bundleChanged: false,
@@ -82,20 +88,22 @@ describe('compilePerformer scope boundaries', () => {
         expect(compiled.allFiles).toContain('.codex/agents/dot_studio_review_performer.toml')
         expect(compiled.codexAgentContent).toContain(`name = "${compiled.codexAgentName}"`)
         expect(compiled.codexAgentContent).toContain('model = "gpt-5.4"')
+        expect(compiled.codexAgentContent).toContain('model_reasoning_effort = "medium"')
         expect(compiled.codexAgentContent).toContain('sandbox_mode = "workspace-write"')
         expect(compiled.codexAgentContent).toContain('Custom agent for Review Performer.')
         expect(compiled.codexAgentContent).toContain('developer_instructions = """\n')
         const instructions = compiled.codexAgentContent!.match(/developer_instructions = """\n([\s\S]*?)\n"""/)?.[1] || ''
         expect(instructions).toBe(talContent)
         expect(compiled.codexAgentContent).toContain('[[skills.config]]')
-        expect(compiled.codexAgentContent).toContain('path = "/tmp/workspace/.opencode/skills/dance-one/SKILL.md"')
+        expect(compiled.codexAgentContent).toContain('path = "/tmp/workspace/.agents/skills/dot-studio-review-dance-one/SKILL.md"')
+        expect(compiled.codexAgentContent).not.toContain('path = "/tmp/workspace/.opencode/skills/dance-one/SKILL.md"')
         expect(compiled.codexAgentContent).toContain('enabled = true')
         expect(instructions).not.toContain('Dance body')
         expect(instructions).not.toContain('Dance of Tal')
         expect(instructions).not.toContain('Studio')
     })
 
-    it('points Codex skill config at Codex-discoverable skill paths when present', async () => {
+    it('does not fall back to OpenCode-only skill paths in Codex project agents', async () => {
         const { compilePerformer } = await import('./performer-compiler.js')
 
         const compiled = await compilePerformer('/tmp/workspace', {
@@ -115,17 +123,12 @@ describe('compilePerformer scope boundaries', () => {
             description: 'Dance one',
             filePath: '/tmp/workspace/.opencode/skills/dance-one/SKILL.md',
             relativePath: '.opencode/skills/dance-one/SKILL.md',
-            codexFilePath: '/tmp/workspace/.agents/skills/dot-studio-review-dance-one/SKILL.md',
-            codexRelativePath: '.agents/skills/dot-studio-review-dance-one/SKILL.md',
-            codexLinkPath: '/tmp/workspace/.agents/skills/dot-studio-review-dance-one',
-            codexLinkRelativePath: '.agents/skills/dot-studio-review-dance-one',
             content: '---\nname: "dance-one"\n---\n\nDance body',
             additionalFiles: [],
             bundleChanged: false,
         }])
 
-        expect(compiled.codexAgentContent).toContain('[[skills.config]]')
-        expect(compiled.codexAgentContent).toContain('path = "/tmp/workspace/.agents/skills/dot-studio-review-dance-one/SKILL.md"')
+        expect(compiled.codexAgentContent).not.toContain('[[skills.config]]')
         expect(compiled.codexAgentContent).not.toContain('path = "/tmp/workspace/.opencode/skills/dance-one/SKILL.md"')
     })
 
@@ -148,6 +151,47 @@ describe('compilePerformer scope boundaries', () => {
 
         expect(compiled.codexAgentName).toBe('spark_reviewer')
         expect(compiled.codexAgentContent).toContain('model = "gpt-5.3-codex-spark"')
+        expect(compiled.codexAgentContent).toContain('model_reasoning_effort = "high"')
+    })
+
+    it('projects reasoning effort from the selected model variant into Codex project agents', async () => {
+        resolveRuntimeModelMock.mockResolvedValueOnce({
+            provider: 'openai',
+            providerName: 'OpenAI',
+            id: 'gpt-5.4',
+            name: 'GPT-5.4',
+            connected: true,
+            context: 0,
+            output: 0,
+            toolCall: true,
+            reasoning: true,
+            attachment: true,
+            temperature: true,
+            modalities: { input: ['text'], output: ['text'] },
+            variants: [{
+                id: 'reasoning-high',
+                summary: 'reasoning.effort=high',
+                options: { reasoning: { effort: 'high' } },
+            }],
+        })
+        const { compilePerformer } = await import('./performer-compiler.js')
+
+        const compiled = await compilePerformer('/tmp/workspace', {
+            performerId: 'reasoning-reviewer',
+            performerName: 'Reasoning Reviewer',
+            talRef: null,
+            model: { provider: 'openai', modelId: 'gpt-5.4' },
+            modelVariant: 'reasoning-high',
+            workspaceHash: 'workspace-hash',
+            executionDir: '/tmp/workspace',
+            scope: 'stage',
+            skillNames: [],
+            toolMap: {},
+            relationPromptSection: null,
+        }, [])
+
+        expect(compiled.codexAgentContent).toContain('model = "gpt-5.4"')
+        expect(compiled.codexAgentContent).toContain('model_reasoning_effort = "high"')
     })
 
     it('projects performer MCP servers into Codex project agent definitions', async () => {
