@@ -142,6 +142,67 @@ function emptyStudioUsage(): UsageResponse['studio'] {
     }
 }
 
+function readResponseHeader(result: unknown, name: string): string | null {
+    if (!result || typeof result !== 'object') {
+        return null
+    }
+
+    const response = (result as { response?: { headers?: { get?: (name: string) => string | null } } }).response
+    if (!response?.headers || typeof response.headers.get !== 'function') {
+        return null
+    }
+
+    const value = response.headers.get(name)
+    if (!value) {
+        return null
+    }
+    const trimmed = value.trim()
+    return trimmed.length > 0 ? trimmed : null
+}
+
+async function listSessionMessagesForUsage(
+    oc: Awaited<ReturnType<typeof getOpencode>>,
+    directory: string,
+    sessionID: string,
+): Promise<unknown[]> {
+    const messages: unknown[] = []
+    const seenCursors = new Set<string>()
+    let before: string | null = null
+
+    while (true) {
+        const params: {
+            directory: string
+            sessionID: string
+            limit: number
+            before?: string
+        } = {
+            directory,
+            sessionID,
+            limit: 100,
+        }
+        if (before) {
+            params.before = before
+        }
+
+        const messageRes = await oc.session.messages(params)
+        const page = messageRes && typeof messageRes === 'object' && 'data' in messageRes
+            ? (messageRes as { data?: unknown[] }).data
+            : null
+        if (Array.isArray(page)) {
+            messages.push(...page)
+        }
+
+        const nextCursor = readResponseHeader(messageRes, 'x-next-cursor')
+        if (!nextCursor || seenCursors.has(nextCursor)) {
+            break
+        }
+        seenCursors.add(nextCursor)
+        before = nextCursor
+    }
+
+    return messages
+}
+
 async function fetchStudioUsage(directory: string): Promise<UsageResponse['studio']> {
     try {
         const oc = await getOpencode()
@@ -162,11 +223,7 @@ async function fetchStudioUsage(directory: string): Promise<UsageResponse['studi
                 : null
             if (!id) return
 
-            const messageRes = await oc.session.messages({ directory, sessionID: id }).catch(() => null)
-            const messages = messageRes && typeof messageRes === 'object' && 'data' in messageRes
-                ? (messageRes as { data?: unknown[] }).data
-                : null
-            if (!Array.isArray(messages)) return
+            const messages = await listSessionMessagesForUsage(oc, directory, id).catch(() => [])
 
             for (const message of messages) {
                 if (!message || typeof message !== 'object') continue
