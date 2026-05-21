@@ -111,7 +111,7 @@ describe('countRunningSessions', () => {
         expect(result.runningSessions).toBe(1)
     })
 
-    it('ignores busy sessions whose latest assistant turn is already settled', async () => {
+    it('counts busy sessions whose latest assistant turn may continue after step-finish', async () => {
         sessionMessagesMock
             .mockResolvedValueOnce({
                 data: [{
@@ -126,7 +126,7 @@ describe('countRunningSessions', () => {
 
         const result = await countRunningSessions('/tmp/workspace')
 
-        expect(result.runningSessions).toBe(1)
+        expect(result.runningSessions).toBe(2)
     })
 })
 

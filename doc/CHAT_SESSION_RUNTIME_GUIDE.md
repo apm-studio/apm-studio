@@ -125,6 +125,7 @@ Key rules:
 - owner-derived realtime binding must not steal a chat key that the user already rebound to a different session
 - coalesced streaming must not drop `message.part.delta` content
 - if OpenCode stops reporting a status but the assistant snapshot is settled, Studio should treat the session as settled
+- a direct OpenCode `busy` or `retry` status remains authoritative and abortable even if the latest assistant step has a `step-finish`; intermediate step finishes must not flicker the composer back to send mode
 - a parked `wait_until` turn should return to live-running when a later event arrives
 - OpenCode `session.next.*` failure and retry events should feed the same normalized session status and tool state tables as legacy `session.error` and `message.part.updated`
 

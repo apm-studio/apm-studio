@@ -126,7 +126,7 @@ export function resolveEffectiveSessionStatus<T extends SessionStatusLike>(param
         return directStatus
     }
 
-    if (isSessionStatusActive(directStatus) && isSessionEffectivelySettled(messages)) {
+    if (isSessionStatusActive(directStatus) && isSessionParkedByWaitUntil(messages)) {
         return { type: 'idle' } as const
     }
 
@@ -141,7 +141,7 @@ export function isSessionEffectivelyRunning(params: {
     directStatus?: SessionStatusLike | null
     messages: MessageWithParts[]
 }) {
-    return isSessionStatusActive(params.directStatus) && !isSessionEffectivelySettled(params.messages)
+    return isSessionStatusActive(params.directStatus) && !isSessionParkedByWaitUntil(params.messages)
 }
 
 function hasCompletedAssistantTurn(messages: MessageWithParts[]) {

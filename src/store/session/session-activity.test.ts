@@ -190,7 +190,7 @@ describe('session activity', () => {
         })
     })
 
-    it('does not treat stale authoritative busy status as active after a settled assistant snapshot', () => {
+    it('keeps authoritative busy status abortable after an assistant step-finish snapshot', () => {
         expect(resolveSessionActivity({
             loading: false,
             status: { type: 'busy' },
@@ -207,10 +207,10 @@ describe('session activity', () => {
             permission: null,
             question: null,
         })).toMatchObject({
-            kind: 'idle',
-            isActive: false,
-            canAbort: false,
-            isTransportActive: false,
+            kind: 'running',
+            isActive: true,
+            canAbort: true,
+            isTransportActive: true,
         })
     })
 })

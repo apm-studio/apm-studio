@@ -6,7 +6,7 @@ import {
 } from './chat-session.js'
 
 describe('chat session status helpers', () => {
-    it('downgrades stale busy statuses to idle once the latest assistant turn settled', () => {
+    it('keeps direct busy statuses authoritative while an assistant turn may continue', () => {
         expect(resolveEffectiveSessionStatus({
             directStatus: { type: 'busy' },
             messages: [{
@@ -16,7 +16,7 @@ describe('chat session status helpers', () => {
                 },
                 parts: [],
             }],
-        })).toEqual({ type: 'idle' })
+        })).toEqual({ type: 'busy' })
     })
 
     it('treats wait_until parked sessions as effectively settled', () => {
@@ -34,6 +34,10 @@ describe('chat session status helpers', () => {
             directStatus: { type: 'retry' },
             messages,
         })).toBe(false)
+        expect(resolveEffectiveSessionStatus({
+            directStatus: { type: 'busy' },
+            messages,
+        })).toEqual({ type: 'idle' })
     })
 
     it('derives implicit idle when OpenCode status is missing but the assistant already completed', () => {

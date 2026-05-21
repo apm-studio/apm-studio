@@ -73,6 +73,16 @@ describe('ensureAssistantAgent', () => {
         const agentName = await ensureAssistantAgent(executionDir)
 
         expect(agentName).toBe('dot-studio/studio-assistant')
+        const projectedAgent = await fs.readFile(path.join(
+            studioDir,
+            'opencode',
+            'agents',
+            'dot-studio',
+            'studio-assistant.md',
+        ), 'utf-8')
+        expect(projectedAgent).toContain('"*": false')
+        expect(projectedAgent).toContain('"apply_studio_actions": true')
+        expect(projectedAgent).toContain('"find-skills": "allow"')
         const projectedTool = await fs.readFile(path.join(
             studioDir,
             'opencode',
@@ -161,7 +171,7 @@ describe('ensureAssistantAgent', () => {
         await expect(fs.stat(path.join(studioDir, 'opencode', 'skills', 'dot-studio', 'find-skills', 'SKILL.md'))).resolves.toBeTruthy()
     })
 
-    it('tells the assistant to avoid invented ids and string actRules payloads', async () => {
+    it('builds a compact action prompt that steers clear mutations into the Studio tool', async () => {
         const { buildAssistantActionPrompt } = await import('./assistant-service.js')
 
         const prompt = buildAssistantActionPrompt({
@@ -170,64 +180,77 @@ describe('ensureAssistantAgent', () => {
             acts: [],
             drafts: [],
             availableModels: [],
-        })
+        }, 'create a review workflow')
 
-        expect(prompt).toContain('Do not stop after creating loose performers')
-        expect(prompt).toContain('Prefer explicit ids from the snapshot')
-        expect(prompt).toContain('ref on the create action')
-        expect(prompt).toContain('Actions are applied sequentially in array order')
-        expect(prompt).toContain('do not ask a redundant confirmation question')
-        expect(prompt).toContain('Load the smallest relevant guide before calling the tool')
+        expect(prompt).toContain('Current Workspace Snapshot (optimized for this turn)')
+        expect(prompt).toContain('"optimized": true')
+        expect(prompt).toContain('Use the snapshot as the source of truth')
+        expect(prompt).toContain('Action decision:')
+        expect(prompt).toContain('call `apply_studio_actions`; do not stop at describing what you would change')
         expect(prompt).toContain('studio-assistant-action-surface-guide')
         expect(prompt).toContain('studio-assistant-performer-guide')
         expect(prompt).toContain('studio-assistant-act-guide')
         expect(prompt).toContain('studio-assistant-workflow-guide')
         expect(prompt).toContain('studio-assistant-tal-design-guide')
         expect(prompt).toContain('studio-assistant-ui-operations-guide')
-        expect(prompt).toContain('one dependency-ordered tool call: create performers first, then createAct')
-        expect(prompt).toContain('You can CRUD all four authoring asset families')
-        expect(prompt).toContain('Tal and Dance are local draft create/update/delete only')
-        expect(prompt).toContain('Performer and Act are current Stage create/update/delete only')
-        expect(prompt).toContain('same-call refs as the main cascade mechanism')
-        expect(prompt).toContain('When the user explicitly names the requested performers')
-        expect(prompt).toContain('prefer adding at least one relation in createAct')
-        expect(prompt).toContain('prefer participantPerformerRefs on createAct over follow-up attachPerformerToAct actions')
-        expect(prompt).toContain('Do not emit fenced JSON')
-        expect(prompt).toContain('One invalid action causes the tool call to fail')
-        expect(prompt).toContain('Save Local and Publish are outside this assistant CRUD surface')
-        expect(prompt).toContain('Treat install/import helpers as support paths, not as CRUD')
-        expect(prompt).toContain('Legacy from... and to... relation aliases are invalid')
-        expect(prompt).toContain('Every new relation must include a non-empty name and non-empty description')
-        expect(prompt).toContain('When creating a Performer, reflect the user request in the Performer itself')
-        expect(prompt).toContain('Performer description becomes participant focus in Act runtime')
-        expect(prompt).toContain('When creating or updating an Act, reflect the user request in the Act composition itself')
-        expect(prompt).toContain('Infer the Act choreography from the user intent')
-        expect(prompt).toContain('Relation direction should follow the actual handoff or authority flow')
-        expect(prompt).toContain('Put each participant\'s runtime focus in the linked Performer description')
-        expect(prompt).toContain('Add participant subscriptions only when the user asks for wake behavior')
-        expect(prompt).toContain('align callboardKeys and messageTags with concrete relation handoffs')
-        expect(prompt).toContain('Act safety threadTimeoutMs is a runtime deadline, not a participant wait_until wake')
-        expect(prompt).toContain('Use the workspace snapshot as the source of truth')
-        expect(prompt).toContain('snapshot view/position/size/hidden fields')
-        expect(prompt).toContain('Choose the lightest valid response mode')
-        expect(prompt).toContain('Prefer reuse first, install/import second, and brand-new draft or Stage creation third')
-        expect(prompt).toContain('showPerformer, showAct, showDraft, setStudioPanel, setStudioNodeVisibility, and setStudioNodeFrame')
-        expect(prompt).toContain('open, show, inspect, focus, reveal, hide, resize, move, or arrange')
-        expect(prompt).toContain('UI operations are hot Studio state changes')
-        expect(prompt).toContain('Keep SKILL.md concise and procedural')
-        expect(prompt).toContain('Do not create extra bundle docs like README.md')
-        expect(prompt).toContain('load `find-skills` instead of defaulting to new Dance creation')
-        expect(prompt).toContain('reviewed for source trust, install count, maintainer reputation')
-        expect(prompt).toContain('call the mutation tool when the request is specific enough')
-        expect(prompt).toContain('Do not paste raw mutation JSON into the reply')
-        expect(prompt).toContain('Omit unspecified optional fields entirely')
-        expect(prompt).toContain('Tool arguments must be a valid action envelope with version=1 and an actions array')
-        expect(prompt).toContain('Missing Tal, Dance, or model details alone are not enough to block a direct team or workflow creation request')
-        expect(prompt).toContain('Ask one short Tal question only when the role identity or tone is materially ambiguous')
-        expect(prompt).toContain('model variants')
-        expect(prompt).toContain('Do not invent variant ids')
-        expect(prompt).toContain('If the role intent is clear, use a role-appropriate inline talDraft')
-        expect(prompt).toContain('Canonical createAct tool args')
+        expect(prompt).toContain('Use `showPerformer`, `showAct`, `showDraft`, `setStudioPanel`, `setStudioNodeVisibility`, or `setStudioNodeFrame`')
+        expect(prompt).toContain('Never invent ids')
+        expect(prompt).toContain('Use same-call refs only for objects created earlier')
+        expect(prompt).toContain('Tal and Dance actions are draft-only')
+        expect(prompt).toContain('Save Local and Publish are outside this tool surface')
+        expect(prompt).toContain('missing Tal/Dance/model details alone should not block mutation')
+        expect(prompt).toContain('Relation payloads use `source...` and `target...` fields only')
+        expect(prompt).toContain('`actRules` is always an array of strings')
+    })
+
+    it('optimizes assistant stage context by intent while preserving UI geometry when needed', async () => {
+        const { buildAssistantActionPrompt } = await import('./assistant-service.js')
+        const performers = Array.from({ length: 22 }, (_, index) => ({
+            id: `performer-${index + 1}`,
+            name: index === 20 ? 'Writer' : `Performer ${index + 1}`,
+            description: `Long description for performer ${index + 1}. `.repeat(20),
+            position: { x: index * 10, y: index * 20 },
+            size: { width: 320, height: 480 },
+            hidden: index === 20,
+            model: null,
+            modelVariant: null,
+            talUrn: null,
+            talDraftId: null,
+            danceUrns: [],
+            danceDraftIds: [],
+        }))
+
+        const prompt = buildAssistantActionPrompt({
+            workingDir: '/tmp/workspace',
+            view: {
+                selectedPerformerId: null,
+                selectedActId: null,
+                selectedMarkdownEditorId: null,
+                activeChatPerformerId: null,
+                viewMode: 'canvas',
+                panels: {
+                    assetLibrary: false,
+                    workspaceTracking: false,
+                    terminal: false,
+                    assistant: true,
+                },
+            },
+            performers,
+            acts: [],
+            drafts: [],
+            availableModels: [],
+        }, 'Writer 열어줘')
+
+        const snapshot = JSON.parse(prompt.match(/```json\n([\s\S]*?)\n```/)?.[1] || '{}')
+        expect(snapshot.context.omitted.performers).toBe(4)
+        expect(snapshot.context.intent.geometry).toBe(true)
+        expect(snapshot.performers).toHaveLength(18)
+        expect(snapshot.performers.some((performer: { name: string }) => performer.name === 'Writer')).toBe(true)
+        expect(snapshot.performers.find((performer: { name: string }) => performer.name === 'Writer')).toEqual(expect.objectContaining({
+            position: { x: 200, y: 400 },
+            size: { width: 320, height: 480 },
+            hidden: true,
+        }))
     })
 
     it('adds skill intent and security hints for find/apply requests', async () => {

@@ -274,6 +274,7 @@ function buildFrontmatter(skillNames: string[], toolNames: string[]): string {
         lines.push(`    ${JSON.stringify(name)}: "allow"`)
     }
     lines.push('tools:')
+    lines.push('  "*": false')
     for (const toolName of toolNames) {
         lines.push(`  ${JSON.stringify(toolName)}: true`)
     }
@@ -295,93 +296,386 @@ function buildSkillFile(skill: BuiltinSkill): string {
     return skill.content
 }
 
-export function buildAssistantActionPrompt(context: AssistantStageContext | null | undefined): string {
+const ASSISTANT_CONTEXT_LIMITS = {
+    performers: 18,
+    performersAll: 48,
+    acts: 10,
+    actsAll: 24,
+    drafts: 16,
+    draftsAll: 36,
+    models: 10,
+    modelsAll: 24,
+    description: 260,
+    relationDescription: 220,
+} as const
+
+const ASSISTANT_CONTEXT_STOPWORDS = new Set([
+    'please', 'help', 'with', 'that', 'this', 'for', 'from', 'into', 'using', 'make', 'create', 'build',
+    'find', 'search', 'install', 'import', 'add', 'use', 'want', 'need', 'the', 'a', 'an', 'and', 'or',
+    'open', 'show', 'hide', 'move', 'resize', 'arrange', 'inspect', 'focus', 'update', 'delete',
+    'studio', 'assistant', 'workspace', 'canvas', 'editor', 'panel',
+    '좀', '주세요', '해줘', '해', '만들', '만들어', '생성', '열어', '보여', '숨겨', '옮겨', '이동',
+    '정리', '배치', '수정', '삭제', '찾아', '검색', '스튜디오', '어시스턴트',
+])
+
+type AssistantPromptIntent = {
+    tokens: string[]
+    includeGeometry: boolean
+    includeModelVariants: boolean
+    includeActDetails: boolean
+    includeDraftDetails: boolean
+    includeAll: boolean
+}
+
+type Selection<T> = {
+    selected: T[]
+    omitted: number
+}
+
+function normalizeSearchText(value: string | null | undefined) {
+    return (value || '')
+        .toLowerCase()
+        .replace(/[^\p{L}\p{N}@/_\-\s.]+/gu, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+}
+
+function includesAny(text: string, needles: string[]) {
+    return needles.some((needle) => text.includes(needle))
+}
+
+function inferAssistantPromptIntent(userMessage: string | undefined): AssistantPromptIntent {
+    const text = normalizeSearchText(userMessage)
+    const tokens = Array.from(new Set(
+        text
+            .split(/\s+/)
+            .map((token) => token.trim())
+            .filter((token) => token.length >= 2 && !ASSISTANT_CONTEXT_STOPWORDS.has(token)),
+    )).slice(0, 12)
+
+    const includeGeometry = includesAny(text, [
+        'open', 'show', 'focus', 'reveal', 'hide', 'hidden', 'visible', 'visibility', 'move', 'resize',
+        'arrange', 'layout', 'position', 'panel', 'canvas', 'editor', 'inspect',
+        '열', '보여', '숨', '표시', '이동', '옮', '크기', '배치', '정렬', '패널', '캔버스', '편집',
+    ])
+    const includeModelVariants = includesAny(text, [
+        'model', 'variant', 'gpt', 'claude', 'openai', 'anthropic', 'reasoning',
+        '모델', '변형', '추론',
+    ])
+    const includeActDetails = includesAny(text, [
+        'act', 'workflow', 'team', 'pipeline', 'participant', 'relation', 'subscription', 'safety',
+        'handoff', 'thread', 'wake',
+        '액트', '워크플로', '워크플로우', '팀', '파이프라인', '참여', '관계', '구독', '핸드오프',
+    ])
+    const includeDraftDetails = includesAny(text, [
+        'tal', 'dance', 'skill', 'draft', 'bundle', 'reference', 'script',
+        '탈', '댄스', '스킬', '초안', '번들',
+    ])
+    const includeAll = includesAny(text, [
+        'all', 'every', 'entire', 'everything', 'list', 'overview', 'arrange', 'layout',
+        '전체', '모두', '전부', '목록', '개요', '배치', '정렬',
+    ])
+
+    return {
+        tokens,
+        includeGeometry,
+        includeModelVariants,
+        includeActDetails,
+        includeDraftDetails,
+        includeAll,
+    }
+}
+
+function compactText(value: string | null | undefined, limit: number) {
+    const normalized = value?.replace(/\s+/g, ' ').trim()
+    if (!normalized) return undefined
+    if (normalized.length <= limit) return normalized
+    return `${normalized.slice(0, Math.max(0, limit - 1)).trimEnd()}…`
+}
+
+function scoreByTokens(haystack: string, tokens: string[]) {
+    if (tokens.length === 0) return 0
+    const text = normalizeSearchText(haystack)
+    return tokens.reduce((score, token) => score + (text.includes(token) ? 1 : 0), 0)
+}
+
+function selectPromptEntries<T>(
+    entries: T[],
+    options: {
+        limit: number
+        score: (entry: T, index: number) => number
+    },
+): Selection<T> {
+    if (entries.length <= options.limit) {
+        return { selected: entries, omitted: 0 }
+    }
+
+    const ranked = entries
+        .map((entry, index) => ({ entry, index, score: options.score(entry, index) }))
+        .sort((left, right) => right.score - left.score || left.index - right.index)
+        .slice(0, options.limit)
+        .sort((left, right) => left.index - right.index)
+
+    return {
+        selected: ranked.map((item) => item.entry),
+        omitted: entries.length - ranked.length,
+    }
+}
+
+function summarizePerformer(
+    performer: AssistantStageContext['performers'][number],
+    intent: AssistantPromptIntent,
+    expanded: boolean,
+) {
+    return {
+        id: performer.id,
+        name: performer.name,
+        ...(expanded ? { description: compactText(performer.description, ASSISTANT_CONTEXT_LIMITS.description) } : {}),
+        ...(intent.includeGeometry ? {
+            position: performer.position,
+            size: performer.size,
+            hidden: performer.hidden,
+        } : {}),
+        model: performer.model,
+        modelVariant: performer.modelVariant,
+        talUrn: performer.talUrn,
+        talDraftId: performer.talDraftId,
+        danceUrns: performer.danceUrns,
+        danceDraftIds: performer.danceDraftIds,
+    }
+}
+
+function summarizeAct(
+    act: AssistantStageContext['acts'][number],
+    intent: AssistantPromptIntent,
+    expanded: boolean,
+) {
+    const includeDetails = expanded || intent.includeActDetails
+    return {
+        id: act.id,
+        name: act.name,
+        ...(includeDetails ? { description: compactText(act.description, ASSISTANT_CONTEXT_LIMITS.description) } : {}),
+        ...(intent.includeGeometry ? {
+            position: act.position,
+            size: act.size,
+            hidden: act.hidden,
+        } : {}),
+        ...(includeDetails ? {
+            actRules: act.actRules,
+            safety: act.safety,
+        } : {}),
+        participants: act.participants.map((participant) => ({
+            key: participant.key,
+            performerName: participant.performerName,
+            performerId: participant.performerId,
+            ...(includeDetails && participant.displayName ? { displayName: participant.displayName } : {}),
+            ...(includeDetails ? { description: compactText(participant.description, ASSISTANT_CONTEXT_LIMITS.description) } : {}),
+            ...(includeDetails && participant.subscriptions ? { subscriptions: participant.subscriptions } : {}),
+        })),
+        relations: includeDetails
+            ? act.relations.map((relation) => ({
+                id: relation.id,
+                name: relation.name,
+                description: compactText(relation.description, ASSISTANT_CONTEXT_LIMITS.relationDescription),
+                between: relation.between,
+                direction: relation.direction,
+            }))
+            : act.relations.map((relation) => ({
+                id: relation.id,
+                name: relation.name,
+                between: relation.between,
+                direction: relation.direction,
+            })),
+    }
+}
+
+function summarizeDraft(
+    draft: AssistantStageContext['drafts'][number],
+    intent: AssistantPromptIntent,
+    expanded: boolean,
+) {
+    const includeDetails = expanded || intent.includeDraftDetails
+    return {
+        id: draft.id,
+        kind: draft.kind,
+        name: draft.name,
+        slug: draft.slug,
+        ...(includeDetails ? { description: compactText(draft.description, ASSISTANT_CONTEXT_LIMITS.description) } : {}),
+        ...(includeDetails && draft.tags?.length ? { tags: draft.tags.slice(0, 8) } : {}),
+        saveState: draft.saveState,
+    }
+}
+
+function summarizeModel(
+    model: AssistantStageContext['availableModels'][number],
+    intent: AssistantPromptIntent,
+    expanded: boolean,
+) {
+    return {
+        provider: model.provider,
+        providerName: model.providerName,
+        modelId: model.modelId,
+        name: model.name,
+        ...((expanded || intent.includeModelVariants) && model.variants?.length
+            ? { variants: model.variants.slice(0, 8) }
+            : {}),
+    }
+}
+
+function optimizeAssistantStageContext(
+    context: AssistantStageContext | null | undefined,
+    userMessage: string | undefined,
+) {
+    const source = context || { workingDir: '', view: null, performers: [], acts: [], drafts: [], availableModels: [] }
+    const intent = inferAssistantPromptIntent(userMessage)
+    const selectedPerformerIds = new Set([
+        source.view?.selectedPerformerId || '',
+        source.view?.activeChatPerformerId || '',
+    ].filter(Boolean))
+    const selectedActIds = new Set([
+        source.view?.selectedActId || '',
+    ].filter(Boolean))
+    const selectedDraftIds = new Set([
+        source.view?.selectedMarkdownEditorId || '',
+    ].filter(Boolean))
+    const usedModels = new Set(source.performers
+        .map((performer) => performer.model ? `${performer.model.provider}:${performer.model.modelId}` : '')
+        .filter(Boolean))
+
+    const performerSelection = selectPromptEntries(source.performers, {
+        limit: intent.includeAll ? ASSISTANT_CONTEXT_LIMITS.performersAll : ASSISTANT_CONTEXT_LIMITS.performers,
+        score: (performer) => (
+            (selectedPerformerIds.has(performer.id) ? 100 : 0)
+            + scoreByTokens(`${performer.id} ${performer.name} ${performer.description || ''}`, intent.tokens)
+        ),
+    })
+    const actSelection = selectPromptEntries(source.acts, {
+        limit: intent.includeAll ? ASSISTANT_CONTEXT_LIMITS.actsAll : ASSISTANT_CONTEXT_LIMITS.acts,
+        score: (act) => (
+            (selectedActIds.has(act.id) ? 100 : 0)
+            + scoreByTokens([
+                act.id,
+                act.name,
+                act.description || '',
+                ...act.participants.map((participant) => `${participant.key} ${participant.performerName} ${participant.description || ''}`),
+                ...act.relations.map((relation) => `${relation.id} ${relation.name} ${relation.description || ''}`),
+            ].join(' '), intent.tokens)
+        ),
+    })
+    const draftSelection = selectPromptEntries(source.drafts, {
+        limit: intent.includeAll ? ASSISTANT_CONTEXT_LIMITS.draftsAll : ASSISTANT_CONTEXT_LIMITS.drafts,
+        score: (draft) => (
+            (selectedDraftIds.has(draft.id) ? 100 : 0)
+            + scoreByTokens(`${draft.id} ${draft.kind} ${draft.name} ${draft.slug || ''} ${draft.description || ''} ${(draft.tags || []).join(' ')}`, intent.tokens)
+        ),
+    })
+    const modelSelection = selectPromptEntries(source.availableModels, {
+        limit: intent.includeAll || intent.includeModelVariants
+            ? ASSISTANT_CONTEXT_LIMITS.modelsAll
+            : ASSISTANT_CONTEXT_LIMITS.models,
+        score: (model) => (
+            (usedModels.has(`${model.provider}:${model.modelId}`) ? 25 : 0)
+            + scoreByTokens(`${model.provider} ${model.providerName} ${model.modelId} ${model.name}`, intent.tokens)
+        ),
+    })
+
+    return {
+        workingDir: source.workingDir,
+        view: source.view,
+        context: {
+            optimized: true,
+            intent: {
+                geometry: intent.includeGeometry,
+                modelVariants: intent.includeModelVariants,
+                actDetails: intent.includeActDetails,
+                draftDetails: intent.includeDraftDetails,
+                broadRequest: intent.includeAll,
+            },
+            totals: {
+                performers: source.performers.length,
+                acts: source.acts.length,
+                drafts: source.drafts.length,
+                availableModels: source.availableModels.length,
+            },
+            omitted: {
+                performers: performerSelection.omitted,
+                acts: actSelection.omitted,
+                drafts: draftSelection.omitted,
+                availableModels: modelSelection.omitted,
+            },
+            note: 'Expanded records are selected from the current view, user wording, and action intent. If a needed target was omitted and the user did not name it exactly, ask one short clarifying question.',
+        },
+        performers: performerSelection.selected.map((performer) =>
+            summarizePerformer(
+                performer,
+                intent,
+                selectedPerformerIds.has(performer.id)
+                    || intent.includeActDetails
+                    || scoreByTokens(`${performer.name} ${performer.description || ''}`, intent.tokens) > 0,
+            ),
+        ),
+        acts: actSelection.selected.map((act) =>
+            summarizeAct(
+                act,
+                intent,
+                selectedActIds.has(act.id)
+                    || scoreByTokens(`${act.name} ${act.description || ''}`, intent.tokens) > 0,
+            ),
+        ),
+        drafts: draftSelection.selected.map((draft) =>
+            summarizeDraft(
+                draft,
+                intent,
+                selectedDraftIds.has(draft.id)
+                    || scoreByTokens(`${draft.name} ${draft.description || ''}`, intent.tokens) > 0,
+            ),
+        ),
+        availableModels: modelSelection.selected.map((model) =>
+            summarizeModel(
+                model,
+                intent,
+                usedModels.has(`${model.provider}:${model.modelId}`)
+                    || scoreByTokens(`${model.provider} ${model.modelId} ${model.name}`, intent.tokens) > 0,
+            ),
+        ),
+    }
+}
+
+export function buildAssistantActionPrompt(
+    context: AssistantStageContext | null | undefined,
+    userMessage = '',
+): string {
     const snapshot = JSON.stringify(
-        context || { workingDir: '', view: null, performers: [], acts: [], drafts: [], availableModels: [] },
+        optimizeAssistantStageContext(context, userMessage),
         null,
         2,
     )
 
     return [
-        'Current Workspace Snapshot:',
+        'Current Workspace Snapshot (optimized for this turn):',
         '```json',
         snapshot,
         '```',
-        'Use the workspace snapshot as the source of truth for current ids, names, connected models, model variants, draft state, and existing topology.',
-        'When present, snapshot view/position/size/hidden fields describe current Studio UI state and canvas geometry.',
-        'Choose the lightest valid response mode for each turn:',
-        '- explain directly when the user only wants guidance or critique',
-        '- ask one short clarifying question when an important choice is unresolved',
-        '- call the mutation tool when the request is specific enough',
-        '- when a direct create request already specifies the intended roles or workflow, do not ask a redundant confirmation question',
-        'If you want to mutate the stage, call the apply_studio_actions tool with one valid action envelope.',
-        'Load the smallest relevant guide before calling the tool:',
-        '- exact payload fields, refs, or validation: `studio-assistant-action-surface-guide`',
-        '- Performer role design or setup choices: `studio-assistant-performer-guide`',
-        '- Act contract fields, relations, subscriptions, or safety: `studio-assistant-act-guide`',
-        '- workflow topology, team role split, or handoff design: `studio-assistant-workflow-guide`',
-        '- Tal design or Tal proposal: `studio-assistant-tal-design-guide`',
-        '- Studio product help/navigation: `studio-assistant-studio-guide`',
-        '- Studio UI operations like open/show/focus/reveal/hide/move/resize/panel requests: `studio-assistant-ui-operations-guide`',
-        '- local Dance authoring: `studio-assistant-skill-creator-guide`',
-        '- external skill search or apply: `find-skills`',
-        'Core mutation rules:',
-        '- Keep your user-facing explanation in normal assistant text and send mutations through the tool call only.',
-        '- Tool arguments must be a valid action envelope with version=1 and an actions array.',
-        '- Validate the whole action envelope before calling the tool. One invalid action causes the tool call to fail.',
-        '- Do not paste raw mutation JSON into the reply.',
-        '- Do not emit fenced JSON or Markdown code blocks for stage mutations.',
-        '- Omit unspecified optional fields entirely. Do not send empty strings, null placeholders, or empty draft objects just to satisfy a schema shape.',
-        '- If there are multiple reasonable creation paths, ask a short clarifying question before mutating.',
-        '- Missing Tal, Dance, or model details alone are not enough to block a direct team or workflow creation request when the requested roles are already clear.',
-        '- When writing or proposing Tal, load `studio-assistant-tal-design-guide`. Ask one short Tal question only when the role identity or tone is materially ambiguous.',
-        '- Make the smallest correct set of mutations for the user request.',
-        '- Reuse performers, acts, drafts, and relations already present in the Workspace snapshot whenever possible.',
-        '- Prefer reuse first, install/import second, and brand-new draft or Stage creation third unless the user clearly asked for something new.',
-        '- Prefer explicit ids from the snapshot when available. If you do not know an id, you may use exact names.',
-        '- Never invent ids such as performer-1, act-1, relation-1, or draft-1. Use snapshot ids or same-call refs only.',
-        '- If you create something and refer to it later in the same tool call, assign a ref on the create action and use performerRef, actRef, or draftRef in later actions.',
-        '- Actions are applied sequentially in array order. Treat same-call refs as the main cascade mechanism.',
-        '- For models, use values from availableModels in the snapshot. Do not invent provider ids or model ids.',
-        '- For model variants, use only the selected model\'s variant ids listed in availableModels[].variants or an already-present performer modelVariant from the snapshot. Do not invent variant ids.',
-        '- For a direct create request that names both performers and an Act, prefer one dependency-ordered tool call: create performers first, then createAct.',
-        '- You can CRUD all four authoring asset families through this action surface.',
-        '- Tal and Dance are local draft create/update/delete only.',
-        '- Performer and Act are current Stage create/update/delete only.',
-        '- Studio UI operations are supported too: showPerformer, showAct, showDraft, setStudioPanel, setStudioNodeVisibility, and setStudioNodeFrame.',
-        '- Use UI operations when the user asks to open, show, inspect, focus, reveal, hide, resize, move, or arrange existing Studio surfaces.',
-        '- UI operations are hot Studio state changes; do not describe them as saving, publishing, or changing runtime behavior.',
-        '- For showPerformer/showAct, use surface="editor" only when the user asks to edit/configure/inspect settings; otherwise use the canvas surface or omit surface.',
-        '- For setStudioNodeFrame, use absolute canvas coordinates from the snapshot. Do not invent geometry unless the user asked for arrangement and current geometry is present.',
-        '- Treat install/import helpers as support paths, not as CRUD for Tal, Dance, Performer, or Act.',
-        '- Save Local and Publish are outside this assistant CRUD surface.',
-        '- If the user wants to create or improve a Dance bundle, load `studio-assistant-skill-creator-guide`.',
-        '- If the user wants to find, compare, recommend, or apply an existing skill, load `find-skills` instead of defaulting to new Dance creation.',
-        '- Before recommending or installing a skills.sh or GitHub skill, warn briefly that third-party skills should be reviewed for source trust, install count, maintainer reputation, and actual SKILL.md contents.',
-        '- When creating a Performer, reflect the user request in the Performer itself instead of using a generic placeholder.',
-        '- Performer description becomes participant focus in Act runtime.',
-        '- When the user explicitly names the requested performers, use those role names directly instead of collapsing them into generic substitutes.',
-        '- Do not default to generic new Performers without Tal when the user expects configured agents. If the role intent is clear, use a role-appropriate inline talDraft in the same createPerformer action; ask only when the Tal choice is important and unclear.',
-        '- When the user asks for a workflow, pipeline, team, or multi-role setup, create or update the Act too. Do not stop after creating loose performers.',
-        '- When creating or updating an Act, reflect the user request in the Act composition itself.',
-        '- Infer the Act choreography from the user intent: roles, deliverables, handoffs, review/approval loops, and escalation paths.',
-        '- Relation direction should follow the actual handoff or authority flow. Use `one-way` for staged handoffs and separate opposite `one-way` relations for feedback loops when both directions matter.',
-        '- Relation names should name the artifact or coordination moment being handed off, not generic labels like handoff or sync.',
-        '- Put each participant\'s runtime focus in the linked Performer description. Put durable whole-team behavior in actRules.',
-        '- Add participant subscriptions only when the user asks for wake behavior or the workflow clearly needs a participant to resume on specific message tags, board keys, or runtime.idle.',
-        '- When using subscriptions, align callboardKeys and messageTags with concrete relation handoffs so runtime performers can notice the right shared board updates.',
-        '- actRules must always be an array of strings.',
-        '- Act safety threadTimeoutMs is a runtime deadline, not a participant wait_until wake.',
-        '- For new multi-participant workflow Acts, prefer adding at least one relation in createAct.',
-        '- For a brand-new workflow whose participants are already known, prefer participantPerformerRefs on createAct over follow-up attachPerformerToAct actions.',
-        '- For relation payloads, use only source... and target... fields. Legacy from... and to... relation aliases are invalid.',
-        '- Every new relation must include a non-empty name and non-empty description.',
-        '- Participant subscriptions are wake filters, not permissions. Use callboardKeys as the canonical field name, and eventTypes currently only supports runtime.idle.',
-        '- Use createDanceDraft or updateDanceDraft only for SKILL.md content. Keep SKILL.md concise and procedural.',
-        '- Use upsertDanceBundleFile for references/, scripts/, assets/, or agents/openai.yaml.',
-        '- Do not create extra bundle docs like README.md, QUICK_REFERENCE.md, or CHANGELOG.md unless the user explicitly asked for them.',
-        'Canonical createAct tool args:',
-        '{"version":1,"actions":[{"type":"createPerformer","ref":"strategy","name":"Strategy Lead"},{"type":"createPerformer","ref":"growth","name":"Growth Lead"},{"type":"createAct","name":"D2C Company","participantPerformerRefs":["strategy","growth"],"relations":[{"sourcePerformerRef":"strategy","targetPerformerRef":"growth","direction":"one-way","name":"strategy handoff","description":"Strategy Lead hands channel priorities and targets to Growth Lead."}]}]}',
+        'Use the snapshot as the source of truth for current ids, exact names, models, draft save state, topology, and UI state included in this optimized view.',
+        'Action decision:',
+        '- Explain directly only when the user wants guidance, critique, or a concept answer.',
+        '- Ask one short clarifying question only when the target, creation path, or important design choice is unresolved.',
+        '- When the user clearly asks Studio to create, update, delete, open, show, hide, move, resize, arrange, import, install, or apply something, call `apply_studio_actions`; do not stop at describing what you would change.',
+        '- Keep user-facing text brief; send mutations only as a tool call, never as raw JSON or fenced code.',
+        'Tool payload rules:',
+        '- Load `studio-assistant-action-surface-guide` before non-trivial mutation payloads or when exact fields/refs are needed.',
+        '- Load the smallest relevant design guide for the task: Performer, Act, workflow, Tal, Studio UI operations, Dance authoring, or find-skills.',
+        '- Relevant guide names: `studio-assistant-performer-guide`, `studio-assistant-act-guide`, `studio-assistant-workflow-guide`, `studio-assistant-tal-design-guide`, `studio-assistant-ui-operations-guide`, `studio-assistant-skill-creator-guide`, `find-skills`.',
+        '- Tool arguments must be `{version:1, actions:[...]}`. Omit unspecified optional fields and validate the whole envelope before calling.',
+        '- Prefer snapshot ids. Use exact names only when unambiguous. Never invent ids, model ids, model variants, MCP names, URNs, relation ids, or draft ids.',
+        '- Use same-call refs only for objects created earlier in the same tool call; dependent actions must be in order.',
+        '- Reuse existing Studio objects when they fit. Create new objects only when the user asked for new or tailored assets.',
+        '- Tal and Dance actions are draft-only; Performer and Act actions are current Stage-only; Save Local and Publish are outside this tool surface.',
+        '- UI actions are hot state changes. Use `showPerformer`, `showAct`, `showDraft`, `setStudioPanel`, `setStudioNodeVisibility`, or `setStudioNodeFrame` for open/show/focus/reveal/hide/move/resize/panel requests.',
+        '- For clear Performer or workflow creation, missing Tal/Dance/model details alone should not block mutation. Use compact role-appropriate inline Tal when role intent is clear.',
+        '- For new workflow/team Acts, create missing Performers first, then create/update the Act with participants and at least one meaningful relation when there are multiple workflow participants.',
+        '- Relation payloads use `source...` and `target...` fields only; every new relation needs non-empty `name` and `description`.',
+        '- `actRules` is always an array of strings. Participant subscriptions are wake filters and use canonical `callboardKeys`; `eventTypes` supports only `runtime.idle`.',
     ].join('\n')
 }
 

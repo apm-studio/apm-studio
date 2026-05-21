@@ -50,7 +50,7 @@ export async function prepareAssistantChatRequest(
         capabilitySnapshot,
         promptTools: buildAssistantToolMap(),
         systemPrompt: [
-            buildAssistantActionPrompt(options.assistantContext),
+            buildAssistantActionPrompt(options.assistantContext, options.message),
             discoveryPrompt,
         ].filter(Boolean).join('\n\n'),
     }

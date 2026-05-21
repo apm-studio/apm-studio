@@ -75,7 +75,7 @@ describe('getStudioChatSessionStatus', () => {
         })
     })
 
-    it('downgrades stale busy status to idle when the latest assistant turn already settled', async () => {
+    it('keeps direct busy status while the latest assistant turn may continue', async () => {
         statusMock.mockResolvedValueOnce({
             data: {
                 'session-1': { type: 'busy' },
@@ -97,7 +97,7 @@ describe('getStudioChatSessionStatus', () => {
 
         const { getStudioChatSessionStatus } = await import('./chat-session-service.js')
         await expect(getStudioChatSessionStatus('/tmp/workspace', 'session-1')).resolves.toEqual({
-            status: { type: 'idle' },
+            status: { type: 'busy' },
         })
     })
 
