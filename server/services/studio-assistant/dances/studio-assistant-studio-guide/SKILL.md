@@ -1,10 +1,10 @@
 ---
 name: studio-assistant-studio-guide
-description: "Explains DOT Studio navigation, UI vocabulary, Asset Library behavior, Stage vs thread terminology, and visible control names. Use for product-help questions. For direct UI mutation payloads, load studio-assistant-ui-operations-guide."
-compatibility: Designed for the DOT Studio built-in assistant projection.
+description: "Explains Agent Roaster navigation, UI vocabulary, Asset Library behavior, Stage vs thread terminology, and visible control names. Use for product-help questions. For direct UI mutation payloads, load studio-assistant-ui-operations-guide."
+compatibility: Designed for the Agent Roaster built-in assistant projection.
 ---
 
-# DOT Studio UI Guide
+# Agent Roaster UI Guide
 
 Use this skill for navigation, feature-discovery, and product-usage questions.
 

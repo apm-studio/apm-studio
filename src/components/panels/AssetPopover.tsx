@@ -221,7 +221,7 @@ export function PinnedDetailPanel({
             ) : null}
             {!authUser?.authenticated && (resolvedAsset?.source === 'global' || resolvedAsset?.source === 'stage') ? (
                 <div className="asset-detail-panel__note">
-                    Sign in with DOT from the toolbar before saving a local fork or publishing assets.
+                    Sign in with Agent Roaster from the toolbar before saving a local fork or publishing assets.
                 </div>
             ) : null}
             {actionStatus ? <div className="asset-detail-panel__note">{actionStatus}</div> : null}

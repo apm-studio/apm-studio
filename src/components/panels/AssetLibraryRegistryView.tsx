@@ -109,7 +109,7 @@ export default function AssetLibraryRegistryView(props: Props) {
                         <div className="empty-state">
                             {registryError ? (
                                 <span style={{ color: 'var(--tal-color)' }}>{(registryError as Error)?.message || 'Search failed.'}</span>
-                            ) : registryQuery ? 'No results found.' : 'Search the DOT registry to discover and install assets.'}
+                            ) : registryQuery ? 'No results found.' : 'Search the Agent Roaster registry to discover and install assets.'}
                         </div>
                     ) : (
                         registryGroups.map((group) => (

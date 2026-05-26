@@ -1,12 +1,14 @@
 import type { ChatMessage } from '../types'
 
-const CHAT_DEBUG_STORAGE_KEY = 'dot-chat-debug'
+const CHAT_DEBUG_STORAGE_KEYS = ['agent-roaster-chat-debug', 'dot-chat-debug']
 
 function readStorageFlag(storage: Storage | undefined) {
     if (!storage) return false
     try {
-        const value = storage.getItem(CHAT_DEBUG_STORAGE_KEY)
-        return value === '1' || value === 'true' || value === 'on'
+        return CHAT_DEBUG_STORAGE_KEYS.some((key) => {
+            const value = storage.getItem(key)
+            return value === '1' || value === 'true' || value === 'on'
+        })
     } catch {
         return false
     }
@@ -17,7 +19,11 @@ export function isChatDebugEnabled() {
         return false
     }
 
-    const fromWindow = (window as Window & { __DOT_CHAT_DEBUG__?: unknown }).__DOT_CHAT_DEBUG__
+    const flags = window as Window & {
+        __AGENT_ROASTER_CHAT_DEBUG__?: unknown
+        __DOT_CHAT_DEBUG__?: unknown
+    }
+    const fromWindow = flags.__AGENT_ROASTER_CHAT_DEBUG__ ?? flags.__DOT_CHAT_DEBUG__
     if (fromWindow === true) {
         return true
     }

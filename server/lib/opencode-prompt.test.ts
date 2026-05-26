@@ -11,13 +11,13 @@ describe('retryOnAgentRegistryMiss', () => {
         const { retryOnAgentRegistryMiss } = await import('./opencode-prompt.js')
         const dispose = vi.fn().mockResolvedValue(undefined)
         const run = vi.fn()
-            .mockRejectedValueOnce(new Error('Agent not found: "dot-studio/act/hash/participant-lead--build". Available agents: build'))
+            .mockRejectedValueOnce(new Error('Agent not found: "agent-roaster/act/hash/participant-lead--build". Available agents: build'))
             .mockResolvedValueOnce('ok')
 
         const result = await retryOnAgentRegistryMiss({
             oc: { instance: { dispose } },
             directory: '/tmp/workspace',
-            agentName: 'dot-studio/act/hash/participant-lead--build',
+            agentName: 'agent-roaster/act/hash/participant-lead--build',
             getRunningSessions,
             logLabel: 'test',
             run,
@@ -32,14 +32,14 @@ describe('retryOnAgentRegistryMiss', () => {
     it('does not dispose when another session is still running', async () => {
         const { retryOnAgentRegistryMiss } = await import('./opencode-prompt.js')
         const dispose = vi.fn().mockResolvedValue(undefined)
-        const error = new Error('Agent not found: "dot-studio/act/hash/participant-lead--build". Available agents: build')
+        const error = new Error('Agent not found: "agent-roaster/act/hash/participant-lead--build". Available agents: build')
         const run = vi.fn().mockRejectedValue(error)
         getRunningSessions.mockResolvedValueOnce(1)
 
         await expect(retryOnAgentRegistryMiss({
             oc: { instance: { dispose } },
             directory: '/tmp/workspace',
-            agentName: 'dot-studio/act/hash/participant-lead--build',
+            agentName: 'agent-roaster/act/hash/participant-lead--build',
             getRunningSessions,
             logLabel: 'test',
             run,

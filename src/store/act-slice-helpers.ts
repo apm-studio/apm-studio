@@ -10,7 +10,7 @@ import type {
     ActRelation,
 } from '../types'
 import { api } from '../api'
-import { parseActAsset } from 'dance-of-tal/contracts'
+import { parseActAsset } from '../../shared/dot-contracts'
 import { assetUrnDisplayName, parseStudioAssetUrn } from '../lib/asset-urn'
 import { resolvePerformerFromActBinding } from '../lib/act-participants'
 import { resolvePreferredActThreadId } from '../lib/act-threads'

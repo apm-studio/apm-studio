@@ -506,7 +506,7 @@ function buildCodexAgentFile(input: {
     mcpServers?: McpCatalog
 }): AgentFile {
     const agentName = buildCodexAgentName(input.performerName, input.performerId)
-    const fileName = `dot_studio_${agentName}.toml`
+    const fileName = `agent_roaster_${agentName}.toml`
     const filePath = path.join(input.executionDir, '.codex', 'agents', fileName)
     const instructions = buildCodexDeveloperInstructions(input.talContent)
     const content = [

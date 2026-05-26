@@ -1,10 +1,10 @@
 ---
 name: studio-assistant-performer-guide
-description: "Helps design or revise Studio Performers with strong role focus, Tal/Dance/model choices, and Act participant readiness. Use for Performer creation, Performer updates, role design, and participant-quality decisions. For exact payload fields, load studio-assistant-action-surface-guide."
-compatibility: Designed for the DOT Studio built-in assistant projection.
+description: "Helps design or revise Agent Roaster Performers with strong role focus, Tal/Dance/model choices, and Act participant readiness. Use for Performer creation, Performer updates, role design, and participant-quality decisions. For exact payload fields, load studio-assistant-action-surface-guide."
+compatibility: Designed for the Agent Roaster built-in assistant projection.
 ---
 
-# Studio Performer Guide
+# Agent Roaster Performer Guide
 
 Use this skill when the user wants a Performer created, revised, inspected, or attached as a useful Act participant.
 

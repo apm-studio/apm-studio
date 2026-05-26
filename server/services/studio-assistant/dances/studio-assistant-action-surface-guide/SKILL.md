@@ -1,10 +1,10 @@
 ---
 name: studio-assistant-action-surface-guide
 description: "Lists the exact Studio Assistant apply_studio_actions mutation surface, field rules, ref ordering, and payload self-checks. Use before emitting or validating any Studio mutation tool call."
-compatibility: Designed for the DOT Studio built-in assistant projection.
+compatibility: Designed for the Agent Roaster built-in assistant projection.
 ---
 
-# Studio Assistant Action Surface
+# Agent Roaster Assistant Action Surface
 
 Use this skill when you need to produce, inspect, or verify an `apply_studio_actions` payload.
 

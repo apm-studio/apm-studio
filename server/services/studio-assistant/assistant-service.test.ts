@@ -72,12 +72,12 @@ describe('ensureAssistantAgent', () => {
 
         const agentName = await ensureAssistantAgent(executionDir)
 
-        expect(agentName).toBe('dot-studio/studio-assistant')
+        expect(agentName).toBe('agent-roaster/studio-assistant')
         const projectedAgent = await fs.readFile(path.join(
             studioDir,
             'opencode',
             'agents',
-            'dot-studio',
+            'agent-roaster',
             'studio-assistant.md',
         ), 'utf-8')
         expect(projectedAgent).toContain('"*": false')
@@ -89,7 +89,7 @@ describe('ensureAssistantAgent', () => {
             'tools',
             'apply_studio_actions.ts',
         ), 'utf-8')
-        expect(projectedTool).toContain('Apply Studio workspace mutations')
+        expect(projectedTool).toContain('Apply Agent Roaster workspace mutations')
         expect(projectedTool).toContain('lintAssistantActionEnvelope')
         expect(projectedTool).toContain('rejected the mutation envelope')
         expect(projectedTool).not.toContain('../../shared/assistant-action-protocol.js')
@@ -97,7 +97,7 @@ describe('ensureAssistantAgent', () => {
             studioDir,
             'opencode',
             'skills',
-            'dot-studio',
+            'agent-roaster',
             'find-skills',
             'SKILL.md',
         ), 'utf-8')).resolves.toContain('Find Skills')
@@ -105,7 +105,7 @@ describe('ensureAssistantAgent', () => {
             studioDir,
             'opencode',
             'skills',
-            'dot-studio',
+            'agent-roaster',
             'studio-assistant-skill-creator-guide',
             'references',
             'bundle-authoring.md',
@@ -167,8 +167,8 @@ describe('ensureAssistantAgent', () => {
         await expect(fs.stat(path.join(executionDir, '.opencode', 'tools', 'apply_studio_actions.ts'))).rejects.toMatchObject({ code: 'ENOENT' })
         await expect(fs.stat(path.join(executionDir, '.opencode', 'agents', 'dot-studio', 'studio-assistant.md'))).rejects.toMatchObject({ code: 'ENOENT' })
         await expect(fs.stat(path.join(studioDir, 'opencode', 'tools', 'apply_studio_actions.ts'))).resolves.toBeTruthy()
-        await expect(fs.stat(path.join(studioDir, 'opencode', 'agents', 'dot-studio', 'studio-assistant.md'))).resolves.toBeTruthy()
-        await expect(fs.stat(path.join(studioDir, 'opencode', 'skills', 'dot-studio', 'find-skills', 'SKILL.md'))).resolves.toBeTruthy()
+        await expect(fs.stat(path.join(studioDir, 'opencode', 'agents', 'agent-roaster', 'studio-assistant.md'))).resolves.toBeTruthy()
+        await expect(fs.stat(path.join(studioDir, 'opencode', 'skills', 'agent-roaster', 'find-skills', 'SKILL.md'))).resolves.toBeTruthy()
     })
 
     it('builds a compact action prompt that steers clear mutations into the Studio tool', async () => {

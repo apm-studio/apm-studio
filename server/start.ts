@@ -1,7 +1,4 @@
 import { spawn, type ChildProcess } from 'node:child_process'
-import fs from 'node:fs'
-import path from 'node:path'
-import { fileURLToPath, pathToFileURL } from 'node:url'
 import { STUDIO_API_PORT, STUDIO_OPENCODE_PORT, STUDIO_VITE_PORT } from '../shared/default-ports.js'
 import { resolvePackageBinCommand } from './lib/package-bin.js'
 
@@ -10,7 +7,6 @@ const OPENCODE_HEALTH_URL = `http://127.0.0.1:${STUDIO_API_PORT}/api/opencode/he
 const STARTUP_TIMEOUT_MS = 30_000
 const POLL_INTERVAL_MS = 250
 const SHUTDOWN_TIMEOUT_MS = 5_000
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 type ManagedProcess = {
     name: string
@@ -95,7 +91,7 @@ function buildDevEnv(extraEnv: NodeJS.ProcessEnv = {}) {
     const env: NodeJS.ProcessEnv = {
         ...process.env,
         ...extraEnv,
-        DOT_STUDIO_PRODUCTION: '0',
+        AGENT_ROASTER_PRODUCTION: '0',
         PORT: String(STUDIO_API_PORT),
         OPENCODE_PORT: String(STUDIO_OPENCODE_PORT),
     }
@@ -105,25 +101,6 @@ function buildDevEnv(extraEnv: NodeJS.ProcessEnv = {}) {
 
 function resolvePackageCommand(packageName: string, binName: string, fallbackCommand: string): CommandSpec {
     return resolvePackageBinCommand(packageName, binName) || { command: fallbackCommand, args: [] }
-}
-
-function resolveDotDevAliasRegisterPath() {
-    const candidates = [
-        path.join(__dirname, 'lib', 'dot-dev-alias-register.mjs'),
-        path.resolve(process.cwd(), 'server', 'lib', 'dot-dev-alias-register.mjs'),
-    ]
-    return candidates.find((candidate) => fs.existsSync(candidate)) || null
-}
-
-function withNodeImport(commandSpec: CommandSpec, importPath: string | null): CommandSpec {
-    if (!importPath || commandSpec.command !== process.execPath) {
-        return commandSpec
-    }
-    const importUrl = path.isAbsolute(importPath) ? pathToFileURL(importPath).href : importPath
-    return {
-        command: commandSpec.command,
-        args: ['--import', importUrl, ...commandSpec.args],
-    }
 }
 
 function spawnManaged(name: string, commandSpec: CommandSpec, extraArgs: string[] = [], extraEnv: NodeJS.ProcessEnv = {}) {
@@ -186,7 +163,7 @@ async function main() {
     console.log(`[dev:all] Starting Hono server on ${STUDIO_API_PORT}...`)
     spawnManaged(
         'server',
-        withNodeImport(resolvePackageCommand('tsx', 'tsx', 'tsx'), resolveDotDevAliasRegisterPath()),
+        resolvePackageCommand('tsx', 'tsx', 'tsx'),
         ['--watch', 'server/index.ts'],
     )
     await waitForHttpOk('Hono server', SERVER_URL)

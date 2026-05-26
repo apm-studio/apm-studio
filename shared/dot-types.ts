@@ -1,27 +1,20 @@
-// dot Contract Types — Single Source of Truth for all dot type imports
-// This is the ONLY file that imports types directly from 'dance-of-tal'.
-// Both shared/ and server/ code should import dot types from here.
+// Agent Roaster asset contract types.
+// Keep this file as the shared import surface for client/server asset types.
 
 export type {
-    // ── Act ────────────────────────────────────────────
-    ActRelationV1,
-    ActParticipantV1,
-    ActParticipantSubscriptionsV1,
-    ActAssetPayloadV1,
     ActAsset,
-
-    // ── Performer ──────────────────────────────────────
-    PerformerAsset,
-    PerformerAssetPayloadV1,
-
-    // ── Tal / Dance ────────────────────────────────────
-    TalAsset,
-    TalAssetPayloadV1,
+    ActAssetPayloadV1,
+    ActParticipantSubscriptionsV1,
+    ActParticipantV1,
+    ActRelationV1,
+    AnyDotAssetV1,
     DanceAsset,
     DanceAssetPayloadV1,
-
-    // ── Base ───────────────────────────────────────────
     DotAssetBase,
     DotAssetKind,
     ModelConfigV1,
-} from 'dance-of-tal/data/types'
+    PerformerAsset,
+    PerformerAssetPayloadV1,
+    TalAsset,
+    TalAssetPayloadV1,
+} from './dot-contracts.js'

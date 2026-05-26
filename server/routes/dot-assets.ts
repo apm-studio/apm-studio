@@ -78,7 +78,7 @@ dotAssets.post('/api/dot/assets/publish', async (c) => {
         return jsonError(c, 'kind and slug are required.', 400)
     }
     if (!body.acknowledgedTos) {
-        return jsonError(c, 'Review and accept the Dance of Tal Terms of Service before publishing: https://danceoftal.com/tos', 400)
+        return jsonError(c, 'Review and accept the Agent Roaster Terms of Service before publishing: https://agentroaster.dev/tos', 400)
     }
 
     try {

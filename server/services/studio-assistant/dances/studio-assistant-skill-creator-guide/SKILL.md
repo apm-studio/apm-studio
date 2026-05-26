@@ -1,10 +1,10 @@
 ---
 name: studio-assistant-skill-creator-guide
-description: Helps the Studio Assistant create or extend Dance skill bundles in a Studio-safe way. Use when the user wants a new Dance skill, a better SKILL.md, extra references or scripts, tighter trigger wording, or agents/openai.yaml metadata inside a Dance draft bundle.
-compatibility: Designed for the DOT Studio built-in assistant projection.
+description: Helps the Agent Roaster Assistant create or extend Dance skill bundles in an app-safe way. Use when the user wants a new Dance skill, a better SKILL.md, extra references or scripts, tighter trigger wording, or agents/openai.yaml metadata inside a Dance draft bundle.
+compatibility: Designed for the Agent Roaster built-in assistant projection.
 ---
 
-# Studio Skill Creator
+# Agent Roaster Skill Creator
 
 Use this skill when the user wants to build a Dance skill bundle through Studio Assistant.
 

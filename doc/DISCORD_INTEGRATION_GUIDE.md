@@ -4,7 +4,7 @@
 
 Discord is an external Studio chat client.
 
-- it does not create, edit, save, or publish DOT assets
+- it does not create, edit, save, or publish Agent Roaster assets
 - it reuses Studio performer and Act chat runtime services
 - Studio web owns configuration and sync controls
 
@@ -14,8 +14,8 @@ Discord is an external Studio chat client.
 - settings UI: `src/components/modals/SettingsDiscord.tsx`
 - API routes: `server/routes/discord.ts`
 - bot lifecycle and Discord event handling: `server/services/discord/discord-service.ts`
-- config storage: `~/.dot-studio/discord-config.json`
-- channel/role mappings: `~/.dot-studio/discord-mappings.json`
+- config storage: `~/.agent-roaster/discord-config.json`
+- channel/role mappings: `~/.agent-roaster/discord-mappings.json`
 
 ## Configuration
 
@@ -24,7 +24,7 @@ Discord is configured from the Studio web Settings modal.
 - token is write-only from the client perspective
 - API responses must return only `hasToken`
 - one selected Discord server is supported in v1
-- config and mapping files are written under `~/.dot-studio` with private file permissions
+- config and mapping files are written under `~/.agent-roaster` with private file permissions
 - Studio enforces Discord actor authorization before handling control, command, or chat events
 - default access requires Discord `Manage Server`
 - configured role IDs and user IDs may be used as explicit allowlist exceptions
@@ -143,8 +143,8 @@ Key rules:
 - settings UI: `src/components/modals/SettingsDiscord.tsx`
 - API routes: `server/routes/discord.ts`
 - bot lifecycle and Discord event handling: `server/services/discord/discord-service.ts`
-- config storage: `~/.dot-studio/discord-config.json`
-- channel/role mappings: `~/.dot-studio/discord-mappings.json`
+- config storage: `~/.agent-roaster/discord-config.json`
+- channel/role mappings: `~/.agent-roaster/discord-mappings.json`
 
 Runtime boundaries:
 

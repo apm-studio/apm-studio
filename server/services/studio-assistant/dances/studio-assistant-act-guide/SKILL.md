@@ -1,7 +1,7 @@
 ---
 name: studio-assistant-act-guide
-description: "Explains the current DOT Studio Act contract: participants, relations, subscriptions, actRules, safety, and publish-safe field boundaries. Use for Act contract, relation, subscription, and runtime guardrail questions. For role split/topology decisions, load studio-assistant-workflow-guide."
-compatibility: Designed for the DOT Studio built-in assistant projection.
+description: "Explains the current Agent Roaster Act contract: participants, relations, subscriptions, actRules, safety, and publish-safe field boundaries. Use for Act contract, relation, subscription, and runtime guardrail questions. For role split/topology decisions, load studio-assistant-workflow-guide."
+compatibility: Designed for the Agent Roaster built-in assistant projection.
 ---
 
 # Act Contract Guide

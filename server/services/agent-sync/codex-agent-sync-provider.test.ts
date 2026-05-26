@@ -34,7 +34,7 @@ describe('codex agent sync provider', () => {
     let workingDir: string
 
     beforeEach(async () => {
-        workingDir = await fs.mkdtemp(path.join(os.tmpdir(), 'dot-studio-agent-sync-'))
+        workingDir = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-roaster-agent-sync-'))
         listWorkspacePerformersForDirMock.mockReset().mockResolvedValue([
             {
                 id: 'performer-1',
@@ -49,12 +49,12 @@ describe('codex agent sync provider', () => {
         compileDanceMock.mockReset()
         readGlobalMcpCatalogMock.mockReset().mockResolvedValue({})
         compilePerformerMock.mockReset().mockImplementation(async (cwd: string, input: { performerId: string; performerName: string }, skills = []) => {
-            const relativePath = `.codex/agents/dot_studio_${input.performerId}.toml`
+            const relativePath = `.codex/agents/agent_roaster_${input.performerId}.toml`
             return {
                 performerId: input.performerId,
-                agentNames: { build: `dot-studio/workspace/hash/${input.performerId}--build` },
+                agentNames: { build: `agent-roaster/workspace/hash/${input.performerId}--build` },
                 agentPaths: {
-                    build: path.join(cwd, '.opencode', 'agents', 'dot-studio', 'workspace', 'hash', `${input.performerId}--build.md`),
+                    build: path.join(cwd, '.opencode', 'agents', 'agent-roaster', 'workspace', 'hash', `${input.performerId}--build.md`),
                 },
                 agentContents: {
                     build: 'OpenCode build content',
@@ -92,8 +92,8 @@ describe('codex agent sync provider', () => {
             expect.objectContaining({ includeCodexAgent: true }),
             [],
         )
-        await expect(fs.access(path.join(workingDir, '.codex', 'agents', 'dot_studio_performer-1.toml'))).rejects.toBeTruthy()
-        await expect(fs.access(path.join(workingDir, '.opencode', 'dot-studio.manifest.json'))).rejects.toBeTruthy()
+        await expect(fs.access(path.join(workingDir, '.codex', 'agents', 'agent_roaster_performer-1.toml'))).rejects.toBeTruthy()
+        await expect(fs.access(path.join(workingDir, '.opencode', 'agent-roaster.manifest.json'))).rejects.toBeTruthy()
     })
 
     it('writes Codex files on manual sync and returns changed counts', async () => {
@@ -108,10 +108,10 @@ describe('codex agent sync provider', () => {
             failedCount: 0,
             changedCount: 1,
         }))
-        await expect(fs.readFile(path.join(workingDir, '.codex', 'agents', 'dot_studio_performer-1.toml'), 'utf-8'))
+        await expect(fs.readFile(path.join(workingDir, '.codex', 'agents', 'agent_roaster_performer-1.toml'), 'utf-8'))
             .resolves.toBe('name = "agent_performer-1"\n')
-        const manifest = JSON.parse(await fs.readFile(path.join(workingDir, '.opencode', 'dot-studio.manifest.json'), 'utf-8'))
-        expect(manifest.groups['performer:performer-1']).toContain('.codex/agents/dot_studio_performer-1.toml')
+        const manifest = JSON.parse(await fs.readFile(path.join(workingDir, '.opencode', 'agent-roaster.manifest.json'), 'utf-8'))
+        expect(manifest.groups['performer:performer-1']).toContain('.codex/agents/agent_roaster_performer-1.toml')
     })
 
     it('prunes only provider-owned stale immediate artifacts', async () => {
@@ -142,8 +142,9 @@ describe('codex agent sync provider', () => {
         await expect(fs.access(path.join(workingDir, codexRelativePath))).rejects.toBeTruthy()
         await expect(fs.access(path.join(workingDir, skillLinkRelativePath))).rejects.toBeTruthy()
         await expect(fs.access(path.join(workingDir, openCodeRelativePath))).resolves.toBeUndefined()
-        const manifest = JSON.parse(await fs.readFile(path.join(workingDir, '.opencode', 'dot-studio.manifest.json'), 'utf-8'))
+        const manifest = JSON.parse(await fs.readFile(path.join(workingDir, '.opencode', 'agent-roaster.manifest.json'), 'utf-8'))
         expect(manifest.groups['performer:old']).toEqual([openCodeRelativePath])
+        expect(manifest.owner).toBe('agent-roaster')
     })
 
     it('reports unsupported models without failing', async () => {

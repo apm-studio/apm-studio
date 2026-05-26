@@ -1,4 +1,4 @@
-// DOT Studio — Hono API Server (Entry Point)
+// Agent Roaster — Hono API Server (Entry Point)
 
 import { serve } from '@hono/node-server'
 import { WebSocketServer } from 'ws'
@@ -31,7 +31,7 @@ async function shutdown(signal: NodeJS.Signals) {
     }
     shuttingDown = true
 
-    console.log(`\n${signal} received. Shutting down DOT Studio...`)
+    console.log(`\n${signal} received. Shutting down Agent Roaster...`)
     await closeServer().catch(() => {})
     terminalManager.disposeAll()
     await stopOpencodeSidecar().catch((err) => {
@@ -58,7 +58,7 @@ await discordIntegrationService.initialize().catch((err) => {
     console.warn(`Discord integration startup failed: ${err instanceof Error ? err.message : String(err)}`)
 })
 
-console.log(`\n🎪 DOT Studio Server${IS_PRODUCTION ? ' (production)' : ' (dev)'}`)
+console.log(`\nAgent Roaster Server${IS_PRODUCTION ? ' (production)' : ' (dev)'}`)
 console.log(`   API:      http://localhost:${PORT}`)
 console.log(`   OpenCode: ${OPENCODE_URL} (managed sidecar)`)
 console.log(`   Project:  ${getActiveProjectDir()}`)

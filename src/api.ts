@@ -1,4 +1,4 @@
-// DOT Studio — API Client
+// Agent Roaster — API Client
 
 import type {
     ActThreadStatus,

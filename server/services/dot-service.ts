@@ -361,7 +361,7 @@ export async function saveDotLocalAsset(cwd: string, input: {
     const auth = await readDotAuthUser()
     const author = input.author || auth?.username
     if (!author) {
-        throw new Error('No author available. Sign in with `dot login` first.')
+        throw new Error('No author available. Sign in to Agent Roaster first.')
     }
 
     const saved = await saveLocalStudioAsset({
@@ -391,7 +391,7 @@ export async function publishDotAsset(cwd: string, input: {
 }) {
     const auth = await readDotAuthUser()
     if (!auth) {
-        const error = Object.assign(new Error('You are not logged in. Run `dot login` first.'), { status: 401 })
+        const error = Object.assign(new Error('You are not logged in. Sign in to Agent Roaster first.'), { status: 401 })
         throw error
     }
 

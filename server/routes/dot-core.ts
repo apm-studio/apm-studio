@@ -39,13 +39,13 @@ dotCore.get('/api/dot/auth-user', async () => {
 dotCore.post('/api/dot/login', async (c) => {
     const body = await c.req.json<{ acknowledgedTos?: boolean }>().catch((): { acknowledgedTos?: boolean } => ({}))
     if (!body?.acknowledgedTos) {
-        return jsonError(c, 'Review and accept the Dance of Tal Terms of Service before signing in: https://danceoftal.com/tos', 400)
+        return jsonError(c, 'Review and accept the Agent Roaster Terms of Service before signing in: https://agentroaster.dev/tos', 400)
     }
 
     try {
         return c.json(await loginToDot())
     } catch (error: unknown) {
-        return jsonError(c, errorMessage(error, 'Failed to start dot login.'), 500)
+        return jsonError(c, errorMessage(error, 'Failed to start Agent Roaster login.'), 500)
     }
 })
 

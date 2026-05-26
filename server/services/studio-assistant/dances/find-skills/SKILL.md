@@ -1,7 +1,7 @@
 ---
 name: find-skills
 description: Finds, compares, and applies existing external skills or Dance bundles before creating a new one. Use when the user asks to find a skill, search skills.sh, recommend an existing skill, or install/apply a GitHub or skills.sh Dance.
-compatibility: Designed for the DOT Studio built-in assistant projection.
+compatibility: Designed for the Agent Roaster built-in assistant projection.
 ---
 
 # Find Skills
@@ -15,7 +15,7 @@ Use this skill when the user likely wants an existing external skill, not a bran
 
 ## Search Order
 - Prefer installed local matches first.
-- Then consider DOT registry matches.
+- Then consider Agent Roaster registry matches.
 - Then consider `skills.sh` or GitHub Dance candidates.
 - Treat `skills.sh` hints as candidates, not guarantees.
 

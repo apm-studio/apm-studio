@@ -5,7 +5,7 @@ import type { SharedAssetRef } from './chat-contracts.js'
 export type DraftAssetKind = 'tal' | 'dance' | 'performer' | 'act'
 
 /**
- * A draft file stored at `.dance-of-tal/drafts/<kind>/<id>.json`.
+ * A draft file stored at `.agent-roaster/drafts/<kind>/<id>.json`.
  * Drafts are project-local only — no global scope.
  *
  * @template T – The content type. Defaults to `unknown`;

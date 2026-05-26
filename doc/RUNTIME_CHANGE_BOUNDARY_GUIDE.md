@@ -121,19 +121,19 @@ Every execution path should follow this order.
 - generated Codex subagents should project Studio model variant reasoning effort to Codex-native `model_reasoning_effort` when the selected variant exposes `reasoning.effort`
 - when Studio stores the model variant as `null`/Default, generated Codex subagents should still write the Codex model's default `model_reasoning_effort` so the performer does not accidentally inherit the parent Codex session's effort
 - generated Codex subagent names are derived from the performer name with a short performer-id hash suffix so sanitized names cannot collide
-- generated Codex subagent files use the `dot_studio_*.toml` filename namespace for local cleanup, but the Codex-visible `name` should not include that namespace
+- generated Codex subagent files use the `agent_roaster_*.toml` filename namespace for local cleanup, but the Codex-visible `name` should not include that namespace
 - generated Codex subagent `developer_instructions` must contain only the raw performer TAL content
-- generated Codex subagent Dance access must use Codex-native `[[skills.config]]` entries that point at Codex-discoverable `.agents/skills/dot-studio-*` skill links backed by Studio's projected `.opencode/skills/...` files
+- generated Codex subagent Dance access must use Codex-native `[[skills.config]]` entries that point at Codex-discoverable `.agents/skills/agent-roaster-*` skill links backed by Agent Roaster's projected `.opencode/skills/...` files
 - generated Codex subagents must project the performer's selected MCP servers directly from Studio's MCP catalog, using Codex `[mcp_servers.<name>]` TOML tables; do not require OpenCode runtime tool resolution for Codex-only MCP projection
 - generated Codex subagent MCP projection should use Codex-native `bearer_token_env_var` and `env_http_headers` when Studio remote header values are environment references such as `$TOKEN` or `${TOKEN}`
 - generated Codex subagent MCP projection should use Codex-native `env_vars` when a local MCP environment value forwards the same variable name, such as `TOKEN=$TOKEN`
 - Codex project subagent files are generated from Studio performer state and should be treated as local projection output, not hand-authored source
 - Codex project subagent files are managed by `Agent Sync`, not by normal Studio save, startup, chat projection, or Act projection
 - `GET /api/agent-sync` must be dry-run status calculation and must not write Codex TOML, skill links, skill files, or manifests
-- `POST /api/agent-sync/codex/sync` is the manual path that may write Codex TOML, Dance skill files, `.agents/skills/dot-studio-*` symlinks, and manifest entries
-- `POST /api/agent-sync/codex/prune` may remove only Codex/provider-owned stale immediate artifacts such as `.codex/agents/dot_studio_*.toml` and `.agents/skills/dot-studio-*`
+- `POST /api/agent-sync/codex/sync` is the manual path that may write Codex TOML, Dance skill files, `.agents/skills/agent-roaster-*` symlinks, and manifest entries
+- `POST /api/agent-sync/codex/prune` may remove only Codex/provider-owned stale immediate artifacts such as `.codex/agents/agent_roaster_*.toml` and `.agents/skills/agent-roaster-*`
 - Codex-only projection writes do not require OpenCode `dispose`
-- Codex-only manual sync may write Codex TOML, Dance skill files, and `.agents/skills/dot-studio-*` symlinks needed by `[[skills.config]]`, but must not rewrite projected OpenCode agent markdown files or mark `projectionPending`
+- Codex-only manual sync may write Codex TOML, Dance skill files, and `.agents/skills/agent-roaster-*` symlinks needed by `[[skills.config]]`, but must not rewrite projected OpenCode agent markdown files or mark `projectionPending`
 
 ## Act Rules
 
@@ -158,8 +158,8 @@ Every execution path should follow this order.
 - managed process shutdown must account for Windows process trees as well as Unix signals
 - managed sidecar readiness should use OpenCode `/global/health`
 - if a managed sidecar child is already alive, readiness retries must wait on that child rather than spawning a duplicate process
-- dev sidecar/tooling paths should use the local `../dot` checkout for DOT imports and the runtime `dot` loader command
-- production sidecar/tooling paths should use the packaged `dance-of-tal` dependency
+- dev sidecar/tooling paths should use the repo-local Agent Roaster contract and registry implementation
+- production sidecar/tooling paths must not depend on the legacy `dance-of-tal` dependency
 - managed config root is `STUDIO_DIR/opencode`
 - do not silently migrate MCP or config state from `~/.config/opencode`
 
@@ -170,7 +170,8 @@ Every execution path should follow this order.
 - terminal exit and kill behavior belongs to `server/services/terminal-service.ts`
 - terminal WebSocket routing belongs to the Hono route in `server/routes/terminal.ts`
 - terminal shell selection follows this order:
-  - `DOT_STUDIO_TERMINAL_SHELL`
+  - `AGENT_ROASTER_TERMINAL_SHELL`
+  - legacy `DOT_STUDIO_TERMINAL_SHELL`
   - Studio-owned OpenCode global config `shell`
   - platform default (`SHELL`/`zsh` on Unix, `ComSpec`/`cmd.exe` on Windows)
 - Studio terminal WebSocket disconnects should reconnect to the existing Studio-owned PTY when the PTY itself is still alive

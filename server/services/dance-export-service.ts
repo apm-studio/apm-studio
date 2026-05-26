@@ -1,6 +1,6 @@
 import fs from 'fs/promises'
 import path from 'path'
-import { parseDanceFromSkillMd } from 'dance-of-tal/contracts'
+import { parseDanceFromSkillMd } from '../../shared/dot-contracts.js'
 import { readDraft } from './draft-service.js'
 import { danceBundleDir } from './dance-bundle-service.js'
 

@@ -1,9 +1,9 @@
-# DOT Studio Navigation Reference
+# Agent Roaster Navigation Reference
 
 ## Top Toolbar
-- `DOT`: workspace initialization state.
+- `Agent Roaster`: workspace initialization state.
 - Branch label: current git branch when available.
-- `Sign in` or user menu: DOT registry login.
+- `Sign in` or user menu: Agent Roaster registry login.
 - Server status indicator.
 - `Terminal`: `Show/Hide Pinned Terminal`, `Add Terminal to Canvas`.
 - `Workspace Tracking`: opens the right-side tracking panel and closes Assistant.
@@ -58,4 +58,4 @@
 ## MCP Flow
 - Define servers in `Asset Library -> Local -> Runtime -> MCPs`.
 - Attach or drag the MCP card onto a Performer to enable it there.
-- Studio MCP library definitions are not the same as raw OpenCode project MCP config.
+- Agent Roaster MCP library definitions are not the same as raw OpenCode project MCP config.

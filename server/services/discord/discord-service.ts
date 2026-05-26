@@ -356,7 +356,7 @@ class DiscordIntegrationService {
                     mappings.menuChannelId || workspaceMapping.menuChannelId,
                     controlChannelName(),
                     activeCategory.id,
-                    `Dance of Tal Studio control for ${snapshot.workingDir}`,
+                    `Agent Roaster control for ${snapshot.workingDir}`,
                 )
                 void this.runDiscordSyncBestEffort(`position Discord workspace menu ${menuChannel.id}`, () => menuChannel.setPosition(0))
                 mappings.menuChannelId = menuChannel.id
@@ -440,7 +440,7 @@ class DiscordIntegrationService {
                 const cleanedChannelIds = await this.deleteTextChannels(
                     guild,
                     Array.from(staleChannelIds),
-                    'Dance of Tal Studio stale thread cleanup',
+                    'Agent Roaster stale thread cleanup',
                 )
                 for (const [key, channelId] of Object.entries(originalPerformerThreadChannels)) {
                     if (!cleanedChannelIds.has(channelId)) {
@@ -855,7 +855,7 @@ class DiscordIntegrationService {
         const commands = [
             new SlashCommandBuilder()
                 .setName('studio')
-                .setDescription('Dance of Tal Studio controls')
+                .setDescription('Agent Roaster controls')
                 .addSubcommand((command) =>
                     command.setName('menu').setDescription('Refresh the Studio control panel'),
                 )
@@ -1182,7 +1182,7 @@ class DiscordIntegrationService {
         await this.deleteCategories(
             guild,
             orphanCategoryIds,
-            'Dance of Tal Studio orphan entity category cleanup',
+            'Agent Roaster orphan entity category cleanup',
         )
     }
 
@@ -1209,7 +1209,7 @@ class DiscordIntegrationService {
         const cleanedCategoryIds = await this.deleteCategories(
             guild,
             emptyInactiveCategoryEntries.map(([, categoryId]) => categoryId),
-            'Dance of Tal Studio inactive workspace root category cleanup',
+            'Agent Roaster inactive workspace root category cleanup',
         )
         for (const [workspaceId, categoryId] of emptyInactiveCategoryEntries) {
             if (cleanedCategoryIds.has(categoryId)) {
@@ -1221,7 +1221,7 @@ class DiscordIntegrationService {
     private async deleteCategories(
         guild: Guild,
         categoryIds: string[],
-        reason = 'Dance of Tal Studio inactive workspace category cleanup',
+        reason = 'Agent Roaster inactive workspace category cleanup',
     ) {
         const cleanedCategoryIds = new Set<string>()
         for (const categoryId of Array.from(new Set(categoryIds))) {
@@ -1319,7 +1319,7 @@ class DiscordIntegrationService {
         const actCount = snapshot.acts?.length || 0
         await this.withDiscordSyncTimeout(`post Discord workspace menu ${channel.id}`, () => channel.send({
             content: [
-                `**Dance of Tal Studio**`,
+                `**Agent Roaster**`,
                 `Workspace: \`${snapshot.workingDir}\``,
                 `Performers: ${performerCount} | Acts: ${actCount}`,
             ].join('\n'),

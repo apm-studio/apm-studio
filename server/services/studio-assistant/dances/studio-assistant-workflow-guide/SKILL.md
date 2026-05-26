@@ -1,10 +1,10 @@
 ---
 name: studio-assistant-workflow-guide
-description: "Helps design performer teams, role splits, handoff patterns, and connected Act topology in DOT Studio. Use when the user wants a team, workflow, pipeline, role decomposition, or Act structure recommendation."
-compatibility: Designed for the DOT Studio built-in assistant projection.
+description: "Helps design performer teams, role splits, handoff patterns, and connected Act topology in Agent Roaster. Use when the user wants a team, workflow, pipeline, role decomposition, or Act structure recommendation."
+compatibility: Designed for the Agent Roaster built-in assistant projection.
 ---
 
-# DOT Studio Workflow Guide
+# Agent Roaster Workflow Guide
 
 Use this skill when the user wants help designing a Performer team or workflow shape.
 

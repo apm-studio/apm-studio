@@ -2,7 +2,7 @@
  * assistant-service.ts — Agent + skill projection for Studio Assistant.
  *
  * Produces:
- *   ~/.dot-studio/opencode/{agents,skills,tools}/dot-studio/...
+ *   ~/.agent-roaster/opencode/{agents,skills,tools}/agent-roaster/...
  *
  * Builtin assistant dances are authored as Agent Skills under:
  *   server/services/studio-assistant/dances/<skill-name>/SKILL.md
@@ -15,7 +15,7 @@
 import fs from 'fs/promises'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { parseDanceFromSkillMd } from 'dance-of-tal/contracts'
+import { parseDanceFromSkillMd } from '../../../shared/dot-contracts.js'
 import type { AssistantStageContext } from '../../../shared/assistant-actions.js'
 import { STUDIO_DIR } from '../../lib/config.js'
 import { getOpencode } from '../../lib/opencode.js'
@@ -43,11 +43,11 @@ function workspaceAssistantProjectionRoot(executionDir: string) {
 }
 
 function agentFilePath(executionDir: string) {
-    return path.join(assistantProjectionRoot(executionDir), 'agents', 'dot-studio', AGENT_FILENAME)
+    return path.join(assistantProjectionRoot(executionDir), 'agents', 'agent-roaster', AGENT_FILENAME)
 }
 
 function skillDir(executionDir: string, skillName: string) {
-    return path.join(assistantProjectionRoot(executionDir), 'skills', 'dot-studio', skillName)
+    return path.join(assistantProjectionRoot(executionDir), 'skills', 'agent-roaster', skillName)
 }
 
 function skillFilePath(executionDir: string, skillName: string) {
@@ -59,15 +59,23 @@ function toolFilePath(executionDir: string, toolName: string) {
 }
 
 function dotStudioAgentPath(opencodeRoot: string) {
-    return path.join(opencodeRoot, 'agents', 'dot-studio', AGENT_FILENAME)
+    return path.join(opencodeRoot, 'agents', 'agent-roaster', AGENT_FILENAME)
 }
 
 function dotStudioSkillDir(opencodeRoot: string, skillName: string) {
-    return path.join(opencodeRoot, 'skills', 'dot-studio', skillName)
+    return path.join(opencodeRoot, 'skills', 'agent-roaster', skillName)
 }
 
 function dotStudioToolPath(opencodeRoot: string, toolName: string) {
     return path.join(opencodeRoot, 'tools', `${toolName}.ts`)
+}
+
+function legacyDotStudioAgentPath(opencodeRoot: string) {
+    return path.join(opencodeRoot, 'agents', 'dot-studio', AGENT_FILENAME)
+}
+
+function legacyDotStudioSkillDir(opencodeRoot: string, skillName: string) {
+    return path.join(opencodeRoot, 'skills', 'dot-studio', skillName)
 }
 
 // ── Read source assets ────────────────────────────────
@@ -114,7 +122,7 @@ async function removeStaleBuiltinSkills(
     executionDir: string,
     expectedSkillNames: string[],
 ): Promise<boolean> {
-    const skillsRoot = path.join(assistantProjectionRoot(executionDir), 'skills', 'dot-studio')
+    const skillsRoot = path.join(assistantProjectionRoot(executionDir), 'skills', 'agent-roaster')
     const expected = new Set(expectedSkillNames)
     let changed = false
 
@@ -124,6 +132,24 @@ async function removeStaleBuiltinSkills(
         if (expected.has(entry.name)) continue
 
         await fs.rm(path.join(skillsRoot, entry.name), { recursive: true, force: true })
+        changed = true
+    }
+
+    return changed
+}
+
+async function removeLegacyGlobalAssistantProjection(executionDir: string): Promise<boolean> {
+    const root = assistantProjectionRoot(executionDir)
+    const targets = [
+        path.join(root, 'agents', 'dot-studio'),
+        path.join(root, 'skills', 'dot-studio'),
+    ]
+    let changed = false
+
+    for (const target of targets) {
+        const existed = await fs.stat(target).then(() => true).catch(() => false)
+        if (!existed) continue
+        await fs.rm(target, { recursive: true, force: true })
         changed = true
     }
 
@@ -161,8 +187,10 @@ async function removeAssistantProjectionAtRoot(
 
     const targets = [
         dotStudioAgentPath(opencodeRoot),
+        legacyDotStudioAgentPath(opencodeRoot),
         ...toolNames.map((toolName) => dotStudioToolPath(opencodeRoot, toolName)),
         ...skillNames.map((skillName) => dotStudioSkillDir(opencodeRoot, skillName)),
+        ...skillNames.map((skillName) => legacyDotStudioSkillDir(opencodeRoot, skillName)),
     ]
 
     for (const target of targets) {
@@ -174,16 +202,26 @@ async function removeAssistantProjectionAtRoot(
         changed = true
     }
 
-    const skillsRoot = path.join(opencodeRoot, 'skills', 'dot-studio')
+    const skillsRoot = path.join(opencodeRoot, 'skills', 'agent-roaster')
     const remainingSkillEntries = await fs.readdir(skillsRoot, { withFileTypes: true }).catch(() => [])
     if (remainingSkillEntries.length === 0) {
         await fs.rm(skillsRoot, { recursive: true, force: true }).catch(() => {})
     }
+    const legacySkillsRoot = path.join(opencodeRoot, 'skills', 'dot-studio')
+    const remainingLegacySkillEntries = await fs.readdir(legacySkillsRoot, { withFileTypes: true }).catch(() => [])
+    if (remainingLegacySkillEntries.length === 0) {
+        await fs.rm(legacySkillsRoot, { recursive: true, force: true }).catch(() => {})
+    }
 
-    const agentDir = path.join(opencodeRoot, 'agents', 'dot-studio')
+    const agentDir = path.join(opencodeRoot, 'agents', 'agent-roaster')
     const remainingAgentEntries = await fs.readdir(agentDir, { withFileTypes: true }).catch(() => [])
     if (remainingAgentEntries.length === 0) {
         await fs.rm(agentDir, { recursive: true, force: true }).catch(() => {})
+    }
+    const legacyAgentDir = path.join(opencodeRoot, 'agents', 'dot-studio')
+    const remainingLegacyAgentEntries = await fs.readdir(legacyAgentDir, { withFileTypes: true }).catch(() => [])
+    if (remainingLegacyAgentEntries.length === 0) {
+        await fs.rm(legacyAgentDir, { recursive: true, force: true }).catch(() => {})
     }
 
     return changed
@@ -263,7 +301,7 @@ async function removeManagedWorkspaceAssistantProjection(
 // ── Frontmatter ───────────────────────────────────────
 function buildFrontmatter(skillNames: string[], toolNames: string[]): string {
     const lines = ['---']
-    lines.push('description: "Studio Assistant"')
+    lines.push('description: "Agent Roaster Assistant"')
     lines.push('mode: primary')
     // Model is NOT specified here — passed via promptAsync() to avoid staleness.
 
@@ -807,7 +845,7 @@ function buildAssistantSkillIntentPrompt(intent: AssistantSkillIntent): string[]
                 'Skill Intent Hint:',
                 '- The user likely wants to find or compare existing skills.',
                 '- Load and use `find-skills`.',
-                '- Prefer installed local matches first, then DOT registry matches, then skills.sh candidates.',
+                '- Prefer installed local matches first, then Agent Roaster registry matches, then skills.sh candidates.',
             ]
         case 'apply':
             return [
@@ -917,6 +955,7 @@ export async function ensureAssistantAgent(
     const toolNames = tools.map((tool) => tool.name)
     let changed = false
 
+    changed = (await removeLegacyGlobalAssistantProjection(executionDir)) || changed
     changed = (await removeManagedWorkspaceAssistantProjection(executionDir, skillNames, toolNames)) || changed
 
     changed = (await removeDuplicateAssistantProjectionAncestors(
@@ -954,5 +993,5 @@ export async function ensureAssistantAgent(
         await oc.instance.dispose({ directory: executionDir }).catch(() => {})
     }
 
-    return `dot-studio/${AGENT_FILENAME.replace(/\.md$/, '')}`
+    return `agent-roaster/${AGENT_FILENAME.replace(/\.md$/, '')}`
 }

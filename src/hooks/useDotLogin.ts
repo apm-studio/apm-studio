@@ -25,8 +25,8 @@ export function useDotLogin() {
                 window.clearInterval(timer)
                 loginDeadlineRef.current = null
                 setAwaitingLogin(false)
-                showToast('DOT login timed out before authentication completed.', 'error', {
-                    title: 'DOT login timed out',
+                showToast('Agent Roaster login timed out before authentication completed.', 'error', {
+                    title: 'Login timed out',
                     dedupeKey: 'dot-login:timeout',
                 })
                 return
@@ -46,7 +46,7 @@ export function useDotLogin() {
         setAwaitingLogin(false)
         queryClient.invalidateQueries({ queryKey: queryKeys.dotAuthUser })
         showToast(`Signed in as @${authUser.username || 'unknown'}.`, 'success', {
-            title: 'DOT login complete',
+            title: 'Agent Roaster login complete',
             dedupeKey: 'dot-login:complete',
         })
     }, [authUser?.authenticated, authUser?.username, awaitingLogin, queryClient])
@@ -90,8 +90,8 @@ export function useDotLogin() {
                 loginDeadlineRef.current = Date.now() + LOGIN_POLL_TIMEOUT_MS
                 setAwaitingLogin(true)
                 if (result.authUrl && !result.browserOpened && !openedInClient) {
-                    showToast('Open the DOT login flow to continue authentication.', 'warning', {
-                        title: 'DOT login started',
+                    showToast('Open the Agent Roaster login flow to continue authentication.', 'warning', {
+                        title: 'Agent Roaster login started',
                         actionLabel: 'Open login',
                         onAction: () => {
                             window.open(result.authUrl, '_blank')
@@ -100,8 +100,8 @@ export function useDotLogin() {
                         durationMs: 8000,
                     })
                 } else {
-                    showToast('Complete DOT login in the browser to continue.', 'success', {
-                        title: 'DOT login started',
+                    showToast('Complete Agent Roaster login in the browser to continue.', 'success', {
+                        title: 'Agent Roaster login started',
                         dedupeKey: 'dot-login:started',
                     })
                 }
@@ -112,8 +112,8 @@ export function useDotLogin() {
             popup?.close()
         } catch (error: unknown) {
             popup?.close()
-            showToast(error instanceof Error ? error.message : 'Failed to start DOT login.', 'error', {
-                title: 'DOT login failed',
+            showToast(error instanceof Error ? error.message : 'Failed to start Agent Roaster login.', 'error', {
+                title: 'Agent Roaster login failed',
                 dedupeKey: 'dot-login:failed',
             })
         } finally {
@@ -133,13 +133,13 @@ export function useDotLogin() {
             await api.dot.logout()
             await queryClient.invalidateQueries({ queryKey: queryKeys.dotAuthUser })
             await refetchAuthUser()
-            showToast('Signed out from DOT.', 'success', {
-                title: 'DOT logout complete',
+            showToast('Signed out from Agent Roaster.', 'success', {
+                title: 'Agent Roaster logout complete',
                 dedupeKey: 'dot-login:logout',
             })
         } catch (error: unknown) {
-            showToast(error instanceof Error ? error.message : 'Failed to sign out from DOT.', 'error', {
-                title: 'DOT logout failed',
+            showToast(error instanceof Error ? error.message : 'Failed to sign out from Agent Roaster.', 'error', {
+                title: 'Agent Roaster logout failed',
                 dedupeKey: 'dot-login:logout-failed',
             })
         } finally {

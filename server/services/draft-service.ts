@@ -1,9 +1,9 @@
 /**
- * draft-service.ts — Filesystem CRUD for `.dance-of-tal/drafts/`
+ * draft-service.ts — Filesystem CRUD for `.agent-roaster/drafts/`
  *
- * Tal / Performer / Act: .dance-of-tal/drafts/<kind>/<id>.json
- * Dance (bundle):        .dance-of-tal/drafts/dance/<id>/draft.json + SKILL.md + sibling dirs
- * Dance (legacy):        .dance-of-tal/drafts/dance/<id>.json  (lazily migrated to bundle)
+ * Tal / Performer / Act: .agent-roaster/drafts/<kind>/<id>.json
+ * Dance (bundle):        .agent-roaster/drafts/dance/<id>/draft.json + SKILL.md + sibling dirs
+ * Dance (legacy):        .agent-roaster/drafts/dance/<id>.json  (lazily migrated to bundle)
  * Project-local only — no global scope.
  */
 

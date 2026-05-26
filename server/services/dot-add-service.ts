@@ -1,4 +1,4 @@
-// dot add service — installs Dance skills from a GitHub repo
+// Agent Roaster add service: installs Dance skills from a GitHub repo.
 import path from 'path'
 import {
     parseSource,
@@ -18,7 +18,9 @@ import {
     upsertGitHubDanceLockEntry,
 } from './dance-github-source.js'
 
-const REGISTRY_URL = process.env.DOT_REGISTRY_URL || 'https://registry.dance-of-tal.workers.dev'
+const REGISTRY_URL = process.env.AGENT_ROASTER_REGISTRY_URL
+    || process.env.DOT_REGISTRY_URL
+    || 'https://registry.agentroaster.dev'
 
 export interface AddResult {
     installed: Array<{ urn: string; name: string; description: string }>

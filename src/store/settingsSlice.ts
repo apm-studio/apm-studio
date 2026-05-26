@@ -50,7 +50,7 @@ export const useUISettings = create<UISettingsStore>()(
             setEditToolPartsExpanded: (value) => set({ editToolPartsExpanded: value }),
         }),
         {
-            name: 'dot-studio-ui-settings',
+            name: 'agent-roaster-ui-settings',
             version: 3,
             migrate: migrateUISettings,
         },

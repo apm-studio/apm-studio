@@ -2,7 +2,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { promises as fs } from 'node:fs'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { parseDanceFromSkillMd } from 'dance-of-tal/contracts'
+import { parseDanceFromSkillMd } from '../../shared/dot-contracts.js'
 import { createDraft } from './draft-service.js'
 import { DANCE_EXPORT_EXISTS_PREFIX, exportDanceBundle } from './dance-export-service.js'
 
@@ -42,8 +42,8 @@ describe('dance export service', () => {
             ].join('\n'),
         })
 
-        await fs.mkdir(path.join(workingDir, '.dance-of-tal', 'drafts', 'dance', draft.id, 'scripts'), { recursive: true })
-        await fs.writeFile(path.join(workingDir, '.dance-of-tal', 'drafts', 'dance', draft.id, 'scripts', 'check.sh'), 'echo ok\n', 'utf-8')
+        await fs.mkdir(path.join(workingDir, '.agent-roaster', 'drafts', 'dance', draft.id, 'scripts'), { recursive: true })
+        await fs.writeFile(path.join(workingDir, '.agent-roaster', 'drafts', 'dance', draft.id, 'scripts', 'check.sh'), 'echo ok\n', 'utf-8')
 
         const exported = await exportDanceBundle({
             cwd: workingDir,

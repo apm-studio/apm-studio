@@ -1,4 +1,3 @@
-import path from 'path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 describe('resolveDotCommand', () => {
@@ -7,21 +6,19 @@ describe('resolveDotCommand', () => {
         vi.resetModules()
     })
 
-    it('uses the sibling ../dot source checkout in dev mode', async () => {
-        vi.stubEnv('DOT_STUDIO_PRODUCTION', '0')
+    it('does not resolve the legacy sibling dot checkout in dev mode', async () => {
+        vi.stubEnv('AGENT_ROASTER_PRODUCTION', '0')
 
-        const { resolveDotCommand, resolveLocalDotRoot } = await import('./dot-loader.js')
+        const { resolveDotCommand } = await import('./dot-loader.js')
 
-        expect(resolveLocalDotRoot()).toBe(path.resolve(process.cwd(), '..', 'dot'))
-        expect(resolveDotCommand().join(' ')).toContain(path.join('dot', 'src', 'cli', 'dot.ts'))
+        expect(resolveDotCommand().join(' ')).not.toContain('dot/src/cli/dot.ts')
     })
 
-    it('uses the packaged dance-of-tal command in production mode', async () => {
-        vi.stubEnv('DOT_STUDIO_PRODUCTION', '1')
+    it('uses the Agent Roaster package command in production mode', async () => {
+        vi.stubEnv('AGENT_ROASTER_PRODUCTION', '1')
 
-        const { resolveDotCommand, resolveLocalDotRoot } = await import('./dot-loader.js')
+        const { resolveDotCommand } = await import('./dot-loader.js')
 
-        expect(resolveLocalDotRoot()).toBeNull()
-        expect(resolveDotCommand().join(' ')).not.toContain(path.join('dot', 'src', 'cli', 'dot.ts'))
+        expect(resolveDotCommand()[0]).not.toBe('dance-of-tal')
     })
 })

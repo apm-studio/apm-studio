@@ -1,25 +1,28 @@
 {
-  "name": "dot-studio",
+  "name": "agent-roaster",
   "version": "0.2.13",
-  "description": "DOT Studio visual workspace for composing and running Dance of Tal performers and acts on top of OpenCode.",
+  "description": "Agent Roaster packages coding agents and applies them to Codex, Claude, Gemini, and local AI coding assistants.",
   "license": "MIT",
   "author": "monarchjuno",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dance-of-tal/dot-studio.git"
+    "url": "git+https://github.com/agent-roaster/agent-roaster.git"
   },
-  "homepage": "https://github.com/dance-of-tal/dot-studio",
+  "homepage": "https://github.com/agent-roaster/agent-roaster",
   "bugs": {
-    "url": "https://github.com/dance-of-tal/dot-studio/issues"
+    "url": "https://github.com/agent-roaster/agent-roaster/issues"
   },
   "publishConfig": {
     "access": "public"
   },
   "keywords": [
-    "dance-of-tal",
-    "dot",
-    "studio",
+    "agent-roaster",
+    "agent-packages",
+    "coding-agents",
     "opencode",
+    "codex",
+    "claude",
+    "gemini",
     "agentic-ai",
     "visual-editor"
   ],
@@ -33,8 +36,8 @@
     "dev:client": "vite",
     "kill-ports": "node scripts/kill-ports.mjs 43200 43201 43202",
     "dev:all": "npm run kill-ports && tsx server/start.ts",
-    "server": "node --import ./server/lib/dot-dev-alias-register.mjs ./node_modules/tsx/dist/cli.mjs server/index.ts",
-    "server:dev": "node --import ./server/lib/dot-dev-alias-register.mjs ./node_modules/tsx/dist/cli.mjs --watch server/index.ts",
+    "server": "node ./node_modules/tsx/dist/cli.mjs server/index.ts",
+    "server:dev": "node ./node_modules/tsx/dist/cli.mjs --watch server/index.ts",
     "clean": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true }); require('fs').rmSync('client', { recursive: true, force: true })\"",
     "build": "npm run build:all",
     "build:client": "vite build --outDir client",
@@ -49,7 +52,7 @@
     "prepublishOnly": "npm run build:all"
   },
   "bin": {
-    "dot-studio": "dist/cli.js"
+    "agent-roaster": "dist/cli.js"
   },
   "files": [
     "dist/",
@@ -69,7 +72,6 @@
     "@xterm/addon-webgl": "^0.19.0",
     "@xterm/xterm": "^6.0.0",
     "@xyflow/react": "^12.10.1",
-    "dance-of-tal": "^4.0.5",
     "diff": "^9.0.0",
     "discord.js": "^14.26.4",
     "elkjs": "^0.11.1",
@@ -108,8 +110,5 @@
     "typescript-eslint": "^8.48.0",
     "vite": "^6.4.2",
     "vitest": "^4.1.0"
-  },
-  "overrides": {
-    "simple-git": "3.36.0"
   }
 }

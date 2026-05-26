@@ -31,14 +31,14 @@ dotPerformer.get('/api/dot/search', async (c) => {
     const kind = c.req.query('kind')
     const limit = parseInt(c.req.query('limit') || '20', 10)
     try {
-        // Call DOT registry + skills.sh in parallel
+        // Call the Agent Roaster registry and skills.sh in parallel.
         const shouldSearchSkillsSh = !kind || kind === 'dance' || kind === 'all'
         const [dotResults, skillsShResults] = await Promise.all([
             searchDotRegistry(query, { kind, limit }),
             shouldSearchSkillsSh ? searchSkillsCatalog(query, 10).catch(() => []) : Promise.resolve([]),
         ])
 
-        // Deduplicate by name: DOT results take priority
+        // Deduplicate by name: Agent Roaster registry results take priority.
         const dotNames = new Set(dotResults.map((r) => r.name))
         const merged = [...dotResults, ...skillsShResults.filter((r) => !dotNames.has(r.name))]
 

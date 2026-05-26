@@ -1,8 +1,9 @@
 import fs from 'fs/promises'
 import path from 'path'
 
-const MANIFEST_FILENAME = 'dot-studio.manifest.json'
-const NAMESPACE = 'dot-studio'
+const MANIFEST_FILENAME = 'agent-roaster.manifest.json'
+const LEGACY_MANIFEST_FILENAME = 'dot-studio.manifest.json'
+const NAMESPACE = 'agent-roaster'
 
 export interface ProjectionManifest {
     version: 1
@@ -21,8 +22,12 @@ function manifestPath(executionDir: string) {
 
 export function isManualAgentSyncProjectionPath(filePath: string) {
     return (
-        filePath.startsWith('.codex/agents/dot_studio_') && filePath.endsWith('.toml')
-    ) || filePath.startsWith('.agents/skills/dot-studio-')
+        (
+            filePath.startsWith('.codex/agents/agent_roaster_')
+            || filePath.startsWith('.codex/agents/dot_studio_')
+        ) && filePath.endsWith('.toml')
+    ) || filePath.startsWith('.agents/skills/agent-roaster-')
+        || filePath.startsWith('.agents/skills/dot-studio-')
 }
 
 export async function readManifest(executionDir: string): Promise<ProjectionManifest | null> {
@@ -30,14 +35,21 @@ export async function readManifest(executionDir: string): Promise<ProjectionMani
         const raw = await fs.readFile(manifestPath(executionDir), 'utf-8')
         return JSON.parse(raw) as ProjectionManifest
     } catch {
-        return null
+        try {
+            const raw = await fs.readFile(path.join(executionDir, '.opencode', LEGACY_MANIFEST_FILENAME), 'utf-8')
+            return JSON.parse(raw) as ProjectionManifest
+        } catch {
+            return null
+        }
     }
 }
 
 export async function writeManifest(executionDir: string, manifest: ProjectionManifest) {
     const filePath = manifestPath(executionDir)
+    manifest.owner = NAMESPACE
     await fs.mkdir(path.dirname(filePath), { recursive: true })
     await fs.writeFile(filePath, JSON.stringify(manifest, null, 2), 'utf-8')
+    await fs.rm(path.join(executionDir, '.opencode', LEGACY_MANIFEST_FILENAME), { force: true }).catch(() => {})
 }
 
 async function readOrCreateManifest(executionDir: string, workspaceHash = ''): Promise<ProjectionManifest> {
@@ -120,14 +132,14 @@ export async function updateGitExclude(executionDir: string) {
     }
 
     const excludePath = path.join(gitDir, 'info', 'exclude')
-    const marker = '# dot-studio projection (auto-managed)'
+    const marker = '# agent-roaster projection (auto-managed)'
     const patterns = [
         marker,
-        '.opencode/agents/dot-studio/',
-        '.opencode/skills/dot-studio/',
-        '.opencode/dot-studio.manifest.json',
-        '.codex/agents/dot_studio_*.toml',
-        '.agents/skills/dot-studio-*',
+        '.opencode/agents/agent-roaster/',
+        '.opencode/skills/agent-roaster/',
+        '.opencode/agent-roaster.manifest.json',
+        '.codex/agents/agent_roaster_*.toml',
+        '.agents/skills/agent-roaster-*',
     ]
 
     let content = ''

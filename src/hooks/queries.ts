@@ -134,7 +134,7 @@ export function useServerHealth() {
     })
 }
 
-// ── DOT Status ──────────────────────────────────────────
+// ── Agent Roaster Status ────────────────────────────────
 export function useDotStatus() {
     const workingDir = useStudioStore((s) => s.workingDir)
     return useQuery<{ initialized: boolean; dotDir: string; projectDir: string }>({

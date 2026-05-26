@@ -4,7 +4,7 @@
  * PRD §5: Thread is an execution instance of an Act.
  * Manages: creation, status transitions, participant session mapping, shutdown.
  *
- * Storage: ~/.dot-studio/workspaces/<workspaceId>/act-runtime/<actId>/<threadId>/
+ * Storage: ~/.agent-roaster/workspaces/<workspaceId>/act-runtime/<actId>/<threadId>/
  *   - thread.json   — Thread metadata + mailbox state (WS5)
  *   - board.json    — Callboard entries
  *   - events.jsonl  — Append-only event log

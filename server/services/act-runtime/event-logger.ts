@@ -2,7 +2,7 @@
  * event-logger.ts — Append-only event log for Act Thread
  *
  * PRD §6.3: Events are stored as append-only .jsonl files.
- * Path: ~/.dot-studio/workspaces/<workspaceId>/act-runtime/<actId>/<threadId>/events.jsonl
+ * Path: ~/.agent-roaster/workspaces/<workspaceId>/act-runtime/<actId>/<threadId>/events.jsonl
  */
 
 import { promises as fs } from 'node:fs'

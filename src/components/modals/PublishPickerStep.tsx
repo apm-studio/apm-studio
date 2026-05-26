@@ -1,5 +1,5 @@
 import { FileText, Wand2, Zap } from 'lucide-react'
-import { DOT_TOS_URL } from '../../lib/dot-terms'
+import { AGENT_ROASTER_TOS_URL } from '../../lib/dot-terms'
 import { PickerSection } from './publish-modal-utils'
 import type { PickerItem } from './publish-modal-utils'
 
@@ -45,12 +45,12 @@ export default function PublishPickerStep({
             {!authUser?.authenticated && (
                 <div className="publish-modal__auth-callout">
                     <div>
-                        <strong>DOT sign-in required</strong>
+                        <strong>Agent Roaster sign-in required</strong>
                         <p>
-                            Save Local and Publish use your DOT namespace.
-                            By signing in, you agree to the Dance of Tal Terms of Service:
+                            Save Local and Publish use your Agent Roaster namespace.
+                            By signing in, you agree to the Agent Roaster Terms of Service:
                             {' '}
-                            <a href={DOT_TOS_URL} target="_blank" rel="noreferrer">{DOT_TOS_URL}</a>
+                            <a href={AGENT_ROASTER_TOS_URL} target="_blank" rel="noreferrer">{AGENT_ROASTER_TOS_URL}</a>
                         </p>
                     </div>
                     <button

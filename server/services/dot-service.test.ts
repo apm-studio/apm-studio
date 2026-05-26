@@ -67,11 +67,11 @@ describe('installDotAsset', () => {
         cloneDir = await fs.mkdtemp(path.join(os.tmpdir(), 'dot-studio-clone-'))
 
         assetFilePathMock.mockReset().mockImplementation((targetCwd: string, urn: string) =>
-            path.join(targetCwd, '.dance-of-tal', 'assets', `${urn.replace(/[\\/]/g, '__')}.json`),
+            path.join(targetCwd, '.agent-roaster', 'assets', `${urn.replace(/[\\/]/g, '__')}.json`),
         )
         copySkillDirMock.mockReset()
         danceAssetDirMock.mockReset().mockImplementation((targetCwd: string, urn: string) =>
-            path.join(targetCwd, '.dance-of-tal', 'dances', urn.replace(/[\\/]/g, '__')),
+            path.join(targetCwd, '.agent-roaster', 'dances', urn.replace(/[\\/]/g, '__')),
         )
         ensureDotDirMock.mockReset().mockResolvedValue(undefined)
         fetchRegistryPackageRawMock.mockReset()

@@ -397,7 +397,7 @@ export function useAssetLibraryController() {
 
             if (action === 'save-local') {
                 if (!authUser?.username) {
-                    throw new Error('Run dot login first to save a local fork under your namespace.')
+                    throw new Error('Sign in to Agent Roaster first to save a local fork under your namespace.')
                 }
                 const result = await api.dot.saveLocalAsset(asset.kind, targetSlug, payload, authUser.username)
                 await invalidateInstalledAssetQueries(asset.kind)

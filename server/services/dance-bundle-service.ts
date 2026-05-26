@@ -2,7 +2,7 @@
  * dance-bundle-service.ts — CRUD operations for Dance skill bundles.
  *
  * A Dance bundle is a directory-backed draft that stores:
- *   .dance-of-tal/drafts/dance/<draftId>/
+ *   .agent-roaster/drafts/dance/<draftId>/
  *       ├── draft.json     (metadata)
  *       ├── SKILL.md       (main skill content)
  *       ├── scripts/       (helper scripts)

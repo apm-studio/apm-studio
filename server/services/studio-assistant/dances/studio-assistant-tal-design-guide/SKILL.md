@@ -1,10 +1,10 @@
 ---
 name: studio-assistant-tal-design-guide
-description: Helps the Studio Assistant design strong Tal content for agents. Use when deciding what belongs in Tal, how concise it should be, how to express persona and mental model, or how to propose a role-appropriate Tal before creating a Performer.
-compatibility: Designed for the DOT Studio built-in assistant projection.
+description: Helps the Agent Roaster Assistant design strong Tal content for agents. Use when deciding what belongs in Tal, how concise it should be, how to express persona and mental model, or how to propose a role-appropriate Tal before creating a Performer.
+compatibility: Designed for the Agent Roaster built-in assistant projection.
 ---
 
-# Studio Tal Design Guide
+# Agent Roaster Tal Design Guide
 
 Use this skill when the task is not just "make a Tal draft exist", but "design a good Tal for this agent".
 

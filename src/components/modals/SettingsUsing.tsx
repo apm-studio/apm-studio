@@ -171,7 +171,7 @@ function StudioSection({ studio }: { studio: UsageData['studio'] }) {
         <div className="stg-section">
             <h3 className="stg-section__title">
                 <Zap size={11} style={{ display: 'inline', verticalAlign: '-1px', marginRight: 4 }} />
-                dot-studio
+                agent-roaster
             </h3>
             <div className="stg-group">
                 <div className="stg-row">

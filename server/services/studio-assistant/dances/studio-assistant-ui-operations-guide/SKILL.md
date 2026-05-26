@@ -1,10 +1,10 @@
 ---
 name: studio-assistant-ui-operations-guide
-description: "Tells the Studio Assistant how to open, reveal, inspect, hide, show, move, resize, and panel-toggle Studio UI surfaces through apply_studio_actions. Use for direct Studio UI manipulation requests."
-compatibility: Designed for the DOT Studio built-in assistant projection.
+description: "Tells the Agent Roaster Assistant how to open, reveal, inspect, hide, show, move, resize, and panel-toggle UI surfaces through apply_studio_actions. Use for direct UI manipulation requests."
+compatibility: Designed for the Agent Roaster built-in assistant projection.
 ---
 
-# Studio UI Operations Guide
+# Agent Roaster UI Operations Guide
 
 Use this skill when the user asks Studio Assistant to manipulate the Studio interface.
 

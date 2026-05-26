@@ -37,21 +37,30 @@ function resolveDefaultProjectDir() {
         return path.resolve(process.env.PROJECT_DIR)
     }
 
-    if (process.env.DOT_STUDIO_PRODUCTION === '1') {
+    if (resolveProductionMode()) {
         return path.resolve(process.cwd())
     }
 
     return path.resolve(process.cwd(), '..')
 }
 
+function resolveProductionMode() {
+    const explicit = process.env.AGENT_ROASTER_PRODUCTION?.trim()
+    if (explicit) {
+        return explicit === '1'
+    }
+
+    return process.env.DOT_STUDIO_PRODUCTION === '1'
+}
+
 // ── Constants ───────────────────────────────────────────
-export const IS_PRODUCTION = process.env.DOT_STUDIO_PRODUCTION === '1'
+export const IS_PRODUCTION = resolveProductionMode()
 const DEFAULT_PORT = IS_PRODUCTION ? STUDIO_RELEASE_APP_PORT : STUDIO_DEV_API_PORT
 const DEFAULT_OPENCODE_PORT = IS_PRODUCTION ? STUDIO_RELEASE_OPENCODE_PORT : STUDIO_DEV_OPENCODE_PORT
 
 export const PORT = resolvePort('PORT', process.env.PORT, DEFAULT_PORT)
 export const DEFAULT_PROJECT_DIR = resolveDefaultProjectDir()
-export const STUDIO_DIR = process.env.STUDIO_DIR || path.join(os.homedir(), '.dot-studio')
+export const STUDIO_DIR = process.env.STUDIO_DIR || path.join(os.homedir(), '.agent-roaster')
 export const STUDIO_OPENCODE_CONFIG_DIR = path.join(STUDIO_DIR, 'opencode')
 export const OPENCODE_PORT = resolvePort('OPENCODE_PORT', process.env.OPENCODE_PORT, DEFAULT_OPENCODE_PORT)
 export const OPENCODE_URL = `http://localhost:${OPENCODE_PORT}`

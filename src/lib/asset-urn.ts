@@ -1,4 +1,4 @@
-import { parseDotAssetUrn } from 'dance-of-tal/contracts'
+import { parseDotAssetUrn } from '../../shared/dot-contracts'
 
 export type ParsedStudioAssetUrn = {
     kind: string

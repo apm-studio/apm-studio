@@ -6,6 +6,7 @@ import {
     danceAssetDir,
     discoverSkills,
     getOwnerRepo,
+    readSkillLock,
     readPluginManifest,
     shallowClone,
     upsertSkillLockEntry,
@@ -13,21 +14,7 @@ import {
     type ParsedSource,
 } from '../lib/dot-source.js'
 
-type RawSkillLock = {
-    skills?: Record<string, unknown>
-}
-
-async function readSkillLock(cwd: string) {
-    const addModule = await import('dance-of-tal/lib/add') as unknown as {
-        readSkillLock?: (targetCwd: string) => Promise<unknown>
-    }
-
-    if (typeof addModule.readSkillLock === 'function') {
-        return addModule.readSkillLock(cwd)
-    }
-
-    return { version: 1, skills: {} }
-}
+type RawSkillLock = Awaited<ReturnType<typeof readSkillLock>>
 
 type RawGitHubSkillLockEntry = {
     source?: unknown

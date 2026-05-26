@@ -14,14 +14,6 @@ const assetCopies = [
         source: path.join(rootDir, 'server', 'services', 'studio-assistant', 'dances'),
         target: path.join(rootDir, 'dist', 'server', 'services', 'studio-assistant', 'dances'),
     },
-    {
-        source: path.join(rootDir, 'server', 'lib', 'dot-dev-alias-loader.mjs'),
-        target: path.join(rootDir, 'dist', 'server', 'lib', 'dot-dev-alias-loader.mjs'),
-    },
-    {
-        source: path.join(rootDir, 'server', 'lib', 'dot-dev-alias-register.mjs'),
-        target: path.join(rootDir, 'dist', 'server', 'lib', 'dot-dev-alias-register.mjs'),
-    },
 ]
 
 for (const assetCopy of assetCopies) {

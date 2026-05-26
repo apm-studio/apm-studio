@@ -1,5 +1,5 @@
-const SESSION_TITLE_PREFIX = 'DOT Studio:'
-const SESSION_METADATA_PATTERN = /^DOT Studio:\s*(.*?)\s*\[studio:([^:\]]+):(.*)\]\s*$/
+const SESSION_TITLE_PREFIX = 'Agent Roaster:'
+const SESSION_METADATA_PATTERN = /^(?:Agent Roaster|DOT Studio):\s*(.*?)\s*\[studio:([^:\]]+):(.*)\]\s*$/
 const MAX_PROVISIONAL_THREAD_TITLE_LENGTH = 80
 
 export function buildStudioSessionTitle(performerId: string, performerName: string, configHash: string): string {
@@ -11,7 +11,7 @@ export function parseStudioSessionTitle(title: string | undefined | null): {
     performerId: string
     configHash: string
 } | null {
-    if (!title || !title.startsWith(SESSION_TITLE_PREFIX)) {
+    if (!title || (!title.startsWith(SESSION_TITLE_PREFIX) && !title.startsWith('DOT Studio:'))) {
         return null
     }
 

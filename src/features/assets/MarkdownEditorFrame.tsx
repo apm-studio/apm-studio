@@ -381,7 +381,7 @@ export default function MarkdownEditorFrame({ id, data, selected }: NodeProps<No
     const handleOpenDanceBundle = async () => {
         try {
             if (!draft || draft.kind !== 'dance' || draft.saveState !== 'saved') return
-            await api.studio.openPath(`${workingDir}/.dance-of-tal/drafts/dance/${draft.id}`)
+            await api.studio.openPath(`${workingDir}/.agent-roaster/drafts/dance/${draft.id}`)
         } catch (error) {
             setStatus({ tone: 'error', message: formatStudioApiErrorMessage(error, false) })
         }

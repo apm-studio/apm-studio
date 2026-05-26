@@ -1,4 +1,4 @@
-// DOT Studio — Core Types
+// Agent Roaster — Core Types
 
 import type { RuntimeModelVariant } from '../../shared/model-variants'
 import type {

@@ -87,9 +87,9 @@ export default function WorkspaceToolbar() {
             await api.dot.init();
             queryClient.invalidateQueries({ queryKey: queryKeys.dotStatus(workingDir) });
         } catch (err) {
-            console.error('Failed to init DOT workspace:', err);
-            showToast('Failed to initialize the DOT workspace for this project.', 'error', {
-                title: 'DOT init failed',
+            console.error('Failed to init Agent Roaster workspace:', err);
+            showToast('Failed to initialize the Agent Roaster workspace for this project.', 'error', {
+                title: 'Workspace init failed',
                 dedupeKey: `dot:init:${workingDir || 'unknown'}`,
                 actionLabel: 'Retry',
                 onAction: () => {
@@ -106,14 +106,14 @@ export default function WorkspaceToolbar() {
                     type="button"
                     className={`toolbar__item dot-status ${dotInitialized ? 'dot-ok' : 'dot-missing'}`}
                     onClick={handleDotInit}
-                    aria-label={dotInitialized ? 'DOT workspace initialized' : 'Initialize DOT workspace'}
+                    aria-label={dotInitialized ? 'Agent Roaster workspace initialized' : 'Initialize Agent Roaster workspace'}
                     title={dotInitialized
-                        ? 'DOT initialized for this workspace'
-                        : 'DOT not initialized — click to init'
+                        ? 'Agent Roaster initialized for this workspace'
+                        : 'Agent Roaster not initialized - click to init'
                     }
                 >
                     <Hexagon size={12} />
-                    <span>DOT</span>
+                    <span>Roaster</span>
                 </button>
 
                 {gitBranch && (
@@ -129,7 +129,7 @@ export default function WorkspaceToolbar() {
                             <button
                                 type="button"
                                 className="toolbar__item dot-auth-status dot-auth-status--ok"
-                                aria-label={`DOT account @${authUser.username}`}
+                                aria-label={`Agent Roaster account @${authUser.username}`}
                                 title={`Signed in as @${authUser.username}`}
                             >
                                 <UserRound size={12} />
@@ -146,10 +146,10 @@ export default function WorkspaceToolbar() {
                         type="button"
                         className="toolbar__item dot-auth-status dot-auth-status--warn"
                         onClick={() => void startLogin(true)}
-                        aria-label={isAuthenticating ? 'DOT sign in pending' : 'Sign in to DOT'}
+                        aria-label={isAuthenticating ? 'Agent Roaster sign in pending' : 'Sign in to Agent Roaster'}
                         title={isAuthenticating
-                            ? 'Waiting for DOT login to complete in the browser'
-                            : 'Review the DOT Terms of Service and sign in'
+                            ? 'Waiting for Agent Roaster login to complete in the browser'
+                            : 'Review the Agent Roaster Terms of Service and sign in'
                         }
                     >
                         <LogIn size={12} />
