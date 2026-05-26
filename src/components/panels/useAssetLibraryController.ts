@@ -17,13 +17,14 @@ import {
     useAssetKind,
     useAssets,
     useDanceUpdateChecks,
+    useApmPackages,
     useRosterAuthUser,
-    useInstallAsset,
     useModels,
     queryKeys,
     useReimportDanceSource,
     useRegistrySearch,
 } from '../../hooks/queries'
+import { createPerformerNode } from '../../lib/performers'
 import { useMcpCatalog } from './useMcpCatalog'
 import type { AssetPanelAction, AssetPanelAsset, LibraryAsset } from './asset-panel-types'
 import type {
@@ -73,7 +74,7 @@ function syncLabelForState(state: GitHubDanceSyncStatus['state']) {
             return 'Upstream removed'
         case 'repo_drift':
             return 'Repo drift'
-        case 'legacy_unverifiable':
+        case 'provenance_unverifiable':
             return 'Needs relink'
         case 'check_failed':
             return 'Check failed'
@@ -145,6 +146,7 @@ export function useAssetLibraryController() {
         registryKind,
         searchEnabled,
     )
+    const { data: apmPackages = [] } = useApmPackages(scope === 'registry')
 
     const mcp = useMcpCatalog(workingDir, showMcps)
     const mcpServers = useMemo(() => mcp.mcpServers ?? [], [mcp.mcpServers])
@@ -171,7 +173,6 @@ export function useAssetLibraryController() {
         [drafts, installedKind],
     )
 
-    const installMutation = useInstallAsset()
     const applyDanceUpdatesMutation = useApplyDanceUpdates()
     const reimportDanceSourceMutation = useReimportDanceSource()
     const [danceSyncByKey, setDanceSyncByKey] = useState<Record<string, GitHubDanceSyncStatus>>({})
@@ -237,6 +238,13 @@ export function useAssetLibraryController() {
         () => new Set(assetInventory.map((asset) => getAssetUrn(asset)).filter(Boolean) as string[]),
         [assetInventory],
     )
+    const importedRegistryListingIds = useMemo(
+        () => new Set(apmPackages
+            .map((summary) => summary.derivedFrom)
+            .filter((source): source is string => typeof source === 'string' && source.startsWith('registry:'))
+            .map((source) => source.slice('registry:'.length))),
+        [apmPackages],
+    )
 
     const triggerSearch = () => {
         if (registryQuery.trim()) {
@@ -249,16 +257,76 @@ export function useAssetLibraryController() {
         setSearchEnabled(false)
     }
 
-    const handleRegistryInstall = async (urn: string, targetScope: 'global' | 'stage') => {
-        // Check if this is a skills.sh result — route through GitHub import
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const item = (registryResults as any[]).find((r: any) => getAssetUrn(r) === urn)
-        if (item?.tags?.includes('skills.sh') && item.kind === 'dance') {
-            // owner contains "owner/repo", name is the skill name → "owner/repo@name"
-            const source = `${item.owner}@${item.name}`
-            return api.roster.addFromGitHub(source, targetScope)
+    const handleRegistryInstall = async (urn: string) => {
+        const item = registryResults.find((entry) => getAssetUrn(entry) === urn)
+        const listingId = item?.registryListing?.id
+        if (!listingId) {
+            throw new Error('Registry listing is missing its source reference.')
         }
-        return installMutation.mutateAsync({ urn, scope: targetScope })
+
+        const response = await api.explore.importListing(listingId)
+        const packageResponse = await api.apm.readPackage(response.packageId)
+        const agent = packageResponse.manifest['x-8pm']?.agent
+        if (agent) {
+            useStudioStore.setState((state) => {
+                const existing = state.performers.find((performer) => performer.id === agent.performerId)
+                if (existing) {
+                    return {
+                        selectedPerformerId: existing.id,
+                        selectedPerformerSessionId: null,
+                        selectedMarkdownEditorId: null,
+                        activeChatPerformerId: existing.id,
+                        canvasRevealTarget: {
+                            id: existing.id,
+                            type: 'performer',
+                            nonce: (state.canvasRevealTarget?.nonce || 0) + 1,
+                        },
+                    }
+                }
+
+                const center = state.canvasCenter || { x: 0, y: 0 }
+                const node = createPerformerNode({
+                    id: agent.performerId,
+                    name: agent.performerName,
+                    x: center.x,
+                    y: center.y,
+                    model: agent.model,
+                    modelVariant: agent.modelVariant || null,
+                    inlineInstruction: agent.inlineInstruction || null,
+                    talRef: agent.talRef || null,
+                    danceRefs: agent.danceRefs || [],
+                    mcpServerNames: agent.mcpServerNames || [],
+                    agentId: agent.agentId || null,
+                    planMode: agent.planMode === true,
+                    meta: {
+                        derivedFrom: agent.derivedFrom || `registry:${listingId}`,
+                        authoring: {
+                            slug: item.slug || item.registryListing?.slug,
+                            description: item.description,
+                            tags: item.tags,
+                        },
+                    },
+                })
+                return {
+                    performers: [...state.performers, node],
+                    editingTarget: null,
+                    selectedPerformerId: node.id,
+                    selectedPerformerSessionId: null,
+                    selectedMarkdownEditorId: null,
+                    activeChatPerformerId: node.id,
+                    canvasRevealTarget: {
+                        id: node.id,
+                        type: 'performer',
+                        nonce: (state.canvasRevealTarget?.nonce || 0) + 1,
+                    },
+                    inspectorFocus: null,
+                    workspaceDirty: true,
+                }
+            })
+            useStudioStore.getState().recordStudioChange({ kind: 'performer', performerIds: [agent.performerId] })
+        }
+        await queryClient.invalidateQueries({ queryKey: queryKeys.apmPackages(workingDir) })
+        return response
     }
 
     const createNewPerformerDraftEntry = (kind: 'tal' | 'dance') => {
@@ -273,7 +341,7 @@ export function useAssetLibraryController() {
         if (created) {
             selectPerformer(created.id)
             setActiveChatPerformer(created.id)
-            setAuthoringHint(`Created ${created.name}. Configure and publish it from the inspector.`)
+            setAuthoringHint(`Created ${created.name}. Configure it from the inspector, then save it locally when ready.`)
         }
     }
 
@@ -326,7 +394,7 @@ export function useAssetLibraryController() {
                 setDetailActionStatus(sync.message || syncLabelForState(sync.state))
             }
         } catch (error: unknown) {
-            setDetailActionStatus(error instanceof Error ? error.message : 'Skill Pack update check failed.')
+            setDetailActionStatus(error instanceof Error ? error.message : 'Skill update check failed.')
         } finally {
             setDetailActionLoading(null)
         }
@@ -349,13 +417,13 @@ export function useAssetLibraryController() {
             if (response.updated.length > 0) {
                 recordInstalledDanceChange()
                 await invalidateInstalledAssetQueries('dance')
-                setDetailActionStatus(`Updated ${response.updated.length} Skill Pack bundle${response.updated.length > 1 ? 's' : ''} from GitHub.`)
+                setDetailActionStatus(`Updated ${response.updated.length} Skill${response.updated.length > 1 ? 's' : ''} from GitHub.`)
                 return
             }
 
-            setDetailActionStatus(response.skipped[0]?.reason || 'No GitHub Skill Pack assets were updated.')
+            setDetailActionStatus(response.skipped[0]?.reason || 'No GitHub Skill assets were updated.')
         } catch (error: unknown) {
-            setDetailActionStatus(error instanceof Error ? error.message : 'Skill Pack update failed.')
+            setDetailActionStatus(error instanceof Error ? error.message : 'Skill update failed.')
         } finally {
             setDetailActionLoading(null)
         }
@@ -372,62 +440,49 @@ export function useAssetLibraryController() {
             recordInstalledDanceChange()
             await invalidateInstalledAssetQueries('dance')
             setDetailActionStatus(response.installed.length > 0
-                ? `Imported ${response.installed.length} newly available Skill Pack bundle${response.installed.length > 1 ? 's' : ''}.`
-                : 'No newly available GitHub Skill Pack bundles were found for this source.')
+                ? `Imported ${response.installed.length} newly available Skill${response.installed.length > 1 ? 's' : ''}.`
+                : 'No newly available GitHub Skills were found for this source.')
         } catch (error: unknown) {
-            setDetailActionStatus(error instanceof Error ? error.message : 'Skill Pack re-import failed.')
+            setDetailActionStatus(error instanceof Error ? error.message : 'Skill re-import failed.')
         } finally {
             setDetailActionLoading(null)
         }
     }
 
-    const handlePinnedAssetAction = async (asset: AssetPanelAsset, action: 'save-local' | 'publish') => {
+    const handlePinnedAssetAction = async (asset: AssetPanelAsset, action: 'save-local') => {
         if (!isLibraryAsset(asset)) return
 
         try {
             setDetailActionLoading(action)
             setDetailActionStatus(null)
 
-            if (asset.kind === 'dance' && action === 'publish') {
-                throw new Error('Skill Pack assets are exported from the Skill Pack editor. Export the draft, upload it to GitHub, then import it from Asset Library as a Skill Pack.')
-            }
-
             const payload = buildAuthoringPayloadFromAsset(asset)
             const targetSlug = asset.slug || slugifyAssetName(asset.name)
 
-            if (action === 'save-local') {
-                if (!authUser?.username) {
-                    throw new Error('Sign in to Agent Roster first to save a local fork under your namespace.')
-                }
-                const result = await api.roster.saveLocalAsset(asset.kind, targetSlug, payload, authUser.username)
-                await invalidateInstalledAssetQueries(asset.kind)
+            if (!authUser?.username) {
+                throw new Error('Sign in to 8PM Studio first to save a local fork under your namespace.')
+            }
+            const result = await api.roster.saveLocalAsset(asset.kind, targetSlug, payload, authUser.username)
+            await invalidateInstalledAssetQueries(asset.kind)
 
-                if (asset.source === 'draft' && asset.draftId) {
-                    const draftId = asset.draftId
-                    api.drafts.delete(asset.kind, draftId).catch(() => {})
-                    useStudioStore.setState((state) => {
-                        const next = { ...state.drafts }
-                        delete next[draftId]
-                        const cascade = buildDraftDeleteCascade(asset.kind, draftId, state.performers, state.acts)
-                        return {
-                            drafts: next,
-                            markdownEditors: removeMarkdownEditorsByDraftIds(state.markdownEditors, [draftId]),
-                            ...cascade,
-                        }
-                    })
-                }
-
-                setDetailActionStatus(result.existed
-                    ? `Updated local ${asset.kind} asset at ${result.urn}.`
-                    : `Saved local ${asset.kind} asset at ${result.urn}.`)
-                return
+            if (asset.source === 'draft' && asset.draftId) {
+                const draftId = asset.draftId
+                api.drafts.delete(asset.kind, draftId).catch(() => {})
+                useStudioStore.setState((state) => {
+                    const next = { ...state.drafts }
+                    delete next[draftId]
+                    const cascade = buildDraftDeleteCascade(asset.kind, draftId, state.performers, state.acts)
+                    return {
+                        drafts: next,
+                        markdownEditors: removeMarkdownEditorsByDraftIds(state.markdownEditors, [draftId]),
+                        ...cascade,
+                    }
+                })
             }
 
-            const result = await api.roster.publishAsset(asset.kind, targetSlug, payload, Array.isArray(asset.tags) ? asset.tags : [], undefined, true)
-            await invalidateInstalledAssetQueries(asset.kind)
-            setDetailActionStatus(result.published
-                ? `Published ${result.urn}.`
-                : `${result.urn} already exists in the registry.`)
+            setDetailActionStatus(result.existed
+                ? `Updated local ${asset.kind} asset at ${result.urn}.`
+                : `Saved local ${asset.kind} asset at ${result.urn}.`)
         } catch (error: unknown) {
             setDetailActionStatus(error instanceof Error ? error.message : 'Asset action failed.')
         } finally {
@@ -619,10 +674,14 @@ export function useAssetLibraryController() {
 
     const selectedInstalled = useMemo(() => {
         if (!resolvedSelectedAsset) return false
+        if (resolvedSelectedAsset.source === 'registry') {
+            const listingId = resolvedSelectedAsset.registryListing?.id
+            return !!listingId && importedRegistryListingIds.has(listingId)
+        }
         if (resolvedSelectedAsset.source && resolvedSelectedAsset.urn) return true
         const urn = getAssetUrn(resolvedSelectedAsset)
         return urn ? installedUrns.has(urn) : false
-    }, [installedUrns, resolvedSelectedAsset])
+    }, [importedRegistryListingIds, installedUrns, resolvedSelectedAsset])
 
     const localPlaceholder = placeholderForLocalSection(localSection, runtimeKind)
 
@@ -687,6 +746,7 @@ export function useAssetLibraryController() {
         setRegistryKind,
         registryGroups,
         installedUrns,
+        importedRegistryListingIds,
         triggerSearch,
         handleQueryChange,
         handleRegistryInstall,

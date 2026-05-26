@@ -12,7 +12,7 @@ export default function AssetLibrary({ onClose }: { onClose?: () => void }) {
     return (
         <div className="assets-panel">
             <div className="drawer-header">
-                <span className="drawer-header__title">Asset Library</span>
+                <span className="drawer-header__title">Packages</span>
                 {onClose ? (
                     <button className="icon-btn" onClick={onClose} title="Close">
                         <X size={14} />
@@ -33,7 +33,7 @@ export default function AssetLibrary({ onClose }: { onClose?: () => void }) {
                     onClick={() => controller.setScope('registry')}
                 >
                     <Globe size={10} style={{ marginRight: 3, verticalAlign: -1 }} />
-                    Registry
+                    Explore
                 </button>
             </div>
 
@@ -68,7 +68,6 @@ export default function AssetLibrary({ onClose }: { onClose?: () => void }) {
                     onSelectAsset={controller.setSelectedAsset}
                     onCloseAsset={() => controller.setSelectedAsset(null)}
                     onSaveLocal={(asset) => controller.handlePinnedAssetAction(asset, 'save-local')}
-                    onPublish={(asset) => controller.handlePinnedAssetAction(asset, 'publish')}
                     onDeleteDraft={controller.handleDeleteDraft}
                     onEditDraft={controller.handleEditDraft}
                     onUninstall={controller.handleUninstallAsset}
@@ -111,7 +110,7 @@ export default function AssetLibrary({ onClose }: { onClose?: () => void }) {
                         controller.setSearchEnabled(false)
                     }}
                     registryGroups={controller.registryGroups}
-                    installedUrns={controller.installedUrns}
+                    importedRegistryListingIds={controller.importedRegistryListingIds}
                     selectedAsset={controller.selectedAsset}
                     selectedAssetKey={controller.selectedAssetKey}
                     selectedInstalled={controller.selectedInstalled}
@@ -122,7 +121,6 @@ export default function AssetLibrary({ onClose }: { onClose?: () => void }) {
                     onInstall={controller.handleRegistryInstall}
                     onCloseAsset={() => controller.setSelectedAsset(null)}
                     onSaveLocal={(asset) => controller.handlePinnedAssetAction(asset, 'save-local')}
-                    onPublish={(asset) => controller.handlePinnedAssetAction(asset, 'publish')}
                     onDeleteDraft={controller.handleDeleteDraft}
                 />
             )}

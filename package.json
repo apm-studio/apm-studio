@@ -1,22 +1,23 @@
 {
-  "name": "agent-roster",
+  "name": "8pm-studio",
   "version": "0.2.13",
-  "description": "Agent Roster packages coding agents and applies them to Codex, Claude, Gemini, and local AI coding assistants.",
+  "description": "8PM Studio packages agents, instructions, and skills for Codex, Claude, Gemini, and local AI coding assistants.",
   "license": "MIT",
   "author": "monarchjuno",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/agent-roster/agent-roster.git"
+    "url": "git+https://github.com/8pm-studio/8pm-studio.git"
   },
-  "homepage": "https://github.com/agent-roster/agent-roster",
+  "homepage": "https://github.com/8pm-studio/8pm-studio",
   "bugs": {
-    "url": "https://github.com/agent-roster/agent-roster/issues"
+    "url": "https://github.com/8pm-studio/8pm-studio/issues"
   },
   "publishConfig": {
     "access": "public"
   },
   "keywords": [
-    "agent-roster",
+    "8pm-studio",
+    "apm",
     "agent-packages",
     "coding-agents",
     "opencode",
@@ -52,7 +53,7 @@
     "prepublishOnly": "npm run build:all"
   },
   "bin": {
-    "agent-roster": "dist/cli.js"
+    "8pm-studio": "dist/cli.js"
   },
   "files": [
     "dist/",
@@ -91,6 +92,7 @@
     "tsx": "^4.21.0",
     "ws": "^8.19.0",
     "xstate": "^5.28.0",
+    "yaml": "^2.8.1",
     "zustand": "^5.0.11"
   },
   "devDependencies": {

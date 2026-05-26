@@ -105,7 +105,7 @@ function createAssistantTarget(
     return {
         chatKey,
         kind: 'assistant' as const,
-        name: 'Studio Assistant',
+        name: '8PM Assistant',
         runtimeConfig: {
             ...createRuntimeConfig(),
             model,
@@ -123,7 +123,7 @@ function createAssistantTarget(
         },
         requestTarget: {
             performerId: chatKey,
-            performerName: 'Studio Assistant',
+            performerName: '8PM Assistant',
         },
     }
 }
@@ -301,7 +301,7 @@ describe('chat send actions', () => {
             chatKeyToSession: { 'performer-1': sessionId },
             sessionToChatKey: { [sessionId]: 'performer-1' },
             sessionLoading: { [sessionId]: true },
-            sessions: [{ id: sessionId, title: 'DOT Studio: Performer 1 [studio:performer-1:hash]' }],
+            sessions: [{ id: sessionId, title: '8PM Studio: Performer 1 [studio:performer-1:hash]' }],
             initRealtimeEvents: vi.fn(),
             listSessions: vi.fn(async () => {}),
         })

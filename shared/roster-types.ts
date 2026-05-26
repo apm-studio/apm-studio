@@ -1,4 +1,4 @@
-// Agent Roster asset contract types.
+// 8PM Studio asset contract types.
 // Keep this file as the shared import surface for client/server asset types.
 
 export type {

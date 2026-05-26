@@ -1,8 +1,8 @@
 /**
- * assistant-service.ts — Agent + skill projection for Studio Assistant.
+ * assistant-service.ts — Agent + skill projection for 8PM Assistant.
  *
  * Produces:
- *   ~/.agent-roster/opencode/{agents,skills,tools}/agent-roster/...
+ *   ~/.8pm-studio/opencode/{agents,skills,tools}/8pm-studio/...
  *
  * Builtin assistant dances are authored as Agent Skills under:
  *   server/services/studio-assistant/dances/<skill-name>/SKILL.md
@@ -20,7 +20,8 @@ import type { AssistantStageContext } from '../../../shared/assistant-actions.js
 import { STUDIO_DIR } from '../../lib/config.js'
 import { getOpencode } from '../../lib/opencode.js'
 import { listStudioAssets } from '../asset-service.js'
-import { searchRosterRegistry, searchSkillsCatalog } from '../roster-service.js'
+import { searchSkillsCatalog } from '../roster-service.js'
+import { searchExploreCatalog } from '../explore-registry-service.js'
 import { syncSkillBundleSiblings } from '../opencode-projection/skill-bundle-sync.js'
 import { ASSISTANT_TOOL_NAMES, getStaticAssistantTools } from './assistant-tools.js'
 
@@ -43,11 +44,11 @@ function workspaceAssistantProjectionRoot(executionDir: string) {
 }
 
 function agentFilePath(executionDir: string) {
-    return path.join(assistantProjectionRoot(executionDir), 'agents', 'agent-roster', AGENT_FILENAME)
+    return path.join(assistantProjectionRoot(executionDir), 'agents', '8pm-studio', AGENT_FILENAME)
 }
 
 function skillDir(executionDir: string, skillName: string) {
-    return path.join(assistantProjectionRoot(executionDir), 'skills', 'agent-roster', skillName)
+    return path.join(assistantProjectionRoot(executionDir), 'skills', '8pm-studio', skillName)
 }
 
 function skillFilePath(executionDir: string, skillName: string) {
@@ -58,24 +59,16 @@ function toolFilePath(executionDir: string, toolName: string) {
     return path.join(assistantProjectionRoot(executionDir), 'tools', `${toolName}.ts`)
 }
 
-function rosterStudioAgentPath(opencodeRoot: string) {
-    return path.join(opencodeRoot, 'agents', 'agent-roster', AGENT_FILENAME)
+function assistantAgentPath(opencodeRoot: string) {
+    return path.join(opencodeRoot, 'agents', '8pm-studio', AGENT_FILENAME)
 }
 
-function rosterStudioSkillDir(opencodeRoot: string, skillName: string) {
-    return path.join(opencodeRoot, 'skills', 'agent-roster', skillName)
+function assistantSkillDir(opencodeRoot: string, skillName: string) {
+    return path.join(opencodeRoot, 'skills', '8pm-studio', skillName)
 }
 
-function rosterStudioToolPath(opencodeRoot: string, toolName: string) {
+function assistantToolPath(opencodeRoot: string, toolName: string) {
     return path.join(opencodeRoot, 'tools', `${toolName}.ts`)
-}
-
-function legacyDotStudioAgentPath(opencodeRoot: string) {
-    return path.join(opencodeRoot, 'agents', 'dot-studio', AGENT_FILENAME)
-}
-
-function legacyDotStudioSkillDir(opencodeRoot: string, skillName: string) {
-    return path.join(opencodeRoot, 'skills', 'dot-studio', skillName)
 }
 
 // ── Read source assets ────────────────────────────────
@@ -122,7 +115,7 @@ async function removeStaleBuiltinSkills(
     executionDir: string,
     expectedSkillNames: string[],
 ): Promise<boolean> {
-    const skillsRoot = path.join(assistantProjectionRoot(executionDir), 'skills', 'agent-roster')
+    const skillsRoot = path.join(assistantProjectionRoot(executionDir), 'skills', '8pm-studio')
     const expected = new Set(expectedSkillNames)
     let changed = false
 
@@ -132,24 +125,6 @@ async function removeStaleBuiltinSkills(
         if (expected.has(entry.name)) continue
 
         await fs.rm(path.join(skillsRoot, entry.name), { recursive: true, force: true })
-        changed = true
-    }
-
-    return changed
-}
-
-async function removeLegacyGlobalAssistantProjection(executionDir: string): Promise<boolean> {
-    const root = assistantProjectionRoot(executionDir)
-    const targets = [
-        path.join(root, 'agents', 'dot-studio'),
-        path.join(root, 'skills', 'dot-studio'),
-    ]
-    let changed = false
-
-    for (const target of targets) {
-        const existed = await fs.stat(target).then(() => true).catch(() => false)
-        if (!existed) continue
-        await fs.rm(target, { recursive: true, force: true })
         changed = true
     }
 
@@ -186,11 +161,9 @@ async function removeAssistantProjectionAtRoot(
     let changed = false
 
     const targets = [
-        rosterStudioAgentPath(opencodeRoot),
-        legacyDotStudioAgentPath(opencodeRoot),
-        ...toolNames.map((toolName) => rosterStudioToolPath(opencodeRoot, toolName)),
-        ...skillNames.map((skillName) => rosterStudioSkillDir(opencodeRoot, skillName)),
-        ...skillNames.map((skillName) => legacyDotStudioSkillDir(opencodeRoot, skillName)),
+        assistantAgentPath(opencodeRoot),
+        ...toolNames.map((toolName) => assistantToolPath(opencodeRoot, toolName)),
+        ...skillNames.map((skillName) => assistantSkillDir(opencodeRoot, skillName)),
     ]
 
     for (const target of targets) {
@@ -202,26 +175,15 @@ async function removeAssistantProjectionAtRoot(
         changed = true
     }
 
-    const skillsRoot = path.join(opencodeRoot, 'skills', 'agent-roster')
+    const skillsRoot = path.join(opencodeRoot, 'skills', '8pm-studio')
     const remainingSkillEntries = await fs.readdir(skillsRoot, { withFileTypes: true }).catch(() => [])
     if (remainingSkillEntries.length === 0) {
         await fs.rm(skillsRoot, { recursive: true, force: true }).catch(() => {})
     }
-    const legacySkillsRoot = path.join(opencodeRoot, 'skills', 'dot-studio')
-    const remainingLegacySkillEntries = await fs.readdir(legacySkillsRoot, { withFileTypes: true }).catch(() => [])
-    if (remainingLegacySkillEntries.length === 0) {
-        await fs.rm(legacySkillsRoot, { recursive: true, force: true }).catch(() => {})
-    }
-
-    const agentDir = path.join(opencodeRoot, 'agents', 'agent-roster')
+    const agentDir = path.join(opencodeRoot, 'agents', '8pm-studio')
     const remainingAgentEntries = await fs.readdir(agentDir, { withFileTypes: true }).catch(() => [])
     if (remainingAgentEntries.length === 0) {
         await fs.rm(agentDir, { recursive: true, force: true }).catch(() => {})
-    }
-    const legacyAgentDir = path.join(opencodeRoot, 'agents', 'dot-studio')
-    const remainingLegacyAgentEntries = await fs.readdir(legacyAgentDir, { withFileTypes: true }).catch(() => [])
-    if (remainingLegacyAgentEntries.length === 0) {
-        await fs.rm(legacyAgentDir, { recursive: true, force: true }).catch(() => {})
     }
 
     return changed
@@ -301,7 +263,7 @@ async function removeManagedWorkspaceAssistantProjection(
 // ── Frontmatter ───────────────────────────────────────
 function buildFrontmatter(skillNames: string[], toolNames: string[]): string {
     const lines = ['---']
-    lines.push('description: "Agent Roster Assistant"')
+    lines.push('description: "8PM Assistant"')
     lines.push('mode: primary')
     // Model is NOT specified here — passed via promptAsync() to avoid staleness.
 
@@ -702,15 +664,15 @@ export function buildAssistantActionPrompt(
         '- Keep user-facing text brief; send mutations only as a tool call, never as raw JSON or fenced code.',
         'Tool payload rules:',
         '- Load `studio-assistant-action-surface-guide` before non-trivial mutation payloads or when exact fields/refs are needed.',
-        '- Load the smallest relevant design guide for the task: Agent, Team, workflow, Persona, Studio UI operations, Skill Pack authoring, or find-skills.',
+        '- Load the smallest relevant design guide for the task: Agent, Team, workflow, Instruction, Studio UI operations, Skill authoring, or find-skills.',
         '- Relevant guide names: `studio-assistant-performer-guide`, `studio-assistant-act-guide`, `studio-assistant-workflow-guide`, `studio-assistant-tal-design-guide`, `studio-assistant-ui-operations-guide`, `studio-assistant-skill-creator-guide`, `find-skills`.',
         '- Tool arguments must be `{version:1, actions:[...]}`. Omit unspecified optional fields and validate the whole envelope before calling.',
         '- Prefer snapshot ids. Use exact names only when unambiguous. Never invent ids, model ids, model variants, MCP names, URNs, relation ids, or draft ids.',
         '- Use same-call refs only for objects created earlier in the same tool call; dependent actions must be in order.',
         '- Reuse existing Studio objects when they fit. Create new objects only when the user asked for new or tailored assets.',
-        '- Persona and Skill Pack actions are draft-only; Agent and Team actions are current Stage-only; Save Local and Publish are outside this tool surface.',
+        '- Instruction and Skill actions are draft-only; Agent and Team actions are current Stage-only; Save Local is outside this tool surface.',
         '- UI actions are hot state changes. Use `showPerformer`, `showAct`, `showDraft`, `setStudioPanel`, `setStudioNodeVisibility`, or `setStudioNodeFrame` for open/show/focus/reveal/hide/move/resize/panel requests.',
-        '- For clear Agent or workflow creation, missing Persona/Skill Pack/model details alone should not block mutation. Use compact role-appropriate inline Persona when role intent is clear.',
+        '- For clear Agent or workflow creation, missing Instruction/Skill/model details alone should not block mutation. Use compact role-appropriate inline Instruction when role intent is clear.',
         '- For new workflow Teams, create missing Agents first, then create/update the Team with participants and at least one meaningful relation when there are multiple workflow participants.',
         '- Relation payloads use `source...` and `target...` fields only; every new relation needs non-empty `name` and `description`.',
         '- `actRules` is always an array of strings. Participant subscriptions are wake filters and use canonical `callboardKeys`; `eventTypes` supports only `runtime.idle`.',
@@ -720,7 +682,7 @@ export function buildAssistantActionPrompt(
 function shouldDiscoverAssets(message: string) {
     const text = message.toLowerCase()
     return [
-        'tal', 'dance', 'performer', 'act', 'persona', 'skill pack', 'team', 'workflow', 'agent', 'skill', 'registry', 'install', 'import',
+        'tal', 'dance', 'performer', 'act', 'instruction', 'skill', 'team', 'workflow', 'agent', 'skill', 'registry', 'install', 'import',
         'search', 'find', 'create', 'build', 'apply', 'use', 'attach',
         '탈', '댄스', '퍼포머', '액트', '워크플로', '워크플로우', '에이전트', '스킬', '레지스트리',
         '설치', '가져오기', '임포트', '검색', '찾', '만들', '생성', '적용', '사용', '붙여', '연결',
@@ -732,7 +694,7 @@ type AssistantSkillIntent = 'create' | 'find' | 'apply' | 'mixed' | null
 function mentionsSkillContext(message: string) {
     const text = message.toLowerCase()
     return [
-        'skill', 'skills.sh', 'dance', 'skill pack', '스킬', '댄스',
+        'skill', 'skills.sh', 'dance', 'skill', '스킬', '댄스',
     ].some((token) => text.includes(token))
 }
 
@@ -743,8 +705,8 @@ function inferAssistantSkillIntent(message: string): AssistantSkillIntent {
     const create =
         [
         'create skill', 'make skill', 'new skill', 'build skill', 'author skill',
-        'create dance', 'new dance', 'create skill pack', 'new skill pack', 'edit skill', 'update skill', 'improve skill', 'enhance skill',
-        'skill creator', 'dance draft', 'skill pack draft',
+        'create dance', 'new dance', 'create skill', 'new skill', 'edit skill', 'update skill', 'improve skill', 'enhance skill',
+        'skill creator', 'dance draft', 'skill draft',
         '스킬 만들어', '스킬 생성', '스킬 작성', '새 스킬', '댄스 만들어', '댄스 생성', '댄스 작성',
         '스킬 수정', '스킬 개선', '댄스 수정', '댄스 개선', '댄스 초안',
     ].some((token) => text.includes(token))
@@ -755,7 +717,7 @@ function inferAssistantSkillIntent(message: string): AssistantSkillIntent {
     const find =
         [
         'find skill', 'search skill', 'look for skill', 'is there a skill', 'recommend skill',
-        'existing skill', 'skills.sh', 'find dance', 'find skill pack',
+        'existing skill', 'skills.sh', 'find dance', 'find skill',
         '스킬 찾아', '스킬 검색', '스킬 추천', '기존 스킬', '댄스 찾아', '댄스 검색', '댄스 추천',
     ].some((token) => text.includes(token))
         || ['find', 'search', 'recommend'].some((token) => text.includes(token))
@@ -763,7 +725,7 @@ function inferAssistantSkillIntent(message: string): AssistantSkillIntent {
     const apply =
         [
         'apply skill', 'use skill', 'install skill', 'add skill', 'attach skill',
-        'apply dance', 'use dance', 'install dance', 'attach dance', 'apply skill pack', 'use skill pack', 'install skill pack', 'attach skill pack', 'import skill',
+        'apply dance', 'use dance', 'install dance', 'attach dance', 'apply skill', 'use skill', 'install skill', 'attach skill', 'import skill',
         '스킬 적용', '스킬 사용', '스킬 설치', '스킬 추가', '스킬 붙여', '댄스 적용', '댄스 사용',
         '댄스 설치', '댄스 추가', '댄스 붙여',
     ].some((token) => text.includes(token))
@@ -780,8 +742,8 @@ function inferAssistantSkillIntent(message: string): AssistantSkillIntent {
 function inferDiscoveryKinds(message: string): Array<'tal' | 'dance' | 'performer' | 'act'> {
     const text = message.toLowerCase()
     const kinds = new Set<'tal' | 'dance' | 'performer' | 'act'>()
-    if (text.includes('tal') || text.includes('persona') || text.includes('탈')) kinds.add('tal')
-    if (text.includes('dance') || text.includes('skill') || text.includes('skill pack') || text.includes('skills.sh') || text.includes('댄스') || text.includes('스킬')) kinds.add('dance')
+    if (text.includes('tal') || text.includes('instruction') || text.includes('탈')) kinds.add('tal')
+    if (text.includes('dance') || text.includes('skill') || text.includes('skill') || text.includes('skills.sh') || text.includes('댄스') || text.includes('스킬')) kinds.add('dance')
     if (text.includes('performer') || text.includes('agent') || text.includes('퍼포머') || text.includes('에이전트')) kinds.add('performer')
     if (
         text.includes('act')
@@ -808,7 +770,7 @@ function buildDiscoveryQuery(message: string) {
     const stopwords = new Set([
         'please', 'help', 'with', 'that', 'this', 'for', 'from', 'into', 'using', 'make', 'create', 'build',
         'find', 'search', 'install', 'import', 'add', 'use', 'want', 'need', 'the', 'a', 'an',
-        'skill', 'skills', 'dance', 'performer', 'act', 'workflow', 'agent', 'tal', 'persona', 'pack', 'team',
+        'skill', 'skills', 'dance', 'performer', 'act', 'workflow', 'agent', 'tal', 'instruction', 'pack', 'team',
         '스킬', '댄스', '퍼포머', '액트', '워크플로', '워크플로우', '에이전트', '탈',
         '만들', '만들어', '만들어줘', '생성', '생성해', '생성해줘', '찾아', '찾아줘', '검색',
         '검색해', '검색해줘', '설치', '적용', '사용', '추가', '붙여', '가져와', '임포트',
@@ -821,6 +783,20 @@ function buildDiscoveryQuery(message: string) {
         .filter((token) => token.length >= 2 && !stopwords.has(token))
 
     return Array.from(new Set(tokens)).slice(0, 6).join(' ').trim()
+}
+
+function labelForDiscoveryKind(kind: 'tal' | 'dance' | 'performer' | 'act') {
+    if (kind === 'tal') return 'Instruction'
+    if (kind === 'dance') return 'Skill'
+    if (kind === 'performer') return 'Agent'
+    return 'Team'
+}
+
+function exploreKindForDiscoveryKind(kind: 'tal' | 'dance' | 'performer' | 'act') {
+    if (kind === 'tal') return 'instruction' as const
+    if (kind === 'dance') return 'skill' as const
+    if (kind === 'performer') return 'agent' as const
+    return 'team' as const
 }
 
 function matchesDiscoveryQuery(candidate: { name?: string; urn?: string; description?: string }, query: string) {
@@ -836,7 +812,7 @@ function buildAssistantSkillIntentPrompt(intent: AssistantSkillIntent): string[]
         case 'create':
             return [
                 'Skill Intent Hint:',
-                '- The user likely wants to create or improve a local Skill Pack bundle.',
+                '- The user likely wants to create or improve a local Skill.',
                 '- Load and use `studio-assistant-skill-creator-guide`.',
                 '- Do not default to skills.sh search unless the user explicitly asks for an existing external skill.',
             ]
@@ -845,7 +821,7 @@ function buildAssistantSkillIntentPrompt(intent: AssistantSkillIntent): string[]
                 'Skill Intent Hint:',
                 '- The user likely wants to find or compare existing skills.',
                 '- Load and use `find-skills`.',
-                '- Prefer installed local matches first, then Agent Roster registry matches, then skills.sh candidates.',
+                '- Prefer installed local matches first, then Explore matches, then skills.sh candidates.',
             ]
         case 'apply':
             return [
@@ -859,7 +835,7 @@ function buildAssistantSkillIntentPrompt(intent: AssistantSkillIntent): string[]
             return [
                 'Skill Intent Hint:',
                 '- The message mixes local skill authoring with external skill search or apply.',
-                '- Ask one short clarifying question: should Studio create a new local Skill Pack bundle, or use an existing external skill?',
+                '- Ask one short clarifying question: should Studio create a new local Skill, or use an existing external skill?',
                 '- Use `studio-assistant-skill-creator-guide` for create/edit paths and `find-skills` for search/apply paths.',
             ]
         default:
@@ -895,16 +871,20 @@ export async function buildAssistantDiscoveryPrompt(workingDir: string, userMess
 
         if (installed.length > 0) {
             sections.push(
-                `Installed ${kind} matches:`,
+                `Installed ${labelForDiscoveryKind(kind)} matches:`,
                 ...installed.map((asset) => `- ${asset.name} (${asset.urn}) [${asset.source}]`),
             )
         }
 
-        const registry = await searchRosterRegistry(query, { kind, limit: 4 }).catch(() => [])
-        if (registry.length > 0) {
+        const registry = await searchExploreCatalog({
+            q: query,
+            kind: exploreKindForDiscoveryKind(kind),
+            limit: 4,
+        }).catch(() => ({ listings: [] }))
+        if (registry.listings.length > 0) {
             sections.push(
-                `Registry ${kind} matches:`,
-                ...registry.slice(0, 3).map((asset) => `- ${asset.name} (${asset.urn})`),
+                `Explore ${labelForDiscoveryKind(kind)} matches:`,
+                ...registry.listings.slice(0, 3).map((asset) => `- ${asset.name} (${asset.source.repo}${asset.source.path ? `/${asset.source.path}` : ''})`),
             )
         }
 
@@ -912,7 +892,7 @@ export async function buildAssistantDiscoveryPrompt(workingDir: string, userMess
             const skills = await searchSkillsCatalog(query, 4).catch(() => [])
             if (skills.length > 0) {
                 sections.push(
-                    'skills.sh dance matches:',
+                    'skills.sh Skill matches:',
                     ...skills.slice(0, 3).map((asset) => `- ${asset.name} (${asset.urn}) ${asset.description} install via ${asset.owner}@${asset.name}`),
                     'If you recommend or apply one of these, include a short security warning about reviewing third-party skill contents and source trust first.',
                 )
@@ -955,7 +935,6 @@ export async function ensureAssistantAgent(
     const toolNames = tools.map((tool) => tool.name)
     let changed = false
 
-    changed = (await removeLegacyGlobalAssistantProjection(executionDir)) || changed
     changed = (await removeManagedWorkspaceAssistantProjection(executionDir, skillNames, toolNames)) || changed
 
     changed = (await removeDuplicateAssistantProjectionAncestors(
@@ -993,5 +972,5 @@ export async function ensureAssistantAgent(
         await oc.instance.dispose({ directory: executionDir }).catch(() => {})
     }
 
-    return `agent-roster/${AGENT_FILENAME.replace(/\.md$/, '')}`
+    return `8pm-studio/${AGENT_FILENAME.replace(/\.md$/, '')}`
 }

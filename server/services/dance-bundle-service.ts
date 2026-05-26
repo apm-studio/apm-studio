@@ -1,8 +1,8 @@
 /**
- * dance-bundle-service.ts — CRUD operations for Dance skill bundles.
+ * dance-bundle-service.ts — CRUD operations for Skill folders.
  *
- * A Dance bundle is a directory-backed draft that stores:
- *   .agent-roster/drafts/dance/<draftId>/
+ * A Skill folder is a directory-backed draft that stores:
+ *   .8pm-studio/drafts/dance/<draftId>/
  *       ├── draft.json     (metadata)
  *       ├── SKILL.md       (main skill content)
  *       ├── scripts/       (helper scripts)
@@ -73,10 +73,10 @@ export function sanitizeBundlePath(filePath: string): string {
     return normalized
 }
 
-// ── Bundle scaffold ─────────────────────────────────────
+// ── Skill scaffold ─────────────────────────────────────
 
 /**
- * Create the initial directory structure for a Dance bundle.
+ * Create the initial directory structure for a Skill folder.
  */
 export async function scaffoldDanceBundle(
     cwd: string,

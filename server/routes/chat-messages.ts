@@ -49,7 +49,7 @@ chatMessages.post('/api/chat/sessions/:id/send', async (c) => {
         return jsonOpencodeError(
             c,
             new StudioValidationError(
-                'Select a model for this performer before sending prompts.',
+                'Select a model for this agent before sending prompts.',
                 'select_model',
             ),
         )

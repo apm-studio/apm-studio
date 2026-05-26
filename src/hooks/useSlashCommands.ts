@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 
 const SLASH_COMMANDS = [
-    { cmd: '/dance', desc: 'Add dance for this turn', mode: 'compose' as const },
+    { cmd: '/skill', desc: 'Add Skill for this turn', mode: 'compose' as const },
 ]
 
 export function getSlashMenuQuery(input: string) {
@@ -86,7 +86,7 @@ export function useSlashCommands(input: string, setInput: (v: string) => void) {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault()
             if (activeCommand) {
-                // in dance selection mode, do nothing on Enter
+                // in skill selection mode, do nothing on Enter
                 return true
             }
 

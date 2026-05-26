@@ -2,10 +2,7 @@ import fs from 'fs/promises'
 import path from 'path'
 import { assetFilePath, danceAssetDir, ensureRosterDir, getGlobalCwd, getRegistryPackage, readAsset } from './roster-source.js'
 import {
-    buildPublishPlan,
-    executePublishPlan,
     existsInRegistry,
-    getPayloadTags,
     loadLocalAssetByUrn,
     parseRosterAsset,
     parseRosterAssetUrn,
@@ -15,11 +12,6 @@ import { buildCanonicalStudioAssetUrn, sanitizePublishSegment, stageFromWorkingD
 const SLUG_RE = /^[a-z0-9][a-z0-9._-]{1,98}[a-z0-9]$/
 
 export type StudioAssetKind = 'tal' | 'dance' | 'performer' | 'act'
-
-type AuthUser = {
-    token: string
-    username: string
-}
 
 type ProvidedPublishAsset = {
     kind: 'tal' | 'performer' | 'act'
@@ -112,7 +104,7 @@ async function ensureDanceUrnPublished(cwd: string, urn: string) {
 
     const local = await readAsset(cwd, urn)
     if (local) {
-        throw new Error(`Dance dependency '${urn}' is local-only. Export it from the Dance editor, upload it to GitHub, import it from Asset Library, and then try again.`)
+        throw new Error(`Dance dependency '${urn}' is local-only. Export it from the Dance editor, upload it to GitHub, import it from Packages, and then try again.`)
     }
 
     throw new Error(`Dance dependency '${urn}' is missing from the registry.`)
@@ -332,98 +324,6 @@ export async function saveLocalStudioAsset(options: {
     return { urn, path: filePath, existed, payload: normalized }
 }
 
-export async function publishStudioAsset(options: {
-    cwd: string
-    kind: StudioAssetKind
-    slug: string
-    stage?: string
-    payload?: unknown
-    tags?: string[]
-    providedAssets?: ProvidedPublishAsset[]
-    auth: AuthUser
-}) {
-    if (options.kind === 'dance') {
-        throw new Error('Dance assets cannot be published via the Studio registry pipeline. Export the draft, upload it to GitHub, and import it from Asset Library as Dance.')
-    }
-
-    const slug = sanitizeSlug(options.slug)
-    const username = sanitizeAuthor(options.auth.username)
-    const stage = options.stage ? sanitizePublishSegment(options.stage) : stageFromWorkingDir(options.cwd)
-    const urn = buildCanonicalStudioAssetUrn(options.kind, username, stage, slug)
-    const providedAssets = (options.providedAssets || []).map((asset) => {
-        const parsed = parseRosterAsset(asset.payload)
-        if (parsed.kind === 'dance') {
-            throw new Error('Dance assets are not accepted as Studio publish dependencies.')
-        }
-        if (parsed.kind !== asset.kind) {
-            throw new Error(`Provided asset '${asset.urn}' kind does not match its payload.`)
-        }
-        if (parsed.urn !== asset.urn) {
-            throw new Error(`Provided asset '${asset.urn}' does not match payload URN '${parsed.urn}'.`)
-        }
-
-        const parsedUrn = parseRosterAssetUrn(asset.urn, asset.kind)
-        if (parsedUrn.owner.toLowerCase() !== username.toLowerCase()) {
-            throw new Error(`Provided asset '${asset.urn}' must belong to @${username}.`)
-        }
-
-        return {
-            kind: asset.kind,
-            urn: parsed.urn,
-            payload: parsed as Record<string, unknown>,
-            tags: sanitizeTags(asset.tags).length > 0
-                ? sanitizeTags(asset.tags)
-                : sanitizeTags(getPayloadTags(parsed as Record<string, unknown>)),
-        }
-    })
-    let localPayload: Record<string, unknown>
-
-    if (options.payload !== undefined) {
-        const saved = await saveLocalStudioAsset({
-            cwd: options.cwd,
-            kind: options.kind,
-            author: username,
-            slug,
-            stage,
-            payload: options.payload,
-        })
-        localPayload = saved.payload
-    } else {
-        const existing = await loadLocalAssetByUrn(options.cwd, urn)
-        if (!existing) {
-            throw new Error(`Local asset '${urn}' was not found. Save it locally before publishing.`)
-        }
-        localPayload = existing
-    }
-
-    await ensurePublishableDependencies(options.cwd, options.kind, localPayload, providedAssets)
-
-    const tags = options.tags && options.tags.length > 0 ? sanitizeTags(options.tags) : sanitizeTags(getPayloadTags(localPayload))
-    const publishKind = options.kind as 'tal' | 'performer' | 'act'
-    const plan = await buildPublishPlan({
-        cwd: options.cwd,
-        username,
-        root: {
-            kind: publishKind,
-            urn,
-            payload: localPayload,
-            tags,
-        },
-        providedAssets: Object.fromEntries(
-            providedAssets.map((asset) => [asset.urn, asset]),
-        ),
-    })
-    const publishResult = await executePublishPlan(plan, options.auth.token)
-
-    return {
-        urn,
-        published: publishResult.rootPublished,
-        dependenciesPublished: publishResult.published.filter((entryUrn) => entryUrn !== urn),
-        dependenciesSkipped: publishResult.skipped.filter((entryUrn) => entryUrn !== urn),
-        dependenciesExisting: publishResult.existing,
-    }
-}
-
 export async function uninstallStudioAsset(cwd: string, urn: string) {
     const [kind] = urn.split('/')
 
@@ -445,7 +345,7 @@ export async function uninstallStudioAsset(cwd: string, urn: string) {
         if (await tryRemoveDir(danceAssetDir(getGlobalCwd(), urn))) {
             return { urn, scope: 'global' as const }
         }
-        throw new Error(`Dance asset not found: ${urn}`)
+        throw new Error(`Skill asset not found: ${urn}`)
     }
 
     // Tal / Performer / Act — single JSON file

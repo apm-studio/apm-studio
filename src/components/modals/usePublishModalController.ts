@@ -5,17 +5,12 @@ import { api } from '../../api'
 import { formatStudioApiErrorMessage } from '../../lib/api-errors'
 import {
     buildActAssetPayload,
-    buildActPublishPayload,
     buildPerformerAssetPayload,
-    buildPerformerPublishPayload,
-    getActPublishDependencyIssues,
-    getPerformerPublishBlockReasons,
 } from '../../lib/performers'
 import { queryKeys, useAssetKind } from '../../hooks/queries'
 import { useRosterLogin } from '../../hooks/useRosterLogin'
 import {
     buildMarkdownAssetPayload,
-    buildAuthoringPayloadForPublishApi,
     buildPublishFormSeed,
     buildPerformerPreflight,
     buildPickerItems,
@@ -51,7 +46,7 @@ export function usePublishModalController(open: boolean) {
     const [description, setDescription] = useState('')
     const [tagsText, setTagsText] = useState('')
     const [status, setStatus] = useState<null | { tone: 'success' | 'error'; message: string }>(null)
-    const [action, setAction] = useState<null | 'save-local' | 'publish'>(null)
+    const [action, setAction] = useState<null | 'save-local'>(null)
     const performer = pickerSelection?.kind === 'performer'
         ? performers.find((p) => p.id === pickerSelection.performerId) || null
         : null
@@ -121,25 +116,6 @@ export function usePublishModalController(open: boolean) {
             || baseline.content !== draft.content
     }, [draft, markdownEditor])
 
-    const publishBlockedReason = useMemo(() => {
-        if (performer) {
-            const dependencyIssues = getPerformerPublishBlockReasons(performer, drafts)
-            if (dependencyIssues.length > 0) {
-                return dependencyIssues.join(' ')
-            }
-        }
-        if (selectedAct) {
-            const actBlockReasons = [
-                ...getActPublishBlockReasons(selectedAct),
-                ...getActPublishDependencyIssues(selectedAct, performers, drafts),
-            ]
-            if (actBlockReasons.length > 0) {
-                return actBlockReasons.join(' ')
-            }
-        }
-        return null
-    }, [drafts, performer, performers, selectedAct])
-
     const canSaveLocal = !!target
         && !!stage.trim()
         && !!slug.trim()
@@ -147,13 +123,6 @@ export function usePublishModalController(open: boolean) {
         && !!authUser?.authenticated
         && (!performer || performerPreflight.every((entry) => entry.status === 'ready'))
         && (!selectedAct || getActPublishBlockReasons(selectedAct).length === 0)
-
-    const canPublish = !!target
-        && !!stage.trim()
-        && !!slug.trim()
-        && (!markdownEditor || markdownDirty)
-        && !publishBlockedReason
-        && !!authUser?.authenticated
 
     const invalidateKind = async (kind: 'tal' | 'dance' | 'performer' | 'act') => {
         await Promise.all([
@@ -163,7 +132,7 @@ export function usePublishModalController(open: boolean) {
         ])
     }
 
-    const syncMarkdownDraftPublishState = (
+    const syncMarkdownDraftLocalState = (
         resultUrn: string,
         nextSlug: string,
         payload: ReturnType<typeof buildMarkdownAssetPayload>,
@@ -231,7 +200,7 @@ export function usePublishModalController(open: boolean) {
                 await invalidateKind('performer')
                 setStatus({
                     tone: 'success',
-                    message: result.existed ? `Updated local performer asset at ${result.urn}.` : `Saved local performer asset at ${result.urn}.`,
+                    message: result.existed ? `Updated local agent asset at ${result.urn}.` : `Saved local agent asset at ${result.urn}.`,
                 })
                 return
             }
@@ -243,7 +212,7 @@ export function usePublishModalController(open: boolean) {
                 await invalidateKind('act')
                 setStatus({
                     tone: 'success',
-                    message: result.existed ? `Updated local act asset at ${result.urn}.` : `Saved local act asset at ${result.urn}.`,
+                    message: result.existed ? `Updated local team asset at ${result.urn}.` : `Saved local team asset at ${result.urn}.`,
                 })
                 return
             }
@@ -251,7 +220,7 @@ export function usePublishModalController(open: boolean) {
             if (target.kind === 'tal' && markdownEditor && draft) {
                 const payload = buildMarkdownAssetPayload(markdownEditor, draft, slug, description, tags)
                 const result = await api.roster.saveLocalAsset(markdownEditor.kind, slug, payload, authUser?.username || undefined, stage)
-                syncMarkdownDraftPublishState(result.urn, slug, payload)
+                syncMarkdownDraftLocalState(result.urn, slug, payload)
                 await invalidateKind(markdownEditor.kind)
                 setStatus({
                     tone: 'success',
@@ -262,96 +231,6 @@ export function usePublishModalController(open: boolean) {
 
             if (target.kind === 'tal' && isLocalAsset) {
                 setStatus({ tone: 'success', message: `${target.kind}/${target.id} is already saved locally.` })
-            }
-        } catch (error: unknown) {
-            setStatus({ tone: 'error', message: formatStudioApiErrorMessage(error, false) })
-        } finally {
-            setAction(null)
-        }
-    }
-
-    const handlePublish = async () => {
-        if (!target) return
-        try {
-            setAction('publish')
-            setStatus(null)
-            const tags = parseTags(tagsText)
-
-            if (target.kind === 'performer' && performer) {
-                updatePerformerAuthoringMeta(performer.id, { slug, description, tags })
-                const publishInput = buildPerformerPublishPayload(performer, {
-                    name: performer.name,
-                    slug,
-                    description,
-                    tags,
-                }, {
-                    drafts,
-                    username: authUser?.username || '',
-                    workingDir,
-                    stage,
-                })
-                const result = await api.roster.publishAsset(
-                    'performer',
-                    slug,
-                    buildAuthoringPayloadForPublishApi(publishInput.payload),
-                    tags,
-                    publishInput.providedAssets,
-                    true,
-                    stage,
-                )
-                await invalidateKind('performer')
-                setStatus({
-                    tone: 'success',
-                    message: result.published ? `Published ${result.urn}.` : `${result.urn} already exists in the registry.`,
-                })
-                return
-            }
-
-            if (target.kind === 'act' && selectedAct) {
-                syncActAuthoringMeta(selectedAct.id, tags)
-                const publishInput = buildActPublishPayload(selectedAct, { slug, description, tags }, {
-                    drafts,
-                    performers,
-                    username: authUser?.username || '',
-                    workingDir,
-                    stage,
-                })
-                const result = await api.roster.publishAsset(
-                    'act',
-                    slug,
-                    buildAuthoringPayloadForPublishApi(publishInput.payload),
-                    tags,
-                    publishInput.providedAssets,
-                    true,
-                    stage,
-                )
-                await invalidateKind('act')
-                setStatus({
-                    tone: 'success',
-                    message: result.published ? `Published ${result.urn}.` : `${result.urn} already exists in the registry.`,
-                })
-                return
-            }
-
-            if (target.kind === 'tal' && markdownEditor && draft) {
-                const payload = buildMarkdownAssetPayload(markdownEditor, draft, slug, description, tags)
-                const result = await api.roster.publishAsset(markdownEditor.kind, slug, payload, tags, undefined, true, stage)
-                syncMarkdownDraftPublishState(result.urn, slug, payload)
-                await invalidateKind(markdownEditor.kind)
-                setStatus({
-                    tone: 'success',
-                    message: result.published ? `Published ${result.urn}.` : `${result.urn} already exists in the registry.`,
-                })
-                return
-            }
-
-            if (target.kind === 'tal' && isLocalAsset) {
-                const result = await api.roster.publishAsset(target.kind, slug, undefined, tags, undefined, true, stage)
-                await invalidateKind(target.kind)
-                setStatus({
-                    tone: 'success',
-                    message: result.published ? `Published ${result.urn}.` : `${result.urn} already exists in the registry.`,
-                })
             }
         } catch (error: unknown) {
             setStatus({ tone: 'error', message: formatStudioApiErrorMessage(error, false) })
@@ -384,12 +263,9 @@ export function usePublishModalController(open: boolean) {
         markdownEditor,
         markdownDirty,
         draft,
-        publishBlockedReason,
         canSaveLocal,
-        canPublish,
         isLocalAsset,
         handleSaveLocal,
-        handlePublish,
         handlePickItem: (item: PickerItem) => {
             setPickerSelection(item)
             setStep('form')

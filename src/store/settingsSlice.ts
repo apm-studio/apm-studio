@@ -35,8 +35,6 @@ export function migrateUISettings(persistedState: unknown): UISettings {
     return {
         ...defaults,
         ...rest,
-        // This toggle existed before it was actually wired into chat rendering.
-        // Reset legacy installs to the new visible-by-default behavior.
         showReasoningSummaries: true,
     }
 }
@@ -50,7 +48,7 @@ export const useUISettings = create<UISettingsStore>()(
             setEditToolPartsExpanded: (value) => set({ editToolPartsExpanded: value }),
         }),
         {
-            name: 'agent-roster-ui-settings',
+            name: '8pm-studio-ui-settings',
             version: 3,
             migrate: migrateUISettings,
         },

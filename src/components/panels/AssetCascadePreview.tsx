@@ -59,7 +59,7 @@ export function PerformerCascadePreview({ asset }: { asset: AssetPanelAsset }) {
     const references = getPerformerCascadeReferences(asset)
 
     if (references.length === 0) {
-        return <div className="asset-cascade__empty">No linked Persona or Skill Pack assets.</div>
+        return <div className="asset-cascade__empty">No linked Instruction or Skill assets.</div>
     }
 
     return (

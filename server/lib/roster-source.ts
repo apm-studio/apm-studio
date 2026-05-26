@@ -36,26 +36,18 @@ const execFileAsync = promisify(execFile)
 const ASSET_NAME_RE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/
 const STAGE_RE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/
 const OWNER_RE = /^@[A-Za-z0-9_-]{1,64}$/
-const ASSET_STORE_DIR = '.agent-roster'
-const LEGACY_ASSET_STORE_DIRS = ['.agent-roaster', '.dance-of-tal']
+const ASSET_STORE_DIR = '.8pm-studio'
 const DEFAULT_CLONE_TIMEOUT_MS = 60_000
 const LOCK_FILE = 'skill-lock.json'
-const SUPABASE_URL = process.env.AGENT_ROSTER_SUPABASE_URL
-    || process.env.AGENT_ROASTER_SUPABASE_URL
-    || process.env.DOT_SUPABASE_URL
-    || 'https://qbildcrfjencoqkngyfw.supabase.co'
-const SUPABASE_ANON_KEY = process.env.AGENT_ROSTER_SUPABASE_ANON_KEY
-    || process.env.AGENT_ROASTER_SUPABASE_ANON_KEY
-    || process.env.DOT_SUPABASE_ANON_KEY
-    || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJxYmlsZGNyZmplbmNvcWtuZ3lmdyIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzcyMjYxOTM2LCJleHAiOjIwODc4Mzc5MzZ9.9aI9FU-j20w3UIG7BuVtmpAPh3qClz7xTNXjcq7ofNQ'
+const SUPABASE_URL = process.env.EIGHTPM_STUDIO_SUPABASE_URL
+    || ''
+const SUPABASE_ANON_KEY = process.env.EIGHTPM_STUDIO_SUPABASE_ANON_KEY
+    || ''
 const AUTH_CALLBACK_PORT = 4242
 const AUTH_REDIRECT_URI = `http://localhost:${AUTH_CALLBACK_PORT}/callback`
 const LOGIN_TIMEOUT_MS = 180_000
 
-export const REGISTRY_URL = process.env.AGENT_ROSTER_REGISTRY_URL
-    || process.env.AGENT_ROASTER_REGISTRY_URL
-    || process.env.DOT_REGISTRY_URL
-    || 'https://registry.agentroster.dev'
+const SOURCE_REFERENCE_REGISTRY_MESSAGE = '8PM Registry indexes GitHub source references only. Use Explore to import GitHub source listings.'
 
 export type InstalledAsset = {
     urn: string
@@ -125,33 +117,6 @@ type SkillLockEntry = {
 
 type PublishableKind = Exclude<RosterAssetKind, 'dance'>
 
-type NormalizedPublishAsset = {
-    kind: PublishableKind
-    urn: string
-    payload: Exclude<AnyRosterAssetV1, { kind: 'dance' }>
-    tags: string[]
-}
-
-type PublishDependencyStatus = 'exists' | 'foreign_missing' | 'local_missing' | 'to_publish'
-
-type PublishDependency = {
-    urn: string
-    kind: PublishableKind
-    status: PublishDependencyStatus
-    payload?: Exclude<AnyRosterAssetV1, { kind: 'dance' }>
-    tags?: string[]
-    source?: 'provided' | 'local'
-}
-
-export type PublishPlan = {
-    root: NormalizedPublishAsset
-    dependencies: PublishDependency[]
-    publishQueue: Array<PublishDependency & { status: 'to_publish'; payload: Exclude<AnyRosterAssetV1, { kind: 'dance' }> }>
-    existing: string[]
-    foreignMissing: string[]
-    localMissing: string[]
-}
-
 function assertSafeAssetUrn(urn: string) {
     const parts = urn.split('/')
     if (parts.length !== 4) {
@@ -189,17 +154,11 @@ export function getRosterDir(cwd = process.cwd()) {
     return path.join(cwd, ASSET_STORE_DIR)
 }
 
-function getLegacyRosterDirs(cwd = process.cwd()) {
-    return LEGACY_ASSET_STORE_DIRS.map((dirName) => path.join(cwd, dirName))
-}
-
 export function getGlobalCwd() {
-    const rawInput = process.env.AGENT_ROSTER_HOME?.trim()
-        || process.env.AGENT_ROASTER_HOME?.trim()
-        || process.env.DANCE_OF_TAL_HOME?.trim()
+    const rawInput = process.env.EIGHTPM_STUDIO_HOME?.trim()
         || os.homedir()
     const normalized = path.resolve(rawInput)
-    return path.basename(normalized) === ASSET_STORE_DIR || LEGACY_ASSET_STORE_DIRS.includes(path.basename(normalized))
+    return path.basename(normalized) === ASSET_STORE_DIR
         ? path.dirname(normalized)
         : normalized
 }
@@ -217,10 +176,6 @@ export async function ensureRosterDir(cwd: string) {
 
 export function assetFilePath(cwd: string, urn: string) {
     return assetFilePathForRosterDir(getRosterDir(cwd), urn)
-}
-
-function legacyAssetFilePaths(cwd: string, urn: string) {
-    return getLegacyRosterDirs(cwd).map((rosterDir) => assetFilePathForRosterDir(rosterDir, urn))
 }
 
 function assetFilePathForRosterDir(rosterDirInput: string, urn: string) {
@@ -277,19 +232,7 @@ async function readAssetFile(filePath: string, urn: string): Promise<AnyRosterAs
 }
 
 async function readAssetFrom(cwd: string, urn: string): Promise<AnyRosterAssetV1 | null> {
-    const current = await readAssetFile(assetFilePath(cwd, urn), urn)
-    if (current) {
-        return current
-    }
-
-    for (const filePath of legacyAssetFilePaths(cwd, urn)) {
-        const legacy = await readAssetFile(filePath, urn)
-        if (legacy) {
-            return legacy
-        }
-    }
-
-    return null
+    return readAssetFile(assetFilePath(cwd, urn), urn)
 }
 
 export async function readAsset(cwd: string, urn: string): Promise<AnyRosterAssetV1 | null> {
@@ -321,7 +264,7 @@ export async function initRegistry(cwd = process.cwd()) {
     await fs.mkdir(rosterDir, { recursive: true })
     await fs.writeFile(
         path.join(rosterDir, 'roster.json'),
-        JSON.stringify({ schema: 'agent-roster.workspace/v1', version: 1 }, null, 2),
+        JSON.stringify({ schema: '8pm-studio.workspace/v1', version: 1 }, null, 2),
         'utf-8',
     ).catch(() => undefined)
     for (const kind of ROSTER_ASSET_KINDS) {
@@ -330,32 +273,12 @@ export async function initRegistry(cwd = process.cwd()) {
     }
 }
 
-export async function reportInstall(urn: string) {
-    const parts = urn.split('/')
-    if (parts.length !== 4) return
-    const [kind, ownerWithAt, stage, name] = parts
-    const owner = ownerWithAt.replace('@', '')
-    try {
-        await fetch(`${REGISTRY_URL}/registry/${kind}/${owner}/${stage}/${name}/install`, { method: 'POST' })
-    } catch {
-        // Best-effort analytics only.
-    }
-}
-
 export async function fetchRegistryPackageRaw(kind: string, owner: string, stage: string, name: string): Promise<Record<string, unknown>> {
-    const url = `${REGISTRY_URL}/registry/${kind}/${owner.replace(/^@/, '')}/${stage}/${name}`
-    const res = await fetch(url)
-    if (!res.ok) {
-        if (res.status === 404) {
-            throw new Error(`Package '${kind}/@${owner.replace(/^@/, '')}/${stage}/${name}' not found in registry.`)
-        }
-        throw new Error(`Registry error: ${res.statusText}`)
-    }
-    const data = await res.json() as { success?: unknown; package?: unknown }
-    if (!data.success || !isRecord(data.package)) {
-        throw new Error('Invalid response from registry.')
-    }
-    return data.package
+    void kind
+    void owner
+    void stage
+    void name
+    throw new Error(SOURCE_REFERENCE_REGISTRY_MESSAGE)
 }
 
 export async function getRegistryPackage(kind: string, owner: string, stage: string, name: string): Promise<RegistryPackage> {
@@ -382,41 +305,13 @@ export async function getRegistryPackage(kind: string, owner: string, stage: str
     }
 }
 
-function normalisePackages(packages: unknown[]): RegistryPackage[] {
-    return packages.filter(isRecord).map((pkg) => {
-        const kind = typeof pkg.kind === 'string' ? pkg.kind : ''
-        const owner = typeof pkg.owner === 'string' ? pkg.owner : ''
-        const stage = typeof pkg.stage === 'string' ? pkg.stage : ''
-        const name = typeof pkg.name === 'string' ? pkg.name : ''
-        return {
-            urn: typeof pkg.urn === 'string' && pkg.urn ? pkg.urn : `${kind}/@${owner}/${stage}/${name}`,
-            kind,
-            name,
-            owner,
-            stage,
-            description: typeof pkg.description === 'string' ? pkg.description : '',
-            tags: Array.isArray(pkg.tags) ? pkg.tags.filter((tag): tag is string => typeof tag === 'string') : [],
-            ...(typeof pkg.installs === 'number' ? { installs: pkg.installs } : {}),
-            ...(typeof pkg.updatedAt === 'string' ? { updatedAt: pkg.updatedAt } : {}),
-        }
-    })
-}
-
 export async function searchRegistry(
     query: string,
     options?: { kind?: string; tag?: string; limit?: number },
 ): Promise<RegistryPackage[]> {
-    const params = new URLSearchParams()
-    if (query) params.set('q', query)
-    if (options?.kind) params.set('kind', options.kind)
-    if (options?.tag) params.set('tag', options.tag)
-    params.set('limit', String(options?.limit ?? 20))
-    const res = await fetch(`${REGISTRY_URL}/registry?${params.toString()}`)
-    if (!res.ok) {
-        throw new Error(`Registry search failed: ${res.statusText}`)
-    }
-    const data = await res.json() as { packages?: unknown }
-    return normalisePackages(Array.isArray(data.packages) ? data.packages : [])
+    void query
+    void options
+    return []
 }
 
 function splitRegistryUrn(urn: string) {
@@ -484,7 +379,7 @@ async function installDanceAsset(
         || typeof resource.repo !== 'string'
         || !resource.repo.trim()
     ) {
-        throw new Error(`Dance '${urn}' has no GitHub resource pointer. Import it from GitHub directly.`)
+        throw new Error(`Skill '${urn}' has no GitHub resource pointer. Import it from GitHub directly.`)
     }
 
     const repoUrl = `https://github.com/${resource.repo}.git`
@@ -797,12 +692,6 @@ export async function loadLocalAssetByUrn(cwd: string, urn: string): Promise<Rec
     }
 }
 
-export function getPayloadTags(payload: Record<string, unknown>) {
-    return Array.isArray(payload.tags)
-        ? payload.tags.filter((tag): tag is string => typeof tag === 'string' && tag.trim().length > 0)
-        : []
-}
-
 export function extractDependencyUrns(kind: PublishableKind, payload: unknown) {
     const urns: string[] = []
     if (kind === 'performer') {
@@ -818,267 +707,6 @@ export function extractDependencyUrns(kind: PublishableKind, payload: unknown) {
         }
     }
     return Array.from(new Set(urns))
-}
-
-function normalizePublishAssetInput(input: {
-    kind: PublishableKind
-    urn: string
-    payload: unknown
-    tags?: string[]
-}): NormalizedPublishAsset {
-    const parsedUrn = parseUrn(input.urn)
-    if (!parsedUrn) {
-        throw new Error(`Publish only supports tal, performer, and act URNs. Received '${input.urn}'.`)
-    }
-    if (parsedUrn.kind !== input.kind) {
-        throw new Error(`Input kind '${input.kind}' does not match URN '${input.urn}'.`)
-    }
-    const parsedAsset = parseRosterAsset(input.payload)
-    if (parsedAsset.kind === 'dance') {
-        throw new Error('Dance assets are not publishable through the cascade publish planner.')
-    }
-    if (parsedAsset.kind !== input.kind) {
-        throw new Error(`Payload kind '${parsedAsset.kind}' does not match input kind '${input.kind}'.`)
-    }
-    if (parsedAsset.urn !== input.urn) {
-        throw new Error(`Payload URN '${parsedAsset.urn}' does not match input URN '${input.urn}'.`)
-    }
-    return {
-        kind: parsedUrn.kind,
-        urn: parsedAsset.urn,
-        payload: parsedAsset,
-        tags: Array.isArray(input.tags) && input.tags.length > 0 ? input.tags : getPayloadTags(parsedAsset as Record<string, unknown>),
-    }
-}
-
-function extractPublishableDependencyUrns(kind: PublishableKind, payload: unknown) {
-    return extractDependencyUrns(kind, payload).filter((urn) => parseUrn(urn) !== null)
-}
-
-function formatMissingDependencyError(urns: string[], kind: 'foreign_missing' | 'local_missing') {
-    if (kind === 'foreign_missing') {
-        return 'Cannot publish: the following dependencies are not in the registry and belong to other authors:\n'
-            + urns.map((urn) => `  - ${urn}`).join('\n')
-            + '\n\nAsk the respective authors to publish them first.'
-    }
-    return 'Cannot publish: the following dependencies belong to you but are not found locally:\n'
-        + urns.map((urn) => `  - ${urn}`).join('\n')
-        + '\n\nCreate or install them first.'
-}
-
-export async function buildPublishPlan(options: {
-    cwd: string
-    username: string
-    root: {
-        kind: PublishableKind
-        urn: string
-        payload: unknown
-        tags?: string[]
-    }
-    providedAssets?: Record<string, {
-        kind: PublishableKind
-        urn: string
-        payload: unknown
-        tags?: string[]
-    }>
-}): Promise<PublishPlan> {
-    const normalizedRoot = normalizePublishAssetInput(options.root)
-    const rootUrn = parseUrn(normalizedRoot.urn)
-    if (!rootUrn) {
-        throw new Error(`Invalid publish root URN '${normalizedRoot.urn}'.`)
-    }
-    if (rootUrn.owner.toLowerCase() !== options.username.toLowerCase()) {
-        throw new Error(`Root asset '${normalizedRoot.urn}' must belong to @${options.username}.`)
-    }
-
-    const normalizedProvided = new Map<string, NormalizedPublishAsset>()
-    for (const [urn, asset] of Object.entries(options.providedAssets || {})) {
-        const normalized = normalizePublishAssetInput(asset)
-        if (normalized.urn !== urn) {
-            throw new Error(`Provided asset map key '${urn}' must match payload URN '${normalized.urn}'.`)
-        }
-        const parsed = parseUrn(normalized.urn)
-        if (!parsed) {
-            throw new Error(`Unsupported provided asset URN '${normalized.urn}'.`)
-        }
-        if (parsed.owner.toLowerCase() !== options.username.toLowerCase()) {
-            throw new Error(`Provided asset '${normalized.urn}' must belong to @${options.username}.`)
-        }
-        normalizedProvided.set(urn, normalized)
-    }
-
-    const dependencies: PublishDependency[] = []
-    const publishQueue: PublishPlan['publishQueue'] = []
-    const existing: string[] = []
-    const foreignMissing: string[] = []
-    const localMissing: string[] = []
-    const visited = new Set<string>()
-
-    const resolveDependency = async (urn: string): Promise<void> => {
-        if (visited.has(urn)) return
-        visited.add(urn)
-        const parsed = parseUrn(urn)
-        if (!parsed) return
-
-        if (await existsInRegistry(urn)) {
-            existing.push(urn)
-            dependencies.push({ urn, kind: parsed.kind, status: 'exists' })
-            return
-        }
-
-        const isMine = parsed.owner.toLowerCase() === options.username.toLowerCase()
-        if (!isMine) {
-            foreignMissing.push(urn)
-            dependencies.push({ urn, kind: parsed.kind, status: 'foreign_missing' })
-            return
-        }
-
-        const provided = normalizedProvided.get(urn)
-        const localPayload = provided?.payload ?? await loadLocalAssetByUrn(options.cwd, urn)
-        if (!localPayload) {
-            localMissing.push(urn)
-            dependencies.push({ urn, kind: parsed.kind, status: 'local_missing' })
-            return
-        }
-
-        const normalizedDependency = provided ?? normalizePublishAssetInput({
-            kind: parsed.kind,
-            urn,
-            payload: localPayload,
-        })
-        for (const subUrn of extractPublishableDependencyUrns(parsed.kind, normalizedDependency.payload)) {
-            await resolveDependency(subUrn)
-        }
-        const dependencyInfo = {
-            urn,
-            kind: parsed.kind,
-            status: 'to_publish' as const,
-            payload: normalizedDependency.payload,
-            tags: normalizedDependency.tags,
-            source: provided ? 'provided' as const : 'local' as const,
-        }
-        dependencies.push(dependencyInfo)
-        publishQueue.push(dependencyInfo)
-    }
-
-    for (const depUrn of extractPublishableDependencyUrns(normalizedRoot.kind, normalizedRoot.payload)) {
-        await resolveDependency(depUrn)
-    }
-
-    return { root: normalizedRoot, dependencies, publishQueue, existing, foreignMissing, localMissing }
-}
-
-export async function resolveDependencies(
-    cwd: string,
-    kind: PublishableKind,
-    payload: unknown,
-    myUsername: string,
-) {
-    const parsedRoot = parseRosterAsset(payload)
-    if (parsedRoot.kind === 'dance') {
-        throw new Error('Dance assets cannot be resolved through the publish dependency planner.')
-    }
-    const plan = await buildPublishPlan({
-        cwd,
-        username: myUsername,
-        root: {
-            kind,
-            urn: parsedRoot.urn,
-            payload: parsedRoot,
-        },
-    })
-    return plan.dependencies
-}
-
-export async function publishSingleAsset(
-    kind: PublishableKind,
-    stage: string,
-    name: string,
-    payload: unknown,
-    tags: string[],
-    token: string,
-) {
-    const res = await fetch(`${REGISTRY_URL}/publish`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ kind, stage, name, tags, payload }),
-    })
-    if (!res.ok) {
-        const errorData = await res.json().catch(() => ({})) as { error?: unknown }
-        if (res.status === 409) {
-            return false
-        }
-        throw new Error(typeof errorData.error === 'string' ? errorData.error : res.statusText)
-    }
-    const result = await res.json() as { success?: unknown; error?: unknown }
-    if (!result.success) {
-        throw new Error(typeof result.error === 'string' ? result.error : 'Unknown error occurred')
-    }
-    return true
-}
-
-export async function executePublishPlan(
-    plan: PublishPlan,
-    token: string,
-    options: {
-        onPublishStart?: (entry: NormalizedPublishAsset) => void
-        onPublishComplete?: (entry: NormalizedPublishAsset, status: 'published' | 'skipped') => void
-    } = {},
-) {
-    if (plan.foreignMissing.length > 0) {
-        throw new Error(formatMissingDependencyError(plan.foreignMissing, 'foreign_missing'))
-    }
-    if (plan.localMissing.length > 0) {
-        throw new Error(formatMissingDependencyError(plan.localMissing, 'local_missing'))
-    }
-
-    const published: string[] = []
-    const skipped: string[] = []
-    const queue: NormalizedPublishAsset[] = [
-        ...plan.publishQueue.map((entry) => ({
-            kind: entry.kind,
-            urn: entry.urn,
-            payload: entry.payload,
-            tags: entry.tags || [],
-        })),
-        plan.root,
-    ]
-
-    for (const entry of queue) {
-        const parsed = parseUrn(entry.urn)
-        if (!parsed) {
-            throw new Error(`Invalid publish queue entry '${entry.urn}'.`)
-        }
-        options.onPublishStart?.(entry)
-        const didPublish = await publishSingleAsset(
-            parsed.kind,
-            parsed.stage,
-            parsed.name,
-            entry.payload,
-            entry.tags || [],
-            token,
-        )
-        if (didPublish) {
-            published.push(entry.urn)
-            options.onPublishComplete?.(entry, 'published')
-        } else {
-            skipped.push(entry.urn)
-            options.onPublishComplete?.(entry, 'skipped')
-        }
-    }
-
-    return {
-        rootUrn: plan.root.urn,
-        rootPublished: published.includes(plan.root.urn),
-        published,
-        skipped,
-        existing: [...plan.existing],
-        foreignMissing: [...plan.foreignMissing],
-        localMissing: [...plan.localMissing],
-    }
 }
 
 function sanitizeSubpath(subpath: string) {
@@ -1165,7 +793,7 @@ export function getOwnerRepo(url: string) {
 
 export async function shallowClone(options: { url: string; ref?: string; timeoutMs?: number }): Promise<CloneResult> {
     const { url, ref, timeoutMs = DEFAULT_CLONE_TIMEOUT_MS } = options
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-roster-clone-'))
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), '8pm-studio-clone-'))
     const args = ['clone', '--depth', '1', '--single-branch']
     if (ref && ref !== 'HEAD') {
         args.push('--branch', ref)
@@ -1233,7 +861,7 @@ function copyEntry(sourcePath: string, destinationPath: string, repoRoot: string
     if (sourceStat.isSymbolicLink()) {
         const resolvedPath = fss.realpathSync(sourcePath)
         if (!isWithinDirectory(repoRoot, resolvedPath)) {
-            throw new Error(`Skill bundle contains a symlink outside the repository root: ${describeRepoPath(repoRoot, sourcePath)}`)
+            throw new Error(`Skill contains a symlink outside the repository root: ${describeRepoPath(repoRoot, sourcePath)}`)
         }
         const resolvedStat = fss.statSync(resolvedPath)
         if (resolvedStat.isDirectory()) {
@@ -1244,7 +872,7 @@ function copyEntry(sourcePath: string, destinationPath: string, repoRoot: string
             copyFile(resolvedPath, destinationPath)
             return
         }
-        throw new Error(`Skill bundle symlink resolves to an unsupported file type: ${describeRepoPath(repoRoot, sourcePath)}`)
+        throw new Error(`Skill symlink resolves to an unsupported file type: ${describeRepoPath(repoRoot, sourcePath)}`)
     }
     if (sourceStat.isDirectory()) {
         copyDirectory(sourcePath, destinationPath, repoRoot, activeRealDirs)
@@ -1258,10 +886,10 @@ function copyEntry(sourcePath: string, destinationPath: string, repoRoot: string
 function copyDirectory(sourceDir: string, destinationDir: string, repoRoot: string, activeRealDirs: Set<string>) {
     const realSourceDir = fss.realpathSync(sourceDir)
     if (!isWithinDirectory(repoRoot, realSourceDir)) {
-        throw new Error(`Skill bundle resolves outside the repository root: ${describeRepoPath(repoRoot, sourceDir)}`)
+        throw new Error(`Skill resolves outside the repository root: ${describeRepoPath(repoRoot, sourceDir)}`)
     }
     if (activeRealDirs.has(realSourceDir)) {
-        throw new Error(`Skill bundle contains a cyclic symlinked directory: ${describeRepoPath(repoRoot, sourceDir)}`)
+        throw new Error(`Skill contains a cyclic symlinked directory: ${describeRepoPath(repoRoot, sourceDir)}`)
     }
     activeRealDirs.add(realSourceDir)
     try {

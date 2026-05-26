@@ -1,7 +1,6 @@
 // Server Configuration & Studio Config Helpers
 
 import fs from 'fs/promises'
-import { existsSync } from 'fs'
 import path from 'path'
 import os from 'os'
 import { createHash } from 'crypto'
@@ -46,34 +45,24 @@ function resolveDefaultProjectDir() {
 }
 
 function resolveProductionMode() {
-    const explicit = process.env.AGENT_ROSTER_PRODUCTION?.trim()
-    if (explicit) {
-        return explicit === '1'
+    const eightPm = process.env.EIGHTPM_STUDIO_PRODUCTION?.trim()
+    if (eightPm) {
+        return eightPm === '1'
     }
 
-    const legacyRoaster = process.env.AGENT_ROASTER_PRODUCTION?.trim()
-    if (legacyRoaster) {
-        return legacyRoaster === '1'
-    }
-
-    return process.env.DOT_STUDIO_PRODUCTION === '1'
+    return false
 }
 
 function resolveStudioDir() {
+    if (process.env.EIGHTPM_STUDIO_HOME) {
+        return process.env.EIGHTPM_STUDIO_HOME
+    }
+
     if (process.env.STUDIO_DIR) {
         return process.env.STUDIO_DIR
     }
 
-    const current = path.join(os.homedir(), '.agent-roster')
-    const legacyRoaster = path.join(os.homedir(), '.agent-roaster')
-    try {
-        if (!existsSync(current) && existsSync(legacyRoaster)) {
-            return legacyRoaster
-        }
-    } catch {
-        // Ignore filesystem lookup failures and use the current branded path.
-    }
-    return current
+    return path.join(os.homedir(), '.8pm-studio')
 }
 
 // ── Constants ───────────────────────────────────────────

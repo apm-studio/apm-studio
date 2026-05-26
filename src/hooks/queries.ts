@@ -10,6 +10,9 @@ import { useStudioStore } from '../store'
 import type { RuntimeModelCatalogEntry } from '../../shared/model-variants'
 import type { GitHubDanceSyncStatus } from '../../shared/asset-contracts'
 import type { InstalledDanceLocator } from '../../shared/roster-contracts'
+import type { ApmPackageSummary } from '../../shared/apm-contracts'
+import type { RegistryListing, RegistryListingKind } from '../../shared/registry-contracts'
+import { registryListingToLibraryAsset } from '../components/panels/asset-library-utils'
 
 type InstallableAssetKind = 'tal' | 'dance' | 'performer' | 'act'
 
@@ -26,6 +29,7 @@ export const queryKeys = {
     rosterStatus: (workingDir: string) => ['roster-status', workingDir] as const,
     rosterAuthUser: ['roster-auth-user'] as const,
     registrySearch: (workingDir: string, q: string) => ['registry-search', workingDir, q] as const,
+    apmPackages: (workingDir: string) => ['apm-packages', workingDir] as const,
     danceUpdateChecks: (workingDir: string, assetsKey: string, includeRepoDrift: boolean) =>
         ['dance-update-checks', workingDir, assetsKey, includeRepoDrift ? 'drift' : 'light'] as const,
     discordStatus: ['discord-status'] as const,
@@ -134,7 +138,7 @@ export function useServerHealth() {
     })
 }
 
-// ── Agent Roster Status ────────────────────────────────
+// ── 8PM Studio Status ────────────────────────────────
 export function useRosterStatus() {
     const workingDir = useStudioStore((s) => s.workingDir)
     return useQuery<{ initialized: boolean; rosterDir: string; projectDir: string }>({
@@ -154,6 +158,25 @@ export function useRosterAuthUser() {
     })
 }
 
+export function useApmPackages(enabled = true) {
+    const workingDir = useStudioStore((s) => s.workingDir)
+    return useQuery<ApmPackageSummary[]>({
+        queryKey: queryKeys.apmPackages(workingDir),
+        queryFn: async () => (await api.apm.packages()).packages,
+        enabled,
+        staleTime: 30_000,
+        gcTime: 5 * 60_000,
+    })
+}
+
+function registryKindForAssetKind(kind: 'all' | 'tal' | 'dance' | 'performer' | 'act'): RegistryListingKind | undefined {
+    if (kind === 'tal') return 'instruction'
+    if (kind === 'dance') return 'skill'
+    if (kind === 'performer') return 'agent'
+    if (kind === 'act') return 'team'
+    return undefined
+}
+
 // ── Registry Search ─────────────────────────────────────
 export function useRegistrySearch(
     query: string,
@@ -163,7 +186,14 @@ export function useRegistrySearch(
     const workingDir = useStudioStore((s) => s.workingDir)
     return useQuery({
         queryKey: queryKeys.registrySearch(workingDir, `${kind}:${query}`),
-        queryFn: () => api.roster.search(query, kind === 'all' ? undefined : kind, 20),
+        queryFn: async () => {
+            const response = await api.explore.catalog({
+                q: query,
+                kind: registryKindForAssetKind(kind),
+                limit: 20,
+            })
+            return response.listings.map((listing: RegistryListing) => registryListingToLibraryAsset(listing))
+        },
         enabled: enabled && query.trim().length > 0,
         staleTime: 60_000,
         gcTime: 5 * 60_000,

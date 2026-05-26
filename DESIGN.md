@@ -1,8 +1,8 @@
-# DOT Studio Design System
+# 8PM Studio Design System
 
 ## Purpose
 
-This document describes the visual and interaction language for Studio, the local visual editor for Dance of Tal. It is the collaboration guide for humans and coding agents. The executable source of truth remains `src/tokens.css` and `src/primitives.css`.
+This document describes the visual and interaction language for 8PM Studio, the local visual editor for managing APM-backed agent packages. It is the collaboration guide for humans and coding agents. The executable source of truth remains `src/tokens.css` and `src/primitives.css`.
 
 Use this file before adding or changing frontend UI. It should help new work feel like part of Studio instead of a one-off screen.
 
@@ -252,7 +252,7 @@ The design system is already active:
 
 - `src/main.tsx` imports `src/index.css` and `src/primitives.css`.
 - `src/index.css` imports `src/tokens.css`.
-- Existing UI uses primitives such as `.btn`, `.icon-btn`, `.text-input`, `.select`, `.alert`, and `.toggle-switch` across modals, panels, toolbar actions, chat, asset tools, and Act/performer editing.
+- Existing UI uses primitives such as `.btn`, `.icon-btn`, `.text-input`, `.select`, `.alert`, and `.toggle-switch` across modals, panels, toolbar actions, chat, asset tools, and Team/Agent editing.
 
 Known areas to watch:
 

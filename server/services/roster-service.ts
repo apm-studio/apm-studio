@@ -14,14 +14,13 @@ import {
     parseRosterAsset,
     parsePerformerAsset,
     readAsset,
-    reportInstall,
     searchRegistry,
     shallowClone,
     startLogin,
 } from '../lib/roster-source.js'
 import type { PerformerAsset } from '../lib/roster-source.js'
 import type { AssetListItem } from '../../shared/asset-contracts.js'
-import { clearRosterAuthUser, publishStudioAsset, readRosterAuthUser, saveLocalStudioAsset, uninstallStudioAsset, type StudioAssetKind } from '../lib/roster-authoring.js'
+import { clearRosterAuthUser, readRosterAuthUser, saveLocalStudioAsset, uninstallStudioAsset, type StudioAssetKind } from '../lib/roster-authoring.js'
 import { invalidate } from '../lib/cache.js'
 import { findInstalledDependents, getRegistryAssetDetail } from './asset-service.js'
 
@@ -101,7 +100,7 @@ async function installRegistryDanceNormalized(
     const pkgData = await fetchRegistryPackageRaw('dance', owner, stage, name)
     const resource = pkgData.resource as { type?: unknown; repo?: unknown; path?: unknown; ref?: unknown } | undefined
     if (!resource || resource.type !== 'github' || typeof resource.repo !== 'string' || !resource.repo.trim()) {
-        throw new Error(`Dance '${urn}' has no GitHub resource pointer. Use Agent Roster GitHub import to install it directly.`)
+        throw new Error(`Skill '${urn}' has no GitHub resource pointer. Use 8PM Studio GitHub import to install it directly.`)
     }
 
     const repoPath = normalizeRepoResourcePath(resource.path)
@@ -286,7 +285,7 @@ export function validateRosterPerformer(performer: PerformerAsset): void {
     // Canonical assets are already validated by parsePerformerAsset,
     // but we can add extra runtime checks if needed.
     if (!performer.payload.tal && (!performer.payload.dances || performer.payload.dances.length === 0)) {
-        throw new Error("Invalid performer: at least one of 'tal' or 'dances' must be present.")
+        throw new Error("Invalid agent: at least one Instruction or Skill must be present.")
     }
 }
 
@@ -310,25 +309,17 @@ export async function installRosterAsset(cwd: string, input: {
 
     if (input.urn.startsWith('performer/')) {
         const result = await installRegistryPerformerWithDepsNormalized(targetCwd, input.urn, input.force)
-        // Report installs for non-skipped assets (best-effort)
-        for (const asset of result.installedAssets) {
-            if (!asset.skipped) reportInstall(asset.urn).catch(() => {})
-        }
         invalidate('assets')
         return { ...result, scope: input.scope || 'stage' }
     }
 
     if (input.urn.startsWith('act/')) {
         const result = await installRegistryActWithDependenciesNormalized(targetCwd, input.urn, input.force)
-        for (const asset of result.installedAssets) {
-            if (!asset.skipped) reportInstall(asset.urn).catch(() => {})
-        }
         invalidate('assets')
         return { ...result, scope: input.scope || 'stage' }
     }
 
     const result = await installRegistryAssetNormalized(targetCwd, input.urn, input.force)
-    if (!result.skipped) reportInstall(input.urn).catch(() => {})
     invalidate('assets')
     return { ...result, scope: input.scope || 'stage' }
 }
@@ -361,7 +352,7 @@ export async function saveRosterLocalAsset(cwd: string, input: {
     const auth = await readRosterAuthUser()
     const author = input.author || auth?.username
     if (!author) {
-        throw new Error('No author available. Sign in to Agent Roster first.')
+        throw new Error('No author available. Sign in to 8PM Studio first.')
     }
 
     const saved = await saveLocalStudioAsset({
@@ -374,39 +365,6 @@ export async function saveRosterLocalAsset(cwd: string, input: {
     })
     invalidate('assets')
     return { ok: true, ...saved }
-}
-
-export async function publishRosterAsset(cwd: string, input: {
-    kind: StudioAssetKind
-    slug: string
-    stage?: string
-    payload?: unknown
-    tags?: string[]
-    providedAssets?: Array<{
-        kind: 'tal' | 'performer' | 'act'
-        urn: string
-        payload: Record<string, unknown>
-        tags?: string[]
-    }>
-}) {
-    const auth = await readRosterAuthUser()
-    if (!auth) {
-        const error = Object.assign(new Error('You are not logged in. Sign in to Agent Roster first.'), { status: 401 })
-        throw error
-    }
-
-    const result = await publishStudioAsset({
-        cwd,
-        kind: input.kind,
-        slug: input.slug,
-        stage: input.stage,
-        payload: input.payload,
-        tags: input.tags,
-        providedAssets: input.providedAssets,
-        auth,
-    })
-    invalidate('assets')
-    return { ok: true, ...result }
 }
 
 export async function uninstallRosterAsset(cwd: string, input: {

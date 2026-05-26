@@ -1,4 +1,4 @@
-// Model scoring, classification, and grouping for the Asset Library
+// Model scoring, classification, and grouping for the Packages
 
 import type { ModelProviderFilter } from './asset-library-utils'
 import { buildModelHaystack } from './asset-library-search'

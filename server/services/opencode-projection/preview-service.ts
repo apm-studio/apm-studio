@@ -14,6 +14,7 @@ export async function compileProjectionPreview(
         performerId: request.performerId || 'preview',
         performerName: request.performerName || 'Preview',
         talRef: request.talRef,
+        inlineInstruction: request.inlineInstruction || null,
         danceRefs: request.danceRefs,
         model: request.model,
         modelVariant: request.modelVariant || null,
@@ -35,16 +36,16 @@ export async function compileProjectionPreview(
                 detail: 'Studio sets model, variant, tool policy, skill allowlist, and task allowlist in the generated agent file.',
             },
             {
-                label: 'Performer TAL',
-                detail: request.talRef ? 'The selected TAL is inserted as the primary performer body.' : 'No TAL is selected for this performer.',
+                label: 'Agent Instruction',
+                detail: request.inlineInstruction || request.talRef ? 'The selected Instruction is inserted as the primary agent body.' : 'No Instruction is selected for this agent.',
             },
             ...(getCompileRequestTargets(request).length > 0 ? [{
-                label: 'Act relation context',
-                detail: 'Thread participant relation context is appended for Act-scoped execution.',
+                label: 'Team relation context',
+                detail: 'Thread participant relation context is appended for Team-scoped execution.',
             }] : []),
             ...(ensured.compiled.skills.length > 0 ? [{
-                label: 'Dance skills',
-                detail: `${ensured.compiled.skills.length} projected SKILL.md bundle${ensured.compiled.skills.length === 1 ? '' : 's'} are available through the OpenCode skill tool.`,
+                label: 'Skills',
+                detail: `${ensured.compiled.skills.length} projected SKILL.md file${ensured.compiled.skills.length === 1 ? '' : 's'} are available through the OpenCode skill tool.`,
             }] : []),
         ],
         danceCatalog: ensured.compiled.skills.map((skill) => ({

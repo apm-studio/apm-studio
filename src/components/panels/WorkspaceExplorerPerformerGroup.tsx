@@ -194,7 +194,7 @@ export default function WorkspaceExplorerPerformerGroup({
                             <button
                                 className={`icon-btn ${row.hidden ? 'visibility-off' : 'visibility-on'}`}
                                 onClick={() => onTogglePerformerVisibility(row.id)}
-                                title={row.hidden ? 'Show performer' : 'Hide performer'}
+                                title={row.hidden ? 'Show agent' : 'Hide agent'}
                             >
                                 {row.hidden ? <EyeOff size={11} /> : <Eye size={11} />}
                             </button>
@@ -211,7 +211,7 @@ export default function WorkspaceExplorerPerformerGroup({
                                     onOpenPerformerEditor(row.id, 'performer-runtime')
                                     onSetActiveChatPerformer(row.id)
                                 }}
-                                title="Edit performer"
+                                title="Edit agent"
                             >
                                 <Pencil size={11} />
                             </button>
@@ -224,14 +224,14 @@ export default function WorkspaceExplorerPerformerGroup({
                                         dedupeKey: `draft:save:${row.id}`,
                                     })
                                 }}
-                                title="Save performer as draft"
+                                title="Save agent as draft"
                             >
                                 <Archive size={11} />
                             </button>
                             <button
                                 className="icon-btn remove-btn"
                                 onClick={() => onSetPendingDelete(rowKey)}
-                                title="Delete performer"
+                                title="Delete agent"
                             >
                                 <Trash2 size={11} />
                             </button>

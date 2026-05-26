@@ -16,7 +16,7 @@ type Props = {
     registryKind: RegistryKind
     setRegistryKind: (value: RegistryKind) => void
     registryGroups: RegistryGroup[]
-    installedUrns: Set<string>
+    importedRegistryListingIds: Set<string>
     selectedAsset: AssetPanelAsset | null
     selectedAssetKey: string | null
     selectedInstalled: boolean
@@ -24,10 +24,9 @@ type Props = {
     detailActionStatus: string | null
     detailActionLoading: AssetPanelAction | null
     onSelectAsset: AssetPanelHandler
-    onInstall: (urn: string, targetScope: 'global' | 'stage') => Promise<unknown>
+    onInstall: (urn: string) => Promise<unknown>
     onCloseAsset: () => void
     onSaveLocal: AssetPanelHandler
-    onPublish: AssetPanelHandler
     onDeleteDraft: AssetPanelHandler
 }
 
@@ -42,7 +41,7 @@ export default function AssetLibraryRegistryView(props: Props) {
         registryKind,
         setRegistryKind,
         registryGroups,
-        installedUrns,
+        importedRegistryListingIds,
         selectedAsset,
         selectedAssetKey,
         selectedInstalled,
@@ -53,7 +52,6 @@ export default function AssetLibraryRegistryView(props: Props) {
         onInstall,
         onCloseAsset,
         onSaveLocal,
-        onPublish,
         onDeleteDraft,
     } = props
 
@@ -66,7 +64,7 @@ export default function AssetLibraryRegistryView(props: Props) {
                         className="text-input"
                         value={registryQuery}
                         onChange={(e) => setRegistryQuery(e.target.value)}
-                        placeholder="name, author, slug, tag..."
+                        placeholder="agent, skill, repo, tag..."
                         onKeyDown={(e) => e.key === 'Enter' && triggerSearch()}
                     />
                     <button className="registry-search-btn" onClick={triggerSearch} disabled={registryLoading}>
@@ -84,8 +82,8 @@ export default function AssetLibraryRegistryView(props: Props) {
                     onChange={(e) => setRegistryKind(e.target.value as RegistryKind)}
                 >
                     <option value="all">All Kinds</option>
-                    <option value="tal">Persona</option>
-                    <option value="dance">Skill Pack</option>
+                    <option value="tal">Instruction</option>
+                    <option value="dance">Skill</option>
                     <option value="performer">Agent</option>
                     <option value="act">Team</option>
                 </select>
@@ -104,12 +102,12 @@ export default function AssetLibraryRegistryView(props: Props) {
             <div className="asset-library-body">
                 <div className="assets-list">
                     {registryLoading ? (
-                        <div className="empty-state">Searching registry...</div>
+                        <div className="empty-state">Searching Explore...</div>
                     ) : registryResults.length === 0 ? (
                         <div className="empty-state">
                             {registryError ? (
                                 <span style={{ color: 'var(--tal-color)' }}>{(registryError as Error)?.message || 'Search failed.'}</span>
-                            ) : registryQuery ? 'No results found.' : 'Search the Agent Roster registry to discover and install assets.'}
+                            ) : registryQuery ? 'No results found.' : 'Search Explore to import agents, instructions, skills, and teams.'}
                         </div>
                     ) : (
                         registryGroups.map((group) => (
@@ -125,7 +123,7 @@ export default function AssetLibraryRegistryView(props: Props) {
                                         <RegistryResult
                                             key={urn}
                                             item={item}
-                                            installed={installedUrns.has(getAssetUrn(item) || '')}
+                                            installed={!!item.registryListing?.id && importedRegistryListingIds.has(item.registryListing.id)}
                                             selected={selectedAssetKey === getAssetSelectionKey(item)}
                                             onInstall={onInstall}
                                             onSelect={onSelectAsset}
@@ -145,7 +143,6 @@ export default function AssetLibraryRegistryView(props: Props) {
                     actionStatus={detailActionStatus}
                     actionLoading={detailActionLoading}
                     onSaveLocal={onSaveLocal}
-                    onPublish={onPublish}
                     onImportToStage={undefined}
                     onDeleteDraft={onDeleteDraft}
                 />
@@ -167,10 +164,10 @@ function GitHubImportRow() {
         try {
             const result = await addMutation.mutateAsync({ source: source.trim(), scope })
             setSource('')
-            setStatus(`✔ Imported ${result.installed.length} skill(s) as Skill Pack (${scope === 'global' ? 'Global' : 'Workspace'})`)
+            setStatus(`Imported ${result.installed.length} skill(s) as Skill (${scope === 'global' ? 'Global' : 'Workspace'})`)
             setTimeout(() => setStatus(null), 4000)
         } catch (err: unknown) {
-            setStatus(`✗ ${err instanceof Error ? err.message : 'Import failed'}`)
+            setStatus(`Error: ${err instanceof Error ? err.message : 'Import failed'}`)
         }
     }
 
@@ -192,7 +189,7 @@ function GitHubImportRow() {
                         onClick={() => setShowScope(!showScope)}
                         disabled={!source.trim() || addMutation.isPending}
                     >
-                        {addMutation.isPending ? <Loader2 size={10} className="spin" /> : 'Import as Skill Pack'}
+                        {addMutation.isPending ? <Loader2 size={10} className="spin" /> : 'Import as Skill'}
                     </button>
                     {showScope && (
                         <div className="install-scope-menu">
@@ -207,7 +204,7 @@ function GitHubImportRow() {
                 </div>
             </div>
             {status && (
-                <div className={`github-import-status ${status.startsWith('✗') ? 'error' : 'success'}`}>
+                <div className={`github-import-status ${status.startsWith('Error:') ? 'error' : 'success'}`}>
                     {status}
                 </div>
             )}

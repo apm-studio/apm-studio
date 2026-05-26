@@ -46,7 +46,6 @@ type Props = {
     onSelectAsset: AssetPanelHandler
     onCloseAsset: () => void
     onSaveLocal: AssetPanelHandler
-    onPublish: AssetPanelHandler
     onDeleteDraft: AssetPanelHandler
     onEditDraft?: AssetPanelHandler
     onUninstall?: AssetPanelHandler
@@ -105,7 +104,6 @@ export default function AssetLibraryLocalView({
     onSelectAsset,
     onCloseAsset,
     onSaveLocal,
-    onPublish,
     onDeleteDraft,
     onEditDraft,
     onUninstall,
@@ -136,8 +134,8 @@ export default function AssetLibraryLocalView({
 }: Props) {
     const installedTabs: Array<{ key: InstalledKind; label: string; icon: React.ReactNode }> = [
         { key: 'performer', label: 'Agents', icon: <Users size={10} /> },
-        { key: 'tal', label: 'Personas', icon: <Hexagon size={10} /> },
-        { key: 'dance', label: 'Skill Packs', icon: <Zap size={10} /> },
+        { key: 'tal', label: 'Instructions', icon: <Hexagon size={10} /> },
+        { key: 'dance', label: 'Skills', icon: <Zap size={10} /> },
         { key: 'act', label: 'Teams', icon: <Zap size={10} /> },
     ]
 
@@ -206,12 +204,12 @@ export default function AssetLibraryLocalView({
                     )}
                     {installedKind === 'tal' && (
                         <button className="btn" onClick={() => createNewPerformerDraftEntry('tal')}>
-                            <Plus size={10} /> New Persona Draft
+                            <Plus size={10} /> New Instruction Draft
                         </button>
                     )}
                     {installedKind === 'dance' && (
                         <button className="btn" onClick={() => createNewPerformerDraftEntry('dance')}>
-                            <Plus size={10} /> New Skill Pack Draft
+                            <Plus size={10} /> New Skill Draft
                         </button>
                     )}
                     {installedKind === 'act' && (
@@ -286,7 +284,6 @@ export default function AssetLibraryLocalView({
                     onSelectAsset={onSelectAsset}
                     onCloseAsset={onCloseAsset}
                     onSaveLocal={onSaveLocal}
-                    onPublish={onPublish}
                     onDeleteDraft={onDeleteDraft}
                     onEditDraft={onEditDraft}
                     onUninstall={onUninstall}

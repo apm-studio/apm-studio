@@ -39,11 +39,11 @@ export function entityCategoryName(name: string, fallback = 'studio') {
 }
 
 export function performerCategoryName(name: string) {
-    return `👤 ${entityCategoryName(name, 'performer')}`.slice(0, DISCORD_NAME_MAX)
+    return `👤 ${entityCategoryName(name, 'agent')}`.slice(0, DISCORD_NAME_MAX)
 }
 
 export function actCategoryName(name: string) {
-    return `👥 ${entityCategoryName(name, 'act')}`.slice(0, DISCORD_NAME_MAX)
+    return `👥 ${entityCategoryName(name, 'team')}`.slice(0, DISCORD_NAME_MAX)
 }
 
 export function isStudioEntityCategoryName(name: string) {
@@ -74,7 +74,7 @@ export function threadChannelName(name: string | undefined, threadId: string) {
 }
 
 export function performerChannelName(name: string) {
-    return sanitizeDiscordName(name, 'performer')
+    return sanitizeDiscordName(name, 'agent')
 }
 
 export function actThreadChannelName(actName: string, threadName?: string) {

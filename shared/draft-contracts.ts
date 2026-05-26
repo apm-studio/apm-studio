@@ -5,7 +5,7 @@ import type { SharedAssetRef } from './chat-contracts.js'
 export type DraftAssetKind = 'tal' | 'dance' | 'performer' | 'act'
 
 /**
- * A draft file stored at `.agent-roster/drafts/<kind>/<id>.json`.
+ * A draft file stored at `.8pm-studio/drafts/<kind>/<id>.json`.
  * Drafts are project-local only — no global scope.
  *
  * @template T – The content type. Defaults to `unknown`;
@@ -24,7 +24,7 @@ export interface DraftFile<T = unknown> {
     derivedFrom?: string | null
     createdAt: number
     updatedAt: number
-    /** 1 = legacy single-file JSON, 2 = bundle directory (Dance only) */
+    /** 1 = JSON draft file, 2 = bundle directory (Skill only) */
     formatVersion?: number
 }
 

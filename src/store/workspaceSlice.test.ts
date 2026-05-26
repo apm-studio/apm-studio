@@ -176,7 +176,7 @@ describe('workspace runtime reload', () => {
         })
     })
 
-    it('records act runtime-shape changes as lazy projection dirtiness', () => {
+    it('records Team runtime-shape changes as lazy projection dirtiness', () => {
         const harness = createHarness({
             ...createBaseState(),
             runtimeReloadPending: false,
@@ -388,7 +388,7 @@ describe('workspace side panels', () => {
         expect(harness.get().isTrackingOpen).toBe(false)
     })
 
-    it('enters Assistant Sync mode without dirtying the workspace and restores canvas mode', () => {
+    it('enters Agent Sync mode without dirtying the workspace and restores canvas mode', () => {
         const harness = createHarness({
             ...createBaseState(),
             isTrackingOpen: true,

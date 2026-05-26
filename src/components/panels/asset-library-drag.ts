@@ -2,7 +2,7 @@ import type { McpServer } from '../../types'
 import type { RuntimeModelCatalogEntry } from '../../../shared/model-variants'
 import type { LibraryAsset } from './asset-panel-types'
 
-// Drag payload builders for the Asset Library
+// Drag payload builders for the Packages
 
 export function buildInstalledAssetDragPayload(asset: LibraryAsset) {
     // Performer-specific payload (installed or draft)

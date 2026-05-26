@@ -170,7 +170,7 @@ function MarkdownAssetEditor({
                             className="btn btn--sm markdown-editor-frame__action-btn"
                             onClick={onOpen}
                             disabled={saveState !== 'saved'}
-                            title={saveState === 'saved' ? 'Open the saved bundle folder' : 'Save this draft to create the bundle folder first'}
+                            title={saveState === 'saved' ? 'Open the saved Skill folder' : 'Save this draft to create the Skill folder first'}
                         >
                             <ExternalLink size={12} /> Open
                         </button>
@@ -301,7 +301,7 @@ export default function MarkdownEditorFrame({ id, data, selected }: NodeProps<No
         ? 'Save this draft before exporting'
         : dirty
             ? 'Save your latest changes before exporting'
-            : 'Export this saved skill pack bundle'
+            : 'Export this saved Skill'
 
     const applySavedDraftRef = (draftId: string) => {
         const attachTarget = data.attachTarget
@@ -381,7 +381,7 @@ export default function MarkdownEditorFrame({ id, data, selected }: NodeProps<No
     const handleOpenDanceBundle = async () => {
         try {
             if (!draft || draft.kind !== 'dance' || draft.saveState !== 'saved') return
-            await api.studio.openPath(`${workingDir}/.agent-roster/drafts/dance/${draft.id}`)
+            await api.studio.openPath(`${workingDir}/.8pm-studio/drafts/dance/${draft.id}`)
         } catch (error) {
             setStatus({ tone: 'error', message: formatStudioApiErrorMessage(error, false) })
         }

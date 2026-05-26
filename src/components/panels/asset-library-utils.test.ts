@@ -243,8 +243,8 @@ describe('placeholderForLocalSection', () => {
 
 describe('labelForInstalledKind', () => {
     it('returns correct labels', () => {
-        expect(labelForInstalledKind('tal')).toBe('Persona')
-        expect(labelForInstalledKind('dance')).toBe('Skill Pack')
+        expect(labelForInstalledKind('tal')).toBe('Instruction')
+        expect(labelForInstalledKind('dance')).toBe('Skill')
         expect(labelForInstalledKind('performer')).toBe('Agent')
         expect(labelForInstalledKind('act')).toBe('Team')
     })

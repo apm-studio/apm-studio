@@ -337,7 +337,7 @@ export default function StudioViewHeader() {
                                 onClick={() => setPickerKind('act')}
                             >
                                 <Workflow size={11} />
-                                Acts
+                                Teams
                             </button>
                             <button
                                 type="button"
@@ -345,7 +345,7 @@ export default function StudioViewHeader() {
                                 onClick={() => setPickerKind('performer')}
                             >
                                 <Users size={11} />
-                                Performers
+                                Agents
                             </button>
                         </div>
                         <button

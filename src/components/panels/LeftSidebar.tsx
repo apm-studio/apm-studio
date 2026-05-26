@@ -90,7 +90,7 @@ export default function LeftSidebar() {
                             onClick={() => setAssetLibraryOpen(!isAssetLibraryOpen)}
                         >
                             <LayoutGrid size={14} />
-                            <span>Asset Library</span>
+                            <span>Packages</span>
                             <ChevronRight size={12} className={`asset-library-arrow ${isAssetDrawerOpen ? 'rotated' : ''}`} />
                         </button>
                     </div>

@@ -73,7 +73,7 @@ function createHarness() {
         createProcess: vi.fn((input) => {
             expect(input.command).toBe('/bin/zsh')
             expect(input.args).toEqual(['-l'])
-            expect(input.env.AGENT_ROSTER_TERMINAL).toBe('1')
+            expect(input.env.EIGHTPM_STUDIO_TERMINAL).toBe('1')
             const proc = new FakeTerminalProcess()
             processes.push(proc)
             return proc

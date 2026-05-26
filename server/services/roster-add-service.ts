@@ -1,12 +1,10 @@
-// Agent Roster add service: installs Dance skills from a GitHub repo.
+// 8PM Studio add service: installs Skills from a GitHub repo.
 import path from 'path'
 import {
     parseSource,
-    getOwnerRepo,
     shallowClone,
     ensureRosterDir,
     getGlobalCwd,
-    reportInstall,
 } from '../lib/roster-source.js'
 import { invalidate } from '../lib/cache.js'
 import {
@@ -18,50 +16,9 @@ import {
     upsertGitHubDanceLockEntry,
 } from './dance-github-source.js'
 
-const REGISTRY_URL = process.env.AGENT_ROSTER_REGISTRY_URL
-    || process.env.AGENT_ROASTER_REGISTRY_URL
-    || process.env.DOT_REGISTRY_URL
-    || 'https://registry.agentroster.dev'
-
 export interface AddResult {
     installed: Array<{ urn: string; name: string; description: string }>
     source: string
-}
-
-async function autoRegisterInRegistry(
-    urn: string,
-    skill: { name: string; description: string; tags: string[]; repoRootSkillPath: string },
-    sourceUrl: string,
-    ref?: string,
-): Promise<void> {
-    const ownerRepo = getOwnerRepo(sourceUrl)
-
-    try {
-        const response = await fetch(`${REGISTRY_URL}/assets/dance`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                urn,
-                name: skill.name,
-                description: skill.description,
-                tags: skill.tags,
-                resource: {
-                    type: 'github',
-                    repo: ownerRepo,
-                    path: skill.repoRootSkillPath,
-                    ref: ref || 'main',
-                },
-            }),
-        })
-
-        if (!response.ok) {
-            return
-        }
-    } catch {
-        // Best-effort only: install should still succeed without registry registration.
-    }
 }
 
 export async function addDanceFromGitHub(cwd: string, source: string, scope?: 'global' | 'stage'): Promise<AddResult> {
@@ -114,14 +71,6 @@ export async function addDanceFromGitHub(cwd: string, source: string, scope?: 'g
                     remoteHash.status === 'ok' ? remoteHash.hash : undefined,
                 ),
             )
-
-            await autoRegisterInRegistry(urn, {
-                name: skill.skill.name,
-                description: skill.skill.description,
-                tags: skill.skill.tags,
-                repoRootSkillPath: skill.repoRootSkillPath,
-            }, parsed.url, resolvedRef)
-            reportInstall(urn).catch(() => {})
 
             installed.push({ urn, name: skill.skill.name, description: skill.skill.description })
         }

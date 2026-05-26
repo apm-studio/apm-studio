@@ -1,25 +1,25 @@
 ---
 name: studio-assistant-skill-creator-guide
-description: Helps the Agent Roster Assistant create or extend Skill Pack bundles in an app-safe way. Use when the user wants a new Skill Pack, a better SKILL.md, extra references or scripts, tighter trigger wording, or agents/openai.yaml metadata inside a Skill Pack draft bundle.
-compatibility: Designed for the Agent Roster built-in assistant projection.
+description: Helps the 8PM Studio Assistant create or extend Skills in an app-safe way. Use when the user wants a new Skill, a better SKILL.md, extra references or scripts, tighter trigger wording, or agents/openai.yaml metadata inside a Skill draft folder.
+compatibility: Designed for the 8PM Studio built-in assistant projection.
 ---
 
-# Agent Roster Skill Creator
+# 8PM Studio Skill Creator
 
-Use this skill when the user wants to build a Skill Pack bundle through Studio Assistant.
+Use this skill when the user wants to build a Skill through 8PM Assistant.
 
 ## Studio-safe authoring model
 - Use `createDanceDraft` or `updateDanceDraft` only for `SKILL.md`.
 - Use `upsertDanceBundleFile` for sibling files such as `references/*.md`, `scripts/*`, `assets/*`, and `agents/openai.yaml`.
 - Use `deleteDanceBundleEntry` only for non-core bundle entries.
 - Never target `SKILL.md` or `draft.json` with bundle file actions.
-- Bundle file actions only work on saved Skill Pack drafts.
+- Bundle file actions only work on saved Skill drafts.
 
-## Recommended bundle shape
+## Recommended Skill Shape
 - Keep `SKILL.md` concise and procedural.
 - Put detailed examples or schemas in `references/`.
 - Put deterministic helpers in `scripts/` only when they meaningfully reduce ambiguity or repetition.
-- Create `agents/openai.yaml` only when the user wants the Skill Pack to expose polished UI metadata.
+- Create `agents/openai.yaml` only when the user wants the Skill to expose polished UI metadata.
 - For non-trivial Studio mutations, keep dependent actions in one dependency-ordered `apply_studio_actions` call.
 - Do not create clutter files such as `README.md`, `CHANGELOG.md`, or `QUICK_REFERENCE.md` unless the user explicitly asked for them.
 
@@ -32,12 +32,12 @@ Use this skill when the user wants to build a Skill Pack bundle through Studio A
 - Read `references/bundle-authoring.md` when you need a quick reminder of what belongs in `SKILL.md` vs sibling files.
 
 ## Assistant behavior
-- If the user wants a new Skill Pack, prefer `createDanceDraft` first and give it a same-call `ref`.
+- If the user wants a new Skill, prefer `createDanceDraft` first and give it a same-call `ref`.
 - When you need extra bundle files in the same reply, reuse that `draftRef`.
 - If the correct bundle path is unclear, ask a short clarifying question instead of guessing.
 - Treat invalid mutation payloads as blockers. Fix ref ordering, draft-ref kind mismatches, and disconnected multi-participant `createAct` payloads before calling the tool.
-- If the user wants to improve an existing Skill Pack, prefer updating the current draft and bundle files instead of creating a second overlapping Skill Pack.
-- When the user asks for an "enhanced" Skill Pack, improve both triggerability and authoring quality: frontmatter, workflow instructions, and the right supporting files.
+- If the user wants to improve an existing Skill, prefer updating the current draft and bundle files instead of creating a second overlapping Skill.
+- When the user asks for an "enhanced" Skill, improve both triggerability and authoring quality: frontmatter, workflow instructions, and the right supporting files.
 
 ## Example
 

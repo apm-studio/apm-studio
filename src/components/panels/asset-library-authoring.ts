@@ -1,4 +1,4 @@
-// Asset authoring and draft payload builders for the Asset Library
+// Asset authoring and draft payload builders for the Packages
 
 import type { DraftAsset } from '../../types'
 import type { LibraryAsset } from './asset-panel-types'

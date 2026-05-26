@@ -14,8 +14,7 @@ describe('server config mode and port resolution', () => {
     })
 
     it('defaults to dev mode with the dev API port and parent project fallback', async () => {
-        vi.stubEnv('AGENT_ROSTER_PRODUCTION', '')
-        vi.stubEnv('DOT_STUDIO_PRODUCTION', '')
+        vi.stubEnv('EIGHTPM_STUDIO_PRODUCTION', '')
         vi.stubEnv('PORT', '')
         vi.stubEnv('PROJECT_DIR', '')
         vi.stubEnv('OPENCODE_PORT', '')
@@ -29,7 +28,7 @@ describe('server config mode and port resolution', () => {
     })
 
     it('defaults production mode to the published CLI port set', async () => {
-        vi.stubEnv('AGENT_ROSTER_PRODUCTION', '1')
+        vi.stubEnv('EIGHTPM_STUDIO_PRODUCTION', '1')
         vi.stubEnv('PORT', '')
         vi.stubEnv('PROJECT_DIR', '')
         vi.stubEnv('OPENCODE_PORT', '')
@@ -43,8 +42,8 @@ describe('server config mode and port resolution', () => {
     })
 
     it('uses production mode only for an explicit production flag', async () => {
-        vi.stubEnv('AGENT_ROSTER_PRODUCTION', '1')
-        vi.stubEnv('PROJECT_DIR', '/tmp/agent-roster-project')
+        vi.stubEnv('EIGHTPM_STUDIO_PRODUCTION', '1')
+        vi.stubEnv('PROJECT_DIR', '/tmp/8pm-studio-project')
         vi.stubEnv('PORT', '43170')
         vi.stubEnv('OPENCODE_PORT', '43171')
 
@@ -53,27 +52,11 @@ describe('server config mode and port resolution', () => {
         expect(config.IS_PRODUCTION).toBe(true)
         expect(config.PORT).toBe(43170)
         expect(config.OPENCODE_PORT).toBe(43171)
-        expect(config.DEFAULT_PROJECT_DIR).toBe('/tmp/agent-roster-project')
+        expect(config.DEFAULT_PROJECT_DIR).toBe('/tmp/8pm-studio-project')
     })
 
-    it('keeps the legacy DOT production flag as a compatibility fallback', async () => {
-        vi.stubEnv('AGENT_ROSTER_PRODUCTION', '')
-        vi.stubEnv('DOT_STUDIO_PRODUCTION', '1')
-        vi.stubEnv('PORT', '')
-        vi.stubEnv('PROJECT_DIR', '')
-        vi.stubEnv('OPENCODE_PORT', '')
-
-        const config = await import('./config.js')
-
-        expect(config.IS_PRODUCTION).toBe(true)
-        expect(config.PORT).toBe(STUDIO_RELEASE_APP_PORT)
-        expect(config.OPENCODE_PORT).toBe(STUDIO_RELEASE_OPENCODE_PORT)
-        expect(config.DEFAULT_PROJECT_DIR).toBe(path.resolve(process.cwd()))
-    })
-
-    it('lets the Agent Roster production flag override the legacy DOT flag', async () => {
-        vi.stubEnv('AGENT_ROSTER_PRODUCTION', '0')
-        vi.stubEnv('DOT_STUDIO_PRODUCTION', '1')
+    it('lets the 8PM production flag explicitly disable production mode', async () => {
+        vi.stubEnv('EIGHTPM_STUDIO_PRODUCTION', '0')
         vi.stubEnv('PORT', '')
         vi.stubEnv('PROJECT_DIR', '')
         vi.stubEnv('OPENCODE_PORT', '')

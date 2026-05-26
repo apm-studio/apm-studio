@@ -8,6 +8,7 @@ export interface PerformerProjectionInput {
     performerId: string
     performerName: string
     talRef: AssetRef | null
+    inlineInstruction?: string | null
     danceRefs: AssetRef[]
     model: ModelSelection
     modelVariant?: string | null
@@ -32,6 +33,7 @@ export type CodexProjectionPerformerSnapshot = {
     model?: ModelSelection | null
     modelVariant?: string | null
     talRef?: AssetRef | null
+    inlineInstruction?: string | null
     danceRefs?: AssetRef[]
     mcpServerNames?: string[]
 }

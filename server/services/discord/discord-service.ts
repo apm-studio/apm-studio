@@ -356,7 +356,7 @@ class DiscordIntegrationService {
                     mappings.menuChannelId || workspaceMapping.menuChannelId,
                     controlChannelName(),
                     activeCategory.id,
-                    `Agent Roster control for ${snapshot.workingDir}`,
+                    `8PM Studio control for ${snapshot.workingDir}`,
                 )
                 void this.runDiscordSyncBestEffort(`position Discord workspace menu ${menuChannel.id}`, () => menuChannel.setPosition(0))
                 mappings.menuChannelId = menuChannel.id
@@ -374,7 +374,7 @@ class DiscordIntegrationService {
                     Promise.all((snapshot.performers || []).map(async (performer) => {
                         const threads = await listStandaloneThreadsForDiscord(snapshot.workingDir, performer.id)
                             .catch((error) => {
-                                console.warn('[discord] Failed to list performer threads during workspace sync cleanup:', {
+                                console.warn('[discord] Failed to list agent threads during workspace sync cleanup:', {
                                     workspaceId,
                                     performerId: performer.id,
                                     error,
@@ -386,7 +386,7 @@ class DiscordIntegrationService {
                     Promise.all((snapshot.acts || []).map(async (act) => {
                         const result = await listActThreadsForDiscord(snapshot.workingDir, act.id)
                             .catch((error) => {
-                                console.warn('[discord] Failed to list Act threads during workspace sync cleanup:', {
+                                console.warn('[discord] Failed to list Team threads during workspace sync cleanup:', {
                                     workspaceId,
                                     actId: act.id,
                                     error,
@@ -440,7 +440,7 @@ class DiscordIntegrationService {
                 const cleanedChannelIds = await this.deleteTextChannels(
                     guild,
                     Array.from(staleChannelIds),
-                    'Agent Roster stale thread cleanup',
+                    '8PM Studio stale thread cleanup',
                 )
                 for (const [key, channelId] of Object.entries(originalPerformerThreadChannels)) {
                     if (!cleanedChannelIds.has(channelId)) {
@@ -530,7 +530,7 @@ class DiscordIntegrationService {
                         performerCategoryName(performer.name),
                     )
                     workspaceMapping.performerCategories[performer.id] = category.id
-                    void this.runDiscordSyncBestEffort(`position performer category ${category.id}`, () => category.setPosition(categoryPosition))
+                    void this.runDiscordSyncBestEffort(`position agent category ${category.id}`, () => category.setPosition(categoryPosition))
                     categoryPosition += 1
                     const threadChannelIds = Object.entries(workspaceMapping.performerThreadChannels || {})
                         .filter(([key]) => key.startsWith(`${performer.id}:`))
@@ -548,7 +548,7 @@ class DiscordIntegrationService {
                         actCategoryName(act.name),
                     )
                     workspaceMapping.actCategories[act.id] = category.id
-                    void this.runDiscordSyncBestEffort(`position Act category ${category.id}`, () => category.setPosition(categoryPosition))
+                    void this.runDiscordSyncBestEffort(`position Team category ${category.id}`, () => category.setPosition(categoryPosition))
                     categoryPosition += 1
                     const threadChannelIds = Object.entries(workspaceMapping.actThreadChannels || {})
                         .filter(([key]) => key.startsWith(`${act.id}:`))
@@ -767,7 +767,7 @@ class DiscordIntegrationService {
                 return
             }
             void this.handleActRuntimeThreadUpdated(workingDir, event.properties.thread).catch((error) => {
-                console.error('[discord] Act runtime update sync failed:', error)
+                console.error('[discord] Team runtime update sync failed:', error)
             })
         })
         this.actRuntimeUnsubscribers.set(workingDir, unsubscribe)
@@ -807,7 +807,7 @@ class DiscordIntegrationService {
                 thread,
                 limitPerParticipant: 20,
             }).catch((error) => {
-                console.error('[discord] Act thread sync from runtime event failed:', error)
+                console.error('[discord] Team thread sync from runtime event failed:', error)
             })
         }
     }
@@ -855,7 +855,7 @@ class DiscordIntegrationService {
         const commands = [
             new SlashCommandBuilder()
                 .setName('studio')
-                .setDescription('Agent Roster controls')
+                .setDescription('8PM Studio controls')
                 .addSubcommand((command) =>
                     command.setName('menu').setDescription('Refresh the Studio control panel'),
                 )
@@ -888,26 +888,26 @@ class DiscordIntegrationService {
                 )
                 .toJSON(),
             new SlashCommandBuilder()
-                .setName('performer')
-                .setDescription('Studio performer controls')
+                .setName('agent')
+                .setDescription('8PM Studio agent controls')
                 .addSubcommand((command) =>
-                    command.setName('new').setDescription('Create a new standalone performer thread from this performer channel'),
+                    command.setName('new').setDescription('Create a new standalone agent thread from this agent channel'),
                 )
                 .toJSON(),
             new SlashCommandBuilder()
-                .setName('act')
-                .setDescription('Studio Act controls')
+                .setName('team')
+                .setDescription('8PM Studio Team controls')
                 .addSubcommand((command) =>
-                    command.setName('participants').setDescription('Show the participants for this Act thread'),
+                    command.setName('participants').setDescription('Show the agents for this Team thread'),
                 )
                 .addSubcommand((command) =>
                     command
                         .setName('message')
-                        .setDescription('Send a message to an Act participant from this Act thread')
+                        .setDescription('Send a message to a Team agent from this Team thread')
                         .addStringOption((option) =>
                             option
-                                .setName('participant')
-                                .setDescription('Participant in the current Act thread')
+                                .setName('agent')
+                                .setDescription('Agent in the current Team thread')
                                 .setRequired(true)
                                 .setAutocomplete(true),
                         )
@@ -920,7 +920,7 @@ class DiscordIntegrationService {
                         ),
                 )
                 .addSubcommand((command) =>
-                    command.setName('sync').setDescription('Backfill recent participant messages for this Act thread'),
+                    command.setName('sync').setDescription('Backfill recent agent messages for this Team thread'),
                 )
                 .toJSON(),
             new SlashCommandBuilder()
@@ -1182,7 +1182,7 @@ class DiscordIntegrationService {
         await this.deleteCategories(
             guild,
             orphanCategoryIds,
-            'Agent Roster orphan entity category cleanup',
+            '8PM Studio orphan entity category cleanup',
         )
     }
 
@@ -1209,7 +1209,7 @@ class DiscordIntegrationService {
         const cleanedCategoryIds = await this.deleteCategories(
             guild,
             emptyInactiveCategoryEntries.map(([, categoryId]) => categoryId),
-            'Agent Roster inactive workspace root category cleanup',
+            '8PM Studio inactive workspace root category cleanup',
         )
         for (const [workspaceId, categoryId] of emptyInactiveCategoryEntries) {
             if (cleanedCategoryIds.has(categoryId)) {
@@ -1221,7 +1221,7 @@ class DiscordIntegrationService {
     private async deleteCategories(
         guild: Guild,
         categoryIds: string[],
-        reason = 'Agent Roster inactive workspace category cleanup',
+        reason = '8PM Studio inactive workspace category cleanup',
     ) {
         const cleanedCategoryIds = new Set<string>()
         for (const categoryId of Array.from(new Set(categoryIds))) {
@@ -1277,7 +1277,7 @@ class DiscordIntegrationService {
             rows.push(new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
                 new StringSelectMenuBuilder()
                     .setCustomId(`roster:performer:${workspaceId}`)
-                    .setPlaceholder('Open performer threads')
+                    .setPlaceholder('Open agent threads')
                     .addOptions(performers.map((performer) => ({
                         label: performer.name.slice(0, 100),
                         value: performer.id,
@@ -1291,7 +1291,7 @@ class DiscordIntegrationService {
             rows.push(new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
                 new StringSelectMenuBuilder()
                     .setCustomId(`roster:act:${workspaceId}`)
-                    .setPlaceholder('Open Act threads')
+                    .setPlaceholder('Open Team threads')
                     .addOptions(acts.map((act) => ({
                         label: act.name.slice(0, 100),
                         value: act.id,
@@ -1319,9 +1319,9 @@ class DiscordIntegrationService {
         const actCount = snapshot.acts?.length || 0
         await this.withDiscordSyncTimeout(`post Discord workspace menu ${channel.id}`, () => channel.send({
             content: [
-                `**Agent Roster**`,
+                `**8PM Studio**`,
                 `Workspace: \`${snapshot.workingDir}\``,
-                `Performers: ${performerCount} | Acts: ${actCount}`,
+                `Agents: ${performerCount} | Teams: ${actCount}`,
             ].join('\n'),
             components: this.buildWorkspaceMenuComponents(workspaceId, snapshot, savedWorkspaces),
             allowedMentions: { parse: [] },
@@ -1690,11 +1690,11 @@ class DiscordIntegrationService {
             await this.handleWorkspaceCommand(interaction)
             return
         }
-        if (interaction.commandName === 'performer') {
+        if (interaction.commandName === 'agent' || interaction.commandName === 'performer') {
             await this.handlePerformerCommand(interaction)
             return
         }
-        if (interaction.commandName === 'act') {
+        if (interaction.commandName === 'team' || interaction.commandName === 'act') {
             await this.handleActCommand(interaction)
             return
         }
@@ -1704,13 +1704,13 @@ class DiscordIntegrationService {
     }
 
     private async handleAutocomplete(interaction: AutocompleteInteraction) {
-        if (interaction.commandName !== 'act') {
+        if (interaction.commandName !== 'team' && interaction.commandName !== 'act') {
             await interaction.respond([]).catch(() => {})
             return
         }
         const subcommand = interaction.options.getSubcommand(false)
         const focused = interaction.options.getFocused(true)
-        if (subcommand !== 'message' || focused.name !== 'participant') {
+        if (subcommand !== 'message' || (focused.name !== 'agent' && focused.name !== 'participant')) {
             await interaction.respond([]).catch(() => {})
             return
         }
@@ -1862,13 +1862,13 @@ class DiscordIntegrationService {
         }
         const target = (await readDiscordMappings()).channels[interaction.channelId]
         if (!target || target.kind !== 'performer') {
-            await interaction.editReply('New standalone performer threads can only be started from performer thread channels.')
+            await interaction.editReply('New standalone agent threads can only be started from agent thread channels.')
             return
         }
         const snapshot = await this.loadSnapshotForTarget(target)
         const performer = findWorkspacePerformer(snapshot, target.performerId)
         if (!performer) {
-            await interaction.editReply('That performer is no longer present in the saved Studio workspace.')
+            await interaction.editReply('That agent is no longer present in the saved Studio workspace.')
             return
         }
         const sessionId = await ensureStandaloneSession({
@@ -1883,13 +1883,13 @@ class DiscordIntegrationService {
         await interaction.deferReply({ flags: MessageFlags.Ephemeral })
         const target = (await readDiscordMappings()).channels[interaction.channelId]
         if (!target || target.kind !== 'act-thread') {
-            await interaction.editReply('Act participants are only available from Act thread channels.')
+            await interaction.editReply('Team agents are only available from Team thread channels.')
             return
         }
         const snapshot = await this.loadSnapshotForTarget(target)
         const act = findWorkspaceAct(snapshot, target.actId)
         if (!act) {
-            await interaction.editReply('That Act is no longer present in the saved Studio workspace.')
+            await interaction.editReply('That Team is no longer present in the saved Studio workspace.')
             return
         }
         const lines = Object.keys(act.participants || {}).map((participantKey) => {
@@ -1898,8 +1898,8 @@ class DiscordIntegrationService {
         })
         await interaction.editReply({
             content: lines.length
-                ? `Participants for this Act thread:\n${lines.join('\n')}`
-                : 'This Act has no participants.',
+                ? `Agents for this Team thread:\n${lines.join('\n')}`
+                : 'This Team has no agents.',
             allowedMentions: { parse: [] },
         })
     }
@@ -1907,16 +1907,20 @@ class DiscordIntegrationService {
     private async handleActMessageCommand(interaction: ChatInputCommandInteraction) {
         await interaction.deferReply({ flags: MessageFlags.Ephemeral })
         if (!(interaction.channel instanceof TextChannel)) {
-            await interaction.editReply('Act messages can only be sent from Act thread text channels.')
+            await interaction.editReply('Team messages can only be sent from Team thread text channels.')
             return
         }
         const target = (await readDiscordMappings()).channels[interaction.channelId]
         if (!target || target.kind !== 'act-thread') {
-            await interaction.editReply('Act messages can only be sent from Act thread channels.')
+            await interaction.editReply('Team messages can only be sent from Team thread channels.')
             return
         }
-        const participantKey = interaction.options.getString('participant', true).trim()
+        const participantKey = (interaction.options.getString('agent') || interaction.options.getString('participant') || '').trim()
         const content = interaction.options.getString('message', true).trim()
+        if (!participantKey) {
+            await interaction.editReply('Choose an agent before sending.')
+            return
+        }
         if (!content) {
             await interaction.editReply('Type a message before sending.')
             return
@@ -1928,15 +1932,15 @@ class DiscordIntegrationService {
         const snapshot = await this.loadSnapshotForTarget(target)
         const act = findWorkspaceAct(snapshot, target.actId)
         if (!act) {
-            await interaction.editReply('That Act is no longer present in the saved Studio workspace.')
+            await interaction.editReply('That Team is no longer present in the saved Studio workspace.')
             return
         }
         if (!act.participants?.[participantKey]) {
             const names = Object.keys(act.participants || {}).map((key) => participantDisplayName(act, key))
             await interaction.editReply({
                 content: names.length
-                    ? `That participant is not in this Act thread. Use the participant autocomplete for one of: ${names.join(', ')}.`
-                    : 'This Act has no participants.',
+                    ? `That agent is not in this Team thread. Use the agent autocomplete for one of: ${names.join(', ')}.`
+                    : 'This Team has no agents.',
                 allowedMentions: { parse: [] },
             })
             return
@@ -1954,24 +1958,24 @@ class DiscordIntegrationService {
         await interaction.deferReply({ flags: MessageFlags.Ephemeral })
         const channel = interaction.channel
         if (!(channel instanceof TextChannel)) {
-            await interaction.editReply('Act sync only works in Act thread text channels.')
+            await interaction.editReply('Team sync only works in Team thread text channels.')
             return
         }
         const target = (await readDiscordMappings()).channels[interaction.channelId]
         if (!target || target.kind !== 'act-thread') {
-            await interaction.editReply('Act sync only works from Act thread channels.')
+            await interaction.editReply('Team sync only works from Team thread channels.')
             return
         }
         const snapshot = await this.loadSnapshotForTarget(target)
         const act = findWorkspaceAct(snapshot, target.actId)
         if (!act) {
-            await interaction.editReply('That Act is no longer present in the saved Studio workspace.')
+            await interaction.editReply('That Team is no longer present in the saved Studio workspace.')
             return
         }
         const threads = await listActThreadsForDiscord(target.workingDir, target.actId)
         const thread = threads.threads.find((entry) => entry.id === target.threadId)
         if (!thread) {
-            await interaction.editReply('That Act thread is no longer available.')
+            await interaction.editReply('That Team thread is no longer available.')
             return
         }
         const count = await this.syncActThreadParticipantHistory({
@@ -1983,8 +1987,8 @@ class DiscordIntegrationService {
         })
         await this.refreshActThreadChannelName(channel, target)
         await interaction.editReply(count > 0
-            ? `Synced ${count} recent participant message${count === 1 ? '' : 's'} into this Act thread.`
-            : 'This Act thread is already up to date.')
+            ? `Synced ${count} recent agent message${count === 1 ? '' : 's'} into this Team thread.`
+            : 'This Team thread is already up to date.')
     }
 
     private async handleSelect(interaction: StringSelectMenuInteraction) {
@@ -2020,7 +2024,7 @@ class DiscordIntegrationService {
         if (kind === 'performer') {
             const performer = findWorkspacePerformer(snapshot, value)
             if (!performer) {
-                await interaction.reply({ content: 'Performer not found in the saved workspace.', flags: MessageFlags.Ephemeral })
+                await interaction.reply({ content: 'Agent not found in the saved workspace.', flags: MessageFlags.Ephemeral })
                 return
             }
             const threads = (await listStandaloneThreadsForDiscord(snapshot.workingDir, performer.id)).slice(0, 25)
@@ -2029,7 +2033,7 @@ class DiscordIntegrationService {
                 components.push(new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
                     new StringSelectMenuBuilder()
                         .setCustomId(`roster:performer-thread:${workspaceId}:${performer.id}`)
-                        .setPlaceholder('Open saved performer thread')
+                        .setPlaceholder('Open saved agent thread')
                         .addOptions(threads.map((thread) => ({
                             label: thread.name.slice(0, 100),
                             value: thread.id,
@@ -2038,13 +2042,13 @@ class DiscordIntegrationService {
                 ))
             }
             components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(
-                new ButtonBuilder()
-                    .setCustomId(`roster:new-performer-thread:${workspaceId}:${performer.id}`)
-                    .setLabel('New performer thread')
+                    new ButtonBuilder()
+                        .setCustomId(`roster:new-performer-thread:${workspaceId}:${performer.id}`)
+                        .setLabel('New agent thread')
                     .setStyle(ButtonStyle.Primary),
             ))
             await interaction.reply({
-                content: `Performer: **${performer.name}**`,
+                content: `Agent: **${performer.name}**`,
                 components: components.slice(0, 5),
                 flags: MessageFlags.Ephemeral,
                 allowedMentions: { parse: [] },
@@ -2063,7 +2067,7 @@ class DiscordIntegrationService {
         if (kind === 'act') {
             const act = findWorkspaceAct(snapshot, value)
             if (!act) {
-                await interaction.reply({ content: 'Act not found in the saved workspace.', flags: MessageFlags.Ephemeral })
+                await interaction.reply({ content: 'Team not found in the saved workspace.', flags: MessageFlags.Ephemeral })
                 return
             }
             const threads = (await listActThreadsForDiscord(snapshot.workingDir, act.id)).threads.slice(0, 25)
@@ -2072,7 +2076,7 @@ class DiscordIntegrationService {
                 components.push(new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
                     new StringSelectMenuBuilder()
                         .setCustomId(`roster:act-thread:${workspaceId}:${act.id}`)
-                        .setPlaceholder('Open saved Act thread')
+                        .setPlaceholder('Open saved Team thread')
                         .addOptions(threads.map((thread) => ({
                             label: (thread.name || unnamedThreadNameFor(threads, thread.id)).slice(0, 100),
                             value: thread.id,
@@ -2083,11 +2087,11 @@ class DiscordIntegrationService {
             components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(
                 new ButtonBuilder()
                     .setCustomId(`roster:new-act-thread:${workspaceId}:${act.id}`)
-                    .setLabel('New Act thread')
+                    .setLabel('New Team thread')
                     .setStyle(ButtonStyle.Primary),
             ))
             await interaction.reply({
-                content: `Act: **${act.name}**`,
+                content: `Team: **${act.name}**`,
                 components: components.slice(0, 5),
                 flags: MessageFlags.Ephemeral,
                 allowedMentions: { parse: [] },
@@ -2099,7 +2103,7 @@ class DiscordIntegrationService {
             const [, , selectedWorkspaceId, actId] = interaction.customId.split(':')
             const act = findWorkspaceAct(snapshot, actId)
             if (!act) {
-                await interaction.reply({ content: 'Act not found in the saved workspace.', flags: MessageFlags.Ephemeral })
+                await interaction.reply({ content: 'Team not found in the saved workspace.', flags: MessageFlags.Ephemeral })
                 return
             }
             await interaction.deferReply({ flags: MessageFlags.Ephemeral })
@@ -2145,7 +2149,7 @@ class DiscordIntegrationService {
             const snapshot = workspaceSnapshotFromSaved(saved.workspace as SavedDiscordWorkspaceSnapshot)
             const performer = findWorkspacePerformer(snapshot, entityId)
             if (!performer) {
-                await interaction.editReply('Performer not found in the saved workspace.')
+                await interaction.editReply('Agent not found in the saved workspace.')
                 return
             }
             const sessionId = await ensureStandaloneSession({
@@ -2166,7 +2170,7 @@ class DiscordIntegrationService {
             const snapshot = workspaceSnapshotFromSaved(saved.workspace as SavedDiscordWorkspaceSnapshot)
             const act = findWorkspaceAct(snapshot, entityId)
             if (!act) {
-                await interaction.editReply('Act not found in the saved workspace.')
+                await interaction.editReply('Team not found in the saved workspace.')
                 return
             }
             const result = await createActThreadForDiscord(snapshot.workingDir, act, snapshot)
@@ -2324,7 +2328,7 @@ class DiscordIntegrationService {
                 thread,
                 limitPerParticipant: 20,
             }).catch((error) => {
-                console.error('[discord] Act thread sync after pending continuation failed:', error)
+                console.error('[discord] Team thread sync after pending continuation failed:', error)
             })
             return
         }
@@ -2460,7 +2464,7 @@ class DiscordIntegrationService {
         const guild = await this.requireGuild(config)
         const performer = findWorkspacePerformer(snapshot, performerId)
         if (!performer) {
-            throw new Error('Performer not found in the saved workspace.')
+            throw new Error('Agent not found in the saved workspace.')
         }
         const mappings = await readDiscordMappings()
         const workspaceMapping = getOrCreateWorkspaceMapping(mappings, workspaceId, snapshot.workingDir)
@@ -2482,7 +2486,7 @@ class DiscordIntegrationService {
             workspaceMapping.performerThreadChannels[mappingKey],
             threadChannelName(thread?.name, sessionId),
             categoryId,
-            `Studio performer thread: ${performer.name}`,
+            `8PM Studio agent thread: ${performer.name}`,
         )
         workspaceMapping.performerThreadChannels[mappingKey] = channel.id
         mappings.channels[channel.id] = {
@@ -2525,7 +2529,7 @@ class DiscordIntegrationService {
             workspaceMapping.actThreadChannels[actThreadMappingKey(act.id, threadId)],
             threadChannelName(threadName, threadId),
             categoryId,
-            `Studio Act thread: ${act.name}`,
+            `8PM Studio Team thread: ${act.name}`,
         )
         workspaceMapping.actThreadChannels[actThreadMappingKey(act.id, threadId)] = channel.id
         const existingTarget = mappings.channels[channel.id]
@@ -2562,7 +2566,7 @@ class DiscordIntegrationService {
                 thread,
                 limitPerParticipant: 20,
             }).catch((error) => {
-                console.error('[discord] Act thread sync after channel open failed:', error)
+                console.error('[discord] Team thread sync after channel open failed:', error)
             })
         }
         return channel
@@ -2918,11 +2922,11 @@ class DiscordIntegrationService {
         const snapshot = await this.loadSnapshotForTarget(target)
         const performer = findWorkspacePerformer(snapshot, target.performerId)
         if (!performer) {
-            await message.reply({ content: 'That performer is no longer present in the saved Studio workspace.', allowedMentions: { parse: [] } })
+            await message.reply({ content: 'That agent is no longer present in the saved Studio workspace.', allowedMentions: { parse: [] } })
             return
         }
         if (!performer.model) {
-            await message.reply({ content: `Configure a model for "${performer.name}" in Studio before chatting from Discord.`, allowedMentions: { parse: [] } })
+            await message.reply({ content: `Configure a model for "${performer.name}" in 8PM Studio before chatting from Discord.`, allowedMentions: { parse: [] } })
             return
         }
 
@@ -2970,7 +2974,7 @@ class DiscordIntegrationService {
 
     private async handleActThreadMessage(message: Message) {
         await message.reply({
-            content: 'Use `/act message` in this Act thread to choose a participant and send a message. Direct Act chat messages are not routed.',
+            content: 'Use `/team message` in this Team thread to choose an agent and send a message. Direct Team chat messages are not routed.',
             allowedMentions: { parse: [] },
         })
     }
@@ -2984,17 +2988,17 @@ class DiscordIntegrationService {
         const snapshot = await this.loadSnapshotForTarget(params.target)
         const act = findWorkspaceAct(snapshot, params.target.actId)
         if (!act) {
-            return 'That Act is no longer present in the saved Studio workspace.'
+            return 'That Team is no longer present in the saved Studio workspace.'
         }
         const threads = await listActThreadsForDiscord(params.target.workingDir, params.target.actId)
         const thread = threads.threads.find((entry) => entry.id === params.target.threadId)
         if (!thread) {
-            return 'That Act thread is no longer available.'
+            return 'That Team thread is no longer available.'
         }
         for (const [runningParticipantKey, runningSessionId] of Object.entries(thread.participantSessions || {})) {
             if (!runningSessionId) continue
             if (this.activeDiscordSessionTurns.has(runningSessionId)) {
-                return `This Act thread is already handling a Discord message for ${participantDisplayName(act, runningParticipantKey)}. Wait for the current turn to finish before sending another message.`
+                return `This Team thread is already handling a Discord message for ${participantDisplayName(act, runningParticipantKey)}. Wait for the current turn to finish before sending another message.`
             }
             const block = await describeDiscordSessionBlock(params.target.workingDir, runningSessionId)
             if (block.blocked) {
@@ -3011,16 +3015,16 @@ class DiscordIntegrationService {
                         sessionId: runningSessionId,
                     })
                     : false
-                return `This Act thread cannot accept new Discord messages because ${participantDisplayName(act, runningParticipantKey)} is ${detail}.${reposted ? ' I reposted the pending Studio prompt in this channel.' : ''}`
+                return `This Team thread cannot accept new Discord messages because ${participantDisplayName(act, runningParticipantKey)} is ${detail}.${reposted ? ' I reposted the pending Studio prompt in this channel.' : ''}`
             }
         }
 
         const performer = resolveActParticipantPerformer(snapshot, act, params.participantKey)
         if (!performer) {
-            return `Cannot resolve performer for participant "${participantDisplayName(act, params.participantKey)}".`
+            return `Cannot resolve agent for "${participantDisplayName(act, params.participantKey)}".`
         }
         if (!performer.model) {
-            return `Configure a model for "${performer.name}" in Studio before chatting from Discord.`
+            return `Configure a model for "${performer.name}" in 8PM Studio before chatting from Discord.`
         }
 
         const sessionId = await ensureActParticipantSession({
@@ -3061,7 +3065,7 @@ class DiscordIntegrationService {
                 [params.participantKey]: sessionId,
             }
             await params.channel.send({
-                content: `**[Studio User -> ${participantDisplayName(act, params.participantKey)}]**\n${params.content}`,
+                content: `**[Roster User -> ${participantDisplayName(act, params.participantKey)}]**\n${params.content}`,
                 allowedMentions: { parse: [] },
             })
             await sendActParticipantDiscordMessage({
@@ -3089,7 +3093,7 @@ class DiscordIntegrationService {
                 limitPerParticipant: 20,
                 ignoreActiveTurnSessionIds: [sessionId],
             }).catch((error) => {
-                console.error('[discord] Act thread sync during message failed:', error)
+                console.error('[discord] Team thread sync during message failed:', error)
             })
             await this.refreshActThreadChannelName(params.channel, params.target)
             this.scheduleThreadChannelNameRefresh(params.channel, params.target)
@@ -3103,7 +3107,7 @@ class DiscordIntegrationService {
                     limitPerParticipant: 20,
                     ignoreActiveTurnSessionIds: [sessionId],
                 }).catch((error) => {
-                    console.error('[discord] Act thread sync after message failed:', error)
+                    console.error('[discord] Team thread sync after message failed:', error)
                 })
             } else {
                 await this.postAssistantReplyToChannel(params.channel, {

@@ -27,6 +27,7 @@ export function createPerformerNode(input: {
     modelVariant?: string | null
     agentId?: string | null
     mcpServerNames?: string[]
+    inlineInstruction?: string | null
     mcpBindingMap?: Record<string, string>
     declaredMcpConfig?: Record<string, unknown> | null
     planMode?: boolean
@@ -53,6 +54,7 @@ export function createPerformerNode(input: {
         ...(input.modelVariant ? { modelVariant: input.modelVariant } : {}),
         ...(input.agentId ? { agentId: input.agentId } : {}),
         talRef: input.talRef || null,
+        ...(typeof input.inlineInstruction === 'string' ? { inlineInstruction: input.inlineInstruction } : {}),
         danceRefs: input.danceRefs || [],
         mcpServerNames: Array.from(new Set(input.mcpServerNames || [])),
         mcpBindingMap: sanitizeMcpBindingMap(input.mcpBindingMap),
@@ -124,6 +126,7 @@ export function clonePerformerNode(input: {
         y: input.y,
         scope: input.scope || input.source.scope,
         talRef: input.source.talRef,
+        inlineInstruction: input.source.inlineInstruction || null,
         danceRefs: input.source.danceRefs,
         model: input.source.model,
         modelPlaceholder: input.source.modelPlaceholder || null,

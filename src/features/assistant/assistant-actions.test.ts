@@ -509,7 +509,7 @@ describe('assistant-actions', () => {
         expect(writeDanceBundleFileMock).toHaveBeenNthCalledWith(2, 'dance-draft-1', 'agents/openai.yaml', 'display_name: Review Skill')
     })
 
-    it('deletes dance bundle entries for saved drafts', async () => {
+    it('deletes Skill folder entries for saved drafts', async () => {
         useStudioStore.setState({
             drafts: {
                 'dance-draft-1': {

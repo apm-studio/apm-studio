@@ -24,7 +24,7 @@ export function PerformerTalDetail({
         <div className="edit-advanced nodrag nowheel">
             <div className="adv-section">
                 <div className="adv-section__head">
-                    <span className="section-title">Persona</span>
+                    <span className="section-title">Instruction</span>
                     {performer?.talRef && (
                         <button type="button" className="btn btn--sm" onClick={() => void onOpenAssetEditor('tal', performer.talRef, 'tal')}>
                             Edit
@@ -41,17 +41,17 @@ export function PerformerTalDetail({
                                     <span className="adv-section__summary">{talAsset.description}</span>
                                 ) : null}
                                 <div className="adv-list__actions">
-                                    <button type="button" className="icon-btn" onClick={() => void onOpenAssetEditor('tal', performer?.talRef || null, 'tal')} title="Edit tal">
+                                    <button type="button" className="icon-btn" onClick={() => void onOpenAssetEditor('tal', performer?.talRef || null, 'tal')} title="Edit Instruction">
                                         <Pencil size={10} />
                                     </button>
-                                    <button type="button" className="icon-btn" onClick={() => onTalRefChange(null)} title="Remove tal">
+                                    <button type="button" className="icon-btn" onClick={() => onTalRefChange(null)} title="Remove Instruction">
                                         <X size={10} />
                                     </button>
                                 </div>
                             </div>
                         </div>
                     ) : (
-                        <span className="adv-section__summary">No Persona connected. Drag & drop from the Asset Library.</span>
+                        <span className="adv-section__summary">No Instruction connected. Drag & drop from the Packages.</span>
                     )}
                 </div>
             </div>
@@ -74,7 +74,7 @@ export function PerformerDancesDetail({
         <div className="edit-advanced nodrag nowheel">
             <div className="adv-section">
                 <div className="adv-section__head">
-                    <span className="section-title">Dances</span>
+                    <span className="section-title">Skills</span>
                 </div>
                 <div className="adv-section__body">
                     {performer?.danceRefs?.length ? (
@@ -84,10 +84,10 @@ export function PerformerDancesDetail({
                                     <Zap size={10} className="adv-list__icon" />
                                     <span className="adv-list__label">{assetRefLabel(ref)}</span>
                                     <div className="adv-list__actions">
-                                        <button type="button" className="icon-btn" onClick={() => void onOpenAssetEditor('dance', ref, 'dance-replace')} title="Edit dance">
+                                        <button type="button" className="icon-btn" onClick={() => void onOpenAssetEditor('dance', ref, 'dance-replace')} title="Edit Skill">
                                             <Pencil size={10} />
                                         </button>
-                                        <button type="button" className="icon-btn" onClick={() => onRemoveDance(performerId, ref.kind === 'draft' ? ref.draftId : ref.urn)} title="Remove dance">
+                                        <button type="button" className="icon-btn" onClick={() => onRemoveDance(performerId, ref.kind === 'draft' ? ref.draftId : ref.urn)} title="Remove Skill">
                                             <X size={10} />
                                         </button>
                                     </div>
@@ -95,7 +95,7 @@ export function PerformerDancesDetail({
                             ))}
                         </div>
                     ) : (
-                        <span className="adv-section__summary">No dances connected. Drag & drop from the Asset Library.</span>
+                        <span className="adv-section__summary">No Skills connected. Drag & drop from the Packages.</span>
                     )}
                 </div>
             </div>
@@ -223,7 +223,7 @@ export function PerformerMcpDetail({
                             ))}
                         </div>
                     ) : (
-                        <span className="adv-section__summary">No MCP servers connected. Drag & drop from Asset Library.</span>
+                        <span className="adv-section__summary">No MCP servers connected. Drag & drop from Packages.</span>
                     )}
                 </div>
             </div>

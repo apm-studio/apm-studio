@@ -398,7 +398,7 @@ function describeMcpDetailTip({
     if (liveStatus === 'failed') {
         return 'The last connection test failed. Check the config and try again.'
     }
-    return 'This server is saved and ready for connection tests, auth, and performer assignment.'
+    return 'This server is saved and ready for connection tests, auth, and agent assignment.'
 }
 
 type McpCardProps = {
@@ -514,7 +514,7 @@ function McpEditableCard({
                 <button
                     type="button"
                     className={`asset-mcp-editor__drag-handle${canDrag ? '' : ' is-disabled'}`}
-                    title={canDrag ? 'Drag onto a performer' : 'Save this server before dragging'}
+                    title={canDrag ? 'Drag onto an agent' : 'Save this server before dragging'}
                     {...handleDragProps}
                 >
                     <GripVertical size={10} className="drag-handle" />
@@ -780,7 +780,7 @@ export default function AssetLibraryMcpManager({
                 </button>
                 <div className="asset-authoring-row__note asset-authoring-row__note--compact">
                     Card actions run on saved config.
-                    <Tip text="Each MCP card saves independently. Test, auth, and performer drag actions always use the saved server config." />
+                    <Tip text="Each MCP card saves independently. Test, auth, and agent drag actions always use the saved server config." />
                 </div>
             </div>
 

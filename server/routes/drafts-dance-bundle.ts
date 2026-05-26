@@ -1,7 +1,7 @@
 /**
- * drafts-dance-bundle.ts — Routes for Dance bundle file operations.
+ * drafts-dance-bundle.ts — Routes for Skill draft file operations.
  *
- * These endpoints operate on files within a bundle-backed Dance draft directory.
+ * These endpoints operate on files within a bundle-backed Skill draft directory.
  * Generic draft CRUD (create/read/update/delete/list) is in drafts-collection.ts / drafts-item.ts.
  */
 
@@ -29,7 +29,7 @@ draftsDanceBundle.get('/api/drafts/dance/:id/tree', async (c) => {
     const id = c.req.param('id')
 
     if (!await isDanceBundleDraft(cwd, id)) {
-        return jsonError(c, 'Dance bundle draft not found.', 404)
+        return jsonError(c, 'Skill draft not found.', 404)
     }
 
     try {
@@ -51,7 +51,7 @@ draftsDanceBundle.get('/api/drafts/dance/:id/file', async (c) => {
         return jsonError(c, 'path query parameter is required.', 400)
     }
     if (!await isDanceBundleDraft(cwd, id)) {
-        return jsonError(c, 'Dance bundle draft not found.', 404)
+        return jsonError(c, 'Skill draft not found.', 404)
     }
 
     try {
@@ -75,7 +75,7 @@ draftsDanceBundle.put('/api/drafts/dance/:id/file', async (c) => {
         return jsonError(c, 'path and content are required.', 400)
     }
     if (!await isDanceBundleDraft(cwd, id)) {
-        return jsonError(c, 'Dance bundle draft not found.', 404)
+        return jsonError(c, 'Skill draft not found.', 404)
     }
 
     try {
@@ -99,7 +99,7 @@ draftsDanceBundle.post('/api/drafts/dance/:id/files', async (c) => {
         return jsonError(c, 'path is required.', 400)
     }
     if (!await isDanceBundleDraft(cwd, id)) {
-        return jsonError(c, 'Dance bundle draft not found.', 404)
+        return jsonError(c, 'Skill draft not found.', 404)
     }
 
     try {
@@ -123,7 +123,7 @@ draftsDanceBundle.delete('/api/drafts/dance/:id/file', async (c) => {
         return jsonError(c, 'path is required.', 400)
     }
     if (!await isDanceBundleDraft(cwd, id)) {
-        return jsonError(c, 'Dance bundle draft not found.', 404)
+        return jsonError(c, 'Skill draft not found.', 404)
     }
 
     try {

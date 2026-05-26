@@ -39,13 +39,13 @@ rosterCore.get('/api/roster/auth-user', async () => {
 rosterCore.post('/api/roster/login', async (c) => {
     const body = await c.req.json<{ acknowledgedTos?: boolean }>().catch((): { acknowledgedTos?: boolean } => ({}))
     if (!body?.acknowledgedTos) {
-        return jsonError(c, 'Review and accept the Agent Roster Terms of Service before signing in: https://agentroster.dev/tos', 400)
+        return jsonError(c, 'Review and accept the 8PM Studio Terms of Service before signing in: https://8pm.studio/tos', 400)
     }
 
     try {
         return c.json(await loginToRoster())
     } catch (error: unknown) {
-        return jsonError(c, errorMessage(error, 'Failed to start Agent Roster login.'), 500)
+        return jsonError(c, errorMessage(error, 'Failed to start 8PM Studio login.'), 500)
     }
 })
 
@@ -66,7 +66,7 @@ rosterCore.post('/api/roster/add', async (c) => {
         const result = await addDanceFromGitHub(requestWorkingDir(c), source.trim(), scope)
         return c.json(result)
     } catch (error: unknown) {
-        return jsonError(c, errorMessage(error, 'Failed to add dance from GitHub.'), 500)
+        return jsonError(c, errorMessage(error, 'Failed to add Skill from GitHub.'), 500)
     }
 })
 

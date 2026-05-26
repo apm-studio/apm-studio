@@ -3,7 +3,6 @@ import os from 'node:os'
 import path from 'node:path'
 import { promises as fs } from 'node:fs'
 
-const publishStudioAssetMock = vi.fn()
 const readRosterAuthUserMock = vi.fn()
 const searchRegistryMock = vi.fn()
 const getRegistryAssetDetailMock = vi.fn()
@@ -15,7 +14,6 @@ const fetchRegistryPackageRawMock = vi.fn()
 const parseActAssetMock = vi.fn()
 const parseRosterAssetMock = vi.fn()
 const parsePerformerAssetMock = vi.fn()
-const reportInstallMock = vi.fn()
 const shallowCloneMock = vi.fn()
 
 vi.mock('../lib/roster-source.js', () => ({
@@ -35,7 +33,6 @@ vi.mock('../lib/roster-source.js', () => ({
     parseRosterAsset: parseRosterAssetMock,
     parsePerformerAsset: parsePerformerAssetMock,
     readAsset: vi.fn(),
-    reportInstall: reportInstallMock,
     searchRegistry: searchRegistryMock,
     shallowClone: shallowCloneMock,
     startLogin: vi.fn(),
@@ -43,7 +40,6 @@ vi.mock('../lib/roster-source.js', () => ({
 
 vi.mock('../lib/roster-authoring.js', () => ({
     clearRosterAuthUser: vi.fn(),
-    publishStudioAsset: publishStudioAssetMock,
     readRosterAuthUser: readRosterAuthUserMock,
     saveLocalStudioAsset: vi.fn(),
     uninstallStudioAsset: vi.fn(),
@@ -63,22 +59,21 @@ describe('installRosterAsset', () => {
     let cloneDir: string
 
     beforeEach(async () => {
-        cwd = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-roster-install-'))
-        cloneDir = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-roster-clone-'))
+        cwd = await fs.mkdtemp(path.join(os.tmpdir(), '8pm-studio-install-'))
+        cloneDir = await fs.mkdtemp(path.join(os.tmpdir(), '8pm-studio-clone-'))
 
         assetFilePathMock.mockReset().mockImplementation((targetCwd: string, urn: string) =>
-            path.join(targetCwd, '.agent-roster', 'assets', `${urn.replace(/[\\/]/g, '__')}.json`),
+            path.join(targetCwd, '.8pm-studio', 'assets', `${urn.replace(/[\\/]/g, '__')}.json`),
         )
         copySkillDirMock.mockReset()
         danceAssetDirMock.mockReset().mockImplementation((targetCwd: string, urn: string) =>
-            path.join(targetCwd, '.agent-roster', 'dances', urn.replace(/[\\/]/g, '__')),
+            path.join(targetCwd, '.8pm-studio', 'dances', urn.replace(/[\\/]/g, '__')),
         )
         ensureRosterDirMock.mockReset().mockResolvedValue(undefined)
         fetchRegistryPackageRawMock.mockReset()
         parseActAssetMock.mockReset().mockImplementation((asset) => asset)
         parseRosterAssetMock.mockReset().mockImplementation((asset) => asset)
         parsePerformerAssetMock.mockReset().mockImplementation((asset) => asset)
-        reportInstallMock.mockReset().mockResolvedValue(undefined)
         shallowCloneMock.mockReset().mockResolvedValue({
             tempDir: cloneDir,
             cleanup: vi.fn().mockResolvedValue(undefined),
@@ -139,67 +134,6 @@ describe('installRosterAsset', () => {
             expect.any(String),
             { repoRoot: cloneDir },
         )
-    })
-})
-
-describe('publishRosterAsset', () => {
-    beforeEach(() => {
-        publishStudioAssetMock.mockReset()
-        readRosterAuthUserMock.mockReset()
-    })
-
-    it('forwards providedAssets to the studio authoring publish boundary', async () => {
-        readRosterAuthUserMock.mockResolvedValue({
-            username: 'acme',
-            token: 'token',
-        })
-        publishStudioAssetMock.mockResolvedValue({
-            urn: 'act/@acme/moneymaker/exec-sync',
-            published: true,
-            dependenciesPublished: ['performer/@acme/moneymaker/ceo'],
-            dependenciesSkipped: [],
-            dependenciesExisting: [],
-        })
-
-        const { publishRosterAsset } = await import('./roster-service.js')
-        const providedAssets = [{
-            kind: 'performer' as const,
-            urn: 'performer/@acme/moneymaker/ceo',
-            payload: {
-                kind: 'performer',
-                urn: 'performer/@acme/moneymaker/ceo',
-                description: 'CEO',
-                payload: {
-                    tal: 'tal/@acme/moneymaker/ceo-tal',
-                },
-            },
-            tags: ['executive'],
-        }]
-
-        await publishRosterAsset('/tmp/moneymaker', {
-            kind: 'act',
-            slug: 'exec-sync',
-            payload: {
-                description: 'Exec Sync',
-                participants: [
-                    { key: 'CEO', performer: 'performer/@acme/moneymaker/ceo' },
-                ],
-                relations: [],
-            },
-            tags: ['workflow'],
-            providedAssets,
-        })
-
-        expect(publishStudioAssetMock).toHaveBeenCalledWith(expect.objectContaining({
-            cwd: '/tmp/moneymaker',
-            kind: 'act',
-            slug: 'exec-sync',
-            providedAssets,
-            auth: {
-                username: 'acme',
-                token: 'token',
-            },
-        }))
     })
 })
 

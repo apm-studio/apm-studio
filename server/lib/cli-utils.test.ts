@@ -10,7 +10,7 @@ import {
 const tempDirs: string[] = []
 
 async function makeTempDir() {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-roster-cli-'))
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), '8pm-studio-cli-'))
     tempDirs.push(dir)
     return dir
 }

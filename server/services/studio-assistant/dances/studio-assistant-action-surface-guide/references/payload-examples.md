@@ -1,15 +1,15 @@
 # Payload Examples
 
-## Create Agent With Inline Persona
+## Create Agent With Inline Instruction
 
 ```json
-{"version":1,"actions":[{"type":"createPerformer","ref":"coder","name":"Coder","talDraft":{"name":"Coder Persona","content":"You write code carefully."}}]}
+{"version":1,"actions":[{"type":"createPerformer","ref":"coder","name":"Coder","talDraft":{"name":"Coder Instruction","content":"You write code carefully."}}]}
 ```
 
-## Create Agent With Inline Persona And Skill Pack
+## Create Agent With Inline Instruction And Skill
 
 ```json
-{"version":1,"actions":[{"type":"createPerformer","ref":"researcher","name":"Researcher","talDraft":{"name":"Researcher Persona","content":"You research carefully."},"addDanceDrafts":[{"name":"Source Validation","content":"# Source Validation\n\nUse this skill to validate sources."}]}]}
+{"version":1,"actions":[{"type":"createPerformer","ref":"researcher","name":"Researcher","talDraft":{"name":"Researcher Instruction","content":"You research carefully."},"addDanceDrafts":[{"name":"Source Validation","content":"# Source Validation\n\nUse this skill to validate sources."}]}]}
 ```
 
 ## Create Connected Team
@@ -30,7 +30,7 @@
 {"version":1,"actions":[{"type":"updateAct","actName":"Code Review","actRules":["Escalate blockers quickly.","Keep review comments actionable."]},{"type":"updateParticipantSubscriptions","actName":"Code Review","performerName":"Reviewer","subscriptions":{"messagesFromPerformerNames":["Developer"],"messageTags":["review-request"],"callboardKeys":["review-summary"],"eventTypes":["runtime.idle"]}}]}
 ```
 
-## Create Skill Pack Bundle
+## Create Skill Bundle
 
 ```json
 {"version":1,"actions":[{"type":"createDanceDraft","ref":"skill","name":"Review Skill","content":"---\nname: review-skill\ndescription: Review workflow helpers.\n---\n\n# Review Skill\n\nUse this skill when you need a review workflow."},{"type":"upsertDanceBundleFile","draftRef":"skill","path":"references/checklist.md","content":"# Checklist\n\n- Verify scope\n- Leave actionable feedback"},{"type":"upsertDanceBundleFile","draftRef":"skill","path":"agents/openai.yaml","content":"display_name: Review Skill\nshort_description: Review workflow helpers\ndefault_prompt: Use this skill when review structure matters."}]}

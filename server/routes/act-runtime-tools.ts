@@ -76,7 +76,7 @@ function parkedToolError(toolName: string) {
 actRuntimeTools.use('/api/act/*', async (c, next) => {
     const url = c.req.url
     const method = c.req.method
-    const workingDir = c.req.query('workingDir') || c.req.header('x-roster-working-dir') || c.req.header('x-dot-working-dir') || 'NONE'
+    const workingDir = c.req.query('workingDir') || c.req.header('x-8pm-working-dir') || 'NONE'
     serverDebug('act-tool-req', `${method} ${url.replace(/\?.*/, '')} workingDir=${decodeURIComponent(workingDir).slice(-40)}`)
     await next()
 })
@@ -104,7 +104,7 @@ actRuntimeTools.post('/api/act/:actId/thread/:threadId/send-message', async (c) 
 actRuntimeTools.get('/api/act/session/:sessionId/list-shared-board', async (c) => {
     const target = await resolveActSessionTarget(c.req.param('sessionId'))
     if (!target) {
-        return c.json({ ok: false, error: 'Act session not found' }, 404)
+        return c.json({ ok: false, error: 'Team session not found' }, 404)
     }
     if (isActSessionWaitUntilParked(target.sessionId)) {
         const error = parkedToolError('list_shared_board')
@@ -128,7 +128,7 @@ actRuntimeTools.get('/api/act/session/:sessionId/list-shared-board', async (c) =
 actRuntimeTools.get('/api/act/session/:sessionId/get-shared-board-entry', async (c) => {
     const target = await resolveActSessionTarget(c.req.param('sessionId'))
     if (!target) {
-        return c.json({ ok: false, error: 'Act session not found' }, 404)
+        return c.json({ ok: false, error: 'Team session not found' }, 404)
     }
     if (isActSessionWaitUntilParked(target.sessionId)) {
         const error = parkedToolError('get_shared_board_entry')
@@ -146,7 +146,7 @@ actRuntimeTools.get('/api/act/session/:sessionId/get-shared-board-entry', async 
 actRuntimeTools.post('/api/act/session/:sessionId/message-teammate', async (c) => {
     const target = await resolveActSessionTarget(c.req.param('sessionId'))
     if (!target) {
-        return c.json({ ok: false, error: 'Act session not found' }, 404)
+        return c.json({ ok: false, error: 'Team session not found' }, 404)
     }
     if (isActSessionWaitUntilParked(target.sessionId)) {
         const error = parkedToolError('message_teammate')
@@ -205,7 +205,7 @@ actRuntimeTools.post('/api/act/:actId/thread/:threadId/post-to-board', async (c)
 actRuntimeTools.post('/api/act/session/:sessionId/update-shared-board', async (c) => {
     const target = await resolveActSessionTarget(c.req.param('sessionId'))
     if (!target) {
-        return c.json({ ok: false, error: 'Act session not found' }, 404)
+        return c.json({ ok: false, error: 'Team session not found' }, 404)
     }
     if (isActSessionWaitUntilParked(target.sessionId)) {
         const error = parkedToolError('update_shared_board')
@@ -267,7 +267,7 @@ actRuntimeTools.post('/api/act/:actId/thread/:threadId/set-wake-condition', asyn
 actRuntimeTools.post('/api/act/session/:sessionId/wait-until', async (c) => {
     const target = await resolveActSessionTarget(c.req.param('sessionId'))
     if (!target) {
-        return c.json({ ok: false, error: 'Act session not found' }, 404)
+        return c.json({ ok: false, error: 'Team session not found' }, 404)
     }
 
     const body = await c.req.json<{

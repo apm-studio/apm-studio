@@ -77,7 +77,7 @@ function listOrNone(items: string[]) {
 }
 
 /**
- * Build markdown Act context for a participant's system prompt.
+ * Build markdown Team context for a participant's system prompt.
  */
 export function buildActContext(
     actDefinition: ActDefinition,
@@ -89,11 +89,11 @@ export function buildActContext(
     const messageablePartners = messageablePartnerKeys(actDefinition, participantKey)
     const teammateNames = messageablePartners.map((key) => participantDisplayName(actDefinition, key))
 
-    lines.push('# Act Runtime Context')
+    lines.push('# Team Runtime Context')
     if (actDefinition.description) {
         lines.push(`- Goal: ${actDefinition.description}`)
     }
-    lines.push(`- Act: ${actDefinition.name}`)
+    lines.push(`- Team: ${actDefinition.name}`)
     lines.push(`- Your role: ${selfName}`)
     const selfDescription = participantDescription(actDefinition, participantKey)
     if (selfDescription) {

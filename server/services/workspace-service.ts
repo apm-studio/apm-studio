@@ -10,6 +10,10 @@ import {
     deleteSessionOwnership,
     listSessionOwnershipsForWorkingDir,
 } from './session-ownership-service.js'
+import {
+    readEightPmWorkspaceSnapshotForDir,
+    writeApmPackagesForWorkspace,
+} from './apm-package-service.js'
 
 type WorkspaceSessionSummary = { id?: string }
 type WorkspaceLinkedSnapshot = {
@@ -29,6 +33,7 @@ export type WorkspacePerformerSnapshot = {
     model: { provider: string; modelId: string } | null
     modelVariant?: string | null
     talRef?: SharedAssetRef | null
+    inlineInstruction?: string | null
     danceRefs?: SharedAssetRef[]
     mcpServerNames?: string[]
     agentId?: string | null
@@ -83,8 +88,17 @@ async function readWorkspaceSnapshotForDir(workingDir: string): Promise<Workspac
         return null
     }
 
+    const eightPmWorkspace = await readEightPmWorkspaceSnapshotForDir(normalized)
+    if (eightPmWorkspace) {
+        return eightPmWorkspace as WorkspaceLinkedSnapshot
+    }
+
+    return readSavedWorkspaceSnapshotForDir(normalized)
+}
+
+async function readSavedWorkspaceSnapshotForDir(workingDir: string): Promise<WorkspaceLinkedSnapshot | null> {
     try {
-        const raw = await fs.readFile(workspacePathForWorkingDir(normalized), 'utf-8')
+        const raw = await fs.readFile(workspacePathForWorkingDir(workingDir), 'utf-8')
         return JSON.parse(raw) as WorkspaceLinkedSnapshot
     } catch {
         return null
@@ -227,11 +241,11 @@ export async function saveWorkspaceSnapshot(body: WorkspaceLinkedSnapshot) {
         : []
 
     await pruneStalePerformerProjections(workingDir, performerIds).catch((error) => {
-        console.warn('[workspace-service] Failed to prune stale performer projections during save', { workingDir, error })
+        console.warn('[workspace-service] Failed to prune stale agent projections during save', { workingDir, error })
     })
 
     const id = workspaceIdForWorkingDir(workingDir)
-    const existingWorkspace = await readWorkspaceSnapshotForDir(workingDir)
+    const existingWorkspace = await readSavedWorkspaceSnapshotForDir(workingDir) || await readWorkspaceSnapshotForDir(workingDir)
     const workspace = {
         ...body,
         workingDir,
@@ -246,6 +260,9 @@ export async function saveWorkspaceSnapshot(body: WorkspaceLinkedSnapshot) {
     }
 
     await fs.writeFile(filePath, JSON.stringify(workspace, null, 2), 'utf-8')
+    await writeApmPackagesForWorkspace(workingDir, workspace).catch((error) => {
+        console.warn('[workspace-service] Failed to write 8PM Studio APM package state during save', { workingDir, error })
+    })
     const stat = await fs.stat(filePath)
 
     import('./studio-assistant/assistant-service.js').then(({ ensureAssistantAgent }) =>

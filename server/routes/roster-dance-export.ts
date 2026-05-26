@@ -25,7 +25,7 @@ rosterDanceExport.post('/api/roster/dance-export', async (c) => {
             overwrite: body.overwrite,
         }))
     } catch (error) {
-        return jsonError(c, error instanceof Error ? error.message : 'Failed to export dance bundle.', 400)
+        return jsonError(c, error instanceof Error ? error.message : 'Failed to export Skill.', 400)
     }
 })
 

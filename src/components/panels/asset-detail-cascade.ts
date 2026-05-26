@@ -179,9 +179,9 @@ export function getPerformerCascadeReferences(asset: AssetPanelAsset | LibraryAs
 export function getPerformerSummary(asset: AssetPanelAsset | LibraryAsset) {
     if (asset.kind !== 'performer') return null
     const parts: string[] = []
-    if (asset.talUrn) parts.push('Persona linked')
+    if (asset.talUrn) parts.push('Instruction linked')
     if (Array.isArray(asset.danceUrns) && asset.danceUrns.length > 0) {
-        parts.push(`${asset.danceUrns.length} dance${asset.danceUrns.length > 1 ? 's' : ''}`)
+        parts.push(`${asset.danceUrns.length} Skill${asset.danceUrns.length > 1 ? 's' : ''}`)
     }
     if (asset.model?.provider && asset.model?.modelId) {
         parts.push(`${asset.model.provider}/${asset.model.modelId}`)
@@ -216,7 +216,7 @@ export function getActCascadeParticipants(asset: AssetPanelAsset | LibraryAsset)
                     key,
                     performer: {
                         kind: 'performer' as const,
-                        label: performerUrn ? displayUrn(performerUrn) : 'performer',
+                        label: performerUrn ? displayUrn(performerUrn) : 'agent',
                         stub: performerUrn ? buildCascadeStubFromUrn(performerUrn, asset.source) : null,
                     },
                     subscriptions: subscriptionLines(entry.subscriptions as SubscriptionRecord | undefined),

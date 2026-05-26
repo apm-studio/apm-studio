@@ -3,13 +3,13 @@ import os from 'node:os'
 import path from 'node:path'
 import { promises as fs } from 'node:fs'
 
-const listWorkspacePerformersForDirMock = vi.fn()
+const listApmAgentProjectionSnapshotsMock = vi.fn()
 const compileDanceMock = vi.fn()
 const compilePerformerMock = vi.fn()
 const readGlobalMcpCatalogMock = vi.fn()
 
-vi.mock('../workspace-service.js', () => ({
-    listWorkspacePerformersForDir: listWorkspacePerformersForDirMock,
+vi.mock('../apm-package-service.js', () => ({
+    listApmAgentProjectionSnapshots: listApmAgentProjectionSnapshotsMock,
 }))
 
 vi.mock('../opencode-projection/dance-compiler.js', () => ({
@@ -34,8 +34,8 @@ describe('codex agent sync provider', () => {
     let workingDir: string
 
     beforeEach(async () => {
-        workingDir = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-roster-agent-sync-'))
-        listWorkspacePerformersForDirMock.mockReset().mockResolvedValue([
+        workingDir = await fs.mkdtemp(path.join(os.tmpdir(), '8pm-agent-sync-'))
+        listApmAgentProjectionSnapshotsMock.mockReset().mockResolvedValue([
             {
                 id: 'performer-1',
                 name: 'Performer',
@@ -49,12 +49,12 @@ describe('codex agent sync provider', () => {
         compileDanceMock.mockReset()
         readGlobalMcpCatalogMock.mockReset().mockResolvedValue({})
         compilePerformerMock.mockReset().mockImplementation(async (cwd: string, input: { performerId: string; performerName: string }, skills = []) => {
-            const relativePath = `.codex/agents/agent_roster_${input.performerId}.toml`
+            const relativePath = `.codex/agents/8pm_studio_${input.performerId}.toml`
             return {
                 performerId: input.performerId,
-                agentNames: { build: `agent-roster/workspace/hash/${input.performerId}--build` },
+                agentNames: { build: `8pm-studio/workspace/hash/${input.performerId}--build` },
                 agentPaths: {
-                    build: path.join(cwd, '.opencode', 'agents', 'agent-roster', 'workspace', 'hash', `${input.performerId}--build.md`),
+                    build: path.join(cwd, '.opencode', 'agents', '8pm-studio', 'workspace', 'hash', `${input.performerId}--build.md`),
                 },
                 agentContents: {
                     build: 'OpenCode build content',
@@ -92,8 +92,8 @@ describe('codex agent sync provider', () => {
             expect.objectContaining({ includeCodexAgent: true }),
             [],
         )
-        await expect(fs.access(path.join(workingDir, '.codex', 'agents', 'agent_roster_performer-1.toml'))).rejects.toBeTruthy()
-        await expect(fs.access(path.join(workingDir, '.opencode', 'agent-roster.manifest.json'))).rejects.toBeTruthy()
+        await expect(fs.access(path.join(workingDir, '.codex', 'agents', '8pm_studio_performer-1.toml'))).rejects.toBeTruthy()
+        await expect(fs.access(path.join(workingDir, '.opencode', '8pm-studio.manifest.json'))).rejects.toBeTruthy()
     })
 
     it('writes Codex files on manual sync and returns changed counts', async () => {
@@ -108,27 +108,27 @@ describe('codex agent sync provider', () => {
             failedCount: 0,
             changedCount: 1,
         }))
-        await expect(fs.readFile(path.join(workingDir, '.codex', 'agents', 'agent_roster_performer-1.toml'), 'utf-8'))
+        await expect(fs.readFile(path.join(workingDir, '.codex', 'agents', '8pm_studio_performer-1.toml'), 'utf-8'))
             .resolves.toBe('name = "agent_performer-1"\n')
-        const manifest = JSON.parse(await fs.readFile(path.join(workingDir, '.opencode', 'agent-roster.manifest.json'), 'utf-8'))
-        expect(manifest.groups['performer:performer-1']).toContain('.codex/agents/agent_roster_performer-1.toml')
+        const manifest = JSON.parse(await fs.readFile(path.join(workingDir, '.opencode', '8pm-studio.manifest.json'), 'utf-8'))
+        expect(manifest.groups['performer:performer-1']).toContain('.codex/agents/8pm_studio_performer-1.toml')
     })
 
     it('prunes only provider-owned stale immediate artifacts', async () => {
-        listWorkspacePerformersForDirMock.mockResolvedValueOnce([])
-        const codexRelativePath = '.codex/agents/dot_studio_old.toml'
-        const skillLinkRelativePath = '.agents/skills/dot-studio-old'
-        const openCodeRelativePath = '.opencode/agents/dot-studio/workspace/hash/old--build.md'
+        listApmAgentProjectionSnapshotsMock.mockResolvedValueOnce([])
+        const codexRelativePath = '.codex/agents/8pm_studio_old.toml'
+        const skillLinkRelativePath = '.agents/skills/8pm-studio-old'
+        const openCodeRelativePath = '.opencode/agents/8pm-studio/workspace/hash/old--build.md'
 
         await fs.mkdir(path.join(workingDir, '.codex', 'agents'), { recursive: true })
-        await fs.mkdir(path.join(workingDir, '.agents', 'skills', 'dot-studio-old'), { recursive: true })
+        await fs.mkdir(path.join(workingDir, '.agents', 'skills', '8pm-studio-old'), { recursive: true })
         await fs.mkdir(path.dirname(path.join(workingDir, openCodeRelativePath)), { recursive: true })
         await fs.writeFile(path.join(workingDir, codexRelativePath), 'old codex', 'utf-8')
         await fs.writeFile(path.join(workingDir, openCodeRelativePath), 'old opencode', 'utf-8')
         await fs.mkdir(path.join(workingDir, '.opencode'), { recursive: true })
-        await fs.writeFile(path.join(workingDir, '.opencode', 'dot-studio.manifest.json'), JSON.stringify({
+        await fs.writeFile(path.join(workingDir, '.opencode', '8pm-studio.manifest.json'), JSON.stringify({
             version: 1,
-            owner: 'dot-studio',
+            owner: '8pm-studio',
             workspaceHash: 'hash',
             groups: {
                 'performer:old': [codexRelativePath, skillLinkRelativePath, openCodeRelativePath],
@@ -142,13 +142,13 @@ describe('codex agent sync provider', () => {
         await expect(fs.access(path.join(workingDir, codexRelativePath))).rejects.toBeTruthy()
         await expect(fs.access(path.join(workingDir, skillLinkRelativePath))).rejects.toBeTruthy()
         await expect(fs.access(path.join(workingDir, openCodeRelativePath))).resolves.toBeUndefined()
-        const manifest = JSON.parse(await fs.readFile(path.join(workingDir, '.opencode', 'agent-roster.manifest.json'), 'utf-8'))
+        const manifest = JSON.parse(await fs.readFile(path.join(workingDir, '.opencode', '8pm-studio.manifest.json'), 'utf-8'))
         expect(manifest.groups['performer:old']).toEqual([openCodeRelativePath])
-        expect(manifest.owner).toBe('agent-roster')
+        expect(manifest.owner).toBe('8pm-studio')
     })
 
     it('reports unsupported models without failing', async () => {
-        listWorkspacePerformersForDirMock.mockResolvedValueOnce([
+        listApmAgentProjectionSnapshotsMock.mockResolvedValueOnce([
             {
                 id: 'performer-2',
                 name: 'Claude Performer',

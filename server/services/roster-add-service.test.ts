@@ -4,8 +4,6 @@ const parseSourceMock = vi.hoisted(() => vi.fn())
 const shallowCloneMock = vi.hoisted(() => vi.fn())
 const ensureRosterDirMock = vi.hoisted(() => vi.fn())
 const getGlobalCwdMock = vi.hoisted(() => vi.fn(() => '/tmp/global-dot'))
-const reportInstallMock = vi.hoisted(() => vi.fn(() => Promise.resolve()))
-const getOwnerRepoMock = vi.hoisted(() => vi.fn(() => 'acme/skill-pack'))
 
 const discoverGitHubDanceSkillsMock = vi.hoisted(() => vi.fn())
 const resolveGitHubRefMock = vi.hoisted(() => vi.fn())
@@ -18,8 +16,6 @@ vi.mock('../lib/roster-source.js', () => ({
     shallowClone: shallowCloneMock,
     ensureRosterDir: ensureRosterDirMock,
     getGlobalCwd: getGlobalCwdMock,
-    reportInstall: reportInstallMock,
-    getOwnerRepo: getOwnerRepoMock,
 }))
 
 vi.mock('./dance-github-source.js', () => ({
@@ -50,7 +46,6 @@ describe('addDanceFromGitHub', () => {
         parseSourceMock.mockReset()
         shallowCloneMock.mockReset()
         ensureRosterDirMock.mockReset()
-        reportInstallMock.mockReset()
         discoverGitHubDanceSkillsMock.mockReset()
         resolveGitHubRefMock.mockReset()
         getGitHubTreeShaMock.mockReset()

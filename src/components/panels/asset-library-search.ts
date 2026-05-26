@@ -1,4 +1,4 @@
-// Search, filter, and haystack utilities for the Asset Library
+// Search, filter, and haystack utilities for the Packages
 
 import type { InstalledKind, LocalSection, RuntimeKind, SourceFilter } from './asset-library-utils'
 import type { RegistryGroup } from './asset-panel-types'
@@ -85,8 +85,8 @@ export function buildRegistryGroups<T extends { kind: InstalledKind }>(registryR
 }
 
 export function labelForInstalledKind(kind: InstalledKind) {
-    if (kind === 'tal') return 'Persona'
-    if (kind === 'dance') return 'Skill Pack'
+    if (kind === 'tal') return 'Instruction'
+    if (kind === 'dance') return 'Skill'
     if (kind === 'performer') return 'Agent'
     return 'Team'
 }
@@ -103,10 +103,10 @@ export function placeholderForLocalSection(localSection: LocalSection, runtimeKi
 
 export function authoringNoteForInstalledKind(installedKind: InstalledKind) {
     if (installedKind === 'tal' || installedKind === 'dance') {
-        return 'Drag & drop onto a performer, or edit from the draft card.'
+        return 'Drag & drop onto an agent, or edit from the draft card.'
     }
     if (installedKind === 'performer') {
-        return 'Drag & drop onto the canvas to create a new performer.'
+        return 'Drag & drop onto the canvas to create a new agent.'
     }
-    return 'Drag & drop onto the canvas to create a new act.'
+    return 'Drag & drop onto the canvas to create a new team.'
 }

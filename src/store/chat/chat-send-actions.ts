@@ -301,6 +301,7 @@ export function createChatSendActions(
                     performerId: target.requestTarget.performerId,
                     performerName: target.requestTarget.performerName,
                     talRef: runtimeConfig.talRef,
+                    inlineInstruction: runtimeConfig.inlineInstruction,
                     danceRefs: runtimeConfig.danceRefs,
                     extraDanceRefs,
                     model: runtimeConfig.model,

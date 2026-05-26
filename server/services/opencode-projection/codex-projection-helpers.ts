@@ -21,16 +21,12 @@ function groupKey(performerId: string) {
 
 export function isCodexAgentProjectionPath(filePath: string) {
     return (
-        filePath.startsWith('.codex/agents/agent_roster_')
-        || filePath.startsWith('.codex/agents/agent_roaster_')
-        || filePath.startsWith('.codex/agents/dot_studio_')
+        filePath.startsWith('.codex/agents/8pm_studio_')
     ) && filePath.endsWith('.toml')
 }
 
 export function isCodexSkillLinkProjectionPath(filePath: string) {
-    return filePath.startsWith('.agents/skills/agent-roster-')
-        || filePath.startsWith('.agents/skills/agent-roaster-')
-        || filePath.startsWith('.agents/skills/dot-studio-')
+    return filePath.startsWith('.agents/skills/8pm-studio-')
 }
 
 export function isCodexImmediateProjectionPath(filePath: string) {
@@ -62,7 +58,7 @@ export function attachCodexSkillPaths(
             workingDir,
             '.agents',
             'skills',
-            `agent-roster-${performerSegment}-${skillSegment}-${hash}`,
+            `8pm-studio-${performerSegment}-${skillSegment}-${hash}`,
         )
         const codexFilePath = path.join(linkDir, 'SKILL.md')
 
@@ -113,7 +109,7 @@ export async function syncCodexSkillLinks(skills: CompiledSkill[]) {
 function createManifest(workspaceHash: string): ProjectionManifest {
     return {
         version: 1,
-        owner: 'agent-roster',
+        owner: '8pm-studio',
         workspaceHash,
         groups: {},
     }
@@ -187,6 +183,7 @@ export function performerSnapshotToCodexProjectionInput(
         performerId: performer.id,
         performerName: performer.name,
         talRef: performer.talRef || null,
+        inlineInstruction: performer.inlineInstruction || null,
         danceRefs: performer.danceRefs || [],
         model: performer.model,
         modelVariant: performer.modelVariant || null,

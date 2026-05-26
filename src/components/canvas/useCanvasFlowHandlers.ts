@@ -118,7 +118,7 @@ export function useCanvasFlowHandlers(args: UseCanvasFlowHandlersArgs) {
         switch (result.kind) {
             case 'markdownEditor':
                 closeEditor()
-                // Don't exit Act edit mode when clicking other canvas elements
+                // Keep Team edit mode active when focusing other canvas elements.
                 if (!editingActId) {
                     closeActEditor()
                 }
@@ -126,7 +126,7 @@ export function useCanvasFlowHandlers(args: UseCanvasFlowHandlersArgs) {
                 return
             case 'canvasTerminal':
                 closeEditor()
-                // Don't exit Act edit mode when clicking other canvas elements
+                // Keep Team edit mode active when focusing other canvas elements.
                 if (!editingActId) {
                     closeActEditor()
                 }
@@ -142,7 +142,7 @@ export function useCanvasFlowHandlers(args: UseCanvasFlowHandlersArgs) {
                 return
             case 'performer':
                 if (editingActId) {
-                    // Stay in Act edit mode — just re-focus the Act
+                    // Stay in Team edit mode - just refocus the Team.
                     closeEditor()
                     selectAct(editingActId)
                     return
@@ -171,7 +171,7 @@ export function useCanvasFlowHandlers(args: UseCanvasFlowHandlersArgs) {
     const onPaneClick = useCallback(() => {
         clearTransformTarget()
         closeEditor()
-        // Don't exit Act edit mode on canvas click — only exit via explicit action
+        // Keep Team edit mode until the user takes an explicit close action.
         if (!editingActId) {
             closeActEditor()
             selectAct(null)

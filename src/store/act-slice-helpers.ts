@@ -705,8 +705,8 @@ export function scheduleActRuntimeSync(get: GetState, set: SetState, actId: stri
                     await api.actRuntime.syncDefinition(actId, buildServerActDefinition(latestAct, latestState.performers) as unknown as Record<string, unknown>)
                     await loadActThreadsImpl(get, set, actId)
                 } catch (error) {
-                    console.error('[act-sync] Failed to sync act runtime definition', error)
-                    showToast('Agent Roster could not sync the running Team threads.', 'error', {
+                    console.error('[team-sync] Failed to sync Team runtime definition', error)
+                    showToast('8PM Studio could not sync the running Team threads.', 'error', {
                         title: 'Team sync failed',
                         dedupeKey: `act:sync:${actId}`,
                     })

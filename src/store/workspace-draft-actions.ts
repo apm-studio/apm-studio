@@ -513,7 +513,7 @@ export function createMarkdownEditorImpl(
     const editorId = `markdown-editor-${markdownEditorIdCounter.value}`
     const draftId = makeId(`${kind}-draft`)
     const source = options?.source
-    const name = source?.name || (kind === 'tal' ? 'New Persona' : 'New Skill Pack')
+    const name = source?.name || (kind === 'tal' ? 'New Instruction' : 'New Skill')
     const slug = source?.slug || name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
     const description = source?.description || name
     const tags = source?.tags || []

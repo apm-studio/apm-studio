@@ -14,6 +14,7 @@ type ProjectionTargetInput = {
     performerId: string
     performerName: string
     talRef: SharedAssetRef | null
+    inlineInstruction?: string | null
     danceRefs: SharedAssetRef[]
     model: ModelSelection
     modelVariant?: string | null
@@ -38,6 +39,7 @@ function performerToProjectionInput(
         performerId: performer.id,
         performerName: performer.name,
         talRef: performer.talRef || null,
+        inlineInstruction: performer.inlineInstruction || null,
         danceRefs: performer.danceRefs || [],
         model: performer.model,
         modelVariant: performer.modelVariant || null,

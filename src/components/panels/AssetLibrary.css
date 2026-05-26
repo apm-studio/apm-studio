@@ -1,4 +1,4 @@
-/* Asset Library */
+/* Packages */
 @import './AssetLibraryMcp.css';
 @import './AssetLibraryRegistry.css';
 
@@ -181,7 +181,7 @@
 }
 
 .asset-sync-badge--upstream_missing,
-.asset-sync-badge--legacy_unverifiable,
+.asset-sync-badge--provenance_unverifiable,
 .asset-sync-badge--check_failed {
     background: rgba(239, 68, 68, 0.12);
     color: #dc2626;

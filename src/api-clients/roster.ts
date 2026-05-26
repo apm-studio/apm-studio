@@ -11,7 +11,6 @@ import type {
     RosterInitResponse,
     RosterInstallRequest,
     RosterLoginResponse,
-    RosterPublishRequest,
     RosterSaveLocalRequest,
     RosterStatusResponse,
 } from '../../shared/roster-contracts'
@@ -57,29 +56,6 @@ export const rosterApi = {
         stage?: string,
     ) =>
         putJSON<{ ok: boolean; urn: string; path: string; existed: boolean; payload: Record<string, unknown> }>('/api/roster/assets/local', { kind, slug, payload, author, stage } satisfies RosterSaveLocalRequest),
-
-    publishAsset: (
-        kind: 'tal' | 'dance' | 'performer' | 'act',
-        slug: string,
-        payload?: Record<string, unknown>,
-        tags?: string[],
-        providedAssets?: Array<{
-            kind: 'tal' | 'performer' | 'act'
-            urn: string
-            payload: Record<string, unknown>
-            tags?: string[]
-        }>,
-        acknowledgedTos = false,
-        stage?: string,
-    ) =>
-        postJSON<{
-            ok: boolean
-            urn: string
-            published: boolean
-            dependenciesPublished: string[]
-            dependenciesSkipped: string[]
-            dependenciesExisting: string[]
-        }>('/api/roster/assets/publish', { kind, slug, payload, tags, providedAssets, acknowledgedTos, stage } satisfies RosterPublishRequest),
 
     search: (query: string, kind?: string, limit?: number) =>
         fetchJSON<AssetListItem[]>(

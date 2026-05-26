@@ -26,7 +26,6 @@ type Props = {
     onSelectAsset: AssetPanelHandler
     onCloseAsset: () => void
     onSaveLocal: AssetPanelHandler
-    onPublish: AssetPanelHandler
     onDeleteDraft: AssetPanelHandler
     onEditDraft?: AssetPanelHandler
     onUninstall?: AssetPanelHandler
@@ -59,7 +58,6 @@ export default function AssetLibraryModelList({
     onSelectAsset,
     onCloseAsset,
     onSaveLocal,
-    onPublish,
     onDeleteDraft,
     onEditDraft,
     onUninstall,
@@ -150,7 +148,6 @@ export default function AssetLibraryModelList({
                 actionStatus={detailActionStatus}
                 actionLoading={detailActionLoading}
                 onSaveLocal={onSaveLocal}
-                onPublish={onPublish}
                 onImportToStage={undefined}
                 onDeleteDraft={onDeleteDraft}
                 onUninstall={onUninstall}

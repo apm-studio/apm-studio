@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Agent Roster CLI — agent-roster [path] [options]
+// 8PM Studio CLI — 8pm-studio [path] [options]
 
 import fs from 'fs/promises'
 import { resolve, basename, dirname, join } from 'path'
@@ -80,15 +80,15 @@ const STATUS_PREFIX: Record<DoctorCheck['status'], string> = {
 }
 
 function printUsage(packageMeta?: StudioPackageMeta) {
-    const header = packageMeta ? `${packageMeta.name} ${packageMeta.version}` : 'agent-roster'
+    const header = packageMeta ? `${packageMeta.name} ${packageMeta.version}` : '8pm-studio'
     console.log(`${header}
 
 Usage:
-  agent-roster [path] [options]
-  agent-roster open [path] [options]
-  agent-roster doctor [path] [options]
-  agent-roster --help
-  agent-roster --version
+  8pm-studio [path] [options]
+  8pm-studio open [path] [options]
+  8pm-studio doctor [path] [options]
+  8pm-studio --help
+  8pm-studio --version
 
 Commands:
   open                  Open an agent package workspace. This is the default command.
@@ -99,32 +99,32 @@ Arguments:
 
 Options:
   -p, --port <port>     Port for the Studio server. Defaults to 43100.
-      --openai-oauth    Connect OpenAI through browser OAuth before Agent Roster opens.
-      --performer <urn>
+      --openai-oauth    Connect OpenAI through browser OAuth before 8PM Studio opens.
+      --agent <urn>
                         Prepare and focus an agent package, installing/importing it when needed.
-      --act <urn>
-                        Prepare and focus a canvas act, installing/importing it when needed.
-      --no-open         Do not open the Agent Roster browser window.
-      --open            Explicitly open the Agent Roster browser window after startup.
+      --team <urn>
+                        Prepare and focus a team workflow, installing/importing it when needed.
+      --no-open         Do not open the 8PM Studio browser window.
+      --open            Explicitly open the 8PM Studio browser window after startup.
       --verbose         Print extra startup details.
   -h, --help            Show this help message.
-  -v, --version         Show the installed Agent Roster version.
+  -v, --version         Show the installed 8PM Studio version.
 
 Examples:
-  agent-roster
-  agent-roster .
-  agent-roster --openai-oauth
-  agent-roster --openai-oauth --act act/@acme/workflows/review-flow
-  agent-roster ~/projects/my-app
-  agent-roster ~/projects/my-app --performer performer/@acme/workflows/reviewer
-  agent-roster open ~/projects/my-app --port 3010
-  agent-roster open ~/projects/my-app --act act/@acme/workflows/review-flow
-  agent-roster doctor
-  agent-roster doctor ~/projects/my-app`)
+  8pm-studio
+  8pm-studio .
+  8pm-studio --openai-oauth
+  8pm-studio --openai-oauth --team <team-urn>
+  8pm-studio ~/projects/my-app
+  8pm-studio ~/projects/my-app --agent <agent-urn>
+  8pm-studio open ~/projects/my-app --port 3010
+  8pm-studio open ~/projects/my-app --team <team-urn>
+  8pm-studio doctor
+  8pm-studio doctor ~/projects/my-app`)
 }
 
 function failUsage(message: string): never {
-    throw new CliUsageError(`${message}\nRun agent-roster --help for usage.`)
+    throw new CliUsageError(`${message}\nRun 8pm-studio --help for usage.`)
 }
 
 function parsePort(value: string | undefined, arg: string): number {
@@ -176,7 +176,8 @@ function parseAssetTargetUrn(value: string | undefined, kind: StartupAssetTarget
     try {
         parseRosterAssetUrn(urn, kind)
     } catch {
-        failUsage(`Invalid ${arg} URN: ${urn}. Expected ${kind}/@<owner>/<stage>/<name>.`)
+        const label = kind === 'performer' ? 'agent package' : 'team workflow'
+        failUsage(`Invalid ${arg} URN: ${urn}. Expected a valid ${label} URN.`)
     }
 
     return { kind, urn }
@@ -235,18 +236,18 @@ function parseCliArgs(argv: string[]): CliCommand {
             continue
         }
 
-        if (arg === '--performer') {
+        if (arg === '--agent' || arg === '--performer') {
             if (startupAssetTarget) {
-                failUsage('Use only one of --performer or --act')
+                failUsage('Use only one of --agent or --team')
             }
             startupAssetTarget = parseAssetTargetUrn(argv[index + 1], 'performer', arg)
             index += 1
             continue
         }
 
-        if (arg === '--act') {
+        if (arg === '--team' || arg === '--act') {
             if (startupAssetTarget) {
-                failUsage('Use only one of --performer or --act')
+                failUsage('Use only one of --agent or --team')
             }
             startupAssetTarget = parseAssetTargetUrn(argv[index + 1], 'act', arg)
             index += 1
@@ -270,7 +271,7 @@ function parseCliArgs(argv: string[]): CliCommand {
 
     if (command === 'doctor') {
         if (startupAssetTarget) {
-            failUsage('--performer and --act can only be used with the open command')
+            failUsage('--agent and --team can only be used with the open command')
         }
         if (openaiOauth) {
             failUsage('--openai-oauth can only be used with the open command')
@@ -388,7 +389,7 @@ async function readStudioPackageMeta(): Promise<StudioPackageMeta> {
         }
     }
 
-    throw new Error('Could not locate package.json for Agent Roster.')
+    throw new Error('Could not locate package.json for 8PM Studio.')
 }
 
 async function fetchLatestVersion(packageName: string) {
@@ -488,7 +489,7 @@ async function promptForNpmUpdate(packageMeta: StudioPackageMeta) {
         child.on('error', reject)
     })
 
-    console.log(`Updated ${packageMeta.name} to ${latestVersion}. Run agent-roster again to start the new version.`)
+    console.log(`Updated ${packageMeta.name} to ${latestVersion}. Run 8pm-studio again to start the new version.`)
     return true
 }
 
@@ -583,7 +584,7 @@ async function runDoctor(command: DoctorCommand, packageMeta: StudioPackageMeta)
             ? `Port ${command.port} is reserved for the managed OpenCode sidecar`
             : portAvailable
             ? `Port ${command.port} is available`
-            : `Port ${command.port} is in use. Agent Roster can use another port unless you force --port.`,
+            : `Port ${command.port} is in use. 8PM Studio can use another port unless you force --port.`,
     })
 
     const executable = resolveOpencodeExecutable()
@@ -595,7 +596,7 @@ async function runDoctor(command: DoctorCommand, packageMeta: StudioPackageMeta)
             : 'Could not find an OpenCode executable. Install opencode-ai.',
     })
 
-    console.log('Agent Roster doctor\n')
+    console.log('8PM Studio doctor\n')
     for (const check of checks) {
         console.log(`${STATUS_PREFIX[check.status].padEnd(4)} ${check.label}: ${check.detail}`)
     }
@@ -639,7 +640,7 @@ async function waitForStudioReady(healthUrl: string) {
         await sleep(STUDIO_READY_POLL_MS)
     }
 
-    throw new Error(`Agent Roster did not become ready in time (${lastFailure}).`)
+    throw new Error(`8PM Studio did not become ready in time (${lastFailure}).`)
 }
 
 function isPromptVisible(prompt: ProviderAuthPrompt, values: Record<string, string>) {
@@ -804,7 +805,7 @@ async function runOpen(command: OpenCommand, packageMeta: StudioPackageMeta) {
     const resolvedPort = await resolveOpenPort(command.port)
 
     process.env.PROJECT_DIR = resolvedProjectDir
-    process.env.AGENT_ROSTER_PRODUCTION = '1'
+    process.env.EIGHTPM_STUDIO_PRODUCTION = '1'
     process.env.PORT = String(resolvedPort)
     delete process.env.OPENCODE_URL
 
@@ -816,7 +817,7 @@ async function runOpen(command: OpenCommand, packageMeta: StudioPackageMeta) {
     const healthUrl = `http://127.0.0.1:${resolvedPort}/api/health`
 
     if (command.verbose) {
-        console.log(`Opening Agent Roster for ${resolvedProjectDir}`)
+        console.log(`Opening 8PM Studio for ${resolvedProjectDir}`)
         console.log('Using managed OpenCode sidecar')
         if (command.startupAssetTarget) {
             console.log(`Startup target: ${command.startupAssetTarget.kind} ${command.startupAssetTarget.urn}`)
@@ -838,7 +839,7 @@ async function runOpen(command: OpenCommand, packageMeta: StudioPackageMeta) {
         }
     }
 
-    console.log(`Agent Roster running at ${studioUrl}`)
+    console.log(`8PM Studio running at ${studioUrl}`)
     console.log(`Workspace: ${resolvedProjectDir}`)
     if (command.startupAssetTarget) {
         console.log(`Launch URL: ${launchUrl}`)
@@ -876,7 +877,7 @@ const main = async () => {
             process.exit(1)
         }
 
-        console.error('Failed to start Agent Roster:', error)
+        console.error('Failed to start 8PM Studio:', error)
         process.exit(1)
     }
 }

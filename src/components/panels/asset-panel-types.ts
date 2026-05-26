@@ -2,6 +2,7 @@ import type { AssetCard, McpServer } from '../../types'
 import type { AssetSource, AssetListItem, GitHubDanceSourceInfo } from '../../../shared/asset-contracts'
 import type { RuntimeModelCatalogEntry } from '../../../shared/model-variants'
 import type { ModelConfigV1 } from '../../../shared/roster-types'
+import type { RegistryListing } from '../../../shared/registry-contracts'
 
 type InstalledAssetKind = 'tal' | 'dance' | 'performer' | 'act'
 
@@ -59,6 +60,7 @@ type PanelAssetSharedFields = {
     tier?: string
     updatedAt?: string
     github?: GitHubDanceSourceInfo
+    registryListing?: RegistryListing
 }
 
 export type LibraryAsset = ((AssetCard & { kind: InstalledAssetKind }) | (AssetListItem & { kind: InstalledAssetKind })) & PanelAssetSharedFields
@@ -79,7 +81,7 @@ export type AssetPanelAuthUser = {
     username: string | null
 }
 
-export type AssetPanelAction = 'save-local' | 'publish' | 'import'
+export type AssetPanelAction = 'save-local' | 'import'
     | 'dance-check-updates'
     | 'dance-update'
     | 'dance-check-repo'

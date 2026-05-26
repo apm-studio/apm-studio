@@ -14,6 +14,7 @@ import type { ChatGet } from './chat-internals'
 
 export type ChatRuntimeConfig = {
     talRef: AssetRef | null
+    inlineInstruction?: string | null
     danceRefs: AssetRef[]
     model: { provider: string; modelId: string } | null
     modelVariant: string | null
@@ -43,6 +44,7 @@ export type ResolvedChatRuntimeTarget = {
 
 export const EMPTY_RUNTIME_CONFIG: ChatRuntimeConfig = {
     talRef: null,
+    inlineInstruction: null,
     danceRefs: [],
     model: null,
     modelVariant: null,
@@ -199,7 +201,7 @@ export function resolveChatRuntimeTarget(get: ChatGet, chatKey: string): Resolve
         return {
             chatKey,
             kind: 'assistant',
-            name: 'Studio Assistant',
+            name: '8PM Assistant',
             runtimeConfig: {
                 ...EMPTY_RUNTIME_CONFIG,
                 model: state.assistantModel
@@ -216,7 +218,7 @@ export function resolveChatRuntimeTarget(get: ChatGet, chatKey: string): Resolve
             },
             requestTarget: {
                 performerId: chatKey,
-                performerName: 'Studio Assistant',
+                performerName: '8PM Assistant',
             },
         }
     }

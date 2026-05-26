@@ -35,7 +35,7 @@ export async function prepareAssistantChatRequest(
 
     if (capabilitySnapshot && !capabilitySnapshot.toolCall) {
         throw new StudioValidationError(
-            'Studio Assistant now requires a tool-capable model. Choose a model with tools enabled.',
+            '8PM Assistant now requires a tool-capable model. Choose a model with tools enabled.',
             'choose_model',
         )
     }

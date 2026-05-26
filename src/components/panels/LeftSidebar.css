@@ -111,7 +111,7 @@
     letter-spacing: 0.8px;
 }
 
-/* ── Asset Library Button (prominent, full-width) ─────── */
+/* ── Packages Button (prominent, full-width) ─────── */
 .asset-library-btn {
     display: flex;
     align-items: center;
@@ -156,7 +156,7 @@
     transform: rotate(180deg);
 }
 
-/* ── Legacy tab styles ────────────────────────────────── */
+/* ── Sidebar tab styles ───────────────────────────────── */
 .sidebar__tabs {
     display: flex;
     border-bottom: 1px solid var(--border-main);

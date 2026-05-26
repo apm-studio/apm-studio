@@ -91,7 +91,7 @@ export async function sendStudioChatMessage(
     const performer = request.performer
     if (!performer?.model) {
         throw new StudioValidationError(
-            'Select a model for this performer before sending prompts.',
+            'Select a model for this agent before sending prompts.',
             'select_model',
         )
     }
@@ -128,7 +128,7 @@ export async function sendStudioChatMessage(
                 }
             }
         } catch (err) {
-            console.warn('[chat-service] Act tool projection failed:', err)
+            console.warn('[chat-service] Team tool projection failed:', err)
         }
     }
 
@@ -173,6 +173,7 @@ export async function sendStudioChatMessage(
                 performerId: projectionPerformerId,
                 performerName: projectionPerformerName,
                 talRef: performer.talRef,
+                inlineInstruction: performer.inlineInstruction || null,
                 danceRefs: [...(performer.danceRefs || []), ...(performer.extraDanceRefs || [])],
                 model: performer.model!,
                 modelVariant: performer.modelVariant || null,
@@ -195,7 +196,7 @@ export async function sendStudioChatMessage(
             }
 
             if (!primaryProjection) {
-                throw new Error(`Missing projection for performer ${projectionPerformerId}`)
+                throw new Error(`Missing projection for agent ${projectionPerformerId}`)
             }
 
             return {
@@ -268,7 +269,7 @@ export async function sendStudioChatMessage(
                 threadId: request.actThreadId,
                 provisionalTitle,
             }).catch((error) => {
-                console.warn(`[chat-service] Failed to seed Act thread name for ${request.actThreadId}:`, error)
+                console.warn(`[chat-service] Failed to seed Team thread name for ${request.actThreadId}:`, error)
             })
         } else {
             await setInitialStandaloneSessionTitle({
@@ -335,7 +336,7 @@ export async function sendStudioChatMessage(
                 },
                 provisionalTitle,
             }).catch((error) => {
-                console.warn(`[chat-service] Failed to generate Act thread name for ${request.actThreadId}:`, error)
+                console.warn(`[chat-service] Failed to generate Team thread name for ${request.actThreadId}:`, error)
             })
         } else {
             void maybeGenerateStandaloneSessionTitle({

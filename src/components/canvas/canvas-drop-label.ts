@@ -3,5 +3,5 @@ export function getCanvasDropLabel(activeKind: string | undefined) {
         return null
     }
 
-    return 'Drop to add this performer to the current stage'
+    return 'Drop to add this agent to the current stage'
 }

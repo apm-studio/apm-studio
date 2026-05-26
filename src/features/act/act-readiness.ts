@@ -95,7 +95,7 @@ export function evaluateActReadiness(
             issues.push({
                 code: 'unresolved-performer',
                 severity: 'error',
-                message: `Participant "${participantLabel(key)}" has no matching performer on the canvas`,
+                message: `Participant "${participantLabel(key)}" has no matching agent on the canvas`,
                 focus: { mode: 'participant', participantKey: key },
             })
             continue // skip model check if performer not found
@@ -133,7 +133,7 @@ export function evaluateActReadiness(
 
     // ── 7. Subscription validation ──────────────────────
     // Only warn if the participant's performer actually exists — the
-    // "no matching performer" error is already sufficient otherwise.
+    // "no matching agent" error is already sufficient otherwise.
     if (participantKeys.length > 1) {
         for (const key of participantKeys) {
             const binding = act.participants[key]

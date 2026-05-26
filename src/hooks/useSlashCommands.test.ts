@@ -3,7 +3,7 @@ import { getSlashMenuQuery, resolveSelectedSlashCommand } from './useSlashComman
 
 describe('useSlashCommands helpers', () => {
     it('keeps the slash menu open while the user is typing a command token', () => {
-        expect(getSlashMenuQuery('/da')).toBe('/da')
+        expect(getSlashMenuQuery('/sk')).toBe('/sk')
     })
 
     it('closes the slash menu once the user types a space after a slash token', () => {
@@ -11,10 +11,10 @@ describe('useSlashCommands helpers', () => {
     })
 
     it('preserves an explicitly selected slash command while editing its argument text', () => {
-        expect(resolveSelectedSlashCommand('/dance hello', '/dance')).toBe('/dance')
+        expect(resolveSelectedSlashCommand('/skill hello', '/skill')).toBe('/skill')
     })
 
     it('clears the selected slash command once the command token no longer matches', () => {
-        expect(resolveSelectedSlashCommand('/danger hello', '/dance')).toBeNull()
+        expect(resolveSelectedSlashCommand('/danger hello', '/skill')).toBeNull()
     })
 })

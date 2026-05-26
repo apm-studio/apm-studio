@@ -1,10 +1,10 @@
 ---
 name: studio-assistant-workflow-guide
-description: "Helps design Agent teams, role splits, handoff patterns, and connected Team topology in Agent Roster. Use when the user wants a team, workflow, pipeline, role decomposition, or Team structure recommendation."
-compatibility: Designed for the Agent Roster built-in assistant projection.
+description: "Helps design Agent teams, role splits, handoff patterns, and connected Team topology in 8PM Studio. Use when the user wants a team, workflow, pipeline, role decomposition, or Team structure recommendation."
+compatibility: Designed for the 8PM Studio built-in assistant projection.
 ---
 
-# Agent Roster Workflow Guide
+# 8PM Studio Workflow Guide
 
 Use this skill when the user wants help designing an Agent team or workflow shape.
 
@@ -42,7 +42,7 @@ Use this skill when the user wants help designing an Agent team or workflow shap
 - Ask one short clarifying question only when the role split or handoff is materially unclear.
 - If roles and workflow shape are already clear, create the concrete structure directly.
 - Do not ignore a role the user explicitly requested.
-- Do not add Persona, Skill Pack, model, or MCP choices the user explicitly asked to omit.
+- Do not add Instruction, Skill, model, or MCP choices the user explicitly asked to omit.
 
 ## Anti-Patterns
 - Generic Agents with overlapping jobs.

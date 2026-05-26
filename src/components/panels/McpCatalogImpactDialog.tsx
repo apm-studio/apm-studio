@@ -23,7 +23,7 @@ export default function McpCatalogImpactDialog({
             <div className="mcp-impact-dialog" onClick={(event) => event.stopPropagation()}>
                 <div className="mcp-impact-dialog__header">
                     <AlertTriangle size={16} style={{ color: 'var(--status-warning)' }} />
-                    <span>Update performer MCP references?</span>
+                    <span>Update agent MCP references?</span>
                     <button type="button" className="icon-btn" onClick={onCancel} style={{ marginLeft: 'auto' }}>
                         <X size={14} />
                     </button>
@@ -31,7 +31,7 @@ export default function McpCatalogImpactDialog({
 
                 <div className="mcp-impact-dialog__body">
                     <div className="mcp-impact-dialog__summary">
-                        Saving this MCP catalog change will update {performerCount} performer{performerCount === 1 ? '' : 's'}.
+                        Saving this MCP catalog change will update {performerCount} agent{performerCount === 1 ? '' : 's'}.
                     </div>
 
                     {impact.renames.length > 0 ? (
@@ -71,7 +71,7 @@ export default function McpCatalogImpactDialog({
                     <div className="mcp-impact-dialog__section">
                         <div className="mcp-impact-dialog__section-title">
                             <Users size={12} />
-                            Affected performers
+                            Affected agents
                         </div>
                         <ul className="mcp-impact-dialog__list">
                             {impact.affectedPerformerNames.map((name) => (

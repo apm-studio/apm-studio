@@ -2,7 +2,7 @@
  * board-persistence.ts — Board file persistence
  *
  * PRD §6.2: Board is durable — persisted to file and survives shutdown.
- * Path: ~/.agent-roster/workspaces/<workspaceId>/act-runtime/<actId>/<threadId>/board.json
+ * Path: ~/.8pm-studio/workspaces/<workspaceId>/act-runtime/<actId>/<threadId>/board.json
  */
 
 import { promises as fs } from 'node:fs'

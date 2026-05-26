@@ -69,11 +69,11 @@ export function getPerformerDependencyPublishIssues(
     const issues: string[] = []
 
     if (performer.talRef?.kind === 'draft') {
-        issues.push('Persona is still attached as a draft. Save or publish the persona, then re-apply it before publishing this agent.')
+        issues.push('Instruction is still attached as a draft. Save the instruction locally, then re-apply it before saving this agent.')
     }
 
     if ((performer.danceRefs || []).some((ref) => ref.kind === 'draft')) {
-        issues.push('Draft Skill Pack refs are still attached. Export them from the Skill Pack editor, upload them to GitHub, import them from Asset Library, and re-apply them before publishing this agent.')
+        issues.push('Draft Skills are still attached. Export them from the Skill editor, upload them to GitHub, import them from Packages, and re-apply them before saving this agent.')
     }
 
     return issues
@@ -172,10 +172,10 @@ export function buildPerformerAssetPayload(
         if (dependencyIssues.length > 0) {
             throw new Error(dependencyIssues.join(' '))
         }
-        throw new Error('Agent assets require installable Persona and Skill Pack references. Reconnect them from Asset Library before saving or publishing this agent package.')
+        throw new Error('Agent assets require installable Instruction and Skill references. Reconnect them from Packages before saving this agent package.')
     }
     if (!talUrn && danceUrns.length === 0) {
-        throw new Error('An agent package requires at least one Persona or Skill Pack reference.')
+        throw new Error('An agent package requires at least one Instruction or Skill reference.')
     }
 
     const mcpConfig = performerMcpConfigForAsset(performer)
@@ -207,7 +207,7 @@ export function buildActAssetPayload(
     )
     const exportedKeys = Object.values(displayNameByKey)
     if (new Set(exportedKeys).size !== exportedKeys.length) {
-        throw new Error('Participant display names must be unique before saving or publishing this act asset.')
+        throw new Error('Participant display names must be unique before saving this team asset.')
     }
 
     const participants = Object.entries(act.participants).map(([key, binding]) => ({
@@ -227,12 +227,12 @@ export function buildActAssetPayload(
 
     const unresolvedParticipants = participants.filter((participant) => participant.performerRef.kind !== 'registry')
     if (unresolvedParticipants.length > 0) {
-        throw new Error('Save participant performer drafts as local assets before authoring this act asset.')
+        throw new Error('Save participant agent drafts as local assets before authoring this team asset.')
     }
 
     const invalidRelation = act.relations.find((relation) => !relation.description || !relation.description.trim())
     if (invalidRelation) {
-        throw new Error(`Relation "${invalidRelation.name}" requires a description before saving or publishing this act asset.`)
+        throw new Error(`Relation "${invalidRelation.name}" requires a description before saving this team asset.`)
     }
 
     const relations = act.relations.map((relation) => ({

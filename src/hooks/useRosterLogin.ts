@@ -25,7 +25,7 @@ export function useRosterLogin() {
                 window.clearInterval(timer)
                 loginDeadlineRef.current = null
                 setAwaitingLogin(false)
-                showToast('Agent Roster login timed out before authentication completed.', 'error', {
+                showToast('8PM Studio login timed out before authentication completed.', 'error', {
                     title: 'Login timed out',
                     dedupeKey: 'roster-login:timeout',
                 })
@@ -46,7 +46,7 @@ export function useRosterLogin() {
         setAwaitingLogin(false)
         queryClient.invalidateQueries({ queryKey: queryKeys.rosterAuthUser })
         showToast(`Signed in as @${authUser.username || 'unknown'}.`, 'success', {
-            title: 'Agent Roster login complete',
+            title: '8PM Studio login complete',
             dedupeKey: 'roster-login:complete',
         })
     }, [authUser?.authenticated, authUser?.username, awaitingLogin, queryClient])
@@ -90,8 +90,8 @@ export function useRosterLogin() {
                 loginDeadlineRef.current = Date.now() + LOGIN_POLL_TIMEOUT_MS
                 setAwaitingLogin(true)
                 if (result.authUrl && !result.browserOpened && !openedInClient) {
-                    showToast('Open the Agent Roster login flow to continue authentication.', 'warning', {
-                        title: 'Agent Roster login started',
+                    showToast('Open the 8PM Studio login flow to continue authentication.', 'warning', {
+                        title: '8PM Studio login started',
                         actionLabel: 'Open login',
                         onAction: () => {
                             window.open(result.authUrl, '_blank')
@@ -100,8 +100,8 @@ export function useRosterLogin() {
                         durationMs: 8000,
                     })
                 } else {
-                    showToast('Complete Agent Roster login in the browser to continue.', 'success', {
-                        title: 'Agent Roster login started',
+                    showToast('Complete 8PM Studio login in the browser to continue.', 'success', {
+                        title: '8PM Studio login started',
                         dedupeKey: 'roster-login:started',
                     })
                 }
@@ -112,8 +112,8 @@ export function useRosterLogin() {
             popup?.close()
         } catch (error: unknown) {
             popup?.close()
-            showToast(error instanceof Error ? error.message : 'Failed to start Agent Roster login.', 'error', {
-                title: 'Agent Roster login failed',
+            showToast(error instanceof Error ? error.message : 'Failed to start 8PM Studio login.', 'error', {
+                title: '8PM Studio login failed',
                 dedupeKey: 'roster-login:failed',
             })
         } finally {
@@ -133,13 +133,13 @@ export function useRosterLogin() {
             await api.roster.logout()
             await queryClient.invalidateQueries({ queryKey: queryKeys.rosterAuthUser })
             await refetchAuthUser()
-            showToast('Signed out from Agent Roster.', 'success', {
-                title: 'Agent Roster logout complete',
+            showToast('Signed out from 8PM Studio.', 'success', {
+                title: '8PM Studio logout complete',
                 dedupeKey: 'roster-login:logout',
             })
         } catch (error: unknown) {
-            showToast(error instanceof Error ? error.message : 'Failed to sign out from Agent Roster.', 'error', {
-                title: 'Agent Roster logout failed',
+            showToast(error instanceof Error ? error.message : 'Failed to sign out from 8PM Studio.', 'error', {
+                title: '8PM Studio logout failed',
                 dedupeKey: 'roster-login:logout-failed',
             })
         } finally {

@@ -107,9 +107,7 @@ function uniqueShellOptions(paths: string[]) {
 }
 
 export async function resolveTerminalShell(): Promise<{ command: string; args: string[] }> {
-    const explicitShell = process.env.AGENT_ROSTER_TERMINAL_SHELL?.trim()
-        || process.env.AGENT_ROASTER_TERMINAL_SHELL?.trim()
-        || process.env.DOT_STUDIO_TERMINAL_SHELL?.trim()
+    const explicitShell = process.env.EIGHTPM_STUDIO_TERMINAL_SHELL?.trim()
     if (explicitShell) {
         return { command: explicitShell, args: process.platform === 'win32' ? [] : ['-l'] }
     }
@@ -345,7 +343,7 @@ export class TerminalManager {
             ...process.env,
             TERM: 'xterm-256color',
             COLORTERM: 'truecolor',
-            AGENT_ROSTER_TERMINAL: '1',
+            EIGHTPM_STUDIO_TERMINAL: '1',
         }
 
         const proc = this.createProcess({

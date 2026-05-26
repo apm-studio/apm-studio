@@ -669,7 +669,7 @@ function lintPerformerFields(
         hasMeaningfulDraftBlueprint(fields.talDraft),
     ].filter(Boolean).length
     if (talSelectorCount > 1) {
-        pushIssue(issues, 'error', actionIndex, 'Performer actions must choose only one Tal source among talUrn, talDraftId, talDraftRef, or talDraft.')
+        pushIssue(issues, 'error', actionIndex, 'Agent actions must choose only one Instruction source among talUrn, talDraftId, talDraftRef, or talDraft.')
     }
 
     requireDraftRef(issues, actionIndex, refState.drafts, 'tal', fields.talDraftRef)

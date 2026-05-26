@@ -385,10 +385,10 @@ async function injectWakeTarget(
                     providerID: performerConfig.model.provider,
                     modelID: performerConfig.model.modelId,
                 }
-                serverDebug('wake-cascade', `Performer projection done for "${participantKey}" model=${performerConfig.model.modelId}`)
+                serverDebug('wake-cascade', `Agent projection done for "${participantKey}" model=${performerConfig.model.modelId}`)
             } catch (projErr) {
-                console.warn(`[wake-cascade] Performer projection failed for "${participantKey}", falling back to generic tools:`, projErr)
-                // Fallback: write generic Act tools only.
+                console.warn(`[wake-cascade] Agent projection failed for "${participantKey}", falling back to generic tools:`, projErr)
+                // Fallback: write generic Team tools only.
                 await ensureActToolFiles(
                     executionDir,
                     threadManager.workingDir,
@@ -396,8 +396,8 @@ async function injectWakeTarget(
                 projectedTools = buildActToolMap()
             }
         } else {
-            // No performer model — write generic Act tools only
-            serverDebug('wake-cascade', `No model config for "${participantKey}", using generic Act tools only`)
+            // No agent model - write generic Team tools only.
+            serverDebug('wake-cascade', `No model config for "${participantKey}", using generic Team tools only`)
             await ensureActToolFiles(
                 executionDir,
                 threadManager.workingDir,

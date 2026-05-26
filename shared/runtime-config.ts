@@ -8,6 +8,7 @@ export type SharedModelConfig = {
 
 export type PerformerRuntimeConfigInput = {
     talRef?: SharedAssetRef | null
+    inlineInstruction?: string | null
     danceRefs?: SharedAssetRef[] | null
     model?: SharedModelConfig | null
     modelVariant?: string | null
@@ -66,6 +67,7 @@ export function resolvePerformerRuntimeConfig(
 ) {
     return {
         talRef: performer.talRef || null,
+        inlineInstruction: typeof performer.inlineInstruction === 'string' ? performer.inlineInstruction : null,
         danceRefs: performer.danceRefs || [],
         model: performer.model || null,
         modelVariant: performer.modelVariant || null,
@@ -80,6 +82,7 @@ export function buildPerformerConfigHash(
 ): string {
     const normalized = {
         talRef: assetRefKey(performer.talRef),
+        inlineInstruction: typeof performer.inlineInstruction === 'string' ? performer.inlineInstruction : null,
         danceRefs: [...assetRefKeys(performer.danceRefs)].sort(),
         mcpServerNames: [...resolveMappedMcpServerNames(performer)].sort(),
         mcpBindingMap: Object.fromEntries(

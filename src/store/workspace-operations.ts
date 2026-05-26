@@ -297,6 +297,7 @@ export async function loadWorkspace(workspaceId: string, get: GetFn, set: SetFn)
                 y: performer.position?.y || 0,
                 scope: performer.scope || 'shared',
                 talRef: performer.talRef || registryAssetRef(performer.talUrn),
+                inlineInstruction: performer.inlineInstruction || null,
                 danceRefs: performer.danceRefs || registryAssetRefs(performer.danceUrns),
                 model: performer.model || null,
                 modelPlaceholder: performer.modelPlaceholder || null,

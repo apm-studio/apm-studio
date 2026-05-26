@@ -14,7 +14,7 @@ export type GitHubDanceSyncState =
     | 'update_available'
     | 'upstream_missing'
     | 'repo_drift'
-    | 'legacy_unverifiable'
+    | 'provenance_unverifiable'
     | 'check_failed'
 
 export type GitHubDanceRepoDriftItem = {
@@ -49,7 +49,6 @@ export type GitHubDanceSourceInfo = {
     skillFolderHash?: string
     installedAt?: string
     updatedAt?: string
-    legacy?: boolean
     verifiable?: boolean
     sync?: GitHubDanceSyncStatus
 }

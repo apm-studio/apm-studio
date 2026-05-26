@@ -210,7 +210,7 @@ export async function buildStudioChatEventStream(workingDir: string, abortSignal
                                                     directory: context.workingDir,
                                                 })
                                             } catch (error) {
-                                                console.error('Failed to auto-accept permission for Act session:', error)
+                                                console.error('Failed to auto-accept permission for Team session:', error)
                                             }
                                             continue
                                         }

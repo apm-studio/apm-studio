@@ -14,7 +14,7 @@ function syncLabel(state: string) {
             return 'Upstream removed'
         case 'repo_drift':
             return 'Repo drift'
-        case 'legacy_unverifiable':
+        case 'provenance_unverifiable':
             return 'Needs relink'
         case 'check_failed':
             return 'Check failed'
@@ -83,7 +83,7 @@ export default function AssetDetailBody({
 
             {summaryOnly && !loading && (
                 <div className="alert alert--muted" style={{ marginTop: '8px' }}>
-                    Registry preview shows summary metadata only. Install the asset to inspect full content.
+                    Explore preview shows summary metadata only. Import the package to inspect full content.
                 </div>
             )}
 
@@ -149,10 +149,10 @@ export default function AssetDetailBody({
                         <div className="asset-popover__section">
                             <div className="section-title">References</div>
                             {asset.talUrn ? (
-                                <div className="asset-popover__section-item">Persona: {displayUrn(asset.talUrn)}</div>
+                                <div className="asset-popover__section-item">Instruction: {displayUrn(asset.talUrn)}</div>
                             ) : null}
                             {Array.isArray(asset.danceUrns) && asset.danceUrns.map((danceUrn: string) => (
-                                <div key={danceUrn} className="asset-popover__section-item">Skill Pack: {displayUrn(danceUrn)}</div>
+                                <div key={danceUrn} className="asset-popover__section-item">Skill: {displayUrn(danceUrn)}</div>
                             ))}
                         </div>
                     )}
@@ -186,7 +186,7 @@ export default function AssetDetailBody({
                                     : 'None'}
                             </div>
                             <div className="alert alert--muted" style={{ marginTop: '8px' }}>
-                                Registry and local performer assets keep portable MCP requirements. Exact Studio-library name matches can auto-connect on import, but final MCP binding still belongs to each performer on the stage.
+                                Imported and local agents keep portable MCP requirements. Exact Studio-library name matches can auto-connect on import, but final MCP binding still belongs to each agent on the canvas.
                             </div>
                         </div>
                     )}

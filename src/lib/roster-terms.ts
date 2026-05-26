@@ -1,8 +1,8 @@
-export const AGENT_ROSTER_TOS_URL = 'https://agentroster.dev/tos'
+export const EIGHTPM_STUDIO_TOS_URL = 'https://8pm.studio/tos'
 
-export function confirmRosterTerms(action: 'login' | 'publish') {
-    const verb = action === 'login' ? 'signing in' : 'publishing'
+export function confirmRosterTerms(action: 'login') {
+    const verb = action === 'login' ? 'signing in' : 'continuing'
     return window.confirm(
-        `By ${verb}, you agree to the Agent Roster Terms of Service.\n\n${AGENT_ROSTER_TOS_URL}\n\nContinue?`,
+        `By ${verb}, you agree to the 8PM Studio Terms of Service.\n\n${EIGHTPM_STUDIO_TOS_URL}\n\nContinue?`,
     )
 }

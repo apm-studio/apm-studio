@@ -6,16 +6,16 @@ describe('resolveRosterCommand', () => {
         vi.resetModules()
     })
 
-    it('does not resolve the legacy sibling dot checkout in dev mode', async () => {
-        vi.stubEnv('AGENT_ROSTER_PRODUCTION', '0')
+    it('uses the repo-local package command in dev mode', async () => {
+        vi.stubEnv('EIGHTPM_STUDIO_PRODUCTION', '0')
 
         const { resolveRosterCommand } = await import('./roster-loader.js')
 
-        expect(resolveRosterCommand().join(' ')).not.toContain('dot/src/cli/dot.ts')
+        expect(resolveRosterCommand()[0]).toMatch(/(8pm-studio|cli\.js)$/)
     })
 
-    it('uses the Agent Roster package command in production mode', async () => {
-        vi.stubEnv('AGENT_ROSTER_PRODUCTION', '1')
+    it('uses the 8PM Studio package command in production mode', async () => {
+        vi.stubEnv('EIGHTPM_STUDIO_PRODUCTION', '1')
 
         const { resolveRosterCommand } = await import('./roster-loader.js')
 

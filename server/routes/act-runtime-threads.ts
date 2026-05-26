@@ -10,7 +10,7 @@ function validateActDefinition(def: ActDefinition | undefined) {
 
     const participantKeys = Object.keys(def.participants || {})
     if (participantKeys.length === 0) {
-        return 'Act must have at least one participant'
+        return 'Team must have at least one agent'
     }
 
     // Validate performerRef shape for each participant

@@ -1,6 +1,6 @@
 import type { ChatMessage } from '../types'
 
-const CHAT_DEBUG_STORAGE_KEYS = ['agent-roster-chat-debug', 'roster-chat-debug']
+const CHAT_DEBUG_STORAGE_KEYS = ['8pm-studio-chat-debug']
 
 function readStorageFlag(storage: Storage | undefined) {
     if (!storage) return false
@@ -20,10 +20,9 @@ export function isChatDebugEnabled() {
     }
 
     const flags = window as Window & {
-        __AGENT_ROSTER_CHAT_DEBUG__?: unknown
-        __DOT_CHAT_DEBUG__?: unknown
+        __EIGHTPM_STUDIO_CHAT_DEBUG__?: unknown
     }
-    const fromWindow = flags.__AGENT_ROSTER_CHAT_DEBUG__ ?? flags.__DOT_CHAT_DEBUG__
+    const fromWindow = flags.__EIGHTPM_STUDIO_CHAT_DEBUG__
     if (fromWindow === true) {
         return true
     }

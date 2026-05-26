@@ -55,7 +55,7 @@ export async function exportDanceBundle(options: {
 }) {
     const slug = sanitizeSlug(options.slugInput)
     if (!slug) {
-        throw new Error('Dance slug is required.')
+        throw new Error('Skill slug is required.')
     }
 
     const destinationParentInput = options.destinationParentPath.trim()
@@ -66,7 +66,7 @@ export async function exportDanceBundle(options: {
 
     const draft = await readDraft(options.cwd, 'dance', options.draftId)
     if (!draft) {
-        throw new Error(`Dance draft '${options.draftId}' was not found.`)
+        throw new Error(`Skill draft '${options.draftId}' was not found.`)
     }
 
     let destinationStat: Awaited<ReturnType<typeof fs.stat>>

@@ -17,7 +17,7 @@ compile.post('/api/compile', async (c) => {
         return jsonOpencodeError(
             c,
             new StudioValidationError(
-                'Select a model for this performer before compiling prompts.',
+                'Select a model for this agent before compiling prompts.',
                 'select_model',
             ),
         )

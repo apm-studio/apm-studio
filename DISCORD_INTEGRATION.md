@@ -1,30 +1,30 @@
 # Discord Integration
 
-DOT Studio can connect a Discord bot so a Discord server can chat with saved Studio workspaces.
-Discord is a runtime chat surface only: it can talk to standalone performers and Act participants, but it does not create, edit, save, or publish DOT assets.
+8PM Studio can connect a Discord bot so a Discord server can chat with saved 8PM Studio workspaces.
+Discord is a runtime chat surface only: it can talk to standalone Agents and Team agents, but it does not create, edit, save, or publish 8PM Studio assets.
 
 ## What Gets Created
 
-When a workspace is synced, Studio creates Discord objects that mirror the Studio sidebar, excluding Asset Library:
+When a workspace is synced, 8PM Studio creates Discord objects that mirror the 8PM Studio sidebar, excluding Asset Library:
 
 - one active workspace category, named after the workspace
 - one archived category, named `archived`, for channels from previously active workspaces
 - one shared `studio-control` channel at the top of the active workspace category
-- one category per performer, prefixed with `👤` and named after that performer
-- one category per Act, prefixed with `👥` and named after that Act
-- thread channels under performer and Act categories as threads are opened
-- participant picker controls for Act chat
+- one category per Agent, prefixed with `👤` and named after that Agent
+- one category per Team, prefixed with `👥` and named after that Team
+- thread channels under Agent and Team categories as threads are opened
+- agent picker controls for Team chat
 
-Discord shows one active Studio workspace at a time. When you switch workspaces, channels from the previous workspace move to `archived` instead of being deleted.
+Discord shows one active 8PM Studio workspace at a time. When you switch workspaces, channels from the previous workspace move to `archived` instead of being deleted.
 
 ## Setup Overview
 
 Setup has two sides:
 
 - In Discord, create and invite a bot with the required permissions and intents.
-- In Studio, save the bot token, select the Discord server, configure access, and sync a workspace.
+- In 8PM Studio, save the bot token, select the Discord server, configure access, and sync a workspace.
 
-The bot token stays server-side. Studio stores it locally under `~/.dot-studio/discord-config.json` and API responses only report whether a token exists.
+The bot token stays server-side. 8PM Studio stores it locally under the Studio config directory, preferring `~/.8pm-studio/discord-config.json` for new installs while preserving existing `~/.agent-roster` configs. API responses only report whether a token exists.
 
 ## Discord Setup
 
@@ -32,7 +32,7 @@ The bot token stays server-side. Studio stores it locally under `~/.dot-studio/d
 
 1. Open the Discord Developer Portal.
 2. Click `New Application`.
-3. Give it a name, for example `DOT Studio`.
+3. Give it a name, for example `8PM Studio`.
 4. Open the new application.
 
 ### 2. Create The Bot
@@ -44,13 +44,13 @@ The bot token stays server-side. Studio stores it locally under `~/.dot-studio/d
 
 Recommended bot settings:
 
-- Disable `Public Bot` if this bot is only for your private Studio server.
-- Disable `Requires OAuth2 Code Grant`. Studio uses a normal bot invite link, not a code grant flow.
+- Disable `Public Bot` if this bot is only for your private 8PM Studio server.
+- Disable `Requires OAuth2 Code Grant`. 8PM Studio uses a normal bot invite link, not a code grant flow.
 - Enable `Message Content Intent`. Natural Discord chat needs this privileged intent so the bot can read message text.
 
 ### 3. Invite The Bot To Your Discord Server
 
-The easiest invite path is from Studio after the token is saved, because Studio can generate the correct invite URL.
+The easiest invite path is from 8PM Studio after the token is saved, because 8PM Studio can generate the correct invite URL.
 
 If you invite manually from the Discord Developer Portal:
 
@@ -68,11 +68,11 @@ If you invite manually from the Discord Developer Portal:
 5. Choose the target Discord server.
 6. Approve the invite.
 
-## Studio Setup
+## 8PM Studio Setup
 
 ### 1. Open Discord Settings
 
-1. Start Studio.
+1. Start 8PM Studio.
 2. Open the workspace you want to expose to Discord.
 3. Click the toolbar Settings button.
 4. Open `Integrations` -> `Discord`.
@@ -84,30 +84,30 @@ You can also use the Discord status button in the toolbar when it is visible.
 1. Turn on `Enable Discord integration`.
 2. Paste the bot token.
 3. Save the settings.
-4. Wait for Studio to report the bot status.
+4. Wait for 8PM Studio to report the bot status.
 
-After saving, Studio starts the Discord bot from the local Studio server. The token field is write-only after save; Studio does not send the token back to the browser.
+After saving, 8PM Studio starts the Discord bot from the local 8PM Studio server. The token field is write-only after save; 8PM Studio does not send the token back to the browser.
 
-### 3. Invite The Bot From Studio
+### 3. Invite The Bot From 8PM Studio
 
-1. After Studio validates the token, use the `Invite bot` action.
+1. After 8PM Studio validates the token, use the `Invite bot` action.
 2. Choose the Discord server.
 3. Approve the invite.
-4. Return to Studio.
+4. Return to 8PM Studio.
 5. Refresh the Discord status.
 
 If Discord shows `Integration requires code grant`, go back to the Discord Developer Portal and disable `Requires OAuth2 Code Grant` for the application.
 
 If Discord shows `Used disallowed intents`, enable `Message Content Intent` under the bot settings in the Discord Developer Portal.
 
-### 4. Select The Discord Server In Studio
+### 4. Select The Discord Server In 8PM Studio
 
 1. In `Settings` -> `Integrations` -> `Discord`, refresh status.
 2. Select the Discord server from the server list.
 3. If the server is not listed, paste the server ID manually.
 4. Save settings again.
 
-Studio supports one selected Discord server at a time.
+8PM Studio supports one selected Discord server at a time.
 
 ### 5. Check Permissions
 
@@ -123,17 +123,17 @@ If permissions are missing, update the bot role or reinvite the bot with the gen
 
 ### 6. Configure Access Control
 
-By default, Studio only accepts Discord commands and messages from users with Discord `Manage Server`.
-This is the safest default because Discord messages can trigger local Studio runtime execution.
+By default, 8PM Studio only accepts Discord commands and messages from users with Discord `Manage Server`.
+This is the safest default because Discord messages can trigger local 8PM Studio runtime execution.
 
 Optional access overrides:
 
-- add allowed role IDs for Discord roles that may use Studio without `Manage Server`
+- add allowed role IDs for Discord roles that may use 8PM Studio without `Manage Server`
 - add allowed user IDs for specific Discord users
 
-Users without authorization may still see Discord channels if your server permissions allow it, but Studio rejects their control actions, slash commands, and chat messages.
+Users without authorization may still see Discord channels if your server permissions allow it, but 8PM Studio rejects their control actions, slash commands, and chat messages.
 
-### 7. Sync Studio To Discord
+### 7. Sync 8PM Studio To Discord
 
 From `Settings` -> `Integrations` -> `Discord`:
 
@@ -142,40 +142,40 @@ From `Settings` -> `Integrations` -> `Discord`:
 3. Open Discord and find the active workspace category.
 4. Open `studio-control`.
 
-Studio saves the current workspace before syncing it, so Discord receives the latest performers and Acts.
+8PM Studio saves the current workspace before syncing it, so Discord receives the latest agents and Teams.
 
 ## Discord Usage
 
-### Use The Studio Control Channel
+### Use The 8PM Studio Control Channel
 
 Open `studio-control` in the active workspace category.
 
 From there you can:
 
-- switch the active Studio workspace
+- switch the active 8PM Studio workspace
 - refresh/sync the workspace
-- choose a standalone performer
-- choose an Act
+- choose a standalone Agent
+- choose a Team
 - open existing threads
 - create new threads
 
 Asset Library is intentionally not available from Discord.
 
-### Chat With A Standalone Performer
+### Chat With A Standalone Agent
 
 1. Open `studio-control`.
-2. Select a performer.
-3. Choose an existing performer thread or create a new one.
-4. Studio opens a thread channel under the performer category, for example `👤 Writer`.
-5. If a mapped Studio session already has history, Studio backfills up to 20 recent text-only messages.
+2. Select an Agent.
+3. Choose an existing Agent thread or create a new one.
+4. 8PM Studio opens a thread channel under the Agent category, for example `👤 Writer`.
+5. If a mapped 8PM Studio session already has history, 8PM Studio backfills up to 20 recent text-only messages.
 6. Type a normal Discord message in that thread channel.
-7. While Studio is working, the bot shows a typing indicator.
-8. After the first message, Studio refreshes the Discord channel name from the Studio thread title.
+7. While 8PM Studio is working, the bot shows a typing indicator.
+8. After the first message, 8PM Studio refreshes the Discord channel name from the 8PM Studio thread title.
 
-To create another standalone performer thread from a performer thread channel, run:
+To create another standalone Agent thread from an Agent thread channel, run:
 
 ```text
-/performer new
+/agent new
 ```
 
 The older alias still works:
@@ -184,42 +184,42 @@ The older alias still works:
 /thread new
 ```
 
-### Chat In An Act Thread
+### Chat In A Team Thread
 
 1. Open `studio-control`.
-2. Select an Act.
-3. Choose an existing Act thread or create a new one.
-4. Studio opens an Act thread channel under the Act category, for example `👥 Product Review`.
-5. If the mapped Act thread already has participant history, Studio backfills up to 20 recent visible text-only messages.
-6. In the Act thread channel, run `/act message`.
-7. Choose the participant from the command autocomplete and enter the message option.
+2. Select a Team.
+3. Choose an existing Team thread or create a new one.
+4. 8PM Studio opens a Team thread channel under the Team category, for example `👥 Product Review`.
+5. If the mapped Team thread already has agent history, 8PM Studio backfills up to 20 recent visible text-only messages.
+6. In the Team thread channel, run `/team message`.
+7. Choose the agent from the command autocomplete and enter the message option.
 
 Example:
 
 ```text
-[Studio User -> Reviewer]
+[Roster User -> Reviewer]
 Please review this draft and call out risks.
 ```
 
-Studio routes the slash command message to the selected Act participant. Direct Discord messages typed into an Act thread are not routed; the bot will point you back to `/act message`.
+8PM Studio routes the slash command message to the selected Team agent. Direct Discord messages typed into a Team thread are not routed; the bot will point you back to `/team message`.
 
-Act thread channels show visible text messages from all participant sessions in that Act thread. When one participant responds, Studio syncs the participant history back into Discord so the channel reflects the full Act conversation.
-Discord keeps the Act thread focused on human-visible conversation: user input is reposted by the bot in a normalized `[Studio User -> Participant]` format, and synced Studio history shows participant output messages only. Internal runtime input, teammate wake prompts, tool output, reasoning, and system-only messages are hidden.
+Team thread channels show visible text messages from all agent sessions in that Team thread. When one agent responds, 8PM Studio syncs the agent history back into Discord so the channel reflects the full Team conversation.
+Discord keeps the Team thread focused on human-visible conversation: user input is reposted by the bot in a normalized `[Roster User -> Agent]` format, and synced 8PM Studio history shows agent output messages only. Internal runtime input, teammate wake prompts, tool output, reasoning, and system-only messages are hidden.
 
-### Participant Selection
+### Agent Selection
 
-Use `/act message participant:<participant> message:<text>` inside the Act thread channel. Participant autocomplete is resolved from that channel's mapped Act only, so other workspaces and other Acts do not leak into the choices.
+Use `/team message agent:<agent> message:<text>` inside the Team thread channel. Agent autocomplete is resolved from that channel's mapped Team only, so other workspaces and other Teams do not leak into the choices.
 
 ### Busy Sessions
 
-Standalone performer channels accept one active Studio turn at a time.
-Act channels reject new messages if any participant session in that Act thread is running, retrying, or waiting on a permission/question response.
+Standalone Agent channels accept one active 8PM Studio turn at a time.
+Team channels reject new messages if any agent session in that Team thread is running, retrying, or waiting on a permission/question response.
 
-While Studio is working, Discord shows the bot typing indicator in the thread channel. In Act channels, Studio starts the per-thread watcher as soon as `/act message` is sent, also wakes it from Act runtime thread-update events, checks every participant session plus Act participant runtime status, extends that watcher whenever new output appears or the thread is touched again, and waits for a stable-idle window before it stops syncing participant output.
+While 8PM Studio is working, Discord shows the bot typing indicator in the thread channel. In Team channels, 8PM Studio starts the per-thread watcher as soon as `/team message` is sent, also wakes it from Team runtime thread-update events, checks every agent session plus Team agent runtime status, extends that watcher whenever new output appears or the thread is touched again, and waits for a stable-idle window before it stops syncing agent output.
 
 ### Permissions And Questions
 
-If Studio pauses for permission or input, the bot posts the prompt in the same Discord thread channel.
+If 8PM Studio pauses for permission or input, the bot posts the prompt in the same Discord thread channel.
 
 Permissions use buttons:
 
@@ -232,9 +232,9 @@ Questions use Discord controls:
 - single-option questions show a select menu
 - if custom text is allowed, `Other` opens a text modal
 - multi-question prompts and free-text answers use a modal
-- canceling a question calls the same Studio reject flow as the web UI
+- canceling a question calls the same 8PM Studio reject flow as the web UI
 
-After an answer or permission response, Discord waits for the same Studio session to settle and ignores the just-resolved pending request id so stale runtime polling cannot repost the same prompt.
+After an answer or permission response, Discord waits for the same 8PM Studio session to settle and ignores the just-resolved pending request id so stale runtime polling cannot repost the same prompt.
 
 ## Slash Commands
 
@@ -242,22 +242,22 @@ The menu in `studio-control` is the main Discord UX. Slash commands are availabl
 
 Workspace commands:
 
-- `/workspace active` shows the currently active saved Studio workspace.
+- `/workspace active` shows the currently active saved 8PM Studio workspace.
 - `/workspace control` refreshes the `studio-control` panel for the current or active workspace.
 - `/workspace sync` syncs the active workspace and refreshes the workspace selector.
 - `/workspace switch workspace:<id-or-folder>` switches the active workspace by saved workspace ID, exact working directory, or exact folder name.
 
-Performer commands:
+Agent commands:
 
-- `/performer new` creates a fresh standalone performer thread.
-- This only works inside mapped performer thread channels.
+- `/agent new` creates a fresh standalone Agent thread.
+- This only works inside mapped Agent thread channels.
 
-Act commands:
+Team commands:
 
-- `/act participants` shows the participants for the current Act thread.
-- `/act message participant:<participant> message:<text>` sends a message to one participant in the current Act thread.
-- `/act sync` backfills recent visible participant messages for the current Act thread.
-- These only work inside mapped Act thread channels.
+- `/team participants` shows the agents for the current Team thread.
+- `/team message agent:<agent> message:<text>` sends a message to one agent in the current Team thread.
+- `/team sync` backfills recent visible agent messages for the current Team thread.
+- These only work inside mapped Team thread channels.
 
 Compatibility aliases:
 
@@ -265,35 +265,35 @@ Compatibility aliases:
 - `/studio sync`
 - `/thread new`
 
-Every command must pass selected-server and actor authorization checks before Studio reads mappings or calls runtime services.
+Every command must pass selected-server and actor authorization checks before 8PM Studio reads mappings or calls runtime services.
 
 ## Security Notes
 
-- Discord configuration is stored locally under `~/.dot-studio`.
+- Discord configuration is stored locally under the 8PM Studio config directory.
 - The bot token is written with private file permissions where supported by the OS.
-- Studio refuses to write Discord config through symlinks.
+- 8PM Studio refuses to write Discord config through symlinks.
 - API responses redact the bot token and return only `hasToken`.
-- Studio accepts events only from the selected Discord server.
-- Studio checks Discord actor authorization before control actions, slash commands, or chat messages.
+- 8PM Studio accepts events only from the selected Discord server.
+- 8PM Studio checks Discord actor authorization before control actions, slash commands, or chat messages.
 - Bot replies suppress accidental pings by default with `allowed_mentions: { parse: [] }`.
-- Discord permission and question responses go through the same Studio runtime approval APIs as the web UI.
-- Discord prompt length is bounded before messages reach the Studio runtime.
+- Discord permission and question responses go through the same 8PM Studio runtime approval APIs as the web UI.
+- Discord prompt length is bounded before messages reach the 8PM Studio runtime.
 - Discord backfill is text-only and excludes tool output, reasoning, system-only content, diffs, and prior permission/question metadata.
-- Treat Discord channel permissions as part of your security model. Only expose synced Studio channels to people who should be allowed to trigger local runtime work.
+- Treat Discord channel permissions as part of your security model. Only expose synced 8PM Studio channels to people who should be allowed to trigger local runtime work.
 
 ## Troubleshooting
 
 ### The bot does not come online
 
-1. Check that Discord integration is enabled in Studio.
+1. Check that Discord integration is enabled in 8PM Studio.
 2. Re-enter the bot token and save.
 3. Confirm the bot token was copied from the `Bot` page, not the application client secret.
-4. Restart the Studio server if the local bot process was already running with old settings.
+4. Restart the 8PM Studio server if the local bot process was already running with old settings.
 
 ### The server is not selectable
 
 1. Confirm the bot was invited to the Discord server.
-2. Refresh Discord status in Studio.
+2. Refresh Discord status in 8PM Studio.
 3. Paste the server ID manually if it still does not appear.
 
 ### Sync does not create channels
@@ -305,15 +305,15 @@ Every command must pass selected-server and actor authorization checks before St
 
 ### I do not see participant autocomplete
 
-1. Open the intended Act thread channel.
-2. Type `/act message` and focus the `participant` option.
-3. Run `/act participants` to confirm the participant list.
-4. Click the Act thread again from `studio-control` if the channel mapping looks stale.
+1. Open the intended Team thread channel.
+2. Type `/team message` and focus the `participant` option.
+3. Run `/team agents` to confirm the participant list.
+4. Click the Team thread again from `studio-control` if the channel mapping looks stale.
 
 ### The bot receives messages but says message content is missing
 
-Enable `Message Content Intent` in the Discord Developer Portal under the bot settings, then restart or reconnect the Studio Discord integration.
+Enable `Message Content Intent` in the Discord Developer Portal under the bot settings, then restart or reconnect the 8PM Studio Discord integration.
 
 ### The invite says code grant is required
 
-Disable `Requires OAuth2 Code Grant` in the Discord Developer Portal for the application, then use Studio's invite link again.
+Disable `Requires OAuth2 Code Grant` in the Discord Developer Portal for the application, then use 8PM Studio's invite link again.

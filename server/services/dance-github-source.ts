@@ -131,12 +131,6 @@ export function normalizeGitHubDanceLockEntry(rawEntry: unknown): GitHubDanceSou
         ...(typeof entry.skillFolderHash === 'string' && entry.skillFolderHash ? { skillFolderHash: entry.skillFolderHash } : {}),
         ...(typeof entry.installedAt === 'string' ? { installedAt: entry.installedAt } : {}),
         ...(typeof entry.updatedAt === 'string' ? { updatedAt: entry.updatedAt } : {}),
-        legacy: !(
-            typeof entry.owner === 'string'
-            && typeof entry.repo === 'string'
-            && typeof entry.ref === 'string'
-            && typeof entry.repoRootSkillPath === 'string'
-        ),
         verifiable,
     }
 }

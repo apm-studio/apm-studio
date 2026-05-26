@@ -1,5 +1,5 @@
 import { createPortal } from 'react-dom'
-import { X, Upload, Save, ChevronLeft } from 'lucide-react'
+import { X, Save, ChevronLeft } from 'lucide-react'
 import './PublishModal.css'
 import PublishPickerStep from './PublishPickerStep'
 import PublishFormStep from './PublishFormStep'
@@ -23,15 +23,15 @@ export default function PublishModal({ open, onClose }: { open: boolean; onClose
                             </button>
                         ) : null}
                         <div>
-                            <strong>Publish</strong>
+                            <strong>Save Package</strong>
                             <p>
                                 {controller.step === 'picker'
-                                    ? 'Select a Persona, Agent, or Team to save or publish.'
+                                    ? 'Select an Instruction, Agent, or Team to save locally.'
                                     : controller.target ? `${controller.target.kind} · ${controller.target.name}` : ''}
                             </p>
                         </div>
                     </div>
-                    <button className="icon-btn" onClick={onClose} title="Close publish menu">
+                    <button className="icon-btn" onClick={onClose} title="Close save menu">
                         <X size={12} />
                     </button>
                 </div>
@@ -66,7 +66,6 @@ export default function PublishModal({ open, onClose }: { open: boolean; onClose
                             void controller.startLogin(true)
                         }}
                         status={controller.status}
-                        publishBlockedReason={controller.publishBlockedReason}
                     />
                 )}
 
@@ -74,9 +73,6 @@ export default function PublishModal({ open, onClose }: { open: boolean; onClose
                     <div className="publish-modal__footer">
                         <button className="publish-modal__action" onClick={controller.handleSaveLocal} disabled={!controller.canSaveLocal || !!controller.isLocalAsset}>
                             <Save size={11} /> {controller.action === 'save-local' ? 'Saving…' : 'Save Local'}
-                        </button>
-                        <button className="publish-modal__action publish-modal__action--primary" onClick={controller.handlePublish} disabled={!controller.canPublish}>
-                            <Upload size={11} /> {controller.action === 'publish' ? 'Publishing…' : 'Publish'}
                         </button>
                     </div>
                 ) : null}

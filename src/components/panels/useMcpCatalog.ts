@@ -18,7 +18,7 @@ import {
 import { useStudioStore } from '../../store'
 
 /**
- * useMcpCatalog – Studio-wide MCP library state for Asset Library.
+ * useMcpCatalog – Studio-wide MCP library state for Packages.
  *
  * Manages saved Studio MCP entries, persistence, connection tests,
  * authentication lifecycle, and cache invalidation.
@@ -195,9 +195,9 @@ export function useMcpCatalog(workingDir: string, showMcps: boolean): McpCatalog
             setMcpEntries(buildMcpDrafts(savedCatalog, entries))
             if (impact && hasMcpCatalogImpact(impact)) {
                 applyCatalogImpactToStudio(impact)
-                setMcpCatalogStatus(`Saved Studio MCP library and updated ${impact.affectedPerformerIds.length} performer reference${impact.affectedPerformerIds.length === 1 ? '' : 's'}.`)
+                setMcpCatalogStatus(`Saved Studio MCP library and updated ${impact.affectedPerformerIds.length} agent reference${impact.affectedPerformerIds.length === 1 ? '' : 's'}.`)
             } else {
-                setMcpCatalogStatus('Saved Studio MCP library. Performers enable servers individually.')
+                setMcpCatalogStatus('Saved Studio MCP library. Agents enable servers individually.')
             }
             recordStudioChange({ kind: 'runtime_config' })
             await invalidateMcpQueries(true)

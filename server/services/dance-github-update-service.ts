@@ -147,25 +147,25 @@ async function cleanupSourceGroupCache(cache: Map<string, Promise<SourceGroupSna
     }))
 }
 
-function resolveLegacyStatus(source: ReturnType<typeof normalizeGitHubDanceLockEntry> | null) {
+function resolveUnverifiableStatus(source: ReturnType<typeof normalizeGitHubDanceLockEntry> | null) {
     if (!source) {
         return buildSyncStatus('check_failed', {
             canUpdate: false,
-            message: 'GitHub provenance metadata is missing for this installed Dance.',
+            message: 'GitHub provenance metadata is missing for this installed Skill.',
         })
     }
 
     if (!source.verifiable || !source.owner || !source.repo || !source.repoRootSkillPath) {
-        return buildSyncStatus('legacy_unverifiable', {
+        return buildSyncStatus('provenance_unverifiable', {
             canUpdate: false,
-            message: 'Studio could not reconstruct a trustworthy GitHub source path for this Dance.',
+            message: 'Studio could not reconstruct a trustworthy GitHub source path for this Skill.',
         })
     }
 
     if (!source.skillFolderHash) {
-        return buildSyncStatus('legacy_unverifiable', {
+        return buildSyncStatus('provenance_unverifiable', {
             canUpdate: false,
-            message: 'This Dance was installed before Studio tracked a baseline GitHub hash. Re-import it to relink updates.',
+            message: 'This Skill was installed before Studio tracked a baseline GitHub hash. Re-import it to relink updates.',
         })
     }
 
@@ -184,12 +184,12 @@ export async function checkDanceGitHubUpdates(
         return await Promise.all(targets.map(async (target) => {
             const rawSourceMap = await readGitHubDanceSourceMap(target.cwd)
             const rawSource = rawSourceMap.get(target.urn) || null
-            const legacyStatus = resolveLegacyStatus(rawSource)
-            if (legacyStatus) {
+            const provenanceStatus = resolveUnverifiableStatus(rawSource)
+            if (provenanceStatus) {
                 return {
                     urn: target.urn,
                     scope: target.scope,
-                    sync: legacyStatus,
+                    sync: provenanceStatus,
                 }
             }
             if (!target.source) {
@@ -251,7 +251,7 @@ export async function checkDanceGitHubUpdates(
                         currentHash: target.source.skillFolderHash,
                         remoteHash: remote.hash,
                         repoDrift,
-                        message: 'The source repo now exposes a different set of Dance skills.',
+                        message: 'The source repo now exposes a different set of Skills.',
                     }),
                 }
             }
@@ -264,7 +264,7 @@ export async function checkDanceGitHubUpdates(
                     canUpdate: true,
                     currentHash: target.source.skillFolderHash,
                     remoteHash: remote.hash,
-                    message: hasUpdate ? 'GitHub has newer contents for this Dance.' : 'This Dance matches the current GitHub source.',
+                    message: hasUpdate ? 'GitHub has newer contents for this Skill.' : 'This Skill matches the current GitHub source.',
                 }),
             }
         }))
@@ -286,13 +286,13 @@ export async function applyDanceGitHubUpdates(
         for (const target of targets) {
             const rawSourceMap = await readGitHubDanceSourceMap(target.cwd)
             const rawSource = rawSourceMap.get(target.urn) || null
-            const legacyStatus = resolveLegacyStatus(rawSource)
-            if (legacyStatus) {
+            const provenanceStatus = resolveUnverifiableStatus(rawSource)
+            if (provenanceStatus) {
                 skipped.push({
                     urn: target.urn,
                     scope: target.scope,
-                    reason: legacyStatus.message || 'Legacy GitHub provenance is incomplete.',
-                    sync: legacyStatus,
+                    reason: provenanceStatus.message || 'GitHub provenance is incomplete.',
+                    sync: provenanceStatus,
                 })
                 continue
             }
@@ -352,8 +352,8 @@ export async function applyDanceGitHubUpdates(
                     currentHash: remote.status === 'ok' ? remote.hash : target.source.skillFolderHash,
                     remoteHash: remote.status === 'ok' ? remote.hash : undefined,
                     message: remote.status === 'ok'
-                        ? 'Dance bundle updated from GitHub.'
-                        : 'Dance bundle updated, but Studio could not refresh the GitHub hash.',
+                        ? 'Skill updated from GitHub.'
+                        : 'Skill updated, but Studio could not refresh the GitHub hash.',
                 }),
             })
         }
@@ -375,9 +375,9 @@ export async function reimportDanceGitHubSource(
     const [target] = await resolveTargets(cwd, [asset])
     const rawSourceMap = await readGitHubDanceSourceMap(target.cwd)
     const rawSource = rawSourceMap.get(target.urn) || null
-    const legacyStatus = resolveLegacyStatus(rawSource)
-    if (legacyStatus || !target.source) {
-        throw new Error(legacyStatus?.message || 'GitHub provenance metadata is missing.')
+    const provenanceStatus = resolveUnverifiableStatus(rawSource)
+    if (provenanceStatus || !target.source) {
+        throw new Error(provenanceStatus?.message || 'GitHub provenance metadata is missing.')
     }
 
     const repoCache = new Map<string, Promise<SourceGroupSnapshot>>()

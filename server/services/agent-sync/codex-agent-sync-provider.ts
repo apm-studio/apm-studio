@@ -11,7 +11,7 @@ import type {
     AgentSyncStatusCounts,
 } from '../../../shared/agent-sync-contracts.js'
 import { getAssetPayload, getRosterDir, readAsset } from '../../lib/roster-source.js'
-import { listWorkspacePerformersForDir } from '../workspace-service.js'
+import { listApmAgentProjectionSnapshots } from '../apm-package-service.js'
 import {
     danceBundleDir,
     isDanceBundleDraft,
@@ -43,7 +43,7 @@ import {
 const PROVIDER_ID = 'codex'
 const PROVIDER_LABEL = 'Codex'
 
-type WorkspacePerformer = Awaited<ReturnType<typeof listWorkspacePerformersForDir>>[number]
+type WorkspacePerformer = Awaited<ReturnType<typeof listApmAgentProjectionSnapshots>>[number]
 
 type CodexProjectionPlan = {
     status: AgentSyncPerformerStatus
@@ -145,7 +145,7 @@ async function compileDanceReadOnly(
         const asset = await readAsset(cwd, ref.urn)
         const body = await getAssetPayload(cwd, ref.urn)
         if (!body) {
-            throw new Error(`Dance '${ref.urn}' was not found or has no content.`)
+            throw new Error(`Skill '${ref.urn}' was not found or has no content.`)
         }
 
         const parsed = parseUrn(ref.urn)
@@ -171,7 +171,7 @@ async function compileDanceReadOnly(
     if (await isDanceBundleDraft(cwd, ref.draftId)) {
         const body = await readBundleSkillContent(cwd, ref.draftId)
         if (!body) {
-            throw new Error(`Dance draft '${ref.draftId}' is missing SKILL.md.`)
+            throw new Error(`Skill draft '${ref.draftId}' is missing SKILL.md.`)
         }
         const draft = await readJsonFile<{ name?: string; description?: string; content?: unknown }>(
             path.join(danceBundleDir(cwd, ref.draftId), 'draft.json'),
@@ -200,7 +200,7 @@ async function compileDanceReadOnly(
     )
     const body = typeof draft?.content === 'string' ? draft.content : null
     if (!draft || !body) {
-        throw new Error(`Dance draft '${ref.draftId}' was not found or has no content.`)
+        throw new Error(`Skill draft '${ref.draftId}' was not found or has no content.`)
     }
 
     const logicalName = sanitizeSegment(draft.name || ref.draftId)
@@ -298,7 +298,7 @@ async function buildCodexPlan(
             status: {
                 ...baseStatus,
                 status: 'invalid',
-                reason: 'Performer is missing a name or model selection.',
+                reason: 'Agent is missing a name or model selection.',
             },
             expectedFiles: [],
             skills: [],
@@ -337,6 +337,7 @@ async function buildCodexPlan(
                 performerId: projectionInput.performerId,
                 performerName: projectionInput.performerName,
                 talRef: projectionInput.talRef,
+                inlineInstruction: projectionInput.inlineInstruction || null,
                 model: projectionInput.model,
                 modelVariant: projectionInput.modelVariant || null,
                 workspaceHash,
@@ -368,8 +369,8 @@ async function buildCodexPlan(
                 ...baseStatus,
                 status,
                 reason: status === 'synced'
-                    ? 'Codex agent, skills, links, and manifest match the current performer.'
-                    : 'Codex export is missing or differs from the current performer.',
+                    ? 'Codex agent, skills, links, and manifest match the current agent.'
+                    : 'Codex export is missing or differs from the current agent.',
                 lastSyncedAt: await mtimeMs(compiled.codexAgentPath),
                 agentName: compiled.codexAgentName,
             },
@@ -461,7 +462,7 @@ export async function getCodexAgentSyncOverview(workingDir: string): Promise<{
     provider: AgentSyncProviderSummary
     performers: AgentSyncPerformerStatus[]
 }> {
-    const performers = await listWorkspacePerformersForDir(workingDir)
+    const performers = await listApmAgentProjectionSnapshots(workingDir)
     const plans = await buildPlans(workingDir, performers)
     const staleArtifacts = await findStaleArtifacts(workingDir, plans)
     const statusCounts = createStatusCounts()
@@ -528,6 +529,7 @@ export async function ensureCodexPerformerProjection(
             performerId: input.performerId,
             performerName: input.performerName,
             talRef: input.talRef,
+            inlineInstruction: input.inlineInstruction || null,
             model: input.model,
             modelVariant: input.modelVariant || null,
             workspaceHash,
@@ -591,7 +593,7 @@ export async function syncCodexAgentSync(
     request: AgentSyncRunRequest = {},
 ): Promise<AgentSyncRunResponse> {
     const selectedIds = new Set((request.performerIds || []).filter(Boolean))
-    const allPerformers = await listWorkspacePerformersForDir(workingDir)
+    const allPerformers = await listApmAgentProjectionSnapshots(workingDir)
     const performers = selectedIds.size > 0
         ? allPerformers.filter((performer) => selectedIds.has(performer.id))
         : allPerformers
@@ -630,7 +632,7 @@ export async function syncCodexAgentSync(
 }
 
 export async function pruneCodexAgentSync(workingDir: string): Promise<AgentSyncRunResponse> {
-    const performers = await listWorkspacePerformersForDir(workingDir)
+    const performers = await listApmAgentProjectionSnapshots(workingDir)
     const plans = await buildPlans(workingDir, performers)
     const staleArtifacts = await findStaleArtifacts(workingDir, plans)
     const prunedCount = await pruneStaleArtifacts(workingDir, staleArtifacts)

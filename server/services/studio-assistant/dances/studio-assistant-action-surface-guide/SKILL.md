@@ -1,10 +1,10 @@
 ---
 name: studio-assistant-action-surface-guide
-description: "Lists the exact Studio Assistant apply_studio_actions mutation surface, field rules, ref ordering, and payload self-checks. Use before emitting or validating any Studio mutation tool call."
-compatibility: Designed for the Agent Roster built-in assistant projection.
+description: "Lists the exact 8PM Assistant apply_studio_actions mutation surface, field rules, ref ordering, and payload self-checks. Use before emitting or validating any 8PM Studio mutation tool call."
+compatibility: Designed for the 8PM Studio built-in assistant projection.
 ---
 
-# Agent Roster Assistant Action Surface
+# 8PM Studio Assistant Action Surface
 
 Use this skill when you need to produce, inspect, or verify an `apply_studio_actions` payload.
 
@@ -24,9 +24,9 @@ Use this skill when you need to produce, inspect, or verify an `apply_studio_act
 
 ## Action Families
 - Install/import: `installRegistryAsset`, `addDanceFromGitHub`, `importInstalledPerformer`, `importInstalledAct`
-- Persona draft CRUD: `createTalDraft`, `updateTalDraft`, `deleteTalDraft`
-- Skill Pack draft CRUD: `createDanceDraft`, `updateDanceDraft`, `deleteDanceDraft`
-- Skill Pack bundle files: `upsertDanceBundleFile`, `deleteDanceBundleEntry`
+- Instruction draft CRUD: `createTalDraft`, `updateTalDraft`, `deleteTalDraft`
+- Skill draft CRUD: `createDanceDraft`, `updateDanceDraft`, `deleteDanceDraft`
+- Skill files: `upsertDanceBundleFile`, `deleteDanceBundleEntry`
 - Agent CRUD: `createPerformer`, `updatePerformer`, `deletePerformer`
 - Team CRUD: `createAct`, `updateAct`, `deleteAct`
 - Participants: `attachPerformerToAct`, `detachParticipantFromAct`, `updateParticipantSubscriptions`
@@ -38,13 +38,13 @@ Use this skill when you need to produce, inspect, or verify an `apply_studio_act
 - `description`
 - `model`
 - `modelVariant`
-- one Persona source: `talUrn`, `talDraftId`, `talDraftRef`, or inline `talDraft`
-- Skill Pack additions: `addDanceUrns`, `addDanceDraftIds`, `addDanceDraftRefs`, inline `addDanceDrafts`
-- Skill Pack removals: `removeDanceUrns`, `removeDanceDraftIds`
+- one Instruction source: `talUrn`, `talDraftId`, `talDraftRef`, or inline `talDraft`
+- Skill additions: `addDanceUrns`, `addDanceDraftIds`, `addDanceDraftRefs`, inline `addDanceDrafts`
+- Skill removals: `removeDanceUrns`, `removeDanceDraftIds`
 - MCP changes: `addMcpServerNames`, `removeMcpServerNames`
 
 Rules:
-- Choose at most one Persona source.
+- Choose at most one Instruction source.
 - Use inline `talDraft` or `addDanceDrafts` when the dependency is new and known.
 - Use only available model and variant ids from the snapshot.
 - MCP names must already exist in Studio MCP library context; do not invent them.
@@ -70,9 +70,9 @@ Rules:
 - For brand-new Teams with known participants, prefer participants and relations directly on `createAct`.
 
 ## Draft And Bundle Fields
-- Persona/Skill Pack CRUD acts on local drafts only.
-- Bundle file actions target saved Skill Pack drafts only.
-- Bundle paths are relative to the Skill Pack bundle root.
+- Instruction/Skill CRUD acts on local drafts only.
+- Skill file actions target saved Skill drafts only.
+- Bundle paths are relative to the Skill root.
 - Bundle paths must not target `SKILL.md` or `draft.json`.
 - Use bundle files for `references/*`, `scripts/*`, `assets/*`, and `agents/openai.yaml`.
 
@@ -100,7 +100,7 @@ Rules:
 ## UI Operations
 - `showPerformer`: select/reveal an Agent, or open its editor with `surface: "editor"`.
 - `showAct`: select/reveal a Team, or open its editor with `surface: "editor"` and optional `editorMode`.
-- `showDraft`: open a saved or same-call Persona/Skill Pack draft editor.
+- `showDraft`: open a saved or same-call Instruction/Skill draft editor.
 - `setStudioPanel`: open or close `assetLibrary`, `workspaceTracking`, or `terminal`.
 - `setStudioNodeVisibility`: hide or show an existing Agent or Team.
 - `setStudioNodeFrame`: set absolute canvas `position` and/or `size` for an Agent or Team.

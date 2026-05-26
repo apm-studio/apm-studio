@@ -61,7 +61,7 @@ export function AgentSyncPage() {
         try {
             setOverview(await api.agentSync.overview())
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Unable to load Assistant Sync status.')
+            setError(err instanceof Error ? err.message : 'Unable to load Agent Sync status.')
         } finally {
             setLoading(false)
         }
@@ -78,7 +78,7 @@ export function AgentSyncPage() {
             await action()
             await refresh()
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Assistant Sync action failed.')
+            setError(err instanceof Error ? err.message : 'Agent Sync action failed.')
         } finally {
             setRunningAction(null)
         }
@@ -98,7 +98,7 @@ export function AgentSyncPage() {
         <main className="agent-sync-page">
             <header className="agent-sync-page__header">
                 <div className="agent-sync-page__title-block">
-                    <h1>Assistant Sync</h1>
+                    <h1>Agent Sync</h1>
                     <p title={workingDir || undefined}>{workingDir || 'No workspace selected'}</p>
                 </div>
                 <div className="agent-sync-page__actions">
@@ -127,7 +127,7 @@ export function AgentSyncPage() {
                 </div>
             ) : null}
 
-            <section className="agent-sync-page__providers" aria-label="Assistant sync providers">
+            <section className="agent-sync-page__providers" aria-label="Agent sync providers">
                 {overview?.providers.map((provider) => (
                     <article key={provider.id} className="surface-card agent-sync-provider-card">
                         <div className="agent-sync-provider-card__header">
@@ -162,7 +162,7 @@ export function AgentSyncPage() {
                 <div className="agent-sync-table-card__header">
                     <div>
                         <h2>Codex Agents</h2>
-                        <p>Manual export status for Codex project agents.</p>
+                        <p>APM-backed manual export status for Codex project agents.</p>
                     </div>
                     {runningAction ? <span className="badge badge--subtle">Working...</span> : null}
                 </div>
@@ -215,7 +215,7 @@ export function AgentSyncPage() {
 
                 {rows.length === 0 && !loading ? (
                     <div className="agent-sync-table-card__empty">
-                        No saved agents are available for Codex sync.
+                        No saved APM agent packages are available for Codex sync.
                     </div>
                 ) : null}
             </section>

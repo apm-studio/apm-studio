@@ -1,9 +1,8 @@
 /**
- * draft-service.ts — Filesystem CRUD for `.agent-roster/drafts/`
+ * draft-service.ts — Filesystem CRUD for `.8pm-studio/drafts/`
  *
- * Tal / Performer / Act: .agent-roster/drafts/<kind>/<id>.json
- * Dance (bundle):        .agent-roster/drafts/dance/<id>/draft.json + SKILL.md + sibling dirs
- * Dance (legacy):        .agent-roster/drafts/dance/<id>.json  (lazily migrated to bundle)
+ * Instruction / Agent / Team: .8pm-studio/drafts/<kind>/<id>.json
+ * Skill bundle:              .8pm-studio/drafts/dance/<id>/draft.json + SKILL.md + sibling dirs
  * Project-local only — no global scope.
  */
 
@@ -71,7 +70,7 @@ export async function createDraft(cwd: string, input: CreateDraftRequest): Promi
     const id = input.id || generateDraftId()
     const now = Date.now()
 
-    // Dance drafts use bundle format
+    // Skill drafts use bundle format
     if (input.kind === 'dance') {
         const skillContent = typeof input.content === 'string' ? input.content : ''
         const draft: DraftFile = {
@@ -102,7 +101,7 @@ export async function createDraft(cwd: string, input: CreateDraftRequest): Promi
         return draft
     }
 
-    // Tal / Performer / Act — legacy JSON single-file
+    // Instruction / Agent / Team use JSON draft files.
     const draft: DraftFile = {
         id,
         kind: input.kind,
@@ -135,19 +134,13 @@ export async function readDraft(cwd: string, kind: DraftAssetKind, id: string): 
         if (await isDanceBundleDraft(cwd, id)) {
             return readDanceBundleDraft(cwd, id)
         }
-        // Try legacy JSON, then lazily migrate
-        const legacy = await readLegacyJsonDraft(cwd, kind, id)
-        if (legacy) {
-            return migrateLegacyDanceDraft(cwd, legacy)
-        }
         return null
     }
 
-    // Tal / Performer / Act — legacy JSON
-    return readLegacyJsonDraft(cwd, kind, id)
+    return readJsonDraft(cwd, kind, id)
 }
 
-async function readLegacyJsonDraft(cwd: string, kind: DraftAssetKind, id: string): Promise<DraftFile | null> {
+async function readJsonDraft(cwd: string, kind: DraftAssetKind, id: string): Promise<DraftFile | null> {
     try {
         const raw = await fs.readFile(draftFilePath(cwd, kind, id), 'utf-8')
         return JSON.parse(raw) as DraftFile
@@ -171,33 +164,6 @@ async function readDanceBundleDraft(cwd: string, id: string): Promise<DraftFile 
         if (isErrnoException(error) && error.code === 'ENOENT') return null
         throw error
     }
-}
-
-/**
- * Lazily migrate a legacy Dance JSON draft to bundle format.
- * Creates the bundle directory, writes SKILL.md, writes draft.json, removes the old file.
- */
-async function migrateLegacyDanceDraft(cwd: string, legacy: DraftFile): Promise<DraftFile> {
-    const skillContent = typeof legacy.content === 'string' ? legacy.content : ''
-    await scaffoldDanceBundle(cwd, legacy.id, skillContent)
-
-    const migrated: DraftFile = {
-        ...legacy,
-        formatVersion: 2,
-    }
-    const metaOnly = { ...migrated, content: undefined }
-    await fs.writeFile(
-        path.join(danceBundleDir(cwd, legacy.id), 'draft.json'),
-        JSON.stringify(metaOnly, null, 2),
-        'utf-8',
-    )
-
-    // Remove legacy file (best effort)
-    try {
-        await fs.unlink(draftFilePath(cwd, 'dance', legacy.id))
-    } catch { /* ignore if already gone */ }
-
-    return migrated
 }
 
 /**
@@ -238,7 +204,7 @@ export async function listDrafts(cwd: string, kind?: DraftAssetKind): Promise<Dr
         }
 
         for (const entry of entries) {
-            // Dance bundle directories
+            // Skill draft directories
             if (k === 'dance' && entry.isDirectory()) {
                 try {
                     const metaPath = path.join(dir, entry.name, 'draft.json')
@@ -252,7 +218,7 @@ export async function listDrafts(cwd: string, kind?: DraftAssetKind): Promise<Dr
                     })
                     seenIds.add(meta.id)
                 } catch {
-                    // Skip malformed bundle
+                    // Skip malformed Skill draft directory
                 }
                 continue
             }
@@ -263,7 +229,7 @@ export async function listDrafts(cwd: string, kind?: DraftAssetKind): Promise<Dr
             try {
                 const raw = await fs.readFile(path.join(dir, entry.name), 'utf-8')
                 const draft = JSON.parse(raw) as DraftFile
-                // Skip if already seen as a bundle draft (shouldn't happen, but safety)
+                // Skip if already seen as a directory-backed Skill draft (shouldn't happen, but safety)
                 if (seenIds.has(draft.id)) continue
                 drafts.push(draft)
             } catch {
@@ -297,7 +263,7 @@ export async function updateDraft(
         updatedAt: Date.now(),
     }
 
-    // Dance bundle: write SKILL.md content + metadata to draft.json
+    // Skill folder: write SKILL.md content + metadata to draft.json
     if (kind === 'dance' && (existing.formatVersion === 2 || await isDanceBundleDraft(cwd, id))) {
         updated.formatVersion = 2
         // Write SKILL.md if content was patched

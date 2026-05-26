@@ -87,7 +87,7 @@ function scheduleLiveActWorkspacePersist(get: GetFn, performerId: string) {
         }
 
         void latest.saveWorkspace().catch((error) => {
-            console.warn('[act-sync] Failed to persist workspace for live Act performer update', error)
+            console.warn('[team-sync] Failed to persist workspace for live Team agent update', error)
         })
     }, LIVE_ACT_WORKSPACE_PERSIST_DELAY_MS))
 }

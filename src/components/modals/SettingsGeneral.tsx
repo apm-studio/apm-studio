@@ -7,15 +7,21 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { api } from '../../api'
 import { useStudioStore } from '../../store'
 import { useUISettings } from '../../store/settingsSlice'
+import {
+    buildPermissionModePatch,
+    resolvePermissionMode,
+    type PermissionMode,
+} from './settings-permissions'
 
 interface ToggleRowProps {
     title: string
     description: string
     checked: boolean
     onChange: (value: boolean) => void
+    disabled?: boolean
 }
 
-function ToggleRow({ title, description, checked, onChange }: ToggleRowProps) {
+function ToggleRow({ title, description, checked, onChange, disabled }: ToggleRowProps) {
     return (
         <div className="stg-row">
             <div className="stg-row__text">
@@ -26,6 +32,7 @@ function ToggleRow({ title, description, checked, onChange }: ToggleRowProps) {
                 <input
                     type="checkbox"
                     checked={checked}
+                    disabled={disabled}
                     onChange={(e) => onChange(e.target.checked)}
                 />
                 <span className="toggle-switch__track" />
@@ -50,6 +57,10 @@ export default function SettingsGeneral() {
     const [shellSaving, setShellSaving] = useState(false)
     const [shellError, setShellError] = useState<string | null>(null)
     const [shellStatus, setShellStatus] = useState<string | null>(null)
+    const [permissionMode, setPermissionMode] = useState<PermissionMode>('default')
+    const [permissionSaving, setPermissionSaving] = useState(false)
+    const [permissionError, setPermissionError] = useState<string | null>(null)
+    const [permissionStatus, setPermissionStatus] = useState<string | null>(null)
 
     const normalizedShellOptions = useMemo(() => {
         if (!shellValue || shellOptions.some((option) => option.path === shellValue)) {
@@ -74,6 +85,7 @@ export default function SettingsGeneral() {
             setSavedShell(shell)
             setShellValue(shell)
             setShellOptions(shells)
+            setPermissionMode(resolvePermissionMode(configRecord))
         } catch (error) {
             setShellError(error instanceof Error ? error.message : String(error))
         } finally {
@@ -103,7 +115,27 @@ export default function SettingsGeneral() {
         }
     }, [recordStudioChange, shellValue])
 
+    const savePermissionMode = useCallback(async (autoApprove: boolean) => {
+        setPermissionSaving(true)
+        setPermissionError(null)
+        setPermissionStatus(null)
+        try {
+            await api.config.updateGlobal(buildPermissionModePatch(autoApprove))
+            setPermissionMode(autoApprove ? 'auto' : 'default')
+            recordStudioChange({ kind: 'runtime_config' })
+            setPermissionStatus('Saved')
+        } catch (error) {
+            setPermissionError(error instanceof Error ? error.message : String(error))
+        } finally {
+            setPermissionSaving(false)
+        }
+    }, [recordStudioChange])
+
     const shellDirty = shellValue.trim() !== savedShell
+    const permissionCustom = permissionMode === 'custom'
+    const permissionDescription = permissionCustom
+        ? 'Custom OpenCode permission rules are configured in opencode.json; Studio will not overwrite them.'
+        : 'Writes OpenCode permission "*" = "allow" so new agent actions skip permission prompts.'
 
     return (
         <div className="stg-panel">
@@ -139,6 +171,26 @@ export default function SettingsGeneral() {
             <div className="stg-section">
                 <h3 className="stg-section__title">Runtime</h3>
                 <div className="stg-group">
+                    <div className="stg-row">
+                        <div className="stg-row__text">
+                            <span className="stg-row__title">Auto-approve permissions</span>
+                            <span className="stg-row__desc">{permissionDescription}</span>
+                            {permissionError ? <span className="stg-inline-error">{permissionError}</span> : null}
+                            {permissionStatus ? <span className="stg-inline-status">{permissionStatus}</span> : null}
+                        </div>
+                        <label className="toggle-switch">
+                            <input
+                                type="checkbox"
+                                checked={permissionMode === 'auto'}
+                                disabled={shellLoading || permissionSaving || permissionCustom}
+                                onChange={(event) => {
+                                    void savePermissionMode(event.target.checked)
+                                }}
+                            />
+                            <span className="toggle-switch__track" />
+                        </label>
+                    </div>
+
                     <div className="stg-row stg-row--top">
                         <div className="stg-row__text">
                             <span className="stg-row__title">Default shell</span>

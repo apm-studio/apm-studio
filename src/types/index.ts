@@ -1,4 +1,4 @@
-// Agent Roster — Core Types
+// 8PM Studio — Core Types
 
 import type { RuntimeModelVariant } from '../../shared/model-variants'
 import type {
@@ -154,6 +154,7 @@ export interface PerformerNode {
     modelVariant?: string | null
     agentId?: string | null
     talRef: AssetRef | null
+    inlineInstruction?: string | null
     danceRefs: AssetRef[]
     mcpServerNames: string[]
     mcpBindingMap?: Record<string, string>

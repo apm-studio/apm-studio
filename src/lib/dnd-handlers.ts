@@ -143,7 +143,7 @@ export function applyModelToPerformer(
         modelId: asset.modelId as string,
     });
     if (asset.connected === false) {
-        showDropWarning(`${asset.providerName || asset.provider} is not connected in Settings yet. The performer can keep this model selection, but it will not run until provider access is configured.`);
+        showDropWarning(`${asset.providerName || asset.provider} is not connected in Settings yet. The agent can keep this model selection, but it will not run until provider access is configured.`);
     }
 }
 

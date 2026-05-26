@@ -19,7 +19,7 @@ rosterPerformer.get('/api/roster/performers/:urn{.+}', async (c) => {
     const urn = c.req.param('urn')
     try {
         const performer = await getRosterPerformer(cwd, `performer/${urn}`)
-        if (!performer) return jsonError(c, 'Performer not found', 404)
+        if (!performer) return jsonError(c, 'Agent not found', 404)
         return c.json(performer)
     } catch (error: unknown) {
         return jsonError(c, errorMessage(error), 500)
@@ -31,14 +31,14 @@ rosterPerformer.get('/api/roster/search', async (c) => {
     const kind = c.req.query('kind')
     const limit = parseInt(c.req.query('limit') || '20', 10)
     try {
-        // Call the Agent Roster registry and skills.sh in parallel.
+        // Call the 8PM Studio registry and skills.sh in parallel.
         const shouldSearchSkillsSh = !kind || kind === 'dance' || kind === 'all'
         const [rosterResults, skillsShResults] = await Promise.all([
             searchRosterRegistry(query, { kind, limit }),
             shouldSearchSkillsSh ? searchSkillsCatalog(query, 10).catch(() => []) : Promise.resolve([]),
         ])
 
-        // Deduplicate by name: Agent Roster registry results take priority.
+        // Deduplicate by name: 8PM Studio registry results take priority.
         const rosterNames = new Set(rosterResults.map((r) => r.name))
         const merged = [...rosterResults, ...skillsShResults.filter((r) => !rosterNames.has(r.name))]
 

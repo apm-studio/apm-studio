@@ -8,9 +8,7 @@ import {
     Cpu,
     Server,
     Download,
-    Globe,
     GripVertical,
-    FolderOpen,
     Workflow,
     Trash2,
     Pencil,
@@ -50,7 +48,7 @@ function danceSyncLabel(asset: LibraryAsset) {
             return 'Upstream removed'
         case 'repo_drift':
             return 'Repo drift'
-        case 'legacy_unverifiable':
+        case 'provenance_unverifiable':
             return 'Needs relink'
         case 'check_failed':
             return 'Check failed'
@@ -289,7 +287,7 @@ export function DraggableMcp({
                     {mcp.configType ? ` · ${mcp.configType}` : ''}
                 </div>
                 <div className="asset-card__desc">
-                    {dragDisabled ? 'Save this server before dragging.' : 'Drag onto a performer to enable it there.'}
+                    {dragDisabled ? 'Save this server before dragging.' : 'Drag onto an agent to enable it there.'}
                 </div>
             </div>
         </HoverableCard>
@@ -308,13 +306,12 @@ export function RegistryResult({
     item: LibraryAsset
     installed: boolean
     selected: boolean
-    onInstall: (urn: string, scope: 'global' | 'stage') => Promise<unknown>
+    onInstall: (urn: string) => Promise<unknown>
     onSelect: AssetPanelHandler
 }) {
     const [installing, setInstalling] = useState(false)
     const [localInstalled, setLocalInstalled] = useState(installed)
     const [error, setError] = useState<string | null>(null)
-    const [showScope, setShowScope] = useState(false)
 
     useEffect(() => {
         setLocalInstalled(installed)
@@ -322,12 +319,11 @@ export function RegistryResult({
 
     const urn = getAssetUrn(item) || ''
 
-    const handleInstall = async (scope: 'global' | 'stage') => {
-        setShowScope(false)
+    const handleInstall = async () => {
         setInstalling(true)
         setError(null)
         try {
-            await onInstall(urn, scope)
+            await onInstall(urn)
             setLocalInstalled(true)
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : 'Install failed')
@@ -354,22 +350,12 @@ export function RegistryResult({
                             >
                                 <button
                                     className={`registry-install-btn ${localInstalled ? 'is-installed' : ''}`}
-                                    onClick={() => localInstalled ? null : setShowScope(!showScope)}
+                                    onClick={handleInstall}
                                     disabled={installing || localInstalled}
-                                    title={localInstalled ? 'Already installed' : `Install ${urn}`}
+                                    title={localInstalled ? 'Already imported' : `Import ${item.name}`}
                                 >
-                                    {localInstalled ? 'Installed' : installing ? <Loader2 size={11} className="spin-icon" /> : <Download size={11} />}
+                                    {localInstalled ? 'Imported' : installing ? <Loader2 size={11} className="spin-icon" /> : <Download size={11} />}
                                 </button>
-                                {showScope && (
-                                    <div className="install-scope-menu">
-                                        <button className="install-scope-opt" onClick={() => handleInstall('stage')}>
-                                            <FolderOpen size={11} /> Workspace
-                                        </button>
-                                        <button className="install-scope-opt" onClick={() => handleInstall('global')}>
-                                            <Globe size={11} /> Global
-                                        </button>
-                                    </div>
-                                )}
                             </div>
                         </>
                     )}

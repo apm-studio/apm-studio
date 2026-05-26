@@ -86,7 +86,7 @@
     color: var(--dance-color);
 }
 
-.publish-modal__preflight-row.is-will_publish span:last-child {
+.publish-modal__preflight-row.is-will_save span:last-child {
     color: var(--accent);
 }
 

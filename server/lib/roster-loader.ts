@@ -18,12 +18,16 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export function resolveRosterCommand(): string[] {
     const localBuiltCli = path.resolve(__dirname, '..', '..', 'cli.js')
-    return [resolvePackageBin('agent-roster', 'agent-roster') || localBuiltCli || 'agent-roster']
+    return [
+        resolvePackageBin('8pm-studio', '8pm-studio')
+            || localBuiltCli
+            || '8pm-studio',
+    ]
 }
 
 export function rosterLoaderServerName(cwd: string): string {
     const hash = createHash('sha1').update(path.resolve(cwd)).digest('hex').slice(0, 10)
-    return `agent-roster-stage-${hash}`
+    return `8pm-studio-stage-${hash}`
 }
 
 function resolveCapabilityToolId(toolIds: string[]) {
@@ -56,7 +60,7 @@ export async function ensureRosterLoaderServer(cwd: string): Promise<{
             command: resolveRosterCommand(),
             enabled: true,
             environment: {
-                AGENT_ROSTER_PROJECT_DIR: path.resolve(cwd),
+                EIGHTPM_STUDIO_PROJECT_DIR: path.resolve(cwd),
             },
         } as unknown as McpAddConfig
         unwrapOpencodeResult(await oc.mcp.add({

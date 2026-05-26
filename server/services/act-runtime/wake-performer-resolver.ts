@@ -3,7 +3,7 @@
  *
  * When the wake cascade auto-wakes a participant, it needs the performer's
  * model, TAL, Dance, and MCP configuration to properly project into OpenCode.
- * This module reads workspace.json to find the matching performer node.
+ * This module reads workspace.json to find the matching agent node.
  */
 
 import type { ActDefinition } from '../../../shared/act-types.js'
@@ -33,7 +33,7 @@ export interface ResolvedPerformerConfig {
  * Returns null if:
  * - the workspace snapshot is not available
  * - participant not in actDefinition
- * - no matching performer in workspace
+ * - no matching agent in workspace
  */
 export async function resolvePerformerForWake(
     workingDir: string,
@@ -56,7 +56,7 @@ export async function resolvePerformerForWake(
     const performer = matchPerformer(performers, ref)
     if (!performer) {
         console.warn(
-            `[wake-resolver] No matching performer for participant "${participantKey}" ref=${JSON.stringify(ref)}`,
+            `[wake-resolver] No matching agent for participant "${participantKey}" ref=${JSON.stringify(ref)}`,
         )
         return null
     }

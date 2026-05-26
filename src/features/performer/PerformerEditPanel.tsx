@@ -4,7 +4,7 @@
  *
  * Drill-down pattern:
  *   Main view: Compose cards (DnD + "Drag & drop or click to configure")
- *   Click a card → detail view for that category (Tal, Dances, Model, MCP)
+ *   Click a card → detail view for that category (Instruction, Skills, Model, MCP)
  *   Back button returns to main card view.
  */
 import { useState } from 'react'
@@ -89,8 +89,8 @@ export default function PerformerEditPanel({
 
     // ── Detail view titles ──
     const detailTitles: Record<string, string> = {
-        tal: 'Persona',
-        dances: 'Dances',
+        tal: 'Instruction',
+        dances: 'Skills',
         model: 'Model & Runtime',
         mcp: 'MCP & Relations',
     }
@@ -98,7 +98,7 @@ export default function PerformerEditPanel({
     // ── Compose card descriptions (with counts) ──
     const talDesc = presentation.talAsset ? presentation.talAsset.name : 'Drag & drop or click to add'
     const danceDesc = presentation.danceAssets.length > 0
-        ? `${presentation.danceAssets.length} dance${presentation.danceAssets.length !== 1 ? 's' : ''}`
+        ? `${presentation.danceAssets.length} Skill${presentation.danceAssets.length !== 1 ? 's' : ''}`
         : 'Drag & drop or click to add'
     const modelDesc = performer?.model
         ? `${performer.model.modelId}`
@@ -161,7 +161,7 @@ export default function PerformerEditPanel({
                                 className="text-input nodrag nowheel"
                                 value={performer?.meta?.authoring?.description || ''}
                                 onChange={(event) => onDescriptionChange(event.target.value)}
-                                placeholder="Describe this performer"
+                                placeholder="Describe this agent"
                             />
                         </label>
                     </div>
@@ -175,7 +175,7 @@ export default function PerformerEditPanel({
                         cards={[
                             {
                                 key: 'tal',
-                                title: 'Persona',
+                                title: 'Instruction',
                                 description: talDesc,
                                 icon: <Hexagon size={12} />,
                                 isOver: dropRefs.tal.isOver,
@@ -184,7 +184,7 @@ export default function PerformerEditPanel({
                             },
                             {
                                 key: 'dances',
-                                title: 'Dances',
+                                title: 'Skills',
                                 description: danceDesc,
                                 icon: <Zap size={12} />,
                                 isOver: dropRefs.dance.isOver,

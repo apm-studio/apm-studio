@@ -21,6 +21,7 @@ export interface PerformerCompileInput {
     performerId: string
     performerName: string
     talRef: AssetRef | null
+    inlineInstruction?: string | null
     model: ModelSelection
     modelVariant?: string | null
     workspaceHash: string
@@ -83,7 +84,11 @@ export interface CompiledPerformer {
 async function resolveTalContent(
     cwd: string,
     ref: AssetRef | null,
+    inlineInstruction?: string | null,
 ): Promise<string | null> {
+    if (typeof inlineInstruction === 'string' && inlineInstruction.trim()) {
+        return inlineInstruction
+    }
     if (!ref) {
         return null
     }
@@ -506,7 +511,7 @@ function buildCodexAgentFile(input: {
     mcpServers?: McpCatalog
 }): AgentFile {
     const agentName = buildCodexAgentName(input.performerName, input.performerId)
-    const fileName = `agent_roster_${agentName}.toml`
+    const fileName = `8pm_studio_${agentName}.toml`
     const filePath = path.join(input.executionDir, '.codex', 'agents', fileName)
     const instructions = buildCodexDeveloperInstructions(input.talContent)
     const content = [
@@ -536,7 +541,7 @@ export async function compilePerformer(
     input: PerformerCompileInput,
     skills: CompiledSkill[],
 ): Promise<CompiledPerformer> {
-    const talContent = await resolveTalContent(cwd, input.talRef)
+    const talContent = await resolveTalContent(cwd, input.talRef, input.inlineInstruction)
 
     let resolvedVariantId: string | null = null
     let resolvedVariant: RuntimeModelVariant | null = null

@@ -149,7 +149,7 @@ export async function loadMarkdownTemplateIntoEditor(
         throw new Error('Editor not found.')
     }
     if (editor.kind !== asset.kind) {
-        throw new Error(`${editor.kind === 'tal' ? 'Persona' : 'Skill Pack'} editor only accepts ${editor.kind} assets.`)
+        throw new Error(`${editor.kind === 'tal' ? 'Instruction' : 'Skill'} editor only accepts matching assets.`)
     }
 
     const isLocalInstalled = isInstalledAsset(asset)
@@ -236,7 +236,7 @@ export async function resolvePerformerAssetForStudio(
             return `• ${name}`
         }).join('\n')
         showToast(
-            `This performer requires MCP servers that are not yet in the Studio MCP library:\n${details}\n\nAdd them in Asset Library → MCP.`,
+            `This performer requires MCP servers that are not yet in the Studio MCP library:\n${details}\n\nAdd them in Packages → MCP.`,
             'warning',
             {
                 title: 'MCP servers required',

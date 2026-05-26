@@ -61,7 +61,6 @@ const SOURCE = {
     ref: 'main',
     repoRootSkillPath: 'skills/research-pack',
     skillFolderHash: 'local-hash',
-    legacy: false,
     verifiable: true,
 }
 
@@ -116,7 +115,7 @@ describe('dance GitHub update service', () => {
         ])
     })
 
-    it('updates installed GitHub dance bundles in place and invalidates asset caches', async () => {
+    it('updates installed GitHub Skills in place and invalidates asset caches', async () => {
         let cleaned = false
         readGitHubDanceSourceMapMock.mockResolvedValue(new Map([
             ['dance/@acme/skill-pack/research-pack', SOURCE],

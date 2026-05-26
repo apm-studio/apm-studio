@@ -11,8 +11,8 @@ describe('dance export service', () => {
     let exportRoot: string
 
     beforeEach(async () => {
-        workingDir = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-roster-dance-export-'))
-        exportRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-roster-dance-export-target-'))
+        workingDir = await fs.mkdtemp(path.join(os.tmpdir(), '8pm-studio-dance-export-'))
+        exportRoot = await fs.mkdtemp(path.join(os.tmpdir(), '8pm-studio-dance-export-target-'))
     })
 
     afterEach(async () => {
@@ -20,7 +20,7 @@ describe('dance export service', () => {
         await fs.rm(exportRoot, { recursive: true, force: true }).catch(() => {})
     })
 
-    it('exports a spec-facing dance bundle without draft metadata', async () => {
+    it('exports a spec-facing Skill without draft metadata', async () => {
         const draft = await createDraft(workingDir, {
             kind: 'dance',
             id: 'dance-draft-1',
@@ -42,8 +42,8 @@ describe('dance export service', () => {
             ].join('\n'),
         })
 
-        await fs.mkdir(path.join(workingDir, '.agent-roster', 'drafts', 'dance', draft.id, 'scripts'), { recursive: true })
-        await fs.writeFile(path.join(workingDir, '.agent-roster', 'drafts', 'dance', draft.id, 'scripts', 'check.sh'), 'echo ok\n', 'utf-8')
+        await fs.mkdir(path.join(workingDir, '.8pm-studio', 'drafts', 'dance', draft.id, 'scripts'), { recursive: true })
+        await fs.writeFile(path.join(workingDir, '.8pm-studio', 'drafts', 'dance', draft.id, 'scripts', 'check.sh'), 'echo ok\n', 'utf-8')
 
         const exported = await exportDanceBundle({
             cwd: workingDir,
@@ -110,7 +110,7 @@ describe('dance export service', () => {
             draftId: 'missing-draft',
             slugInput: 'draft-dance',
             destinationParentPath: exportRoot,
-        })).rejects.toThrow("Dance draft 'missing-draft' was not found.")
+        })).rejects.toThrow("Skill draft 'missing-draft' was not found.")
     })
 
     it('fails clearly when the slug is invalid', async () => {
@@ -133,7 +133,7 @@ describe('dance export service', () => {
             draftId: draft.id,
             slugInput: '!!!',
             destinationParentPath: exportRoot,
-        })).rejects.toThrow('Dance slug is required.')
+        })).rejects.toThrow('Skill slug is required.')
     })
 
     it('fails when SKILL.md does not satisfy the canonical Dance contract', async () => {

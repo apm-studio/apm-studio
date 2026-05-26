@@ -819,7 +819,7 @@ export const createIntegrationSlice: StateCreator<
 
         compilePrompt: async (performerId) => {
             const performer = get().performers.find((entry) => entry.id === performerId)
-            if (!performer) return '// No performer selected'
+            if (!performer) return '// No agent selected'
             const runtimeConfig = resolvePerformerRuntimeConfig(performer)
             if (!hasModelConfig(runtimeConfig.model)) {
                 return '// Prompt preview unavailable.'
@@ -865,7 +865,7 @@ export const createIntegrationSlice: StateCreator<
                 }
 
                 if (res.danceCatalog.length > 0) {
-                    lines.push('', '// Dance Catalog')
+                    lines.push('', '// Skill Catalog')
                     for (const dance of res.danceCatalog) {
                         lines.push(`- ${dance.urn} (${dance.loadMode})${dance.description ? `: ${dance.description}` : ''}`)
                     }

@@ -20,7 +20,7 @@ describe('AssetDetailBody', () => {
                         repoRootSkillPath: 'skills/research-pack',
                         sync: {
                             state: 'repo_drift',
-                            message: 'The source repo now exposes a different set of Dance skills.',
+                            message: 'The source repo now exposes a different set of Skills.',
                             repoDrift: {
                                 newSkills: [{
                                     name: 'interview-pack',

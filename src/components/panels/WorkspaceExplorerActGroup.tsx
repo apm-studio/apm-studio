@@ -130,7 +130,7 @@ export default function WorkspaceExplorerActGroup({
                         {participantCount}p · {act.relations.length}r · {threads.length}t
                     </span>
                 </span>
-                {/* Actions — same order as PerformerGroup: [Eye, +Thread, Archive, Trash] */}
+                {/* Actions keep the same order as the Agent group. */}
                 <span
                     className="thread-card__actions"
                     onPointerDown={(event) => event.stopPropagation()}
@@ -177,7 +177,7 @@ export default function WorkspaceExplorerActGroup({
                             <button
                                 className="icon-btn"
                                 onClick={() => onOpenActEditor(act.id)}
-                                title="Edit act"
+                                title="Edit team"
                             >
                                 <Pencil size={11} />
                             </button>
@@ -190,14 +190,14 @@ export default function WorkspaceExplorerActGroup({
                                         dedupeKey: `draft:save:act:${act.id}`,
                                     })
                                 }}
-                                title="Save act as draft"
+                                title="Save team as draft"
                             >
                                 <Archive size={11} />
                             </button>
                             <button
                                 className="icon-btn remove-btn"
                                 onClick={() => onSetPendingDelete(actKey)}
-                                title="Delete act"
+                                title="Delete team"
                             >
                                 <Trash2 size={11} />
                             </button>

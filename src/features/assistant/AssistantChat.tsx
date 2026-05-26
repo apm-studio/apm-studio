@@ -130,7 +130,7 @@ export function AssistantChat() {
             'Assistant session refreshed.',
             'success',
             {
-                title: 'Studio Assistant',
+                title: '8PM Assistant',
                 dedupeKey: 'assistant:refresh-session',
             },
         )
@@ -202,7 +202,7 @@ export function AssistantChat() {
             <Sparkles size={48} className="assistant-empty__icon" />
             <h3 className="assistant-empty__title">How can I help you design?</h3>
             <p className="assistant-empty__desc">
-                Ask me to package agents, apply them to assistants, or explain how Agent Roster works.
+                Ask me to package agents, apply them to assistants, or explain how 8PM Studio works.
             </p>
         </div>
     ), [])
@@ -327,7 +327,7 @@ export function AssistantChat() {
                         <div className="assistant-header__icon">
                             <Sparkles size={14} />
                         </div>
-                        <span>Studio Assistant</span>
+                        <span>8PM Assistant</span>
                     </div>
                     <div className="assistant-header__subtitle">
                         <span>{currentModelLabel || 'No model selected'}</span>
@@ -346,7 +346,7 @@ export function AssistantChat() {
                     <button
                         className="icon-btn assistant-header__close"
                         onClick={toggleAssistant}
-                        title="Hide Studio Assistant"
+                        title="Hide 8PM Assistant"
                     >
                         <X size={12} />
                     </button>
@@ -360,7 +360,7 @@ export function AssistantChat() {
                         <AlertCircle size={40} className="assistant-empty__icon assistant-empty__icon--warn" />
                         <h3 className="assistant-empty__title">Model not configured</h3>
                         <p className="assistant-empty__desc">
-                            To use the Studio Assistant, configure at least one AI model provider first.
+                            To use 8PM Assistant, configure at least one AI model provider first.
                         </p>
                         <button className="assistant-setup-btn" onClick={openSettings}>
                             <Settings size={14} />

@@ -89,7 +89,7 @@ describe('evaluateActReadiness', () => {
         expect(result.issues.some((i) => i.code === 'unknown-relation-endpoint')).toBe(true)
     })
 
-    it('returns error when performer ref cannot resolve', () => {
+    it('returns error when agent ref cannot resolve', () => {
         const act = makeAct({
             participants: {
                 'agent-a': { performerRef: { kind: 'draft', draftId: 'missing' }, position: { x: 0, y: 0 } },
@@ -100,7 +100,7 @@ describe('evaluateActReadiness', () => {
         expect(result.issues.some((i) => i.code === 'unresolved-performer')).toBe(true)
     })
 
-    it('returns error when performer has no model configured', () => {
+    it('returns error when agent has no model configured', () => {
         const performer = makePerformer({ id: 'p1', model: null })
         const act = makeAct({
             participants: {

@@ -20,7 +20,7 @@ afterEach(async () => {
 })
 
 describe('copyGitHubDanceSkill', () => {
-    it('copies repo-local symlinked bundle folders into the installed dance bundle', async () => {
+    it('copies repo-local symlinked folders into the installed Skill', async () => {
         const repoRoot = await makeTempDir('roster-gh-source-')
         const workingDir = await makeTempDir('roster-gh-target-')
         const sharedAssetsDir = path.join(repoRoot, 'assets')

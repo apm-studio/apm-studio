@@ -32,7 +32,7 @@ function runCli(args: string[], env: Record<string, string> = {}) {
     })
 }
 
-describe('agent-roster CLI', () => {
+describe('8pm-studio CLI', () => {
     it('rejects malformed port strings instead of truncating them', async () => {
         const result = await runCli(['doctor', '.', '--port', '12abc'])
 
@@ -63,7 +63,7 @@ describe('agent-roster CLI', () => {
 
         expect(result.code).toBe(0)
         expect(result.stdout).toContain('--openai-oauth')
-        expect(result.stdout).toContain('agent-roster --openai-oauth --act act/@acme/workflows/review-flow')
+        expect(result.stdout).toContain('8pm-studio --openai-oauth --team <team-urn>')
     })
 
     it('rejects OpenAI OAuth setup on doctor because it only applies to open', async () => {

@@ -1,4 +1,4 @@
-import { AGENT_ROSTER_TOS_URL } from '../../lib/roster-terms'
+import { EIGHTPM_STUDIO_TOS_URL } from '../../lib/roster-terms'
 import type { DraftAsset, MarkdownEditorNode } from '../../types'
 import type { PerformerPreflightEntry } from './publish-modal-utils'
 
@@ -21,7 +21,6 @@ type Props = {
     isAuthenticating: boolean
     onStartLogin: () => void
     status: null | { tone: 'success' | 'error'; message: string }
-    publishBlockedReason: string | null
 }
 
 export default function PublishFormStep({
@@ -41,7 +40,6 @@ export default function PublishFormStep({
     isAuthenticating,
     onStartLogin,
     status,
-    publishBlockedReason,
 }: Props) {
     return (
         <div className="publish-modal__body">
@@ -96,12 +94,12 @@ export default function PublishFormStep({
             {!authUser?.authenticated ? (
                 <div className="publish-modal__auth-callout">
                     <div>
-                        <strong>Agent Roster sign-in required</strong>
+                        <strong>8PM Studio sign-in required</strong>
                         <p>
-                            Save Local and Publish use your Agent Roster namespace.
-                            By signing in, you agree to the Agent Roster Terms of Service:
+                            Save Local uses your 8PM Studio namespace.
+                            By signing in, you agree to the 8PM Studio Terms of Service:
                             {' '}
-                            <a href={AGENT_ROSTER_TOS_URL} target="_blank" rel="noreferrer">{AGENT_ROSTER_TOS_URL}</a>
+                            <a href={EIGHTPM_STUDIO_TOS_URL} target="_blank" rel="noreferrer">{EIGHTPM_STUDIO_TOS_URL}</a>
                         </p>
                     </div>
                     <button
@@ -120,11 +118,6 @@ export default function PublishFormStep({
                 </div>
             ) : null}
 
-            {publishBlockedReason ? (
-                <div className="publish-modal__status publish-modal__status--error">
-                    {publishBlockedReason}
-                </div>
-            ) : null}
         </div>
     )
 }

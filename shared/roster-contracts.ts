@@ -46,21 +46,6 @@ export type RosterSaveLocalRequest = {
     payload: unknown
 }
 
-export type RosterPublishRequest = {
-    kind: 'tal' | 'dance' | 'performer' | 'act'
-    slug: string
-    stage?: string
-    payload?: unknown
-    tags?: string[]
-    providedAssets?: Array<{
-        kind: 'tal' | 'performer' | 'act'
-        urn: string
-        payload: Record<string, unknown>
-        tags?: string[]
-    }>
-    acknowledgedTos?: boolean
-}
-
 export type RosterUninstallRequest = {
     kind: 'tal' | 'dance' | 'performer' | 'act'
     urn: string

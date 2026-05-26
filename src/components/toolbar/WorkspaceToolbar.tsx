@@ -1,7 +1,7 @@
 import { Suspense, lazy, useState, useEffect } from 'react';
 import { api } from '../../api';
 import { showToast } from '../../lib/toast';
-import { GitBranch, CheckCircle, AlertCircle, Settings, Moon, Sun, Hexagon, Terminal as TerminalIcon, Github, ChevronDown, Upload, LogIn, UserRound, MessageCircle, RefreshCcw } from 'lucide-react';
+import { GitBranch, CheckCircle, AlertCircle, Settings, Moon, Sun, Hexagon, Terminal as TerminalIcon, Github, ChevronDown, Save, LogIn, UserRound, MessageCircle, RefreshCcw } from 'lucide-react';
 import { useStudioStore } from '../../store';
 import { useServerHealth, useRosterStatus } from '../../hooks/queries';
 import { useRosterLogin } from '../../hooks/useRosterLogin';
@@ -87,8 +87,8 @@ export default function WorkspaceToolbar() {
             await api.roster.init();
             queryClient.invalidateQueries({ queryKey: queryKeys.rosterStatus(workingDir) });
         } catch (err) {
-            console.error('Failed to init Agent Roster workspace:', err);
-            showToast('Failed to initialize the Agent Roster workspace for this project.', 'error', {
+            console.error('Failed to init 8PM Studio workspace:', err);
+            showToast('Failed to initialize the 8PM Studio workspace for this project.', 'error', {
                 title: 'Workspace init failed',
                 dedupeKey: `roster:init:${workingDir || 'unknown'}`,
                 actionLabel: 'Retry',
@@ -106,14 +106,14 @@ export default function WorkspaceToolbar() {
                     type="button"
                     className={`toolbar__item roster-status ${rosterInitialized ? 'roster-ok' : 'roster-missing'}`}
                     onClick={handleRosterInit}
-                    aria-label={rosterInitialized ? 'Agent Roster workspace initialized' : 'Initialize Agent Roster workspace'}
+                    aria-label={rosterInitialized ? '8PM Studio workspace initialized' : 'Initialize 8PM Studio workspace'}
                     title={rosterInitialized
-                        ? 'Agent Roster initialized for this workspace'
-                        : 'Agent Roster not initialized - click to init'
+                        ? '8PM Studio initialized for this workspace'
+                        : '8PM Studio not initialized - click to init'
                     }
                 >
                     <Hexagon size={12} />
-                    <span>Roster</span>
+                    <span>8PM</span>
                 </button>
 
                 {gitBranch && (
@@ -129,7 +129,7 @@ export default function WorkspaceToolbar() {
                             <button
                                 type="button"
                                 className="toolbar__item roster-auth-status roster-auth-status--ok"
-                                aria-label={`Agent Roster account @${authUser.username}`}
+                                aria-label={`8PM Studio account @${authUser.username}`}
                                 title={`Signed in as @${authUser.username}`}
                             >
                                 <UserRound size={12} />
@@ -146,10 +146,10 @@ export default function WorkspaceToolbar() {
                         type="button"
                         className="toolbar__item roster-auth-status roster-auth-status--warn"
                         onClick={() => void startLogin(true)}
-                        aria-label={isAuthenticating ? 'Agent Roster sign in pending' : 'Sign in to Agent Roster'}
+                        aria-label={isAuthenticating ? '8PM Studio sign in pending' : 'Sign in to 8PM Studio'}
                         title={isAuthenticating
-                            ? 'Waiting for Agent Roster login to complete in the browser'
-                            : 'Review the Agent Roster Terms of Service and sign in'
+                            ? 'Waiting for 8PM Studio login to complete in the browser'
+                            : 'Review the 8PM Studio Terms of Service and sign in'
                         }
                     >
                         <LogIn size={12} />
@@ -199,8 +199,8 @@ export default function WorkspaceToolbar() {
                     type="button"
                     className="icon-btn"
                     onClick={() => setWorkspaceMode('agent-sync')}
-                    title="Assistant Sync"
-                    aria-label="Open Assistant Sync"
+                    title="Agent Sync"
+                    aria-label="Open Agent Sync"
                 >
                     <RefreshCcw size={12} />
                 </button>
@@ -209,10 +209,10 @@ export default function WorkspaceToolbar() {
                     type="button"
                     className="icon-btn"
                     onClick={() => setPublishOpen(true)}
-                    title="Save or publish selected asset"
-                    aria-label="Save or publish selected asset"
+                    title="Save selected package locally"
+                    aria-label="Save selected package locally"
                 >
-                    <Upload size={12} />
+                    <Save size={12} />
                 </button>
 
                 <button
@@ -237,7 +237,7 @@ export default function WorkspaceToolbar() {
                     type="button"
                     className={`toolbar__assistant-btn ${isAssistantOpen ? 'is-active' : ''}`}
                     onClick={toggleAssistant}
-                    title={isAssistantOpen ? 'Hide Studio Assistant' : 'Show Studio Assistant'}
+                    title={isAssistantOpen ? 'Hide 8PM Assistant' : 'Show 8PM Assistant'}
                     aria-pressed={isAssistantOpen}
                 >
                     Assistant

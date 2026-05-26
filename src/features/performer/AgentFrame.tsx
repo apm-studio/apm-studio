@@ -225,8 +225,8 @@ export default function AgentFrame({ data, id }: AgentFrameProps) {
             })
         } catch (error) {
             console.error('Failed to open markdown editor', error)
-            showToast(`Studio could not open the ${kind} editor for this performer.`, 'error', {
-                title: `${kind === 'tal' ? 'Persona' : 'Skill Pack'} editor failed`,
+            showToast(`Studio could not open the ${kind === 'tal' ? 'Instruction' : 'Skill'} editor for this agent.`, 'error', {
+                title: `${kind === 'tal' ? 'Instruction' : 'Skill'} editor failed`,
                 dedupeKey: `performer-editor-open:${id}:${kind}:${targetRef?.kind}:${targetRef?.kind === 'registry' ? targetRef.urn : targetRef?.draftId}`,
                 actionLabel: 'Retry',
                 onAction: () => { void openAssetEditor(kind, targetRef, _attachMode) },
@@ -310,7 +310,7 @@ export default function AgentFrame({ data, id }: AgentFrameProps) {
                             <button
                                 className="icon-btn"
                                 onClick={(e) => { e.stopPropagation(); useStudioStore.getState().openPerformerEditor(id) }}
-                                title="Edit performer"
+                                title="Edit agent"
                                 style={{ padding: '0 4px', opacity: 0.7 }}
                             >
                                 <Pencil size={11} />

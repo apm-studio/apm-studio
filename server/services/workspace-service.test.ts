@@ -18,7 +18,7 @@ describe('saveWorkspaceSnapshot', () => {
     let studioDir: string
 
     beforeEach(async () => {
-        studioDir = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-roster-workspace-service-'))
+        studioDir = await fs.mkdtemp(path.join(os.tmpdir(), '8pm-studio-workspace-service-'))
         process.env.STUDIO_DIR = studioDir
         pruneStalePerformerProjectionsMock.mockReset().mockResolvedValue(false)
         ensureAssistantAgentMock.mockReset().mockResolvedValue('studio-assistant')

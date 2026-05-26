@@ -3,7 +3,7 @@
  * publish-modal-utils.tsx – Pure helpers, types, and sub-components
  * extracted from PublishModal.tsx.
  *
- * Contains: type definitions, publishability helpers, picker-item builders,
+ * Contains: type definitions, saveability helpers, picker-item builders,
  * preflight builders, and the PickerSection presentational component.
  */
 
@@ -28,7 +28,7 @@ export type PublishFormSeed = {
 export type PerformerPreflightEntry = {
     label: string
     required: boolean
-    status: 'ready' | 'draft' | 'missing' | 'will_publish'
+    status: 'ready' | 'draft' | 'missing' | 'will_save'
     detail: string
 }
 
@@ -47,7 +47,7 @@ export function parseTags(value: string) {
         .filter(Boolean)
 }
 
-export function isPerformerPublishable(p: PerformerNode): boolean {
+export function isPerformerSavable(p: PerformerNode): boolean {
     if (!p.meta?.derivedFrom) return true
     if (p.meta.authoring?.slug || p.meta.authoring?.description || (p.meta.authoring?.tags && p.meta.authoring.tags.length > 0)) return true
     return false
@@ -57,7 +57,7 @@ export function getPerformerIssue(p: PerformerNode): string | undefined {
     const hasTal = !!p.talRef
     const hasDance = p.danceRefs.length > 0
     if (!hasTal && !hasDance) {
-        return 'Needs at least a Persona or Skill Pack'
+        return 'Needs at least an Instruction or Skill'
     }
     return undefined
 }
@@ -157,7 +157,7 @@ export function buildPickerItems(args: {
     }
 
     for (const performer of args.performers) {
-        if (isPerformerPublishable(performer)) {
+        if (isPerformerSavable(performer)) {
             items.push({ kind: 'performer', source: 'canvas', performerId: performer.id, name: performer.name, issue: getPerformerIssue(performer) })
         }
     }
@@ -174,8 +174,8 @@ export function buildPerformerPreflight(performer: PerformerNode | null): Perfor
     if (!performer) return []
 
     const candidates: PerformerPreflightCandidate[] = [
-        ...(performer.talRef ? [{ label: 'Persona', ref: performer.talRef, required: true }] : []),
-        ...performer.danceRefs.map((ref, index) => ({ label: `Skill Pack ${index + 1}`, ref, required: false })),
+        ...(performer.talRef ? [{ label: 'Instruction', ref: performer.talRef, required: true }] : []),
+        ...performer.danceRefs.map((ref, index) => ({ label: `Skill ${index + 1}`, ref, required: false })),
     ]
 
     return candidates.map((entry) => {
@@ -186,8 +186,8 @@ export function buildPerformerPreflight(performer: PerformerNode | null): Perfor
         if (entry.ref.kind === 'draft') {
             return {
                 ...entry,
-                status: entry.label === 'Persona' ? 'will_publish' as const : 'draft' as const,
-                detail: entry.label === 'Persona' ? 'Will publish from draft' : `draft:${entry.ref.draftId}`,
+                status: entry.label === 'Instruction' ? 'will_save' as const : 'draft' as const,
+                detail: entry.label === 'Instruction' ? 'Will save from draft' : `draft:${entry.ref.draftId}`,
             }
         }
         return { ...entry, status: 'missing' as const, detail: 'not set' }
@@ -245,20 +245,6 @@ export function buildPublishFormSeed(args: {
     }
 
     return null
-}
-
-export function buildAuthoringPayloadForPublishApi(asset: {
-    description?: string
-    tags?: string[]
-    payload?: Record<string, unknown>
-}) {
-    return {
-        ...(typeof asset.description === 'string' && asset.description.trim()
-            ? { description: asset.description.trim() }
-            : {}),
-        ...(Array.isArray(asset.tags) ? { tags: asset.tags } : {}),
-        ...((asset.payload && typeof asset.payload === 'object') ? asset.payload : {}),
-    }
 }
 
 // ── Sub-components ──────────────────────────────────────

@@ -9,6 +9,7 @@ export type CompilePromptRequest = {
     performerId?: string
     performerName?: string
     talRef: SharedAssetRef | null
+    inlineInstruction?: string | null
     danceRefs: SharedAssetRef[]
     model: {
         provider: string
@@ -44,6 +45,7 @@ export type ChatSendRequest = {
         performerId: string
         performerName: string
         talRef: SharedAssetRef | null
+        inlineInstruction?: string | null
         danceRefs: SharedAssetRef[]
         extraDanceRefs?: SharedAssetRef[]
         model?: {

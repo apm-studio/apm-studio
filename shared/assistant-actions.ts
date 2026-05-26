@@ -59,12 +59,12 @@ export interface AssistantPerformerFields {
     talDraftId?: string             // existing draft id
     talDraftRef?: string            // ref created in same block
     talDraft?: AssistantDraftBlueprint  // create + attach inline
-    // Dances to add
+    // Skills to add
     addDanceUrns?: string[]
     addDanceDraftIds?: string[]
     addDanceDraftRefs?: string[]
     addDanceDrafts?: AssistantDraftBlueprint[]
-    // Dances to remove  (update only)
+    // Skills to remove  (update only)
     removeDanceUrns?: string[]
     removeDanceDraftIds?: string[]
     // MCP
@@ -229,7 +229,7 @@ export type AssistantAction =
         draftRef?: string
         draftName?: string
     }
-    // ── Dance draft CRUD ───────────────────────────────
+    // ── Skill draft CRUD ───────────────────────────────
     | {
         type: 'createDanceDraft'
         ref?: string

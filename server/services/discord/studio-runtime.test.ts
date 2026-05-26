@@ -63,7 +63,7 @@ describe('formatDiscordBackfillMessages', () => {
 
         expect(messages).toEqual([
             { id: 'session-1:assistant-1', content: '**[Planner]**\nHere is a plan.' },
-            { id: 'session-1:user-2', content: '**[Studio User]**\nRevise it.' },
+            { id: 'session-1:user-2', content: '**[Roster User]**\nRevise it.' },
         ])
     })
 
@@ -157,13 +157,13 @@ describe('listStandaloneThreadsForDiscord', () => {
         chatSessionMocks.sessions.mockResolvedValue([
             {
                 id: 'session-older',
-                title: 'DOT Studio: Planner [studio:performer-1:hash-a]',
+                title: '8PM Studio: Planner [studio:performer-1:hash-a]',
                 createdAt: 100,
                 updatedAt: 10,
             },
             {
                 id: 'session-newer',
-                title: 'DOT Studio: Planner [studio:performer-1:hash-b]',
+                title: '8PM Studio: Planner [studio:performer-1:hash-b]',
                 createdAt: 200,
                 updatedAt: 20,
             },

@@ -88,7 +88,6 @@ export function PinnedDetailPanel({
     actionStatus,
     actionLoading,
     onSaveLocal,
-    onPublish,
     onImportToStage,
     onDeleteDraft,
     onUninstall,
@@ -106,7 +105,6 @@ export function PinnedDetailPanel({
     actionStatus?: string | null
     actionLoading?: AssetPanelAction | null
     onSaveLocal?: AssetPanelHandler
-    onPublish?: AssetPanelHandler
     onImportToStage?: AssetPanelHandler
     onDeleteDraft?: AssetPanelHandler
     onUninstall?: AssetPanelHandler
@@ -121,7 +119,7 @@ export function PinnedDetailPanel({
     const danceSync = resolvedAsset?.kind === 'dance' ? resolvedAsset.github?.sync : null
     const updateDisabled = actionLoading !== null
         || danceSync?.state === 'upstream_missing'
-        || danceSync?.state === 'legacy_unverifiable'
+        || danceSync?.state === 'provenance_unverifiable'
 
     if (!asset) {
         return (
@@ -148,13 +146,6 @@ export function PinnedDetailPanel({
                 <div className="btns">
                     <button className="btn" onClick={() => onSaveLocal(resolvedAsset)} disabled={actionLoading !== null}>
                         {actionLoading === 'save-local' ? 'Saving…' : 'Save Local Fork'}
-                    </button>
-                </div>
-            ) : null}
-            {resolvedAsset?.source === 'stage' && resolvedAsset?.kind !== 'dance' && authUser?.authenticated && onPublish ? (
-                <div className="btns">
-                    <button className="btn" onClick={() => onPublish(resolvedAsset)} disabled={actionLoading !== null}>
-                        {actionLoading === 'publish' ? 'Publishing…' : 'Publish'}
                     </button>
                 </div>
             ) : null}
@@ -221,7 +212,7 @@ export function PinnedDetailPanel({
             ) : null}
             {!authUser?.authenticated && (resolvedAsset?.source === 'global' || resolvedAsset?.source === 'stage') ? (
                 <div className="asset-detail-panel__note">
-                    Sign in with Agent Roster from the toolbar before saving a local fork or publishing assets.
+                    Sign in with 8PM Studio from the toolbar before saving a local fork.
                 </div>
             ) : null}
             {actionStatus ? <div className="asset-detail-panel__note">{actionStatus}</div> : null}

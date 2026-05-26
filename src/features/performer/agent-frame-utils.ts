@@ -55,7 +55,7 @@ export function buildAttachedDraftDanceItems(
             ref,
             label: assetRefDisplayLabel(ref, drafts),
             scope: 'draft' as const,
-            subtitle: 'Attached to performer',
+            subtitle: 'Attached to agent',
         }))
 }
 

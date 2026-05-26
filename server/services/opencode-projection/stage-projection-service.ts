@@ -217,6 +217,7 @@ export async function ensurePerformerProjection(input: PerformerProjectionInput)
             performerId: input.performerId,
             performerName: input.performerName,
             talRef: input.talRef,
+            inlineInstruction: input.inlineInstruction || null,
             model: input.model,
             modelVariant: input.modelVariant || null,
             workspaceHash,

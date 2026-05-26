@@ -7,8 +7,8 @@ export type StartupAssetTarget =
 
 export function readStartupAssetTarget(search: string): StartupAssetTarget | null {
     const params = new URLSearchParams(search);
-    const performerUrn = params.get('performer')?.trim() || '';
-    const actUrn = params.get('act')?.trim() || '';
+    const performerUrn = params.get('agent')?.trim() || params.get('performer')?.trim() || '';
+    const actUrn = params.get('team')?.trim() || params.get('act')?.trim() || '';
 
     if (performerUrn && actUrn) {
         return null;
@@ -27,6 +27,8 @@ export function readStartupAssetTarget(search: string): StartupAssetTarget | nul
 
 export function clearStartupAssetTargetFromUrl() {
     const url = new URL(window.location.href);
+    url.searchParams.delete('agent');
+    url.searchParams.delete('team');
     url.searchParams.delete('performer');
     url.searchParams.delete('act');
     const search = url.searchParams.toString();
@@ -102,8 +104,9 @@ function showMissingAssetToast(
     showToast: (message: string, kind: 'info' | 'success' | 'error' | 'warning', options?: Record<string, unknown>) => void,
     target: StartupAssetTarget,
 ) {
+    const label = target.kind === 'performer' ? 'agent' : 'team'
     showToast(
-        `Studio could not find installed ${target.kind} asset ${target.urn}.`,
+        `Studio could not find installed ${label} asset ${target.urn}.`,
         'error',
         {
             title: `${target.kind === 'performer' ? 'Agent' : 'Team'} not found`,

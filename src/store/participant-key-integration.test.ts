@@ -141,7 +141,7 @@ describe('Participant Keys And Labels', () => {
                 },
             })
 
-            expect(() => buildActAssetPayload(act)).toThrow('Save participant performer drafts')
+            expect(() => buildActAssetPayload(act)).toThrow('Save participant agent drafts')
         })
     })
 

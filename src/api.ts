@@ -1,4 +1,4 @@
-// Agent Roster — API Client
+// 8PM Studio — API Client
 
 import type {
     ActThreadStatus,
@@ -20,6 +20,8 @@ import { opencodeApi } from './api-clients/opencode'
 import { workspaceApi } from './api-clients/workspace'
 import { discordApi } from './api-clients/discord'
 import { agentSyncApi } from './api-clients/agent-sync'
+import { apmApi } from './api-clients/apm'
+import { exploreApi } from './api-clients/explore'
 
 export { setApiWorkingDirContext } from './api-core'
 
@@ -113,6 +115,8 @@ export const api = {
 
     chat: chatApi,
     agentSync: agentSyncApi,
+    apm: apmApi,
+    explore: exploreApi,
 
     actRuntime: {
         createThread: (actId: string, actDefinition?: Record<string, unknown>) =>

@@ -120,9 +120,9 @@ export default function ComposerMentionMenus(props: ComposerMentionMenusProps) {
                         </div>
                     )) : (
                         <div className="slash-menu__section">
-                            <div className="slash-menu__section-title">Skill Pack</div>
+                            <div className="slash-menu__section-title">Skill</div>
                             <div className="slash-menu-item">
-                                <span className="slash-desc">No matching dances found.</span>
+                                <span className="slash-desc">No matching Skills found.</span>
                             </div>
                         </div>
                     )}

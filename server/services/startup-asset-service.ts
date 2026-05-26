@@ -609,7 +609,7 @@ async function buildMaterializedRegistryPerformers(
             meta: {
                 derivedFrom: seed.urn,
                 authoring: {
-                    description: `Auto-created for Act participant "${seed.key}" (${seed.urn}). Configure a model to make this participant runnable.`,
+                    description: `Auto-created for Team agent "${seed.key}" (${seed.urn}). Configure a model to make this agent runnable.`,
                 },
             },
         }
@@ -763,7 +763,7 @@ export async function prepareStartupAssetTarget(
 
     if (target.kind === 'performer') {
         if (asset.kind !== 'performer') {
-            throw new Error(`Expected performer asset for ${target.urn}.`)
+            throw new Error(`Expected agent asset for ${target.urn}.`)
         }
         return preparePerformerTarget(normalizedWorkingDir, snapshot, asset)
     }

@@ -112,7 +112,7 @@ export function usePerformerChatComposerState({
         setIsFileMentioning(false)
 
         if (text === '/undo' || text === '/redo') {
-            showToast('Use the Undo Last Turn button for performer undo.', 'info', {
+            showToast('Use the Undo Last Turn button for agent undo.', 'info', {
                 title: 'Undo moved',
                 dedupeKey: `performer-undo-moved:${performerId}`,
             })

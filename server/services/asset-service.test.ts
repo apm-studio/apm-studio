@@ -10,7 +10,7 @@ describe('asset service canonical urn handling', () => {
     let workingDir: string
 
     beforeEach(async () => {
-        workingDir = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-roster-assets-'))
+        workingDir = await fs.mkdtemp(path.join(os.tmpdir(), '8pm-studio-assets-'))
     })
 
     afterEach(async () => {

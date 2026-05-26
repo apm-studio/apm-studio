@@ -690,7 +690,7 @@ export async function applyAssistantAction(
                 return { success: true }
             }
 
-            // ── Dance draft CRUD ──────────────────────────────────────────────
+            // ── Skill draft CRUD ──────────────────────────────────────────────
             case 'createDanceDraft': {
                 await createDraft('dance', action, refs)
                 return { success: true }

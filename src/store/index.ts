@@ -1,4 +1,4 @@
-// Agent Roster — Global Store (Zustand)
+// 8PM Studio — Global Store (Zustand)
 
 import { create } from 'zustand'
 import type { StudioState } from './types'

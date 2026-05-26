@@ -80,15 +80,15 @@ describe('readStartupAssetTarget', () => {
         };
     });
 
-    it('reads performer targets from search params', () => {
-        expect(readStartupAssetTarget('?performer=performer/@acme/workflows/reviewer')).toEqual({
+    it('reads agent targets from search params', () => {
+        expect(readStartupAssetTarget('?agent=performer/@acme/workflows/reviewer')).toEqual({
             kind: 'performer',
             urn: 'performer/@acme/workflows/reviewer',
         });
     });
 
-    it('reads act targets from search params', () => {
-        expect(readStartupAssetTarget('?act=act/@acme/workflows/review-flow')).toEqual({
+    it('reads team targets from search params', () => {
+        expect(readStartupAssetTarget('?team=act/@acme/workflows/review-flow')).toEqual({
             kind: 'act',
             urn: 'act/@acme/workflows/review-flow',
         });
@@ -98,8 +98,19 @@ describe('readStartupAssetTarget', () => {
         expect(readStartupAssetTarget('?foo=bar')).toBeNull();
     });
 
-    it('returns null for ambiguous URLs that include both performer and act', () => {
-        expect(readStartupAssetTarget('?performer=performer/@acme/workflows/reviewer&act=act/@acme/workflows/review-flow')).toBeNull();
+    it('keeps legacy performer and act query params working', () => {
+        expect(readStartupAssetTarget('?performer=performer/@acme/workflows/reviewer')).toEqual({
+            kind: 'performer',
+            urn: 'performer/@acme/workflows/reviewer',
+        });
+        expect(readStartupAssetTarget('?act=act/@acme/workflows/review-flow')).toEqual({
+            kind: 'act',
+            urn: 'act/@acme/workflows/review-flow',
+        });
+    });
+
+    it('returns null for ambiguous URLs that include both agent and team', () => {
+        expect(readStartupAssetTarget('?agent=performer/@acme/workflows/reviewer&team=act/@acme/workflows/review-flow')).toBeNull();
     });
 
     it('installs a missing startup act from the registry before importing it', async () => {

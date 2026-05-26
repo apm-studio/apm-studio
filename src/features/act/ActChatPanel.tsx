@@ -236,7 +236,7 @@ export default function ActChatPanel({ actId }: ActChatPanelProps) {
     const sendDisabled = !input.trim() || noParticipants || !readiness.runnable || !currentThread || !modelConfigured
     const inputPlaceholder = useMemo(() => {
         if (noParticipants) {
-            return 'Add performers first…'
+            return 'Add agents first…'
         }
         if (!readiness.runnable) {
             return 'Resolve readiness issues first…'
@@ -245,7 +245,7 @@ export default function ActChatPanel({ actId }: ActChatPanelProps) {
             return 'Create a thread to start…'
         }
         if (!modelConfigured) {
-            return 'Configure a model for this performer…'
+            return 'Configure a model for this agent…'
         }
         return `Message ${activeParticipantLabel ?? activeParticipantKey ?? 'participant'}…`
     }, [activeParticipantKey, activeParticipantLabel, currentThread, modelConfigured, noParticipants, readiness.runnable])
@@ -344,7 +344,7 @@ export default function ActChatPanel({ actId }: ActChatPanelProps) {
                 <>
                     <Users size={20} className="act-chat__empty-icon" />
                     <strong>No participants bound</strong>
-                    <span>Enter edit mode to connect performers on the canvas.</span>
+                    <span>Enter edit mode to connect agents on the canvas.</span>
                     <button
                         className="act-chat__action-btn"
                         onClick={() => openActEditor(actId, 'act')}
@@ -376,7 +376,7 @@ export default function ActChatPanel({ actId }: ActChatPanelProps) {
                 <>
                     <Workflow size={20} className="act-chat__empty-icon" />
                     <strong>Ready to run</strong>
-                    <span>Create a thread to start the act runtime.</span>
+                    <span>Create a thread to start the Team runtime.</span>
                     <button
                         className="act-chat__action-btn"
                         onClick={() => void handleCreateThread()}
@@ -389,7 +389,7 @@ export default function ActChatPanel({ actId }: ActChatPanelProps) {
                 <>
                     <User size={20} className="act-chat__empty-icon" />
                     <strong>Model not configured</strong>
-                    <span>Set up a model for "{activeParticipantLabel || activeParticipantKey}" in the performer editor.</span>
+                    <span>Set up a model for "{activeParticipantLabel || activeParticipantKey}" in the agent editor.</span>
                 </>
             ) : (
                 <>

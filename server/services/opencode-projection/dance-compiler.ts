@@ -91,7 +91,7 @@ export async function compileDance(
         const asset = await readAsset(cwd, ref.urn)
         const body = await getAssetPayload(cwd, ref.urn)
         if (!body) {
-            throw new Error(`Dance '${ref.urn}' was not found or has no content.`)
+            throw new Error(`Skill '${ref.urn}' was not found or has no content.`)
         }
 
         const parsed = parseUrn(ref.urn)
@@ -125,7 +125,7 @@ export async function compileDance(
     if (isBundle) {
         const body = await readBundleSkillContent(cwd, ref.draftId)
         if (!body) {
-            throw new Error(`Dance draft '${ref.draftId}' is missing SKILL.md.`)
+            throw new Error(`Skill draft '${ref.draftId}' is missing SKILL.md.`)
         }
 
         const draft = await readDraft(cwd, 'dance', ref.draftId)
@@ -156,7 +156,7 @@ export async function compileDance(
     const draft = await readDraft(cwd, 'dance', ref.draftId)
     const body = draft ? (typeof draft.content === 'string' ? draft.content : null) : null
     if (!draft || !body) {
-        throw new Error(`Dance draft '${ref.draftId}' was not found or has no content.`)
+        throw new Error(`Skill draft '${ref.draftId}' was not found or has no content.`)
     }
 
     const logicalName = sanitizeSegment(draft.name || ref.draftId)

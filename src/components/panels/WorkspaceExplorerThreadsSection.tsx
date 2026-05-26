@@ -111,7 +111,7 @@ export default function WorkspaceExplorerThreadsSection({
         }),
     )
 
-    // ── Resizable divider between Performers and Acts ──
+    // ── Resizable divider between Agents and Teams ──
     const [performersFlex, setPerformersFlex] = useState(1)
     const containerRef = useRef<HTMLDivElement>(null)
     const dividerDragging = useRef(false)
@@ -166,12 +166,12 @@ export default function WorkspaceExplorerThreadsSection({
 
     return (
         <section className="explorer-section explorer-section--threads" ref={containerRef}>
-            {/* ── Performers Pane ── */}
+            {/* ── Agents Pane ── */}
             <div className="explorer__pane" style={{ flex: performersFlex }}>
                 <div className="explorer__subheader explorer__subheader--inline">
-                    <span className="explorer__title">Performers</span>
+                    <span className="explorer__title">Agents</span>
                     <div className="explorer__actions">
-                        <button className="icon-btn" onClick={onAddPerformer} title="Add performer" disabled={!workspaceId}>
+                        <button className="icon-btn" onClick={onAddPerformer} title="Add agent" disabled={!workspaceId}>
                             <MessageSquare size={12} />
                         </button>
                     </div>
@@ -212,7 +212,7 @@ export default function WorkspaceExplorerThreadsSection({
                         </div>
                     ) : (
                         <div className="empty-state empty-state--tight empty-state--nested">
-                            No performers yet
+                            No agents yet
                         </div>
                     )}
                 </div>
@@ -221,10 +221,10 @@ export default function WorkspaceExplorerThreadsSection({
             {/* ── Divider ── */}
             <div className="explorer__divider" onMouseDown={onDividerMouseDown} />
 
-            {/* ── Acts Pane ── */}
+            {/* ── Teams Pane ── */}
             <div className="explorer__pane" style={{ flex: 1 }}>
                 <div className="explorer__subheader explorer__subheader--inline">
-                    <span className="explorer__title">Acts</span>
+                    <span className="explorer__title">Teams</span>
                     <div className="explorer__actions">
                         <button className="icon-btn" onClick={onAddAct} title="Add Team" disabled={!workspaceId}>
                             <Workflow size={12} />
@@ -269,7 +269,7 @@ export default function WorkspaceExplorerThreadsSection({
                         </div>
                     ) : (
                         <div className="empty-state empty-state--tight empty-state--nested">
-                            No acts yet
+                            No teams yet
                         </div>
                     )}
                 </div>

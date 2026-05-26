@@ -61,7 +61,7 @@ function danceSummaryLabel(
         .filter((label): label is string => !!label)
 
     if (labels.length === 0) {
-        return `${refs.length} dance${refs.length === 1 ? '' : 's'}`
+        return `${refs.length} Skill${refs.length === 1 ? '' : 's'}`
     }
 
     return labels.length > 1 ? `${labels[0]} +${labels.length - 1}` : labels[0]
