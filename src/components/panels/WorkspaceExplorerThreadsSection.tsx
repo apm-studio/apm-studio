@@ -226,7 +226,7 @@ export default function WorkspaceExplorerThreadsSection({
                 <div className="explorer__subheader explorer__subheader--inline">
                     <span className="explorer__title">Acts</span>
                     <div className="explorer__actions">
-                        <button className="icon-btn" onClick={onAddAct} title="Add Act" disabled={!workspaceId}>
+                        <button className="icon-btn" onClick={onAddAct} title="Add Team" disabled={!workspaceId}>
                             <Workflow size={12} />
                         </button>
                     </div>

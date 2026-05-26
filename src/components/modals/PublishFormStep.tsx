@@ -1,4 +1,4 @@
-import { AGENT_ROASTER_TOS_URL } from '../../lib/dot-terms'
+import { AGENT_ROSTER_TOS_URL } from '../../lib/roster-terms'
 import type { DraftAsset, MarkdownEditorNode } from '../../types'
 import type { PerformerPreflightEntry } from './publish-modal-utils'
 
@@ -67,7 +67,7 @@ export default function PublishFormStep({
 
             {performerPreflight.length > 0 ? (
                 <div className="publish-modal__preflight">
-                    <strong>Performer dependencies</strong>
+                    <strong>Agent dependencies</strong>
                     {performerPreflight.map((entry) => (
                         <div key={`${entry.label}-${entry.detail}`} className={`publish-modal__preflight-row is-${entry.status}`}>
                             <span>{entry.label}</span>
@@ -96,12 +96,12 @@ export default function PublishFormStep({
             {!authUser?.authenticated ? (
                 <div className="publish-modal__auth-callout">
                     <div>
-                        <strong>Agent Roaster sign-in required</strong>
+                        <strong>Agent Roster sign-in required</strong>
                         <p>
-                            Save Local and Publish use your Agent Roaster namespace.
-                            By signing in, you agree to the Agent Roaster Terms of Service:
+                            Save Local and Publish use your Agent Roster namespace.
+                            By signing in, you agree to the Agent Roster Terms of Service:
                             {' '}
-                            <a href={AGENT_ROASTER_TOS_URL} target="_blank" rel="noreferrer">{AGENT_ROASTER_TOS_URL}</a>
+                            <a href={AGENT_ROSTER_TOS_URL} target="_blank" rel="noreferrer">{AGENT_ROSTER_TOS_URL}</a>
                         </p>
                     </div>
                     <button

@@ -15,16 +15,16 @@ type ActHeaderActionsProps = {
 
 function readinessBadgeClass(readiness?: ActReadinessResult): string {
     if (!readiness) return ''
-    if (!readiness.runnable) return 'act-frame__readiness-dot--error'
-    if (readiness.issues.length > 0) return 'act-frame__readiness-dot--warning'
-    return 'act-frame__readiness-dot--ok'
+    if (!readiness.runnable) return 'act-frame__readiness-roster--error'
+    if (readiness.issues.length > 0) return 'act-frame__readiness-roster--warning'
+    return 'act-frame__readiness-roster--ok'
 }
 
 function readinessTitle(readiness?: ActReadinessResult): string {
     if (!readiness) return ''
     if (!readiness.runnable) {
         const first = readiness.issues.find((i) => i.severity === 'error')
-        return first ? first.message : 'Act is not runnable'
+        return first ? first.message : 'Team is not runnable'
     }
     if (readiness.issues.length > 0) return 'Runnable with warnings'
     return 'Ready to run'
@@ -77,7 +77,7 @@ export default function ActHeaderActions({
                 <>
                     <button
                         className={`icon-btn act-frame__edit-btn ${editing ? 'active' : ''}`}
-                        title={editing ? 'Exit edit mode' : 'Edit Act'}
+                        title={editing ? 'Exit edit mode' : 'Edit Team'}
                         onClick={(event) => {
                             event.stopPropagation()
                             onToggleEdit()
@@ -87,7 +87,7 @@ export default function ActHeaderActions({
                     </button>
                     <button
                         className="icon-btn act-frame__close-btn"
-                        title="Hide Act"
+                        title="Hide Team"
                         onClick={(event) => {
                             event.stopPropagation()
                             onHide()

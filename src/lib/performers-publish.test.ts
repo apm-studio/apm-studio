@@ -58,7 +58,7 @@ describe('buildPerformerAssetPayload', () => {
         })
     })
 
-    it('reports draft Tal dependencies with a Tal-specific message', () => {
+    it('reports draft Persona dependencies with a Persona-specific message', () => {
         expect(() => buildPerformerAssetPayload({
             talRef: { kind: 'draft', draftId: 'draft-tal-1' },
             danceRefs: [{ kind: 'registry', urn: 'dance/@user/repo/review-skill' }],
@@ -69,10 +69,10 @@ describe('buildPerformerAssetPayload', () => {
             declaredMcpConfig: null,
         }, {
             name: 'Review Performer',
-        })).toThrow('Tal is still attached as a draft.')
+        })).toThrow('Persona is still attached as a draft.')
     })
 
-    it('reports draft Dance dependencies with a Dance-specific message', () => {
+    it('reports draft Skill Pack dependencies with a Skill Pack-specific message', () => {
         expect(() => buildPerformerAssetPayload({
             talRef: { kind: 'registry', urn: 'tal/@user/project/reasoning' },
             danceRefs: [{ kind: 'draft', draftId: 'draft-dance-1' }],
@@ -83,7 +83,7 @@ describe('buildPerformerAssetPayload', () => {
             declaredMcpConfig: null,
         }, {
             name: 'Review Performer',
-        })).toThrow('Draft Dance refs are still attached.')
+        })).toThrow('Draft Skill Pack refs are still attached.')
     })
 })
 
@@ -527,7 +527,7 @@ describe('publish cascade builders', () => {
                 },
             },
         ], {})).toEqual([
-            'Draft Dance refs are still attached inside this act. Export them, upload them to GitHub, import them from Asset Library, and re-apply them before publishing this act.',
+            'Draft Skill Pack refs are still attached inside this team. Export them, upload them to GitHub, import them from Asset Library, and re-apply them before publishing this team.',
         ])
     })
 

@@ -623,11 +623,11 @@ export async function applyAssistantAction(
     try {
         switch (action.type) {
             case 'installRegistryAsset': {
-                await api.dot.install(action.urn, undefined, false, action.scope || 'stage')
+                await api.roster.install(action.urn, undefined, false, action.scope || 'stage')
                 return { success: true }
             }
             case 'addDanceFromGitHub': {
-                await api.dot.addFromGitHub(action.source, action.scope || 'stage')
+                await api.roster.addFromGitHub(action.source, action.scope || 'stage')
                 return { success: true }
             }
             case 'importInstalledPerformer': {

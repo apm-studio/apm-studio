@@ -2,7 +2,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { promises as fs } from 'node:fs'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { saveLocalStudioAsset } from '../lib/dot-authoring.js'
+import { saveLocalStudioAsset } from '../lib/roster-authoring.js'
 import { getStudioAsset, listStudioAssets } from './asset-service.js'
 import { stageFromWorkingDir } from '../../shared/publish-stage.js'
 
@@ -10,7 +10,7 @@ describe('asset service canonical urn handling', () => {
     let workingDir: string
 
     beforeEach(async () => {
-        workingDir = await fs.mkdtemp(path.join(os.tmpdir(), 'dot-studio-assets-'))
+        workingDir = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-roster-assets-'))
     })
 
     afterEach(async () => {

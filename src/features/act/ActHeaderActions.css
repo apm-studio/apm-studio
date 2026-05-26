@@ -14,15 +14,15 @@
     transition: background 0.2s;
 }
 
-.act-frame__readiness-dot--ok {
+.act-frame__readiness-roster--ok {
     background: #34d399;
 }
 
-.act-frame__readiness-dot--warning {
+.act-frame__readiness-roster--warning {
     background: #fbbf24;
 }
 
-.act-frame__readiness-dot--error {
+.act-frame__readiness-roster--error {
     background: #f87171;
 }
 

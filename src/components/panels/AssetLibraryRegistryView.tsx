@@ -84,10 +84,10 @@ export default function AssetLibraryRegistryView(props: Props) {
                     onChange={(e) => setRegistryKind(e.target.value as RegistryKind)}
                 >
                     <option value="all">All Kinds</option>
-                    <option value="tal">Tal</option>
-                    <option value="dance">Dance</option>
-                    <option value="performer">Performer</option>
-                    <option value="act">Act</option>
+                    <option value="tal">Persona</option>
+                    <option value="dance">Skill Pack</option>
+                    <option value="performer">Agent</option>
+                    <option value="act">Team</option>
                 </select>
             </div>
 
@@ -109,7 +109,7 @@ export default function AssetLibraryRegistryView(props: Props) {
                         <div className="empty-state">
                             {registryError ? (
                                 <span style={{ color: 'var(--tal-color)' }}>{(registryError as Error)?.message || 'Search failed.'}</span>
-                            ) : registryQuery ? 'No results found.' : 'Search the Agent Roaster registry to discover and install assets.'}
+                            ) : registryQuery ? 'No results found.' : 'Search the Agent Roster registry to discover and install assets.'}
                         </div>
                     ) : (
                         registryGroups.map((group) => (
@@ -167,7 +167,7 @@ function GitHubImportRow() {
         try {
             const result = await addMutation.mutateAsync({ source: source.trim(), scope })
             setSource('')
-            setStatus(`✔ Imported ${result.installed.length} skill(s) as Dance (${scope === 'global' ? 'Global' : 'Workspace'})`)
+            setStatus(`✔ Imported ${result.installed.length} skill(s) as Skill Pack (${scope === 'global' ? 'Global' : 'Workspace'})`)
             setTimeout(() => setStatus(null), 4000)
         } catch (err: unknown) {
             setStatus(`✗ ${err instanceof Error ? err.message : 'Import failed'}`)
@@ -192,7 +192,7 @@ function GitHubImportRow() {
                         onClick={() => setShowScope(!showScope)}
                         disabled={!source.trim() || addMutation.isPending}
                     >
-                        {addMutation.isPending ? <Loader2 size={10} className="spin" /> : 'Import as Dance'}
+                        {addMutation.isPending ? <Loader2 size={10} className="spin" /> : 'Import as Skill Pack'}
                     </button>
                     {showScope && (
                         <div className="install-scope-menu">

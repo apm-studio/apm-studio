@@ -244,7 +244,7 @@ export function resolveChatRuntimeTarget(get: ChatGet, chatKey: string): Resolve
                     actId: descriptor.actId,
                     actThreadId: descriptor.threadId,
                 },
-                notice: `Act participant "${participantName}" is no longer available in this Act.`,
+                notice: `Team participant "${participantName}" is no longer available in this Team.`,
             }
         }
 
@@ -268,7 +268,7 @@ export function resolveChatRuntimeTarget(get: ChatGet, chatKey: string): Resolve
                 notice:
                     `Cannot resolve performer for participant "${participantName}" ` +
                     `(ref: ${describeActParticipantRef(binding, descriptor.participantKey)}). ` +
-                    'No matching local performer node found. Try re-importing the Act or creating a performer manually.',
+                    'No matching local agent found. Try re-importing the Team or creating an agent manually.',
             }
         }
 
@@ -299,7 +299,7 @@ export function resolveChatRuntimeTarget(get: ChatGet, chatKey: string): Resolve
     return {
         chatKey,
         kind: 'performer',
-        name: performer.name || 'Untitled Performer',
+        name: performer.name || 'Untitled Agent',
         runtimeConfig: resolvePerformerRuntimeConfig(performer),
         assistantContext: null,
         executionScope: {
@@ -308,7 +308,7 @@ export function resolveChatRuntimeTarget(get: ChatGet, chatKey: string): Resolve
         },
         requestTarget: {
             performerId: performer.id,
-            performerName: performer.name || 'Untitled Performer',
+            performerName: performer.name || 'Untitled Agent',
         },
     }
 }

@@ -301,7 +301,7 @@ export default function MarkdownEditorFrame({ id, data, selected }: NodeProps<No
         ? 'Save this draft before exporting'
         : dirty
             ? 'Save your latest changes before exporting'
-            : 'Export this saved Dance bundle'
+            : 'Export this saved skill pack bundle'
 
     const applySavedDraftRef = (draftId: string) => {
         const attachTarget = data.attachTarget
@@ -381,7 +381,7 @@ export default function MarkdownEditorFrame({ id, data, selected }: NodeProps<No
     const handleOpenDanceBundle = async () => {
         try {
             if (!draft || draft.kind !== 'dance' || draft.saveState !== 'saved') return
-            await api.studio.openPath(`${workingDir}/.agent-roaster/drafts/dance/${draft.id}`)
+            await api.studio.openPath(`${workingDir}/.agent-roster/drafts/dance/${draft.id}`)
         } catch (error) {
             setStatus({ tone: 'error', message: formatStudioApiErrorMessage(error, false) })
         }

@@ -69,11 +69,11 @@ export function getPerformerDependencyPublishIssues(
     const issues: string[] = []
 
     if (performer.talRef?.kind === 'draft') {
-        issues.push('Tal is still attached as a draft. Save or publish the Tal, then re-apply it before publishing this performer.')
+        issues.push('Persona is still attached as a draft. Save or publish the persona, then re-apply it before publishing this agent.')
     }
 
     if ((performer.danceRefs || []).some((ref) => ref.kind === 'draft')) {
-        issues.push('Draft Dance refs are still attached. Export them from the Dance editor, upload them to GitHub, import them from Asset Library, and re-apply them before publishing this performer.')
+        issues.push('Draft Skill Pack refs are still attached. Export them from the Skill Pack editor, upload them to GitHub, import them from Asset Library, and re-apply them before publishing this agent.')
     }
 
     return issues
@@ -172,10 +172,10 @@ export function buildPerformerAssetPayload(
         if (dependencyIssues.length > 0) {
             throw new Error(dependencyIssues.join(' '))
         }
-        throw new Error('Performer assets require installable Tal and Dance references. Reconnect them from Asset Library before saving or publishing this performer asset.')
+        throw new Error('Agent assets require installable Persona and Skill Pack references. Reconnect them from Asset Library before saving or publishing this agent package.')
     }
     if (!talUrn && danceUrns.length === 0) {
-        throw new Error('A performer asset requires at least one Tal or Dance reference.')
+        throw new Error('An agent package requires at least one Persona or Skill Pack reference.')
     }
 
     const mcpConfig = performerMcpConfigForAsset(performer)

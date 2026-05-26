@@ -106,7 +106,7 @@ function showMissingAssetToast(
         `Studio could not find installed ${target.kind} asset ${target.urn}.`,
         'error',
         {
-            title: `${target.kind === 'performer' ? 'Performer' : 'Act'} not found`,
+            title: `${target.kind === 'performer' ? 'Agent' : 'Team'} not found`,
             dedupeKey: `startup-asset-missing:${target.kind}:${target.urn}`,
         },
     );
@@ -118,10 +118,10 @@ function showInstallFailedToast(
     error: unknown,
 ) {
     showToast(
-        `Studio could not install ${target.kind} asset ${target.urn} from the registry. ${formatStudioApiErrorMessage(error, false)}`,
+        `Studio could not install ${target.kind === 'performer' ? 'agent' : 'team'} asset ${target.urn} from the registry. ${formatStudioApiErrorMessage(error, false)}`,
         'error',
         {
-            title: `${target.kind === 'performer' ? 'Performer' : 'Act'} install failed`,
+            title: `${target.kind === 'performer' ? 'Agent' : 'Team'} install failed`,
             dedupeKey: `startup-asset-install-failed:${target.kind}:${target.urn}`,
         },
     );
@@ -130,7 +130,7 @@ function showInstallFailedToast(
 async function ensureInstalledAssetByUrn(
     api: {
         assets: { list: (kind: string) => Promise<Array<Record<string, unknown>>> }
-        dot: { install: (urn: string, localName?: string, force?: boolean, scope?: 'global' | 'stage') => Promise<unknown> }
+        roster: { install: (urn: string, localName?: string, force?: boolean, scope?: 'global' | 'stage') => Promise<unknown> }
     },
     showToast: (message: string, kind: 'info' | 'success' | 'error' | 'warning', options?: Record<string, unknown>) => void,
     target: StartupAssetTarget,
@@ -141,7 +141,7 @@ async function ensureInstalledAssetByUrn(
     }
 
     try {
-        await api.dot.install(target.urn, undefined, false, 'stage');
+        await api.roster.install(target.urn, undefined, false, 'stage');
     } catch (error) {
         showInstallFailedToast(showToast, target, error);
         return null;

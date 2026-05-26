@@ -1,15 +1,15 @@
 import fs from 'fs/promises'
 import path from 'path'
-import { assetFilePath, danceAssetDir, ensureDotDir, getGlobalCwd, getRegistryPackage, readAsset } from './dot-source.js'
+import { assetFilePath, danceAssetDir, ensureRosterDir, getGlobalCwd, getRegistryPackage, readAsset } from './roster-source.js'
 import {
     buildPublishPlan,
     executePublishPlan,
     existsInRegistry,
     getPayloadTags,
     loadLocalAssetByUrn,
-    parseDotAsset,
-    parseDotAssetUrn,
-} from './dot-source.js'
+    parseRosterAsset,
+    parseRosterAssetUrn,
+} from './roster-source.js'
 import { buildCanonicalStudioAssetUrn, sanitizePublishSegment, stageFromWorkingDir } from '../../shared/publish-stage.js'
 
 const SLUG_RE = /^[a-z0-9][a-z0-9._-]{1,98}[a-z0-9]$/
@@ -28,8 +28,8 @@ type ProvidedPublishAsset = {
     tags?: string[]
 }
 
-// Re-export auth helpers so dot-service.ts can import from one place
-export { readAuthUser as readDotAuthUser, clearAuthUser as clearDotAuthUser } from './dot-source.js'
+// Re-export auth helpers so roster-service.ts can import from one place
+export { readAuthUser as readRosterAuthUser, clearAuthUser as clearRosterAuthUser } from './roster-source.js'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
     return !!value && typeof value === 'object' && !Array.isArray(value)
@@ -71,7 +71,7 @@ function ensureUrn(value: unknown, kind: StudioAssetKind) {
     }
     const urn = value.trim()
     try {
-        parseDotAssetUrn(urn, kind)
+        parseRosterAssetUrn(urn, kind)
     } catch {
         throw new Error(`Invalid URN '${urn}'. Expected ${kind}/@<owner>/<stage>/<name>.`)
     }
@@ -79,7 +79,7 @@ function ensureUrn(value: unknown, kind: StudioAssetKind) {
 }
 
 function finalizeAsset(asset: Record<string, unknown>) {
-    return parseDotAsset(asset) as Record<string, unknown>
+    return parseRosterAsset(asset) as Record<string, unknown>
 }
 
 function parseDanceUrn(urn: string) {
@@ -119,7 +119,7 @@ async function ensureDanceUrnPublished(cwd: string, urn: string) {
 }
 
 async function ensurePerformerDanceDependencies(cwd: string, payload: Record<string, unknown>) {
-    const parsed = parseDotAsset(payload)
+    const parsed = parseRosterAsset(payload)
     if (parsed.kind !== 'performer') {
         return
     }
@@ -134,7 +134,7 @@ function mapProvidedAssetsByUrn(providedAssets: ProvidedPublishAsset[]) {
 }
 
 async function ensureActDanceDependencies(cwd: string, payload: Record<string, unknown>, providedAssets: ProvidedPublishAsset[]) {
-    const parsed = parseDotAsset(payload)
+    const parsed = parseRosterAsset(payload)
     if (parsed.kind !== 'act') {
         return
     }
@@ -281,7 +281,7 @@ export async function saveLocalStudioAsset(options: {
     const slug = sanitizeSlug(options.slug)
     const stage = options.stage ? sanitizePublishSegment(options.stage) : stageFromWorkingDir(options.cwd)
     const urn = buildCanonicalStudioAssetUrn(options.kind, author, stage, slug)
-    await ensureDotDir(options.cwd)
+    await ensureRosterDir(options.cwd)
 
     if (options.kind === 'dance') {
         // Dance is a bundle directory — write SKILL.md with proper frontmatter
@@ -351,7 +351,7 @@ export async function publishStudioAsset(options: {
     const stage = options.stage ? sanitizePublishSegment(options.stage) : stageFromWorkingDir(options.cwd)
     const urn = buildCanonicalStudioAssetUrn(options.kind, username, stage, slug)
     const providedAssets = (options.providedAssets || []).map((asset) => {
-        const parsed = parseDotAsset(asset.payload)
+        const parsed = parseRosterAsset(asset.payload)
         if (parsed.kind === 'dance') {
             throw new Error('Dance assets are not accepted as Studio publish dependencies.')
         }
@@ -362,7 +362,7 @@ export async function publishStudioAsset(options: {
             throw new Error(`Provided asset '${asset.urn}' does not match payload URN '${parsed.urn}'.`)
         }
 
-        const parsedUrn = parseDotAssetUrn(asset.urn, asset.kind)
+        const parsedUrn = parseRosterAssetUrn(asset.urn, asset.kind)
         if (parsedUrn.owner.toLowerCase() !== username.toLowerCase()) {
             throw new Error(`Provided asset '${asset.urn}' must belong to @${username}.`)
         }

@@ -525,8 +525,8 @@ export default function WorkspaceExplorer() {
                 onOpenPerformer={openPerformer}
                 onOpenPerformerSession={openPerformerSession}
                 onDeleteSession={deleteSession}
-                onAddPerformer={() => addPerformer(`Performer ${sharedPerformers.length + 1}`)}
-                onAddAct={() => useStudioStore.getState().addAct(`Act ${acts.length + 1}`)}
+                onAddPerformer={() => addPerformer(`Agent ${sharedPerformers.length + 1}`)}
+                onAddAct={() => useStudioStore.getState().addAct(`Team ${acts.length + 1}`)}
                 onTogglePerformerVisibility={togglePerformerVisibility}
                 onOpenPerformerEditor={openPerformerEditor}
                 onSetActiveChatPerformer={setActiveChatPerformer}

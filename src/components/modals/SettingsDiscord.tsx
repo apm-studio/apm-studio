@@ -278,7 +278,7 @@ export default function SettingsDiscord() {
                     <div className="stg-row">
                         <div className="stg-row__text">
                             <span className="stg-row__title">Current workspace</span>
-                            <span className="stg-row__desc">Save and sync the control channel, performer/Act categories, and thread channels.</span>
+                            <span className="stg-row__desc">Save and sync the control channel, Agent/Team categories, and thread channels.</span>
                         </div>
                         <button className="btn" onClick={() => void sync('current')} disabled={!canSyncCurrent || syncing !== null}>
                             {syncing === 'current' ? 'Syncing…' : 'Sync current'}

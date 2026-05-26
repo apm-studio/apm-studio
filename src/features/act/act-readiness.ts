@@ -47,7 +47,7 @@ export function evaluateActReadiness(
         issues.push({
             code: 'no-participants',
             severity: 'error',
-            message: 'No participants bound to this Act',
+            message: 'No participants bound to this Team',
             focus: { mode: 'act' },
         })
     }

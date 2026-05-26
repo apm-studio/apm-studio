@@ -192,7 +192,7 @@ export const createWorkspaceSlice: StateCreator<
     workspaceDirty: false,
     projectionDirty: createEmptyProjectionDirtyState(),
     runtimeReloadPending: false,
-    theme: (localStorage.getItem('dot-theme') as 'light' | 'dark') || 'light',
+    theme: (localStorage.getItem('roster-theme') as 'light' | 'dark') || 'light',
     workingDir: '',
     isTerminalOpen: false,
     isTrackingOpen: false,
@@ -213,7 +213,7 @@ export const createWorkspaceSlice: StateCreator<
 
     toggleTheme: () => set((s) => {
         const newTheme = s.theme === 'light' ? 'dark' : 'light'
-        localStorage.setItem('dot-theme', newTheme)
+        localStorage.setItem('roster-theme', newTheme)
         api.studio.updateConfig({ theme: newTheme }).catch(err => console.warn('[studio] theme sync failed', err))
         return { theme: newTheme }
     }),

@@ -1,4 +1,4 @@
-import { parseDotAssetUrn } from '../../shared/dot-contracts'
+import { parseRosterAssetUrn } from '../../shared/roster-contracts'
 
 export type ParsedStudioAssetUrn = {
     kind: string
@@ -10,7 +10,7 @@ export type ParsedStudioAssetUrn = {
 
 export function parseStudioAssetUrn(urn: string): ParsedStudioAssetUrn | null {
     try {
-        const parsed = parseDotAssetUrn(String(urn || '').trim())
+        const parsed = parseRosterAssetUrn(String(urn || '').trim())
         return {
             kind: parsed.kind,
             author: `@${parsed.owner}`,

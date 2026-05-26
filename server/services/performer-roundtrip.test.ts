@@ -3,9 +3,9 @@ import path from 'node:path'
 import { promises as fs } from 'node:fs'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { publishStudioAsset } from '../lib/dot-authoring.js'
+import { publishStudioAsset } from '../lib/roster-authoring.js'
 import { getStudioAsset } from './asset-service.js'
-import { installDotAsset } from './dot-service.js'
+import { installRosterAsset } from './roster-service.js'
 import { stageFromWorkingDir } from '../../shared/publish-stage.js'
 
 type PublishedRegistryPackage = {
@@ -31,8 +31,8 @@ describe('performer publish/install round-trip', () => {
     let installDir: string
 
     beforeEach(async () => {
-        publishDir = await fs.mkdtemp(path.join(os.tmpdir(), 'dot-studio-performer-publish-'))
-        installDir = await fs.mkdtemp(path.join(os.tmpdir(), 'dot-studio-performer-install-'))
+        publishDir = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-roster-performer-publish-'))
+        installDir = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-roster-performer-install-'))
     })
 
     afterEach(async () => {
@@ -152,7 +152,7 @@ describe('performer publish/install round-trip', () => {
             sentry: { url: 'https://mcp.sentry.dev/mcp' },
         })
 
-        await installDotAsset(installDir, {
+        await installRosterAsset(installDir, {
             urn: publishResult.urn,
             scope: 'stage',
         })

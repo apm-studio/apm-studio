@@ -226,7 +226,7 @@ export default function AgentFrame({ data, id }: AgentFrameProps) {
         } catch (error) {
             console.error('Failed to open markdown editor', error)
             showToast(`Studio could not open the ${kind} editor for this performer.`, 'error', {
-                title: `${kind === 'tal' ? 'Tal' : 'Dance'} editor failed`,
+                title: `${kind === 'tal' ? 'Persona' : 'Skill Pack'} editor failed`,
                 dedupeKey: `performer-editor-open:${id}:${kind}:${targetRef?.kind}:${targetRef?.kind === 'registry' ? targetRef.urn : targetRef?.draftId}`,
                 actionLabel: 'Retry',
                 onAction: () => { void openAssetEditor(kind, targetRef, _attachMode) },

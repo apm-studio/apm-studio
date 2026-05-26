@@ -1,24 +1,24 @@
 import { Hono } from 'hono'
-import type { PerformerAsset } from '../lib/dot-source.js'
+import type { PerformerAsset } from '../lib/roster-source.js'
 import {
-    getDotPerformer,
-    searchDotRegistry,
+    getRosterPerformer,
+    searchRosterRegistry,
     searchSkillsCatalog,
-    validateDotPerformer,
-} from '../services/dot-service.js'
+    validateRosterPerformer,
+} from '../services/roster-service.js'
 import { jsonError, requestWorkingDir } from './route-errors.js'
 
-const dotPerformer = new Hono()
+const rosterPerformer = new Hono()
 
 function errorMessage(error: unknown) {
     return error instanceof Error ? error.message : 'Unknown error'
 }
 
-dotPerformer.get('/api/dot/performers/:urn{.+}', async (c) => {
+rosterPerformer.get('/api/roster/performers/:urn{.+}', async (c) => {
     const cwd = requestWorkingDir(c)
     const urn = c.req.param('urn')
     try {
-        const performer = await getDotPerformer(cwd, `performer/${urn}`)
+        const performer = await getRosterPerformer(cwd, `performer/${urn}`)
         if (!performer) return jsonError(c, 'Performer not found', 404)
         return c.json(performer)
     } catch (error: unknown) {
@@ -26,21 +26,21 @@ dotPerformer.get('/api/dot/performers/:urn{.+}', async (c) => {
     }
 })
 
-dotPerformer.get('/api/dot/search', async (c) => {
+rosterPerformer.get('/api/roster/search', async (c) => {
     const query = c.req.query('q') || ''
     const kind = c.req.query('kind')
     const limit = parseInt(c.req.query('limit') || '20', 10)
     try {
-        // Call the Agent Roaster registry and skills.sh in parallel.
+        // Call the Agent Roster registry and skills.sh in parallel.
         const shouldSearchSkillsSh = !kind || kind === 'dance' || kind === 'all'
-        const [dotResults, skillsShResults] = await Promise.all([
-            searchDotRegistry(query, { kind, limit }),
+        const [rosterResults, skillsShResults] = await Promise.all([
+            searchRosterRegistry(query, { kind, limit }),
             shouldSearchSkillsSh ? searchSkillsCatalog(query, 10).catch(() => []) : Promise.resolve([]),
         ])
 
-        // Deduplicate by name: Agent Roaster registry results take priority.
-        const dotNames = new Set(dotResults.map((r) => r.name))
-        const merged = [...dotResults, ...skillsShResults.filter((r) => !dotNames.has(r.name))]
+        // Deduplicate by name: Agent Roster registry results take priority.
+        const rosterNames = new Set(rosterResults.map((r) => r.name))
+        const merged = [...rosterResults, ...skillsShResults.filter((r) => !rosterNames.has(r.name))]
 
         return c.json(merged)
     } catch (error: unknown) {
@@ -48,14 +48,14 @@ dotPerformer.get('/api/dot/search', async (c) => {
     }
 })
 
-dotPerformer.post('/api/dot/validate', async (c) => {
+rosterPerformer.post('/api/roster/validate', async (c) => {
     const performer = await c.req.json<PerformerAsset>()
     try {
-        validateDotPerformer(performer)
+        validateRosterPerformer(performer)
         return c.json({ valid: true })
     } catch (error: unknown) {
         return c.json({ valid: false, error: errorMessage(error) })
     }
 })
 
-export default dotPerformer
+export default rosterPerformer

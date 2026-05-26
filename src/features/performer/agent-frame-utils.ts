@@ -148,7 +148,7 @@ export function buildDanceSearchSections(
         },
         {
             key: 'performer',
-            title: 'Performer',
+            title: 'Agent',
             items: performerItems.filter(byQuery),
         },
         {

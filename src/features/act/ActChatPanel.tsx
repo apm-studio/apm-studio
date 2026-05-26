@@ -349,13 +349,13 @@ export default function ActChatPanel({ actId }: ActChatPanelProps) {
                         className="act-chat__action-btn"
                         onClick={() => openActEditor(actId, 'act')}
                     >
-                        <Pencil size={11} /> Edit Act
+                        <Pencil size={11} /> Edit Team
                     </button>
                 </>
             ) : !readiness.runnable ? (
                 <>
                     <AlertCircle size={20} className="act-chat__empty-icon" />
-                    <strong>Act is not ready to run</strong>
+                    <strong>Team is not ready to run</strong>
                     <div className="act-chat__issues">
                         {readiness.issues
                             .filter((issue) => issue.severity === 'error')
@@ -369,7 +369,7 @@ export default function ActChatPanel({ actId }: ActChatPanelProps) {
                         className="act-chat__action-btn"
                         onClick={() => openActEditor(actId, 'act')}
                     >
-                        <Pencil size={11} /> Edit Act
+                        <Pencil size={11} /> Edit Team
                     </button>
                 </>
             ) : !currentThread ? (

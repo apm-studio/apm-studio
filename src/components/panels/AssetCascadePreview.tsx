@@ -59,7 +59,7 @@ export function PerformerCascadePreview({ asset }: { asset: AssetPanelAsset }) {
     const references = getPerformerCascadeReferences(asset)
 
     if (references.length === 0) {
-        return <div className="asset-cascade__empty">No linked Tal or Dance assets.</div>
+        return <div className="asset-cascade__empty">No linked Persona or Skill Pack assets.</div>
     }
 
     return (
@@ -124,7 +124,7 @@ export function ActCascadePreview({ asset }: { asset: AssetPanelAsset }) {
 
             {actRules.length > 0 ? (
                 <div className="asset-cascade__group">
-                    <div className="asset-cascade__group-title">Act Rules</div>
+                    <div className="asset-cascade__group-title">Team Rules</div>
                     <div className="asset-cascade__rules">
                         {actRules.map((rule) => (
                             <div key={rule} className="asset-cascade__rule">{rule}</div>

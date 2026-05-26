@@ -2,9 +2,9 @@ import { Hono } from 'hono'
 import { exportDanceBundle } from '../services/dance-export-service.js'
 import { jsonError, requestWorkingDir } from './route-errors.js'
 
-const dotDanceExport = new Hono()
+const rosterDanceExport = new Hono()
 
-dotDanceExport.post('/api/dot/dance-export', async (c) => {
+rosterDanceExport.post('/api/roster/dance-export', async (c) => {
     const body = await c.req.json<{
         draftId: string
         slug: string
@@ -29,4 +29,4 @@ dotDanceExport.post('/api/dot/dance-export', async (c) => {
     }
 })
 
-export default dotDanceExport
+export default rosterDanceExport

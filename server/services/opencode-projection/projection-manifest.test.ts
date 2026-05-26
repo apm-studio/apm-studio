@@ -6,12 +6,12 @@ import { toProjectionPath, updateGitExclude } from './projection-manifest.js'
 
 describe('projection path normalization', () => {
     it('uses forward slashes for OpenCode agent and manifest paths', () => {
-        expect(toProjectionPath('agent-roaster\\workspace\\hash\\performer--build')).toBe('agent-roaster/workspace/hash/performer--build')
-        expect(toProjectionPath('.opencode\\agents\\agent-roaster\\workspace\\hash\\performer--build.md')).toBe('.opencode/agents/agent-roaster/workspace/hash/performer--build.md')
+        expect(toProjectionPath('agent-roster\\workspace\\hash\\performer--build')).toBe('agent-roster/workspace/hash/performer--build')
+        expect(toProjectionPath('.opencode\\agents\\agent-roster\\workspace\\hash\\performer--build.md')).toBe('.opencode/agents/agent-roster/workspace/hash/performer--build.md')
     })
 
     it('adds new generated Codex agent excludes to existing Studio markers', async () => {
-        const workingDir = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-roaster-manifest-'))
+        const workingDir = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-roster-manifest-'))
         try {
             const excludePath = path.join(workingDir, '.git', 'info', 'exclude')
             await fs.mkdir(path.dirname(excludePath), { recursive: true })
@@ -26,10 +26,10 @@ describe('projection path normalization', () => {
             await updateGitExclude(workingDir)
 
             const content = await fs.readFile(excludePath, 'utf-8')
-            expect(content).toContain('.codex/agents/agent_roaster_*.toml')
-            expect(content.match(/\.codex\/agents\/agent_roaster_\*\.toml/g)).toHaveLength(1)
-            expect(content).toContain('.agents/skills/agent-roaster-*')
-            expect(content.match(/\.agents\/skills\/agent-roaster-\*/g)).toHaveLength(1)
+            expect(content).toContain('.codex/agents/agent_roster_*.toml')
+            expect(content.match(/\.codex\/agents\/agent_roster_\*\.toml/g)).toHaveLength(1)
+            expect(content).toContain('.agents/skills/agent-roster-*')
+            expect(content.match(/\.agents\/skills\/agent-roster-\*/g)).toHaveLength(1)
         } finally {
             await fs.rm(workingDir, { recursive: true, force: true }).catch(() => {})
         }

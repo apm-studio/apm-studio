@@ -1,27 +1,27 @@
 import type { GitHubDanceSyncStatus } from './asset-contracts.js'
 
-export type DotStatusResponse = {
+export type RosterStatusResponse = {
     initialized: boolean
     stageInitialized: boolean
     globalInitialized: boolean
-    dotDir: string
-    globalDotDir: string
+    rosterDir: string
+    globalRosterDir: string
     projectDir: string
 }
 
-export type DotInitResponse = {
+export type RosterInitResponse = {
     ok: boolean
-    dotDir: string
+    rosterDir: string
     scope: string
 }
 
-export type DotAuthUserResponse = {
+export type RosterAuthUserResponse = {
     authenticated: boolean
     username: string | null
     error?: string
 }
 
-export type DotLoginResponse = {
+export type RosterLoginResponse = {
     ok: boolean
     started: boolean
     alreadyRunning?: boolean
@@ -31,14 +31,14 @@ export type DotLoginResponse = {
     browserOpened?: boolean
 }
 
-export type DotInstallRequest = {
+export type RosterInstallRequest = {
     urn: string
     localName?: string
     force?: boolean
     scope?: 'global' | 'stage'
 }
 
-export type DotSaveLocalRequest = {
+export type RosterSaveLocalRequest = {
     kind: 'tal' | 'dance' | 'performer' | 'act'
     slug: string
     stage?: string
@@ -46,7 +46,7 @@ export type DotSaveLocalRequest = {
     payload: unknown
 }
 
-export type DotPublishRequest = {
+export type RosterPublishRequest = {
     kind: 'tal' | 'dance' | 'performer' | 'act'
     slug: string
     stage?: string
@@ -61,7 +61,7 @@ export type DotPublishRequest = {
     acknowledgedTos?: boolean
 }
 
-export type DotUninstallRequest = {
+export type RosterUninstallRequest = {
     kind: 'tal' | 'dance' | 'performer' | 'act'
     urn: string
 }
@@ -86,22 +86,22 @@ export type InstalledDanceLocator = {
     scope: 'global' | 'stage'
 }
 
-export type DotDanceUpdateCheckRequest = {
+export type RosterDanceUpdateCheckRequest = {
     assets: InstalledDanceLocator[]
     includeRepoDrift?: boolean
 }
 
-export type DotDanceUpdateCheckResponse = {
+export type RosterDanceUpdateCheckResponse = {
     results: Array<InstalledDanceLocator & {
         sync: GitHubDanceSyncStatus
     }>
 }
 
-export type DotDanceUpdateApplyRequest = {
+export type RosterDanceUpdateApplyRequest = {
     assets: InstalledDanceLocator[]
 }
 
-export type DotDanceUpdateApplyResponse = {
+export type RosterDanceUpdateApplyResponse = {
     updated: Array<InstalledDanceLocator & {
         sync: GitHubDanceSyncStatus
     }>
@@ -111,19 +111,19 @@ export type DotDanceUpdateApplyResponse = {
     }>
 }
 
-export type DotDanceReimportSourceRequest = InstalledDanceLocator
+export type RosterDanceReimportSourceRequest = InstalledDanceLocator
 
-export type DotDanceReimportSourceResponse = {
+export type RosterDanceReimportSourceResponse = {
     sourceUrl: string
     installed: Array<{ urn: string; name: string; description: string }>
     skippedExistingUrns: string[]
 }
 
-export const DOT_ASSET_KINDS = ['tal', 'dance', 'performer', 'act'] as const
+export const ROSTER_ASSET_KINDS = ['tal', 'dance', 'performer', 'act'] as const
 
-export type DotAssetKind = typeof DOT_ASSET_KINDS[number]
+export type RosterAssetKind = typeof ROSTER_ASSET_KINDS[number]
 
-export type DotAssetBase<K extends DotAssetKind, P> = {
+export type RosterAssetBase<K extends RosterAssetKind, P> = {
     kind: K
     urn: string
     description?: string
@@ -135,7 +135,7 @@ export type ParseResult<T> =
     | { success: true; data: T }
     | { success: false; error: string }
 
-export type ParsedUrn<K extends DotAssetKind = DotAssetKind> = {
+export type ParsedUrn<K extends RosterAssetKind = RosterAssetKind> = {
     kind: K
     owner: string
     stage: string
@@ -151,7 +151,7 @@ export type TalAssetPayloadV1 = {
     content: string
 }
 
-export type TalAsset = DotAssetBase<'tal', TalAssetPayloadV1>
+export type TalAsset = RosterAssetBase<'tal', TalAssetPayloadV1>
 
 export type DanceSkillMeta = {
     name: string
@@ -175,7 +175,7 @@ export type DanceAssetPayloadV1 = {
     allowedTools?: string
 }
 
-export type DanceAsset = DotAssetBase<'dance', DanceAssetPayloadV1>
+export type DanceAsset = RosterAssetBase<'dance', DanceAssetPayloadV1>
 
 export type PerformerAssetPayloadV1 = {
     tal?: string
@@ -185,7 +185,7 @@ export type PerformerAssetPayloadV1 = {
     mcp_config?: Record<string, unknown>
 }
 
-export type PerformerAsset = DotAssetBase<'performer', PerformerAssetPayloadV1>
+export type PerformerAsset = RosterAssetBase<'performer', PerformerAssetPayloadV1>
 
 export type ActParticipantSubscriptionsV1 = {
     messagesFrom?: string[]
@@ -213,13 +213,13 @@ export type ActAssetPayloadV1 = {
     relations: ActRelationV1[]
 }
 
-export type ActAsset = DotAssetBase<'act', ActAssetPayloadV1>
+export type ActAsset = RosterAssetBase<'act', ActAssetPayloadV1>
 
 export type TalAssetV1 = TalAsset
 export type DanceAssetV1 = DanceAsset
 export type PerformerAssetV1 = PerformerAsset
 export type ActAssetV1 = ActAsset
-export type AnyDotAssetV1 = TalAsset | DanceAsset | PerformerAsset | ActAsset
+export type AnyRosterAssetV1 = TalAsset | DanceAsset | PerformerAsset | ActAsset
 
 const URN_RE = /^(tal|dance|performer|act)\/@[A-Za-z0-9_-]+\/[A-Za-z0-9][A-Za-z0-9._-]*\/[A-Za-z0-9][A-Za-z0-9._-]*$/
 
@@ -252,11 +252,11 @@ export function asOptionalStringArray(value: unknown, fieldName: string): string
     })))
 }
 
-export function isDotAssetKind(value: string): value is DotAssetKind {
-    return (DOT_ASSET_KINDS as readonly string[]).includes(value)
+export function isRosterAssetKind(value: string): value is RosterAssetKind {
+    return (ROSTER_ASSET_KINDS as readonly string[]).includes(value)
 }
 
-export function parseDotAssetUrn<K extends DotAssetKind = DotAssetKind>(
+export function parseRosterAssetUrn<K extends RosterAssetKind = RosterAssetKind>(
     urn: unknown,
     expectedKind?: K,
 ): ParsedUrn<K> {
@@ -267,7 +267,7 @@ export function parseDotAssetUrn<K extends DotAssetKind = DotAssetKind>(
         throw new Error("urn must match '<kind>/@<owner>/<stage>/<name>'")
     }
     const [kind, rawOwner, stage, name] = urn.split('/')
-    if (!isDotAssetKind(kind)) {
+    if (!isRosterAssetKind(kind)) {
         throw new Error(`unsupported asset kind '${kind}'`)
     }
     if (expectedKind && kind !== expectedKind) {
@@ -282,15 +282,15 @@ export function parseDotAssetUrn<K extends DotAssetKind = DotAssetKind>(
 }
 
 export function nameFromUrn(urn: string) {
-    return parseDotAssetUrn(urn).name
+    return parseRosterAssetUrn(urn).name
 }
 
 export function stageFromUrn(urn: string) {
-    return parseDotAssetUrn(urn).stage
+    return parseRosterAssetUrn(urn).stage
 }
 
 export function ownerFromUrn(urn: string) {
-    return `@${parseDotAssetUrn(urn).owner}`
+    return `@${parseRosterAssetUrn(urn).owner}`
 }
 
 export function slugFromUrn(urn: string) {
@@ -301,10 +301,10 @@ export function authorFromUrn(urn: string) {
     return ownerFromUrn(urn)
 }
 
-export function assertBaseAssetShape<K extends DotAssetKind>(
+export function assertBaseAssetShape<K extends RosterAssetKind>(
     input: unknown,
     kind: K,
-): DotAssetBase<K, Record<string, unknown>> {
+): RosterAssetBase<K, Record<string, unknown>> {
     if (!isRecord(input)) {
         throw new Error('asset must be an object')
     }
@@ -314,7 +314,7 @@ export function assertBaseAssetShape<K extends DotAssetKind>(
     if (input.kind !== kind) {
         throw new Error(`kind must be '${kind}'`)
     }
-    const parsedUrn = parseDotAssetUrn(input.urn, kind)
+    const parsedUrn = parseRosterAssetUrn(input.urn, kind)
     if (input.description !== undefined && typeof input.description !== 'string') {
         throw new Error('description must be a string when provided')
     }
@@ -518,7 +518,7 @@ export function parsePerformerAsset(input: unknown): PerformerAsset {
         if (!isNonEmptyString(base.payload.tal)) {
             throw new Error('payload.tal must be a non-empty string when provided')
         }
-        parseDotAssetUrn(base.payload.tal, 'tal')
+        parseRosterAssetUrn(base.payload.tal, 'tal')
         tal = base.payload.tal
     }
 
@@ -529,7 +529,7 @@ export function parsePerformerAsset(input: unknown): PerformerAsset {
         }
         dances = Array.from(new Set(base.payload.dances.map((entry, index) => {
             try {
-                parseDotAssetUrn(entry, 'dance')
+                parseRosterAssetUrn(entry, 'dance')
             } catch (error) {
                 const message = error instanceof Error ? error.message : 'invalid dance urn'
                 throw new Error(`payload.dances[${index}] ${message}`)
@@ -631,7 +631,7 @@ function parseParticipant(input: unknown, index: number): ActParticipantV1 {
     if (!isNonEmptyString(input.performer)) {
         throw new Error(`payload.participants[${index}].performer must be a non-empty string`)
     }
-    parseDotAssetUrn(input.performer, 'performer')
+    parseRosterAssetUrn(input.performer, 'performer')
     return {
         key: input.key,
         performer: input.performer,
@@ -716,7 +716,7 @@ export function parseActAsset(input: unknown): ActAsset {
     }
 }
 
-export function parseDotAsset(input: unknown): AnyDotAssetV1 {
+export function parseRosterAsset(input: unknown): AnyRosterAssetV1 {
     if (!isRecord(input) || !('kind' in input)) {
         throw new Error('asset must be an object with a kind field')
     }
@@ -734,8 +734,8 @@ export function parseDotAsset(input: unknown): AnyDotAssetV1 {
     }
 }
 
-export function safeParseDotAsset(input: unknown) {
-    return safeParse(() => parseDotAsset(input))
+export function safeParseRosterAsset(input: unknown) {
+    return safeParse(() => parseRosterAsset(input))
 }
 
 export function safeParseActAsset(input: unknown) {
@@ -754,7 +754,7 @@ export function safeParseTalAsset(input: unknown) {
     return safeParse(() => parseTalAsset(input))
 }
 
-export function projectRegistryMetadata(asset: AnyDotAssetV1) {
+export function projectRegistryMetadata(asset: AnyRosterAssetV1) {
     return {
         urn: asset.urn,
         kind: asset.kind,

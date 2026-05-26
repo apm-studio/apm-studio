@@ -22,10 +22,10 @@ type ViewModeTarget = { id: string; type: FullscreenNodeType }
 
 function paneLabel(pane: SplitViewPane, acts: WorkspaceAct[], performers: PerformerNode[]) {
     if (pane.type === 'act') {
-        return acts.find((act) => act.id === pane.nodeId)?.name || 'Act'
+        return acts.find((act) => act.id === pane.nodeId)?.name || 'Team'
     }
 
-    return performers.find((performer) => performer.id === pane.nodeId)?.name || 'Performer'
+    return performers.find((performer) => performer.id === pane.nodeId)?.name || 'Agent'
 }
 
 function modeLabel(viewMode: ViewMode) {

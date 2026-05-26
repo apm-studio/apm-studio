@@ -356,7 +356,7 @@ class DiscordIntegrationService {
                     mappings.menuChannelId || workspaceMapping.menuChannelId,
                     controlChannelName(),
                     activeCategory.id,
-                    `Agent Roaster control for ${snapshot.workingDir}`,
+                    `Agent Roster control for ${snapshot.workingDir}`,
                 )
                 void this.runDiscordSyncBestEffort(`position Discord workspace menu ${menuChannel.id}`, () => menuChannel.setPosition(0))
                 mappings.menuChannelId = menuChannel.id
@@ -440,7 +440,7 @@ class DiscordIntegrationService {
                 const cleanedChannelIds = await this.deleteTextChannels(
                     guild,
                     Array.from(staleChannelIds),
-                    'Agent Roaster stale thread cleanup',
+                    'Agent Roster stale thread cleanup',
                 )
                 for (const [key, channelId] of Object.entries(originalPerformerThreadChannels)) {
                     if (!cleanedChannelIds.has(channelId)) {
@@ -855,7 +855,7 @@ class DiscordIntegrationService {
         const commands = [
             new SlashCommandBuilder()
                 .setName('studio')
-                .setDescription('Agent Roaster controls')
+                .setDescription('Agent Roster controls')
                 .addSubcommand((command) =>
                     command.setName('menu').setDescription('Refresh the Studio control panel'),
                 )
@@ -1182,7 +1182,7 @@ class DiscordIntegrationService {
         await this.deleteCategories(
             guild,
             orphanCategoryIds,
-            'Agent Roaster orphan entity category cleanup',
+            'Agent Roster orphan entity category cleanup',
         )
     }
 
@@ -1209,7 +1209,7 @@ class DiscordIntegrationService {
         const cleanedCategoryIds = await this.deleteCategories(
             guild,
             emptyInactiveCategoryEntries.map(([, categoryId]) => categoryId),
-            'Agent Roaster inactive workspace root category cleanup',
+            'Agent Roster inactive workspace root category cleanup',
         )
         for (const [workspaceId, categoryId] of emptyInactiveCategoryEntries) {
             if (cleanedCategoryIds.has(categoryId)) {
@@ -1221,7 +1221,7 @@ class DiscordIntegrationService {
     private async deleteCategories(
         guild: Guild,
         categoryIds: string[],
-        reason = 'Agent Roaster inactive workspace category cleanup',
+        reason = 'Agent Roster inactive workspace category cleanup',
     ) {
         const cleanedCategoryIds = new Set<string>()
         for (const categoryId of Array.from(new Set(categoryIds))) {
@@ -1262,7 +1262,7 @@ class DiscordIntegrationService {
         if (savedWorkspaces.length > 0) {
             rows.push(new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
                 new StringSelectMenuBuilder()
-                    .setCustomId(`dot:workspace:${workspaceId}`)
+                    .setCustomId(`roster:workspace:${workspaceId}`)
                     .setPlaceholder('Switch workspace')
                     .addOptions(savedWorkspaces.slice(0, 25).map((workspace) => ({
                         label: workspaceLabel(workspace.workingDir).slice(0, 100),
@@ -1276,7 +1276,7 @@ class DiscordIntegrationService {
         if (performers.length > 0) {
             rows.push(new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
                 new StringSelectMenuBuilder()
-                    .setCustomId(`dot:performer:${workspaceId}`)
+                    .setCustomId(`roster:performer:${workspaceId}`)
                     .setPlaceholder('Open performer threads')
                     .addOptions(performers.map((performer) => ({
                         label: performer.name.slice(0, 100),
@@ -1290,7 +1290,7 @@ class DiscordIntegrationService {
         if (acts.length > 0) {
             rows.push(new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
                 new StringSelectMenuBuilder()
-                    .setCustomId(`dot:act:${workspaceId}`)
+                    .setCustomId(`roster:act:${workspaceId}`)
                     .setPlaceholder('Open Act threads')
                     .addOptions(acts.map((act) => ({
                         label: act.name.slice(0, 100),
@@ -1302,7 +1302,7 @@ class DiscordIntegrationService {
 
         rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(
             new ButtonBuilder()
-                .setCustomId(`dot:sync:${workspaceId}`)
+                .setCustomId(`roster:sync:${workspaceId}`)
                 .setLabel('Sync workspace')
                 .setStyle(ButtonStyle.Secondary),
         ))
@@ -1319,7 +1319,7 @@ class DiscordIntegrationService {
         const actCount = snapshot.acts?.length || 0
         await this.withDiscordSyncTimeout(`post Discord workspace menu ${channel.id}`, () => channel.send({
             content: [
-                `**Agent Roaster**`,
+                `**Agent Roster**`,
                 `Workspace: \`${snapshot.workingDir}\``,
                 `Performers: ${performerCount} | Acts: ${actCount}`,
             ].join('\n'),
@@ -1414,9 +1414,9 @@ class DiscordIntegrationService {
                     content: formatPermissionPrompt(reply.request),
                     components: [
                         new ActionRowBuilder<ButtonBuilder>().addComponents(
-                            new ButtonBuilder().setCustomId(`dot:perm:${pendingId}:reject`).setLabel('Deny').setStyle(ButtonStyle.Danger),
-                            new ButtonBuilder().setCustomId(`dot:perm:${pendingId}:once`).setLabel('Allow Once').setStyle(ButtonStyle.Secondary),
-                            new ButtonBuilder().setCustomId(`dot:perm:${pendingId}:always`).setLabel('Allow Always').setStyle(ButtonStyle.Primary),
+                            new ButtonBuilder().setCustomId(`roster:perm:${pendingId}:reject`).setLabel('Deny').setStyle(ButtonStyle.Danger),
+                            new ButtonBuilder().setCustomId(`roster:perm:${pendingId}:once`).setLabel('Allow Once').setStyle(ButtonStyle.Secondary),
+                            new ButtonBuilder().setCustomId(`roster:perm:${pendingId}:always`).setLabel('Allow Always').setStyle(ButtonStyle.Primary),
                         ),
                     ],
                     allowedMentions: { parse: [] },
@@ -1441,8 +1441,8 @@ class DiscordIntegrationService {
                 content: formatQuestionPrompt(reply.request),
                 components: [
                     new ActionRowBuilder<ButtonBuilder>().addComponents(
-                        new ButtonBuilder().setCustomId(`dot:q-answer:${pendingId}`).setLabel('Answer').setStyle(ButtonStyle.Primary),
-                        new ButtonBuilder().setCustomId(`dot:q-reject:${pendingId}`).setLabel('Cancel').setStyle(ButtonStyle.Secondary),
+                        new ButtonBuilder().setCustomId(`roster:q-answer:${pendingId}`).setLabel('Answer').setStyle(ButtonStyle.Primary),
+                        new ButtonBuilder().setCustomId(`roster:q-reject:${pendingId}`).setLabel('Cancel').setStyle(ButtonStyle.Secondary),
                     ),
                 ],
                 allowedMentions: { parse: [] },
@@ -1480,9 +1480,9 @@ class DiscordIntegrationService {
                     content: formatPermissionPrompt(reply.request),
                     components: [
                         new ActionRowBuilder<ButtonBuilder>().addComponents(
-                            new ButtonBuilder().setCustomId(`dot:perm:${pendingId}:reject`).setLabel('Deny').setStyle(ButtonStyle.Danger),
-                            new ButtonBuilder().setCustomId(`dot:perm:${pendingId}:once`).setLabel('Allow Once').setStyle(ButtonStyle.Secondary),
-                            new ButtonBuilder().setCustomId(`dot:perm:${pendingId}:always`).setLabel('Allow Always').setStyle(ButtonStyle.Primary),
+                            new ButtonBuilder().setCustomId(`roster:perm:${pendingId}:reject`).setLabel('Deny').setStyle(ButtonStyle.Danger),
+                            new ButtonBuilder().setCustomId(`roster:perm:${pendingId}:once`).setLabel('Allow Once').setStyle(ButtonStyle.Secondary),
+                            new ButtonBuilder().setCustomId(`roster:perm:${pendingId}:always`).setLabel('Allow Always').setStyle(ButtonStyle.Primary),
                         ),
                     ],
                     allowedMentions: { parse: [] },
@@ -1507,8 +1507,8 @@ class DiscordIntegrationService {
                 content: formatQuestionPrompt(reply.request),
                 components: [
                     new ActionRowBuilder<ButtonBuilder>().addComponents(
-                        new ButtonBuilder().setCustomId(`dot:q-answer:${pendingId}`).setLabel('Answer').setStyle(ButtonStyle.Primary),
-                        new ButtonBuilder().setCustomId(`dot:q-reject:${pendingId}`).setLabel('Cancel').setStyle(ButtonStyle.Secondary),
+                        new ButtonBuilder().setCustomId(`roster:q-answer:${pendingId}`).setLabel('Answer').setStyle(ButtonStyle.Primary),
+                        new ButtonBuilder().setCustomId(`roster:q-reject:${pendingId}`).setLabel('Cancel').setStyle(ButtonStyle.Secondary),
                     ),
                 ],
                 allowedMentions: { parse: [] },
@@ -1989,7 +1989,7 @@ class DiscordIntegrationService {
 
     private async handleSelect(interaction: StringSelectMenuInteraction) {
         const [prefix, kind, workspaceId] = interaction.customId.split(':')
-        if (prefix !== 'dot') {
+        if (prefix !== 'roster' && prefix !== 'dot') {
             return
         }
         if (kind === 'q-select' && workspaceId) {
@@ -2028,7 +2028,7 @@ class DiscordIntegrationService {
             if (threads.length > 0) {
                 components.push(new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
                     new StringSelectMenuBuilder()
-                        .setCustomId(`dot:performer-thread:${workspaceId}:${performer.id}`)
+                        .setCustomId(`roster:performer-thread:${workspaceId}:${performer.id}`)
                         .setPlaceholder('Open saved performer thread')
                         .addOptions(threads.map((thread) => ({
                             label: thread.name.slice(0, 100),
@@ -2039,7 +2039,7 @@ class DiscordIntegrationService {
             }
             components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(
                 new ButtonBuilder()
-                    .setCustomId(`dot:new-performer-thread:${workspaceId}:${performer.id}`)
+                    .setCustomId(`roster:new-performer-thread:${workspaceId}:${performer.id}`)
                     .setLabel('New performer thread')
                     .setStyle(ButtonStyle.Primary),
             ))
@@ -2071,7 +2071,7 @@ class DiscordIntegrationService {
             if (threads.length > 0) {
                 components.push(new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
                     new StringSelectMenuBuilder()
-                        .setCustomId(`dot:act-thread:${workspaceId}:${act.id}`)
+                        .setCustomId(`roster:act-thread:${workspaceId}:${act.id}`)
                         .setPlaceholder('Open saved Act thread')
                         .addOptions(threads.map((thread) => ({
                             label: (thread.name || unnamedThreadNameFor(threads, thread.id)).slice(0, 100),
@@ -2082,7 +2082,7 @@ class DiscordIntegrationService {
             }
             components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(
                 new ButtonBuilder()
-                    .setCustomId(`dot:new-act-thread:${workspaceId}:${act.id}`)
+                    .setCustomId(`roster:new-act-thread:${workspaceId}:${act.id}`)
                     .setLabel('New Act thread')
                     .setStyle(ButtonStyle.Primary),
             ))
@@ -2110,7 +2110,7 @@ class DiscordIntegrationService {
 
     private async handleButton(interaction: ButtonInteraction) {
         const [prefix, kind, workspaceId, entityId] = interaction.customId.split(':')
-        if (prefix !== 'dot') {
+        if (prefix !== 'roster' && prefix !== 'dot') {
             return
         }
         if (kind === 'perm') {
@@ -2189,7 +2189,7 @@ class DiscordIntegrationService {
         }
 
         const modal = new ModalBuilder()
-            .setCustomId(`dot:q-submit:${pendingId}`)
+            .setCustomId(`roster:q-submit:${pendingId}`)
             .setTitle('Answer Studio Question')
         questions.forEach((question, index) => {
             const placeholderParts = [
@@ -2351,7 +2351,7 @@ class DiscordIntegrationService {
             const rows: Array<ActionRowBuilder<StringSelectMenuBuilder | ButtonBuilder>> = [
                 new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
                     new StringSelectMenuBuilder()
-                        .setCustomId(`dot:q-select:${pendingId}`)
+                        .setCustomId(`roster:q-select:${pendingId}`)
                         .setPlaceholder(question.multiple ? 'Choose one or more options' : 'Choose an option')
                         .setMinValues(1)
                         .setMaxValues(question.multiple ? options.length : 1)
@@ -2363,11 +2363,11 @@ class DiscordIntegrationService {
                 ),
             ]
             const buttons = new ActionRowBuilder<ButtonBuilder>().addComponents(
-                new ButtonBuilder().setCustomId(`dot:q-reject:${pendingId}`).setLabel('Cancel').setStyle(ButtonStyle.Secondary),
+                new ButtonBuilder().setCustomId(`roster:q-reject:${pendingId}`).setLabel('Cancel').setStyle(ButtonStyle.Secondary),
             )
             if (question.custom !== false) {
                 buttons.addComponents(
-                    new ButtonBuilder().setCustomId(`dot:q-custom:${pendingId}`).setLabel('Other').setStyle(ButtonStyle.Primary),
+                    new ButtonBuilder().setCustomId(`roster:q-custom:${pendingId}`).setLabel('Other').setStyle(ButtonStyle.Primary),
                 )
             }
             rows.push(buttons)
@@ -2433,7 +2433,7 @@ class DiscordIntegrationService {
 
     private async handleModalSubmit(interaction: ModalSubmitInteraction) {
         const [prefix, kind, pendingId] = interaction.customId.split(':')
-        if (prefix !== 'dot') {
+        if (prefix !== 'roster' && prefix !== 'dot') {
             return
         }
         if (kind !== 'q-submit' || !pendingId) {

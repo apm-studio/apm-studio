@@ -1,4 +1,4 @@
-// Agent Roaster asset contract types.
+// Agent Roster asset contract types.
 // Keep this file as the shared import surface for client/server asset types.
 
 export type {
@@ -7,14 +7,14 @@ export type {
     ActParticipantSubscriptionsV1,
     ActParticipantV1,
     ActRelationV1,
-    AnyDotAssetV1,
+    AnyRosterAssetV1,
     DanceAsset,
     DanceAssetPayloadV1,
-    DotAssetBase,
-    DotAssetKind,
+    RosterAssetBase,
+    RosterAssetKind,
     ModelConfigV1,
     PerformerAsset,
     PerformerAssetPayloadV1,
     TalAsset,
     TalAssetPayloadV1,
-} from './dot-contracts.js'
+} from './roster-contracts.js'

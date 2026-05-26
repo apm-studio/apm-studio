@@ -50,7 +50,7 @@ describe('ensurePerformerProjection source boundaries', () => {
     let workingDir: string
 
     beforeEach(async () => {
-        workingDir = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-roaster-working-'))
+        workingDir = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-roster-working-'))
 
         compileDanceMock.mockReset().mockResolvedValue({
             logicalName: 'draft-dance',
@@ -63,16 +63,16 @@ describe('ensurePerformerProjection source boundaries', () => {
         })
         compilePerformerMock.mockReset().mockResolvedValue({
             performerId: 'performer-1',
-            agentNames: { build: 'agent-roaster/workspace/hash/performer-1--build' },
+            agentNames: { build: 'agent-roster/workspace/hash/performer-1--build' },
             agentPaths: {
-                build: path.join(workingDir, '.opencode', 'agents', 'agent-roaster', 'workspace', 'hash', 'performer-1--build.md'),
+                build: path.join(workingDir, '.opencode', 'agents', 'agent-roster', 'workspace', 'hash', 'performer-1--build.md'),
             },
             agentContents: {
                 build: '---\ndescription: "Agent: Performer"\nmode: primary\n---\n\nbody',
             },
             skills: [],
             projectionHash: 'hash',
-            allFiles: ['.opencode/agents/agent-roaster/workspace/hash/performer-1--build.md'],
+            allFiles: ['.opencode/agents/agent-roster/workspace/hash/performer-1--build.md'],
         })
         resolveRuntimeToolsMock.mockReset().mockResolvedValue({
             selectedMcpServers: [],
@@ -126,7 +126,7 @@ describe('ensurePerformerProjection source boundaries', () => {
             }),
             expect.any(Array),
         )
-        const manifest = JSON.parse(await fs.readFile(path.join(workingDir, '.opencode', 'agent-roaster.manifest.json'), 'utf-8'))
+        const manifest = JSON.parse(await fs.readFile(path.join(workingDir, '.opencode', 'agent-roster.manifest.json'), 'utf-8'))
         expect(manifest.runtime).toEqual(expect.objectContaining({
             projectionPending: true,
         }))
@@ -216,11 +216,11 @@ describe('ensurePerformerProjection source boundaries', () => {
 
     it('does not write Codex project agent definitions during normal Studio projection', async () => {
         const buildContent = '---\ndescription: "Agent: Performer"\nmode: primary\n---\n\nbody'
-        const buildPath = path.join(workingDir, '.opencode', 'agents', 'agent-roaster', 'workspace', 'hash', 'performer-1--build.md')
-        const codexRelativePath = '.codex/agents/agent_roaster_performer_1_deadbeef.toml'
+        const buildPath = path.join(workingDir, '.opencode', 'agents', 'agent-roster', 'workspace', 'hash', 'performer-1--build.md')
+        const codexRelativePath = '.codex/agents/agent_roster_performer_1_deadbeef.toml'
         const codexPath = path.join(workingDir, codexRelativePath)
         const codexContent = [
-            'name = "agent_roaster_performer_1_deadbeef"',
+            'name = "agent_roster_performer_1_deadbeef"',
             'description = "Studio performer: Performer"',
             'sandbox_mode = "workspace-write"',
             'developer_instructions = "Follow Studio performer instructions."',
@@ -231,21 +231,21 @@ describe('ensurePerformerProjection source boundaries', () => {
         await fs.writeFile(buildPath, buildContent, 'utf-8')
         compilePerformerMock.mockResolvedValueOnce({
             performerId: 'performer-1',
-            agentNames: { build: 'agent-roaster/workspace/hash/performer-1--build' },
+            agentNames: { build: 'agent-roster/workspace/hash/performer-1--build' },
             agentPaths: {
                 build: buildPath,
             },
             agentContents: {
                 build: buildContent,
             },
-            codexAgentName: 'agent_roaster_performer_1_deadbeef',
+            codexAgentName: 'agent_roster_performer_1_deadbeef',
             codexAgentPath: codexPath,
             codexAgentContent: codexContent,
             codexAgentRelativePath: codexRelativePath,
             skills: [],
             projectionHash: 'hash',
             allFiles: [
-                '.opencode/agents/agent-roaster/workspace/hash/performer-1--build.md',
+                '.opencode/agents/agent-roster/workspace/hash/performer-1--build.md',
                 codexRelativePath,
             ],
         })
@@ -267,16 +267,16 @@ describe('ensurePerformerProjection source boundaries', () => {
         expect(result.codexChanged).toBe(false)
         await expect(fs.readFile(codexPath, 'utf-8')).rejects.toBeTruthy()
 
-        const manifest = JSON.parse(await fs.readFile(path.join(workingDir, '.opencode', 'agent-roaster.manifest.json'), 'utf-8'))
+        const manifest = JSON.parse(await fs.readFile(path.join(workingDir, '.opencode', 'agent-roster.manifest.json'), 'utf-8'))
         expect(manifest.groups['performer:performer-1']).not.toContain(codexRelativePath)
         expect(manifest.runtime).toBeUndefined()
     })
 
     it('syncs Codex project agents immediately without rewriting OpenCode agent files', async () => {
-        const buildPath = path.join(workingDir, '.opencode', 'agents', 'agent-roaster', 'workspace', 'hash', 'performer-1--build.md')
-        const oldCodexRelativePath = '.codex/agents/agent_roaster_old_name.toml'
+        const buildPath = path.join(workingDir, '.opencode', 'agents', 'agent-roster', 'workspace', 'hash', 'performer-1--build.md')
+        const oldCodexRelativePath = '.codex/agents/agent_roster_old_name.toml'
         const oldCodexPath = path.join(workingDir, oldCodexRelativePath)
-        const codexRelativePath = '.codex/agents/agent_roaster_performer.toml'
+        const codexRelativePath = '.codex/agents/agent_roster_performer.toml'
         const codexPath = path.join(workingDir, codexRelativePath)
         const skillPath = path.join(workingDir, '.opencode', 'skills', 'draft-dance', 'SKILL.md')
 
@@ -285,14 +285,14 @@ describe('ensurePerformerProjection source boundaries', () => {
         await fs.writeFile(buildPath, 'existing OpenCode build', 'utf-8')
         await fs.writeFile(oldCodexPath, 'old codex', 'utf-8')
         await fs.writeFile(
-            path.join(workingDir, '.opencode', 'agent-roaster.manifest.json'),
+            path.join(workingDir, '.opencode', 'agent-roster.manifest.json'),
             JSON.stringify({
                 version: 1,
-                owner: 'agent-roaster',
+                owner: 'agent-roster',
                 workspaceHash: 'hash',
                 groups: {
                     'performer:performer-1': [
-                        '.opencode/agents/agent-roaster/workspace/hash/performer-1--build.md',
+                        '.opencode/agents/agent-roster/workspace/hash/performer-1--build.md',
                         oldCodexRelativePath,
                     ],
                 },
@@ -311,7 +311,7 @@ describe('ensurePerformerProjection source boundaries', () => {
         })
         compilePerformerMock.mockResolvedValueOnce({
             performerId: 'performer-1',
-            agentNames: { build: 'agent-roaster/workspace/hash/performer-1--build' },
+            agentNames: { build: 'agent-roster/workspace/hash/performer-1--build' },
             agentPaths: {
                 build: buildPath,
             },
@@ -325,7 +325,7 @@ describe('ensurePerformerProjection source boundaries', () => {
             skills: [],
             projectionHash: 'hash',
             allFiles: [
-                '.opencode/agents/agent-roaster/workspace/hash/performer-1--build.md',
+                '.opencode/agents/agent-roster/workspace/hash/performer-1--build.md',
                 '.opencode/skills/draft-dance/SKILL.md',
                 codexRelativePath,
             ],
@@ -354,16 +354,16 @@ describe('ensurePerformerProjection source boundaries', () => {
         await expect(fs.readFile(skillPath, 'utf-8')).resolves.toContain('updated skill')
         await expect(fs.access(oldCodexPath)).rejects.toBeTruthy()
         const projectedSkill = compilePerformerMock.mock.calls[0][2][0]
-        expect(projectedSkill.codexFilePath).toContain(`${path.sep}.agents${path.sep}skills${path.sep}agent-roaster-performer-1-draft-dance-`)
+        expect(projectedSkill.codexFilePath).toContain(`${path.sep}.agents${path.sep}skills${path.sep}agent-roster-performer-1-draft-dance-`)
         expect(projectedSkill.codexFilePath).toMatch(/SKILL\.md$/)
-        expect(projectedSkill.codexLinkRelativePath).toMatch(/^\.agents\/skills\/agent-roaster-performer-1-draft-dance-/)
+        expect(projectedSkill.codexLinkRelativePath).toMatch(/^\.agents\/skills\/agent-roster-performer-1-draft-dance-/)
         const linkStat = await fs.lstat(projectedSkill.codexLinkPath)
         expect(linkStat.isSymbolicLink()).toBe(true)
         await expect(fs.realpath(projectedSkill.codexLinkPath)).resolves.toBe(await fs.realpath(path.dirname(skillPath)))
 
-        const manifest = JSON.parse(await fs.readFile(path.join(workingDir, '.opencode', 'agent-roaster.manifest.json'), 'utf-8'))
+        const manifest = JSON.parse(await fs.readFile(path.join(workingDir, '.opencode', 'agent-roster.manifest.json'), 'utf-8'))
         expect(manifest.groups['performer:performer-1']).toEqual(expect.arrayContaining([
-            '.opencode/agents/agent-roaster/workspace/hash/performer-1--build.md',
+            '.opencode/agents/agent-roster/workspace/hash/performer-1--build.md',
             '.opencode/skills/draft-dance/SKILL.md',
             projectedSkill.codexLinkRelativePath,
             codexRelativePath,
@@ -407,9 +407,9 @@ describe('ensurePerformerProjection source boundaries', () => {
     })
 
     it('removes stale Codex project agents immediately when the performer model is unsupported', async () => {
-        const oldCodexRelativePath = '.codex/agents/agent_roaster_old_name.toml'
+        const oldCodexRelativePath = '.codex/agents/agent_roster_old_name.toml'
         const oldCodexPath = path.join(workingDir, oldCodexRelativePath)
-        const oldSkillLinkRelativePath = '.agents/skills/agent-roaster-old-skill'
+        const oldSkillLinkRelativePath = '.agents/skills/agent-roster-old-skill'
         const oldSkillLinkPath = path.join(workingDir, oldSkillLinkRelativePath)
 
         await fs.mkdir(path.dirname(oldCodexPath), { recursive: true })
@@ -417,10 +417,10 @@ describe('ensurePerformerProjection source boundaries', () => {
         await fs.mkdir(path.join(workingDir, '.opencode'), { recursive: true })
         await fs.writeFile(oldCodexPath, 'old codex', 'utf-8')
         await fs.writeFile(
-            path.join(workingDir, '.opencode', 'agent-roaster.manifest.json'),
+            path.join(workingDir, '.opencode', 'agent-roster.manifest.json'),
             JSON.stringify({
                 version: 1,
-                owner: 'agent-roaster',
+                owner: 'agent-roster',
                 workspaceHash: 'hash',
                 groups: {
                     'performer:performer-1': [oldCodexRelativePath, oldSkillLinkRelativePath],
@@ -452,7 +452,7 @@ describe('ensurePerformerProjection source boundaries', () => {
         await expect(fs.access(oldCodexPath)).resolves.toBeUndefined()
         await expect(fs.access(oldSkillLinkPath)).resolves.toBeUndefined()
 
-        const manifest = JSON.parse(await fs.readFile(path.join(workingDir, '.opencode', 'agent-roaster.manifest.json'), 'utf-8'))
+        const manifest = JSON.parse(await fs.readFile(path.join(workingDir, '.opencode', 'agent-roster.manifest.json'), 'utf-8'))
         expect(manifest.groups['performer:performer-1']).toEqual([oldCodexRelativePath, oldSkillLinkRelativePath])
     })
 
@@ -506,10 +506,10 @@ describe('ensurePerformerProjection source boundaries', () => {
 
     it('prunes stale performer agent files from the manifest', async () => {
         const workspaceHash = 'hash'
-        const activeBuild = path.join(workingDir, '.opencode', 'agents', 'agent-roaster', 'workspace', workspaceHash, 'performer-1--build.md')
-        const activePlan = path.join(workingDir, '.opencode', 'agents', 'agent-roaster', 'workspace', workspaceHash, 'performer-1--plan.md')
-        const staleBuild = path.join(workingDir, '.opencode', 'agents', 'agent-roaster', 'workspace', workspaceHash, 'performer-2--build.md')
-        const stalePlan = path.join(workingDir, '.opencode', 'agents', 'agent-roaster', 'workspace', workspaceHash, 'performer-2--plan.md')
+        const activeBuild = path.join(workingDir, '.opencode', 'agents', 'agent-roster', 'workspace', workspaceHash, 'performer-1--build.md')
+        const activePlan = path.join(workingDir, '.opencode', 'agents', 'agent-roster', 'workspace', workspaceHash, 'performer-1--plan.md')
+        const staleBuild = path.join(workingDir, '.opencode', 'agents', 'agent-roster', 'workspace', workspaceHash, 'performer-2--build.md')
+        const stalePlan = path.join(workingDir, '.opencode', 'agents', 'agent-roster', 'workspace', workspaceHash, 'performer-2--plan.md')
 
         await fs.mkdir(path.dirname(activeBuild), { recursive: true })
         await fs.writeFile(activeBuild, 'active build', 'utf-8')
@@ -517,19 +517,19 @@ describe('ensurePerformerProjection source boundaries', () => {
         await fs.writeFile(staleBuild, 'stale build', 'utf-8')
         await fs.writeFile(stalePlan, 'stale plan', 'utf-8')
         await fs.writeFile(
-            path.join(workingDir, '.opencode', 'agent-roaster.manifest.json'),
+            path.join(workingDir, '.opencode', 'agent-roster.manifest.json'),
             JSON.stringify({
                 version: 1,
-                owner: 'agent-roaster',
+                owner: 'agent-roster',
                 workspaceHash,
                 groups: {
                     'performer:performer-1': [
-                        '.opencode/agents/agent-roaster/workspace/hash/performer-1--build.md',
-                        '.opencode/agents/agent-roaster/workspace/hash/performer-1--plan.md',
+                        '.opencode/agents/agent-roster/workspace/hash/performer-1--build.md',
+                        '.opencode/agents/agent-roster/workspace/hash/performer-1--plan.md',
                     ],
                     'performer:performer-2': [
-                        '.opencode/agents/agent-roaster/workspace/hash/performer-2--build.md',
-                        '.opencode/agents/agent-roaster/workspace/hash/performer-2--plan.md',
+                        '.opencode/agents/agent-roster/workspace/hash/performer-2--build.md',
+                        '.opencode/agents/agent-roster/workspace/hash/performer-2--plan.md',
                     ],
                 },
             }, null, 2),
@@ -545,11 +545,11 @@ describe('ensurePerformerProjection source boundaries', () => {
         await expect(fs.access(staleBuild)).rejects.toBeTruthy()
         await expect(fs.access(stalePlan)).rejects.toBeTruthy()
 
-        const manifest = JSON.parse(await fs.readFile(path.join(workingDir, '.opencode', 'agent-roaster.manifest.json'), 'utf-8'))
+        const manifest = JSON.parse(await fs.readFile(path.join(workingDir, '.opencode', 'agent-roster.manifest.json'), 'utf-8'))
         expect(manifest.groups).toEqual({
             'performer:performer-1': [
-                '.opencode/agents/agent-roaster/workspace/hash/performer-1--build.md',
-                '.opencode/agents/agent-roaster/workspace/hash/performer-1--plan.md',
+                '.opencode/agents/agent-roster/workspace/hash/performer-1--build.md',
+                '.opencode/agents/agent-roster/workspace/hash/performer-1--plan.md',
             ],
         })
         expect(instanceDisposeMock).not.toHaveBeenCalled()

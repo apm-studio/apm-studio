@@ -1,9 +1,9 @@
 import fs from 'fs/promises'
 import path from 'path'
 
-const MANIFEST_FILENAME = 'agent-roaster.manifest.json'
-const LEGACY_MANIFEST_FILENAME = 'dot-studio.manifest.json'
-const NAMESPACE = 'agent-roaster'
+const MANIFEST_FILENAME = 'agent-roster.manifest.json'
+const LEGACY_MANIFEST_FILENAMES = ['agent-roaster.manifest.json', 'dot-studio.manifest.json']
+const NAMESPACE = 'agent-roster'
 
 export interface ProjectionManifest {
     version: 1
@@ -23,10 +23,12 @@ function manifestPath(executionDir: string) {
 export function isManualAgentSyncProjectionPath(filePath: string) {
     return (
         (
-            filePath.startsWith('.codex/agents/agent_roaster_')
+            filePath.startsWith('.codex/agents/agent_roster_')
+            || filePath.startsWith('.codex/agents/agent_roaster_')
             || filePath.startsWith('.codex/agents/dot_studio_')
         ) && filePath.endsWith('.toml')
-    ) || filePath.startsWith('.agents/skills/agent-roaster-')
+    ) || filePath.startsWith('.agents/skills/agent-roster-')
+        || filePath.startsWith('.agents/skills/agent-roaster-')
         || filePath.startsWith('.agents/skills/dot-studio-')
 }
 
@@ -35,12 +37,15 @@ export async function readManifest(executionDir: string): Promise<ProjectionMani
         const raw = await fs.readFile(manifestPath(executionDir), 'utf-8')
         return JSON.parse(raw) as ProjectionManifest
     } catch {
-        try {
-            const raw = await fs.readFile(path.join(executionDir, '.opencode', LEGACY_MANIFEST_FILENAME), 'utf-8')
-            return JSON.parse(raw) as ProjectionManifest
-        } catch {
-            return null
+        for (const legacyFilename of LEGACY_MANIFEST_FILENAMES) {
+            try {
+                const raw = await fs.readFile(path.join(executionDir, '.opencode', legacyFilename), 'utf-8')
+                return JSON.parse(raw) as ProjectionManifest
+            } catch {
+                // Keep scanning legacy manifest names.
+            }
         }
+        return null
     }
 }
 
@@ -49,7 +54,9 @@ export async function writeManifest(executionDir: string, manifest: ProjectionMa
     manifest.owner = NAMESPACE
     await fs.mkdir(path.dirname(filePath), { recursive: true })
     await fs.writeFile(filePath, JSON.stringify(manifest, null, 2), 'utf-8')
-    await fs.rm(path.join(executionDir, '.opencode', LEGACY_MANIFEST_FILENAME), { force: true }).catch(() => {})
+    for (const legacyFilename of LEGACY_MANIFEST_FILENAMES) {
+        await fs.rm(path.join(executionDir, '.opencode', legacyFilename), { force: true }).catch(() => {})
+    }
 }
 
 async function readOrCreateManifest(executionDir: string, workspaceHash = ''): Promise<ProjectionManifest> {
@@ -132,14 +139,14 @@ export async function updateGitExclude(executionDir: string) {
     }
 
     const excludePath = path.join(gitDir, 'info', 'exclude')
-    const marker = '# agent-roaster projection (auto-managed)'
+    const marker = '# agent-roster projection (auto-managed)'
     const patterns = [
         marker,
-        '.opencode/agents/agent-roaster/',
-        '.opencode/skills/agent-roaster/',
-        '.opencode/agent-roaster.manifest.json',
-        '.codex/agents/agent_roaster_*.toml',
-        '.agents/skills/agent-roaster-*',
+        '.opencode/agents/agent-roster/',
+        '.opencode/skills/agent-roster/',
+        '.opencode/agent-roster.manifest.json',
+        '.codex/agents/agent_roster_*.toml',
+        '.agents/skills/agent-roster-*',
     ]
 
     let content = ''

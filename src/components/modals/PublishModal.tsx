@@ -26,7 +26,7 @@ export default function PublishModal({ open, onClose }: { open: boolean; onClose
                             <strong>Publish</strong>
                             <p>
                                 {controller.step === 'picker'
-                                    ? 'Select a Tal, Performer, or Act to save or publish.'
+                                    ? 'Select a Persona, Agent, or Team to save or publish.'
                                     : controller.target ? `${controller.target.kind} · ${controller.target.name}` : ''}
                             </p>
                         </div>

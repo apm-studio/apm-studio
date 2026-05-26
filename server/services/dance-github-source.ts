@@ -12,7 +12,7 @@ import {
     upsertSkillLockEntry,
     type DiscoveredSkill,
     type ParsedSource,
-} from '../lib/dot-source.js'
+} from '../lib/roster-source.js'
 
 type RawSkillLock = Awaited<ReturnType<typeof readSkillLock>>
 

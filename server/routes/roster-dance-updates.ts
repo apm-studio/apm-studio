@@ -1,9 +1,9 @@
 import { Hono } from 'hono'
 import type {
-    DotDanceReimportSourceRequest,
-    DotDanceUpdateApplyRequest,
-    DotDanceUpdateCheckRequest,
-} from '../../shared/dot-contracts.js'
+    RosterDanceReimportSourceRequest,
+    RosterDanceUpdateApplyRequest,
+    RosterDanceUpdateCheckRequest,
+} from '../../shared/roster-contracts.js'
 import {
     applyDanceGitHubUpdates,
     checkDanceGitHubUpdates,
@@ -11,14 +11,14 @@ import {
 } from '../services/dance-github-update-service.js'
 import { jsonError, requestWorkingDir } from './route-errors.js'
 
-const dotDanceUpdates = new Hono()
+const rosterDanceUpdates = new Hono()
 
 function errorMessage(error: unknown, fallback = 'Unknown error') {
     return error instanceof Error && error.message ? error.message : fallback
 }
 
-dotDanceUpdates.post('/api/dot/dance-updates/check', async (c) => {
-    const body = await c.req.json<DotDanceUpdateCheckRequest>().catch(() => null)
+rosterDanceUpdates.post('/api/roster/dance-updates/check', async (c) => {
+    const body = await c.req.json<RosterDanceUpdateCheckRequest>().catch(() => null)
     if (!body?.assets?.length) {
         return jsonError(c, 'At least one installed Dance asset is required.', 400)
     }
@@ -32,8 +32,8 @@ dotDanceUpdates.post('/api/dot/dance-updates/check', async (c) => {
     }
 })
 
-dotDanceUpdates.post('/api/dot/dance-updates/apply', async (c) => {
-    const body = await c.req.json<DotDanceUpdateApplyRequest>().catch(() => null)
+rosterDanceUpdates.post('/api/roster/dance-updates/apply', async (c) => {
+    const body = await c.req.json<RosterDanceUpdateApplyRequest>().catch(() => null)
     if (!body?.assets?.length) {
         return jsonError(c, 'At least one installed Dance asset is required.', 400)
     }
@@ -45,8 +45,8 @@ dotDanceUpdates.post('/api/dot/dance-updates/apply', async (c) => {
     }
 })
 
-dotDanceUpdates.post('/api/dot/dance-updates/reimport-source', async (c) => {
-    const body = await c.req.json<DotDanceReimportSourceRequest>().catch(() => null)
+rosterDanceUpdates.post('/api/roster/dance-updates/reimport-source', async (c) => {
+    const body = await c.req.json<RosterDanceReimportSourceRequest>().catch(() => null)
     if (!body?.urn || !body.scope) {
         return jsonError(c, 'Installed Dance urn and scope are required.', 400)
     }
@@ -58,4 +58,4 @@ dotDanceUpdates.post('/api/dot/dance-updates/reimport-source', async (c) => {
     }
 })
 
-export default dotDanceUpdates
+export default rosterDanceUpdates

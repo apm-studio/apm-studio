@@ -35,28 +35,28 @@ button.toolbar__item:hover {
     color: var(--text-primary);
 }
 
-.dot-status.dot-ok {
+.roster-status.roster-ok {
     color: var(--status-success);
     cursor: default;
 }
 
-.dot-status.dot-missing {
+.roster-status.roster-missing {
     color: var(--status-danger);
 }
 
-.dot-auth-status {
+.roster-auth-status {
     transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
 }
 
-.dot-auth-status--ok {
+.roster-auth-status--ok {
     color: var(--status-success);
 }
 
-.dot-auth-status--warn {
+.roster-auth-status--warn {
     color: var(--text-main);
 }
 
-.dot-auth-status--warn:hover {
+.roster-auth-status--warn:hover {
     background: var(--bg-hover);
 }
 

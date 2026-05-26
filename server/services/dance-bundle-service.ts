@@ -2,7 +2,7 @@
  * dance-bundle-service.ts — CRUD operations for Dance skill bundles.
  *
  * A Dance bundle is a directory-backed draft that stores:
- *   .agent-roaster/drafts/dance/<draftId>/
+ *   .agent-roster/drafts/dance/<draftId>/
  *       ├── draft.json     (metadata)
  *       ├── SKILL.md       (main skill content)
  *       ├── scripts/       (helper scripts)
@@ -15,7 +15,7 @@
 
 import fs from 'fs/promises'
 import path from 'path'
-import { getDotDir } from '../lib/dot-source.js'
+import { getRosterDir } from '../lib/roster-source.js'
 import type { BundleTreeEntry } from '../../shared/draft-contracts.js'
 
 // ── Path resolution ─────────────────────────────────────
@@ -23,7 +23,7 @@ import type { BundleTreeEntry } from '../../shared/draft-contracts.js'
 const BUNDLE_SCAFFOLD_DIRS = ['scripts', 'references', 'assets'] as const
 
 export function danceBundleDir(cwd: string, draftId: string): string {
-    return path.join(getDotDir(cwd), 'drafts', 'dance', draftId)
+    return path.join(getRosterDir(cwd), 'drafts', 'dance', draftId)
 }
 
 export async function isDanceBundleDraft(cwd: string, draftId: string): Promise<boolean> {

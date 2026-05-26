@@ -1,10 +1,10 @@
 ---
 name: studio-assistant-action-surface-guide
 description: "Lists the exact Studio Assistant apply_studio_actions mutation surface, field rules, ref ordering, and payload self-checks. Use before emitting or validating any Studio mutation tool call."
-compatibility: Designed for the Agent Roaster built-in assistant projection.
+compatibility: Designed for the Agent Roster built-in assistant projection.
 ---
 
-# Agent Roaster Assistant Action Surface
+# Agent Roster Assistant Action Surface
 
 Use this skill when you need to produce, inspect, or verify an `apply_studio_actions` payload.
 
@@ -24,32 +24,32 @@ Use this skill when you need to produce, inspect, or verify an `apply_studio_act
 
 ## Action Families
 - Install/import: `installRegistryAsset`, `addDanceFromGitHub`, `importInstalledPerformer`, `importInstalledAct`
-- Tal draft CRUD: `createTalDraft`, `updateTalDraft`, `deleteTalDraft`
-- Dance draft CRUD: `createDanceDraft`, `updateDanceDraft`, `deleteDanceDraft`
-- Dance bundle files: `upsertDanceBundleFile`, `deleteDanceBundleEntry`
-- Performer CRUD: `createPerformer`, `updatePerformer`, `deletePerformer`
-- Act CRUD: `createAct`, `updateAct`, `deleteAct`
+- Persona draft CRUD: `createTalDraft`, `updateTalDraft`, `deleteTalDraft`
+- Skill Pack draft CRUD: `createDanceDraft`, `updateDanceDraft`, `deleteDanceDraft`
+- Skill Pack bundle files: `upsertDanceBundleFile`, `deleteDanceBundleEntry`
+- Agent CRUD: `createPerformer`, `updatePerformer`, `deletePerformer`
+- Team CRUD: `createAct`, `updateAct`, `deleteAct`
 - Participants: `attachPerformerToAct`, `detachParticipantFromAct`, `updateParticipantSubscriptions`
 - Relations: `connectPerformers`, `updateRelation`, `removeRelation`
 - Studio UI: `showPerformer`, `showAct`, `showDraft`, `setStudioPanel`, `setStudioNodeVisibility`, `setStudioNodeFrame`
 
-## Performer Fields
+## Agent Fields
 `createPerformer` and `updatePerformer` support:
 - `description`
 - `model`
 - `modelVariant`
-- one Tal source: `talUrn`, `talDraftId`, `talDraftRef`, or inline `talDraft`
-- Dance additions: `addDanceUrns`, `addDanceDraftIds`, `addDanceDraftRefs`, inline `addDanceDrafts`
-- Dance removals: `removeDanceUrns`, `removeDanceDraftIds`
+- one Persona source: `talUrn`, `talDraftId`, `talDraftRef`, or inline `talDraft`
+- Skill Pack additions: `addDanceUrns`, `addDanceDraftIds`, `addDanceDraftRefs`, inline `addDanceDrafts`
+- Skill Pack removals: `removeDanceUrns`, `removeDanceDraftIds`
 - MCP changes: `addMcpServerNames`, `removeMcpServerNames`
 
 Rules:
-- Choose at most one Tal source.
+- Choose at most one Persona source.
 - Use inline `talDraft` or `addDanceDrafts` when the dependency is new and known.
 - Use only available model and variant ids from the snapshot.
 - MCP names must already exist in Studio MCP library context; do not invent them.
 
-## Act And Relation Fields
+## Team And Relation Fields
 `createAct` supports:
 - `name`, `description`, `actRules`, `safety`
 - `participantPerformerIds`, `participantPerformerRefs`, `participantPerformerNames`
@@ -67,12 +67,12 @@ Rules:
 - `actRules` must be an array of strings.
 - Every new relation needs non-empty `name` and `description`.
 - Use `source...` and `target...` fields, never legacy `from...` or `to...`.
-- For brand-new Acts with known participants, prefer participants and relations directly on `createAct`.
+- For brand-new Teams with known participants, prefer participants and relations directly on `createAct`.
 
 ## Draft And Bundle Fields
-- Tal/Dance CRUD acts on local drafts only.
-- Bundle file actions target saved Dance drafts only.
-- Bundle paths are relative to the Dance bundle root.
+- Persona/Skill Pack CRUD acts on local drafts only.
+- Bundle file actions target saved Skill Pack drafts only.
+- Bundle paths are relative to the Skill Pack bundle root.
 - Bundle paths must not target `SKILL.md` or `draft.json`.
 - Use bundle files for `references/*`, `scripts/*`, `assets/*`, and `agents/openai.yaml`.
 
@@ -98,12 +98,12 @@ Rules:
 - `callboardKeys` is canonical.
 
 ## UI Operations
-- `showPerformer`: select/reveal a Performer, or open its editor with `surface: "editor"`.
-- `showAct`: select/reveal an Act, or open its editor with `surface: "editor"` and optional `editorMode`.
-- `showDraft`: open a saved or same-call Tal/Dance draft editor.
+- `showPerformer`: select/reveal an Agent, or open its editor with `surface: "editor"`.
+- `showAct`: select/reveal a Team, or open its editor with `surface: "editor"` and optional `editorMode`.
+- `showDraft`: open a saved or same-call Persona/Skill Pack draft editor.
 - `setStudioPanel`: open or close `assetLibrary`, `workspaceTracking`, or `terminal`.
-- `setStudioNodeVisibility`: hide or show an existing Performer or Act.
-- `setStudioNodeFrame`: set absolute canvas `position` and/or `size` for a Performer or Act.
+- `setStudioNodeVisibility`: hide or show an existing Agent or Team.
+- `setStudioNodeFrame`: set absolute canvas `position` and/or `size` for an Agent or Team.
 
 UI-only operations are hot Studio state changes. Do not describe them as saved, published, installed, or runtime-affecting.
 

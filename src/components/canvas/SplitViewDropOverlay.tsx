@@ -24,10 +24,10 @@ type Props = {
 
 function nodeLabel(nodeId: string, nodeType: FullscreenNodeType, acts: WorkspaceAct[], performers: PerformerNode[]) {
     if (nodeType === 'act') {
-        return acts.find((act) => act.id === nodeId)?.name || 'Act'
+        return acts.find((act) => act.id === nodeId)?.name || 'Team'
     }
 
-    return performers.find((performer) => performer.id === nodeId)?.name || 'Performer'
+    return performers.find((performer) => performer.id === nodeId)?.name || 'Agent'
 }
 
 function nodeIcon(nodeType: FullscreenNodeType) {

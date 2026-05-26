@@ -5,7 +5,7 @@ import path from 'node:path'
 import type { ActDefinition, BoardEntry } from '../../../shared/act-types.js'
 
 async function makeTempStudioDir() {
-    return fs.mkdtemp(path.join(os.tmpdir(), 'dot-studio-act-runtime-'))
+    return fs.mkdtemp(path.join(os.tmpdir(), 'agent-roster-act-runtime-'))
 }
 
 async function importThreadManagerWithStudioDir(studioDir: string) {

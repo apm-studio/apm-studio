@@ -2,14 +2,14 @@ import { useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { api } from '../api'
 import { showToast } from '../lib/toast'
-import { useDotAuthUser, queryKeys } from './queries'
+import { useRosterAuthUser, queryKeys } from './queries'
 
 const LOGIN_POLL_INTERVAL_MS = 2_000
 const LOGIN_POLL_TIMEOUT_MS = 180_000
 
-export function useDotLogin() {
+export function useRosterLogin() {
     const queryClient = useQueryClient()
-    const { data: authUser, refetch: refetchAuthUser } = useDotAuthUser()
+    const { data: authUser, refetch: refetchAuthUser } = useRosterAuthUser()
     const [startingLogin, setStartingLogin] = useState(false)
     const [awaitingLogin, setAwaitingLogin] = useState(false)
     const [loggingOut, setLoggingOut] = useState(false)
@@ -25,9 +25,9 @@ export function useDotLogin() {
                 window.clearInterval(timer)
                 loginDeadlineRef.current = null
                 setAwaitingLogin(false)
-                showToast('Agent Roaster login timed out before authentication completed.', 'error', {
+                showToast('Agent Roster login timed out before authentication completed.', 'error', {
                     title: 'Login timed out',
-                    dedupeKey: 'dot-login:timeout',
+                    dedupeKey: 'roster-login:timeout',
                 })
                 return
             }
@@ -44,10 +44,10 @@ export function useDotLogin() {
 
         loginDeadlineRef.current = null
         setAwaitingLogin(false)
-        queryClient.invalidateQueries({ queryKey: queryKeys.dotAuthUser })
+        queryClient.invalidateQueries({ queryKey: queryKeys.rosterAuthUser })
         showToast(`Signed in as @${authUser.username || 'unknown'}.`, 'success', {
-            title: 'Agent Roaster login complete',
-            dedupeKey: 'dot-login:complete',
+            title: 'Agent Roster login complete',
+            dedupeKey: 'roster-login:complete',
         })
     }, [authUser?.authenticated, authUser?.username, awaitingLogin, queryClient])
 
@@ -60,7 +60,7 @@ export function useDotLogin() {
 
         try {
             setStartingLogin(true)
-            const result = await api.dot.login(acknowledgedTos)
+            const result = await api.roster.login(acknowledgedTos)
 
             if (result.alreadyAuthenticated) {
                 popup?.close()
@@ -90,19 +90,19 @@ export function useDotLogin() {
                 loginDeadlineRef.current = Date.now() + LOGIN_POLL_TIMEOUT_MS
                 setAwaitingLogin(true)
                 if (result.authUrl && !result.browserOpened && !openedInClient) {
-                    showToast('Open the Agent Roaster login flow to continue authentication.', 'warning', {
-                        title: 'Agent Roaster login started',
+                    showToast('Open the Agent Roster login flow to continue authentication.', 'warning', {
+                        title: 'Agent Roster login started',
                         actionLabel: 'Open login',
                         onAction: () => {
                             window.open(result.authUrl, '_blank')
                         },
-                        dedupeKey: 'dot-login:started',
+                        dedupeKey: 'roster-login:started',
                         durationMs: 8000,
                     })
                 } else {
-                    showToast('Complete Agent Roaster login in the browser to continue.', 'success', {
-                        title: 'Agent Roaster login started',
-                        dedupeKey: 'dot-login:started',
+                    showToast('Complete Agent Roster login in the browser to continue.', 'success', {
+                        title: 'Agent Roster login started',
+                        dedupeKey: 'roster-login:started',
                     })
                 }
                 void refetchAuthUser()
@@ -112,9 +112,9 @@ export function useDotLogin() {
             popup?.close()
         } catch (error: unknown) {
             popup?.close()
-            showToast(error instanceof Error ? error.message : 'Failed to start Agent Roaster login.', 'error', {
-                title: 'Agent Roaster login failed',
-                dedupeKey: 'dot-login:failed',
+            showToast(error instanceof Error ? error.message : 'Failed to start Agent Roster login.', 'error', {
+                title: 'Agent Roster login failed',
+                dedupeKey: 'roster-login:failed',
             })
         } finally {
             setStartingLogin(false)
@@ -130,17 +130,17 @@ export function useDotLogin() {
             setLoggingOut(true)
             loginDeadlineRef.current = null
             setAwaitingLogin(false)
-            await api.dot.logout()
-            await queryClient.invalidateQueries({ queryKey: queryKeys.dotAuthUser })
+            await api.roster.logout()
+            await queryClient.invalidateQueries({ queryKey: queryKeys.rosterAuthUser })
             await refetchAuthUser()
-            showToast('Signed out from Agent Roaster.', 'success', {
-                title: 'Agent Roaster logout complete',
-                dedupeKey: 'dot-login:logout',
+            showToast('Signed out from Agent Roster.', 'success', {
+                title: 'Agent Roster logout complete',
+                dedupeKey: 'roster-login:logout',
             })
         } catch (error: unknown) {
-            showToast(error instanceof Error ? error.message : 'Failed to sign out from Agent Roaster.', 'error', {
-                title: 'Agent Roaster logout failed',
-                dedupeKey: 'dot-login:logout-failed',
+            showToast(error instanceof Error ? error.message : 'Failed to sign out from Agent Roster.', 'error', {
+                title: 'Agent Roster logout failed',
+                dedupeKey: 'roster-login:logout-failed',
             })
         } finally {
             setLoggingOut(false)

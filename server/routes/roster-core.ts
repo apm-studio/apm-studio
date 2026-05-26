@@ -1,63 +1,63 @@
 import { Hono } from 'hono'
 import {
-    getDotAuthUser,
-    getDotStatusSnapshot,
-    initDotRegistry,
-    loginToDot,
-    logoutFromDot,
-} from '../services/dot-service.js'
-import { addDanceFromGitHub } from '../services/dot-add-service.js'
+    getRosterAuthUser,
+    getRosterStatusSnapshot,
+    initRosterRegistry,
+    loginToRoster,
+    logoutFromRoster,
+} from '../services/roster-service.js'
+import { addDanceFromGitHub } from '../services/roster-add-service.js'
 import { jsonError, requestWorkingDir } from './route-errors.js'
 
-const dotCore = new Hono()
+const rosterCore = new Hono()
 
 function errorMessage(error: unknown, fallback = 'Unknown error') {
     return error instanceof Error && error.message ? error.message : fallback
 }
 
-dotCore.get('/api/dot/status', async (c) => {
-    return c.json(await getDotStatusSnapshot(requestWorkingDir(c)))
+rosterCore.get('/api/roster/status', async (c) => {
+    return c.json(await getRosterStatusSnapshot(requestWorkingDir(c)))
 })
 
-dotCore.post('/api/dot/init', async (c) => {
+rosterCore.post('/api/roster/init', async (c) => {
     const { scope } = await c.req.json<{ scope?: string }>().catch(() => ({ scope: undefined }))
     try {
-        return c.json(await initDotRegistry(requestWorkingDir(c), scope))
+        return c.json(await initRosterRegistry(requestWorkingDir(c), scope))
     } catch (error: unknown) {
         return jsonError(c, errorMessage(error), 500)
     }
 })
 
-dotCore.get('/api/dot/auth-user', async () => {
+rosterCore.get('/api/roster/auth-user', async () => {
     try {
-        return Response.json(await getDotAuthUser())
+        return Response.json(await getRosterAuthUser())
     } catch (error: unknown) {
         return Response.json({ authenticated: false, username: null, error: errorMessage(error) }, { status: 500 })
     }
 })
 
-dotCore.post('/api/dot/login', async (c) => {
+rosterCore.post('/api/roster/login', async (c) => {
     const body = await c.req.json<{ acknowledgedTos?: boolean }>().catch((): { acknowledgedTos?: boolean } => ({}))
     if (!body?.acknowledgedTos) {
-        return jsonError(c, 'Review and accept the Agent Roaster Terms of Service before signing in: https://agentroaster.dev/tos', 400)
+        return jsonError(c, 'Review and accept the Agent Roster Terms of Service before signing in: https://agentroster.dev/tos', 400)
     }
 
     try {
-        return c.json(await loginToDot())
+        return c.json(await loginToRoster())
     } catch (error: unknown) {
-        return jsonError(c, errorMessage(error, 'Failed to start Agent Roaster login.'), 500)
+        return jsonError(c, errorMessage(error, 'Failed to start Agent Roster login.'), 500)
     }
 })
 
-dotCore.post('/api/dot/logout', async (c) => {
+rosterCore.post('/api/roster/logout', async (c) => {
     try {
-        return c.json(await logoutFromDot())
+        return c.json(await logoutFromRoster())
     } catch (error: unknown) {
         return jsonError(c, errorMessage(error, 'Failed to sign out.'), 500)
     }
 })
 
-dotCore.post('/api/dot/add', async (c) => {
+rosterCore.post('/api/roster/add', async (c) => {
     const { source, scope } = await c.req.json<{ source: string; scope?: 'global' | 'stage' }>()
     if (!source?.trim()) {
         return jsonError(c, 'Missing source (e.g. owner/repo)', 400)
@@ -70,4 +70,4 @@ dotCore.post('/api/dot/add', async (c) => {
     }
 })
 
-export default dotCore
+export default rosterCore

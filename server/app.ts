@@ -11,7 +11,7 @@ import stageRoutes from './routes/workspaces.js'
 import chatRoutes from './routes/chat.js'
 import opencodeRoutes from './routes/opencode.js'
 import compileRoutes from './routes/compile.js'
-import dotRoutes from './routes/dot.js'
+import rosterRoutes from './routes/roster.js'
 import draftRoutes from './routes/drafts.js'
 import actRuntimeRoutes from './routes/act-runtime.js'
 import discordRoutes from './routes/discord.js'
@@ -37,7 +37,7 @@ function mountApiRoutes(app: Hono) {
     app.route('/', chatRoutes)
     app.route('/', opencodeRoutes)
     app.route('/', compileRoutes)
-    app.route('/', dotRoutes)
+    app.route('/', rosterRoutes)
     app.route('/', draftRoutes)
     app.route('/', actRuntimeRoutes)
     app.route('/', discordRoutes)

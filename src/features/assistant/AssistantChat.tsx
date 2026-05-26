@@ -202,7 +202,7 @@ export function AssistantChat() {
             <Sparkles size={48} className="assistant-empty__icon" />
             <h3 className="assistant-empty__title">How can I help you design?</h3>
             <p className="assistant-empty__desc">
-                Ask me to package agents, apply them to assistants, or explain how Agent Roaster works.
+                Ask me to package agents, apply them to assistants, or explain how Agent Roster works.
             </p>
         </div>
     ), [])

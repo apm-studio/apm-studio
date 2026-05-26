@@ -88,7 +88,7 @@ export default function WorkspaceExplorerActGroup({
     const readiness = evaluateActReadiness(act, performers)
     const createThreadTitle = readiness.runnable
         ? 'New Thread'
-        : readiness.issues.find((i) => i.severity === 'error')?.message || 'Act is not runnable'
+        : readiness.issues.find((i) => i.severity === 'error')?.message || 'Team is not runnable'
 
     return (
         <div className="thread-group">

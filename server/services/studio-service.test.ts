@@ -5,7 +5,7 @@ const writeStudioConfigMock = vi.fn()
 const getExplicitActiveProjectDirMock = vi.fn()
 const getActiveProjectDirMock = vi.fn()
 const setActiveProjectDirMock = vi.fn()
-const ensureDotDirMock = vi.fn()
+const ensureRosterDirMock = vi.fn()
 const invalidateAllMock = vi.fn()
 
 vi.mock('../lib/config.js', () => ({
@@ -16,8 +16,8 @@ vi.mock('../lib/config.js', () => ({
     setActiveProjectDir: setActiveProjectDirMock,
 }))
 
-vi.mock('../lib/dot-source.js', () => ({
-    ensureDotDir: ensureDotDirMock,
+vi.mock('../lib/roster-source.js', () => ({
+    ensureRosterDir: ensureRosterDirMock,
 }))
 
 vi.mock('../lib/cache.js', () => ({
@@ -35,7 +35,7 @@ describe('getStudioConfig', () => {
         getExplicitActiveProjectDirMock.mockReset().mockReturnValue(null)
         getActiveProjectDirMock.mockReset().mockReturnValue('/tmp/workspace')
         setActiveProjectDirMock.mockReset()
-        ensureDotDirMock.mockReset()
+        ensureRosterDirMock.mockReset()
         invalidateAllMock.mockReset()
     })
 
@@ -68,7 +68,7 @@ describe('initializeStudioProject', () => {
         getExplicitActiveProjectDirMock.mockReset().mockReturnValue(null)
         getActiveProjectDirMock.mockReset().mockReturnValue('/tmp/workspace')
         setActiveProjectDirMock.mockReset()
-        ensureDotDirMock.mockReset()
+        ensureRosterDirMock.mockReset()
         invalidateAllMock.mockReset()
     })
 
@@ -77,7 +77,7 @@ describe('initializeStudioProject', () => {
 
         await expect(initializeStudioProject('/tmp/workspace/')).resolves.toBe('/tmp/workspace')
 
-        expect(ensureDotDirMock).toHaveBeenCalledWith('/tmp/workspace')
+        expect(ensureRosterDirMock).toHaveBeenCalledWith('/tmp/workspace')
         expect(setActiveProjectDirMock).toHaveBeenCalledWith('/tmp/workspace')
         expect(invalidateAllMock).toHaveBeenCalledTimes(1)
     })

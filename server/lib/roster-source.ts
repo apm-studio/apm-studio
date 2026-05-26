@@ -8,51 +8,54 @@ import path from 'path'
 import { promisify } from 'util'
 import open from 'open'
 import {
-    DOT_ASSET_KINDS,
-    isDotAssetKind,
+    ROSTER_ASSET_KINDS,
+    isRosterAssetKind,
     isRecord,
     nameFromUrn,
     ownerFromUrn,
     parseActAsset,
     parseDanceFromSkillMd,
-    parseDotAsset,
-    parseDotAssetUrn,
+    parseRosterAsset,
+    parseRosterAssetUrn,
     parsePerformerAsset,
     slugFromUrn,
-} from '../../shared/dot-contracts.js'
+} from '../../shared/roster-contracts.js'
 import type {
     ActAsset,
     ActAssetPayloadV1,
     ActParticipantSubscriptionsV1,
     ActParticipantV1,
     ActRelationV1,
-    AnyDotAssetV1,
-    DotAssetKind,
+    AnyRosterAssetV1,
+    RosterAssetKind,
     PerformerAsset,
-} from '../../shared/dot-types.js'
+} from '../../shared/roster-types.js'
 
 const execFileAsync = promisify(execFile)
 
 const ASSET_NAME_RE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/
 const STAGE_RE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/
 const OWNER_RE = /^@[A-Za-z0-9_-]{1,64}$/
-const ASSET_STORE_DIR = '.agent-roaster'
-const LEGACY_ASSET_STORE_DIR = '.dance-of-tal'
+const ASSET_STORE_DIR = '.agent-roster'
+const LEGACY_ASSET_STORE_DIRS = ['.agent-roaster', '.dance-of-tal']
 const DEFAULT_CLONE_TIMEOUT_MS = 60_000
 const LOCK_FILE = 'skill-lock.json'
-const SUPABASE_URL = process.env.AGENT_ROASTER_SUPABASE_URL
+const SUPABASE_URL = process.env.AGENT_ROSTER_SUPABASE_URL
+    || process.env.AGENT_ROASTER_SUPABASE_URL
     || process.env.DOT_SUPABASE_URL
     || 'https://qbildcrfjencoqkngyfw.supabase.co'
-const SUPABASE_ANON_KEY = process.env.AGENT_ROASTER_SUPABASE_ANON_KEY
+const SUPABASE_ANON_KEY = process.env.AGENT_ROSTER_SUPABASE_ANON_KEY
+    || process.env.AGENT_ROASTER_SUPABASE_ANON_KEY
     || process.env.DOT_SUPABASE_ANON_KEY
     || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJxYmlsZGNyZmplbmNvcWtuZ3lmdyIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzcyMjYxOTM2LCJleHAiOjIwODc4Mzc5MzZ9.9aI9FU-j20w3UIG7BuVtmpAPh3qClz7xTNXjcq7ofNQ'
 const AUTH_CALLBACK_PORT = 4242
 const AUTH_REDIRECT_URI = `http://localhost:${AUTH_CALLBACK_PORT}/callback`
 const LOGIN_TIMEOUT_MS = 180_000
 
-export const REGISTRY_URL = process.env.AGENT_ROASTER_REGISTRY_URL
+export const REGISTRY_URL = process.env.AGENT_ROSTER_REGISTRY_URL
+    || process.env.AGENT_ROASTER_REGISTRY_URL
     || process.env.DOT_REGISTRY_URL
-    || 'https://registry.agentroaster.dev'
+    || 'https://registry.agentroster.dev'
 
 export type InstalledAsset = {
     urn: string
@@ -120,12 +123,12 @@ type SkillLockEntry = {
     [key: string]: unknown
 }
 
-type PublishableKind = Exclude<DotAssetKind, 'dance'>
+type PublishableKind = Exclude<RosterAssetKind, 'dance'>
 
 type NormalizedPublishAsset = {
     kind: PublishableKind
     urn: string
-    payload: Exclude<AnyDotAssetV1, { kind: 'dance' }>
+    payload: Exclude<AnyRosterAssetV1, { kind: 'dance' }>
     tags: string[]
 }
 
@@ -135,7 +138,7 @@ type PublishDependency = {
     urn: string
     kind: PublishableKind
     status: PublishDependencyStatus
-    payload?: Exclude<AnyDotAssetV1, { kind: 'dance' }>
+    payload?: Exclude<AnyRosterAssetV1, { kind: 'dance' }>
     tags?: string[]
     source?: 'provided' | 'local'
 }
@@ -143,7 +146,7 @@ type PublishDependency = {
 export type PublishPlan = {
     root: NormalizedPublishAsset
     dependencies: PublishDependency[]
-    publishQueue: Array<PublishDependency & { status: 'to_publish'; payload: Exclude<AnyDotAssetV1, { kind: 'dance' }> }>
+    publishQueue: Array<PublishDependency & { status: 'to_publish'; payload: Exclude<AnyRosterAssetV1, { kind: 'dance' }> }>
     existing: string[]
     foreignMissing: string[]
     localMissing: string[]
@@ -155,7 +158,7 @@ function assertSafeAssetUrn(urn: string) {
         throw new Error(`Invalid URN '${urn}'. Expected: <kind>/@<owner>/<stage>/<name>.`)
     }
     const [kind, owner, stage, name] = parts
-    if (!isDotAssetKind(kind)) {
+    if (!isRosterAssetKind(kind)) {
         throw new Error(`Invalid kind in URN '${urn}'.`)
     }
     if (!OWNER_RE.test(owner)) {
@@ -182,51 +185,52 @@ function toRepoPath(value: string) {
     return value.replace(/\\/g, '/')
 }
 
-export function getDotDir(cwd = process.cwd()) {
+export function getRosterDir(cwd = process.cwd()) {
     return path.join(cwd, ASSET_STORE_DIR)
 }
 
-function getLegacyDotDir(cwd = process.cwd()) {
-    return path.join(cwd, LEGACY_ASSET_STORE_DIR)
+function getLegacyRosterDirs(cwd = process.cwd()) {
+    return LEGACY_ASSET_STORE_DIRS.map((dirName) => path.join(cwd, dirName))
 }
 
 export function getGlobalCwd() {
-    const rawInput = process.env.AGENT_ROASTER_HOME?.trim()
+    const rawInput = process.env.AGENT_ROSTER_HOME?.trim()
+        || process.env.AGENT_ROASTER_HOME?.trim()
         || process.env.DANCE_OF_TAL_HOME?.trim()
         || os.homedir()
     const normalized = path.resolve(rawInput)
-    return path.basename(normalized) === ASSET_STORE_DIR || path.basename(normalized) === LEGACY_ASSET_STORE_DIR
+    return path.basename(normalized) === ASSET_STORE_DIR || LEGACY_ASSET_STORE_DIRS.includes(path.basename(normalized))
         ? path.dirname(normalized)
         : normalized
 }
 
-export function getGlobalDotDir() {
-    return getDotDir(getGlobalCwd())
+export function getGlobalRosterDir() {
+    return getRosterDir(getGlobalCwd())
 }
 
-export async function ensureDotDir(cwd: string) {
-    const dotDir = getDotDir(cwd)
-    if (!fss.existsSync(dotDir)) {
+export async function ensureRosterDir(cwd: string) {
+    const rosterDir = getRosterDir(cwd)
+    if (!fss.existsSync(rosterDir)) {
         await initRegistry(cwd)
     }
 }
 
 export function assetFilePath(cwd: string, urn: string) {
-    return assetFilePathForDotDir(getDotDir(cwd), urn)
+    return assetFilePathForRosterDir(getRosterDir(cwd), urn)
 }
 
-function legacyAssetFilePath(cwd: string, urn: string) {
-    return assetFilePathForDotDir(getLegacyDotDir(cwd), urn)
+function legacyAssetFilePaths(cwd: string, urn: string) {
+    return getLegacyRosterDirs(cwd).map((rosterDir) => assetFilePathForRosterDir(rosterDir, urn))
 }
 
-function assetFilePathForDotDir(dotDirInput: string, urn: string) {
+function assetFilePathForRosterDir(rosterDirInput: string, urn: string) {
     assertSafeAssetUrn(urn)
     const [kind, owner, stage, name] = urn.split('/')
-    const dotDir = path.resolve(dotDirInput)
+    const rosterDir = path.resolve(rosterDirInput)
     const filePath = kind === 'dance'
-        ? path.resolve(dotDir, 'assets', kind, owner, stage, name, 'SKILL.md')
-        : path.resolve(dotDir, 'assets', kind, owner, stage, `${name}.json`)
-    assertPathInside(dotDir, filePath, 'asset')
+        ? path.resolve(rosterDir, 'assets', kind, owner, stage, name, 'SKILL.md')
+        : path.resolve(rosterDir, 'assets', kind, owner, stage, `${name}.json`)
+    assertPathInside(rosterDir, filePath, 'asset')
     return filePath
 }
 
@@ -236,13 +240,13 @@ export function danceAssetDir(cwd: string, urn: string) {
     if (kind !== 'dance') {
         throw new Error(`danceAssetDir only works with dance URNs, got '${kind}'`)
     }
-    const dotDir = path.resolve(getDotDir(cwd))
-    const dirPath = path.resolve(dotDir, 'assets', kind, owner, stage, name)
-    assertPathInside(dotDir, dirPath, 'dance asset')
+    const rosterDir = path.resolve(getRosterDir(cwd))
+    const dirPath = path.resolve(rosterDir, 'assets', kind, owner, stage, name)
+    assertPathInside(rosterDir, dirPath, 'dance asset')
     return dirPath
 }
 
-async function readAssetFile(filePath: string, urn: string): Promise<AnyDotAssetV1 | null> {
+async function readAssetFile(filePath: string, urn: string): Promise<AnyRosterAssetV1 | null> {
     try {
         const raw = await fs.readFile(filePath, 'utf-8')
         const [kind] = urn.split('/')
@@ -265,19 +269,30 @@ async function readAssetFile(filePath: string, urn: string): Promise<AnyDotAsset
                 },
             }
         }
-        return parseDotAsset(JSON.parse(raw))
+        return parseRosterAsset(JSON.parse(raw))
     } catch (error) {
         if (isNodeError(error, 'ENOENT')) return null
         throw error
     }
 }
 
-async function readAssetFrom(cwd: string, urn: string): Promise<AnyDotAssetV1 | null> {
-    return await readAssetFile(assetFilePath(cwd, urn), urn)
-        || await readAssetFile(legacyAssetFilePath(cwd, urn), urn)
+async function readAssetFrom(cwd: string, urn: string): Promise<AnyRosterAssetV1 | null> {
+    const current = await readAssetFile(assetFilePath(cwd, urn), urn)
+    if (current) {
+        return current
+    }
+
+    for (const filePath of legacyAssetFilePaths(cwd, urn)) {
+        const legacy = await readAssetFile(filePath, urn)
+        if (legacy) {
+            return legacy
+        }
+    }
+
+    return null
 }
 
-export async function readAsset(cwd: string, urn: string): Promise<AnyDotAssetV1 | null> {
+export async function readAsset(cwd: string, urn: string): Promise<AnyRosterAssetV1 | null> {
     const result = await readAssetFrom(cwd, urn)
     if (result) return result
     const globalCwd = getGlobalCwd()
@@ -302,16 +317,16 @@ export async function getAssetPayload(cwd: string, urn: string): Promise<string 
 }
 
 export async function initRegistry(cwd = process.cwd()) {
-    const dotDir = getDotDir(cwd)
-    await fs.mkdir(dotDir, { recursive: true })
+    const rosterDir = getRosterDir(cwd)
+    await fs.mkdir(rosterDir, { recursive: true })
     await fs.writeFile(
-        path.join(dotDir, 'dot.json'),
-        JSON.stringify({ schema: 'dot.workspace/v1', version: 1 }, null, 2),
+        path.join(rosterDir, 'roster.json'),
+        JSON.stringify({ schema: 'agent-roster.workspace/v1', version: 1 }, null, 2),
         'utf-8',
     ).catch(() => undefined)
-    for (const kind of DOT_ASSET_KINDS) {
-        await fs.mkdir(path.join(dotDir, 'assets', kind), { recursive: true })
-        await fs.mkdir(path.join(dotDir, 'drafts', kind), { recursive: true })
+    for (const kind of ROSTER_ASSET_KINDS) {
+        await fs.mkdir(path.join(rosterDir, 'assets', kind), { recursive: true })
+        await fs.mkdir(path.join(rosterDir, 'drafts', kind), { recursive: true })
     }
 }
 
@@ -344,7 +359,7 @@ export async function fetchRegistryPackageRaw(kind: string, owner: string, stage
 }
 
 export async function getRegistryPackage(kind: string, owner: string, stage: string, name: string): Promise<RegistryPackage> {
-    if (!isDotAssetKind(kind)) {
+    if (!isRosterAssetKind(kind)) {
         throw new Error(`Invalid kind: '${kind}'. Allowed: tal, dance, act, performer`)
     }
     const normalizedOwner = owner.replace(/^@/, '')
@@ -405,7 +420,7 @@ export async function searchRegistry(
 }
 
 function splitRegistryUrn(urn: string) {
-    const parsed = parseDotAssetUrn(urn)
+    const parsed = parseRosterAssetUrn(urn)
     return {
         kind: parsed.kind,
         owner: `@${parsed.owner}`,
@@ -414,8 +429,8 @@ function splitRegistryUrn(urn: string) {
     }
 }
 
-function parseRegistryAsset(kind: DotAssetKind, raw: unknown) {
-    const parsed = parseDotAsset(raw)
+function parseRegistryAsset(kind: RosterAssetKind, raw: unknown) {
+    const parsed = parseRosterAsset(raw)
     if (parsed.kind !== kind) {
         throw new Error(`Registry payload kind mismatch. Expected '${kind}', received '${parsed.kind}'.`)
     }
@@ -430,7 +445,7 @@ function normalizeRepoResourcePath(value: unknown) {
 
 export async function installAsset(cwd: string, urn: string, force = false): Promise<InstalledAsset> {
     const { kind, owner, stage, name } = splitRegistryUrn(urn)
-    await ensureDotDir(cwd)
+    await ensureRosterDir(cwd)
     if (kind === 'dance') {
         return installDanceAsset(cwd, urn, owner.replace(/^@/, ''), stage, name, force)
     }
@@ -489,7 +504,7 @@ async function installDanceAsset(
 }
 
 export async function installPerformerWithDeps(cwd: string, performerUrn: string, force = false) {
-    parseDotAssetUrn(performerUrn, 'performer')
+    parseRosterAssetUrn(performerUrn, 'performer')
     const installed: InstalledAsset[] = []
     const performerAsset = await installAsset(cwd, performerUrn, force)
     installed.push(performerAsset)
@@ -506,7 +521,7 @@ export async function installPerformerWithDeps(cwd: string, performerUrn: string
 }
 
 export async function installActWithDependencies(cwd: string, actUrn: string, force = false) {
-    parseDotAssetUrn(actUrn, 'act')
+    parseRosterAssetUrn(actUrn, 'act')
     const installed: InstalledAsset[] = []
     const seen = new Set<string>()
     const markInstalled = (asset: InstalledAsset) => {
@@ -528,7 +543,7 @@ export async function installActWithDependencies(cwd: string, actUrn: string, fo
 }
 
 function getAuthFilePath() {
-    return path.join(getGlobalDotDir(), 'auth.json')
+    return path.join(getGlobalRosterDir(), 'auth.json')
 }
 
 function decodeJwtPayload(token: string): Record<string, unknown> | null {
@@ -749,7 +764,7 @@ export async function startLogin() {
 
 export function parseUrn(urn: string): { kind: PublishableKind; owner: string; stage: string; name: string } | null {
     try {
-        const parsed = parseDotAssetUrn(urn)
+        const parsed = parseRosterAssetUrn(urn)
         if (parsed.kind === 'dance') return null
         return {
             kind: parsed.kind,
@@ -818,7 +833,7 @@ function normalizePublishAssetInput(input: {
     if (parsedUrn.kind !== input.kind) {
         throw new Error(`Input kind '${input.kind}' does not match URN '${input.urn}'.`)
     }
-    const parsedAsset = parseDotAsset(input.payload)
+    const parsedAsset = parseRosterAsset(input.payload)
     if (parsedAsset.kind === 'dance') {
         throw new Error('Dance assets are not publishable through the cascade publish planner.')
     }
@@ -959,7 +974,7 @@ export async function resolveDependencies(
     payload: unknown,
     myUsername: string,
 ) {
-    const parsedRoot = parseDotAsset(payload)
+    const parsedRoot = parseRosterAsset(payload)
     if (parsedRoot.kind === 'dance') {
         throw new Error('Dance assets cannot be resolved through the publish dependency planner.')
     }
@@ -1150,7 +1165,7 @@ export function getOwnerRepo(url: string) {
 
 export async function shallowClone(options: { url: string; ref?: string; timeoutMs?: number }): Promise<CloneResult> {
     const { url, ref, timeoutMs = DEFAULT_CLONE_TIMEOUT_MS } = options
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-roaster-clone-'))
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-roster-clone-'))
     const args = ['clone', '--depth', '1', '--single-branch']
     if (ref && ref !== 'HEAD') {
         args.push('--branch', ref)
@@ -1394,7 +1409,7 @@ export async function readPluginManifest(repoDir: string): Promise<{ skills: Arr
 }
 
 function lockFilePath(cwd: string) {
-    return path.join(getDotDir(cwd), LOCK_FILE)
+    return path.join(getRosterDir(cwd), LOCK_FILE)
 }
 
 export async function readSkillLock(cwd: string): Promise<SkillLock> {
@@ -1447,8 +1462,8 @@ function escapeHtml(value: string) {
 export {
     ownerFromUrn,
     parseActAsset,
-    parseDotAsset,
-    parseDotAssetUrn,
+    parseRosterAsset,
+    parseRosterAssetUrn,
     parsePerformerAsset,
     slugFromUrn,
 }

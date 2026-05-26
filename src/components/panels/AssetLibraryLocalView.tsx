@@ -135,10 +135,10 @@ export default function AssetLibraryLocalView({
     modelProviderTabs,
 }: Props) {
     const installedTabs: Array<{ key: InstalledKind; label: string; icon: React.ReactNode }> = [
-        { key: 'performer', label: 'Performer', icon: <Users size={10} /> },
-        { key: 'tal', label: 'Tal', icon: <Hexagon size={10} /> },
-        { key: 'dance', label: 'Dance', icon: <Zap size={10} /> },
-        { key: 'act', label: 'Act', icon: <Zap size={10} /> },
+        { key: 'performer', label: 'Agents', icon: <Users size={10} /> },
+        { key: 'tal', label: 'Personas', icon: <Hexagon size={10} /> },
+        { key: 'dance', label: 'Skill Packs', icon: <Zap size={10} /> },
+        { key: 'act', label: 'Teams', icon: <Zap size={10} /> },
     ]
 
     const runtimeTabs: Array<{ key: RuntimeKind; label: string; icon: ReactNode }> = [
@@ -201,22 +201,22 @@ export default function AssetLibraryLocalView({
                 <div className="asset-authoring-row">
                     {installedKind === 'performer' && (
                         <button className="btn" onClick={createNewPerformer}>
-                            <Plus size={10} /> New Performer
+                            <Plus size={10} /> New Agent
                         </button>
                     )}
                     {installedKind === 'tal' && (
                         <button className="btn" onClick={() => createNewPerformerDraftEntry('tal')}>
-                            <Plus size={10} /> New Tal Draft
+                            <Plus size={10} /> New Persona Draft
                         </button>
                     )}
                     {installedKind === 'dance' && (
                         <button className="btn" onClick={() => createNewPerformerDraftEntry('dance')}>
-                            <Plus size={10} /> New Dance Draft
+                            <Plus size={10} /> New Skill Pack Draft
                         </button>
                     )}
                     {installedKind === 'act' && (
                         <button className="btn" onClick={createNewAct}>
-                            <Plus size={10} /> New Act
+                            <Plus size={10} /> New Team
                         </button>
                     )}
 

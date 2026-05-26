@@ -4,24 +4,24 @@ import {
     assetFilePath,
     copySkillDir,
     danceAssetDir,
-    ensureDotDir,
+    ensureRosterDir,
     fetchRegistryPackageRaw,
-    getDotDir,
+    getRosterDir,
     getGlobalCwd,
-    getGlobalDotDir,
+    getGlobalRosterDir,
     initRegistry,
     parseActAsset,
-    parseDotAsset,
+    parseRosterAsset,
     parsePerformerAsset,
     readAsset,
     reportInstall,
     searchRegistry,
     shallowClone,
     startLogin,
-} from '../lib/dot-source.js'
-import type { PerformerAsset } from '../lib/dot-source.js'
+} from '../lib/roster-source.js'
+import type { PerformerAsset } from '../lib/roster-source.js'
 import type { AssetListItem } from '../../shared/asset-contracts.js'
-import { clearDotAuthUser, publishStudioAsset, readDotAuthUser, saveLocalStudioAsset, uninstallStudioAsset, type StudioAssetKind } from '../lib/dot-authoring.js'
+import { clearRosterAuthUser, publishStudioAsset, readRosterAuthUser, saveLocalStudioAsset, uninstallStudioAsset, type StudioAssetKind } from '../lib/roster-authoring.js'
 import { invalidate } from '../lib/cache.js'
 import { findInstalledDependents, getRegistryAssetDetail } from './asset-service.js'
 
@@ -62,7 +62,7 @@ function splitRegistryUrn(urn: string) {
 
 async function installRegistryAssetNormalized(cwd: string, urn: string, force = false): Promise<InstalledAsset> {
     const { kind, owner, stage, name } = splitRegistryUrn(urn)
-    await ensureDotDir(cwd)
+    await ensureRosterDir(cwd)
 
     if (kind === 'dance') {
         return installRegistryDanceNormalized(cwd, urn, owner.replace(/^@/, ''), stage, name, force)
@@ -74,7 +74,7 @@ async function installRegistryAssetNormalized(cwd: string, urn: string, force = 
     }
 
     const pkgData = await fetchRegistryPackageRaw(kind, owner.replace(/^@/, ''), stage, name)
-    const asset = parseDotAsset(pkgData.payload)
+    const asset = parseRosterAsset(pkgData.payload)
     if (asset.kind !== kind) {
         throw new Error(`Registry payload kind mismatch. Expected '${kind}', received '${asset.kind}'.`)
     }
@@ -101,7 +101,7 @@ async function installRegistryDanceNormalized(
     const pkgData = await fetchRegistryPackageRaw('dance', owner, stage, name)
     const resource = pkgData.resource as { type?: unknown; repo?: unknown; path?: unknown; ref?: unknown } | undefined
     if (!resource || resource.type !== 'github' || typeof resource.repo !== 'string' || !resource.repo.trim()) {
-        throw new Error(`Dance '${urn}' has no GitHub resource pointer. Use 'dot add <owner/repo>' to install from GitHub directly.`)
+        throw new Error(`Dance '${urn}' has no GitHub resource pointer. Use Agent Roster GitHub import to install it directly.`)
     }
 
     const repoPath = normalizeRepoResourcePath(resource.path)
@@ -175,47 +175,47 @@ function toRegistrySearchAsset(result: RegistrySearchResult): AssetListItem {
     } as AssetListItem
 }
 
-export function resolveDotCwd(cwd: string, scope?: string) {
+export function resolveRosterCwd(cwd: string, scope?: string) {
     if (scope === 'global') {
         return getGlobalCwd()
     }
     return cwd
 }
 
-export async function getDotStatus(cwd: string) {
-    const dotDir = getDotDir(cwd)
-    const globalDotDir = getGlobalDotDir()
+export async function getRosterStatus(cwd: string) {
+    const rosterDir = getRosterDir(cwd)
+    const globalRosterDir = getGlobalRosterDir()
     const [stageExists, globalExists] = await Promise.all([
-        fs.access(dotDir).then(() => true).catch(() => false),
-        fs.access(globalDotDir).then(() => true).catch(() => false),
+        fs.access(rosterDir).then(() => true).catch(() => false),
+        fs.access(globalRosterDir).then(() => true).catch(() => false),
     ])
 
     return {
         initialized: stageExists || globalExists,
         stageInitialized: stageExists,
         globalInitialized: globalExists,
-        dotDir,
-        globalDotDir,
+        rosterDir,
+        globalRosterDir,
         projectDir: cwd,
     }
 }
 
-export async function getDotStatusSnapshot(cwd: string) {
+export async function getRosterStatusSnapshot(cwd: string) {
     try {
-        return await getDotStatus(cwd)
+        return await getRosterStatus(cwd)
     } catch {
         return {
             initialized: false,
             stageInitialized: false,
             globalInitialized: false,
-            dotDir: '',
-            globalDotDir: '',
+            rosterDir: '',
+            globalRosterDir: '',
             projectDir: cwd,
         }
     }
 }
 
-export async function getDotPerformer(cwd: string, urn: string): Promise<PerformerAsset | null> {
+export async function getRosterPerformer(cwd: string, urn: string): Promise<PerformerAsset | null> {
     const raw = await readAsset(cwd, urn)
     if (!raw) return null
     try {
@@ -225,7 +225,7 @@ export async function getDotPerformer(cwd: string, urn: string): Promise<Perform
     }
 }
 
-export async function searchDotRegistry(query: string, options: { kind?: string | null; limit: number }) {
+export async function searchRosterRegistry(query: string, options: { kind?: string | null; limit: number }) {
     const results = await searchRegistry(query, {
         kind: options.kind || undefined,
         limit: options.limit,
@@ -282,7 +282,7 @@ function formatInstalls(count: number): string {
 }
 
 /** Validates canonical performer assets after parsing. */
-export function validateDotPerformer(performer: PerformerAsset): void {
+export function validateRosterPerformer(performer: PerformerAsset): void {
     // Canonical assets are already validated by parsePerformerAsset,
     // but we can add extra runtime checks if needed.
     if (!performer.payload.tal && (!performer.payload.dances || performer.payload.dances.length === 0)) {
@@ -290,23 +290,23 @@ export function validateDotPerformer(performer: PerformerAsset): void {
     }
 }
 
-export async function initDotRegistry(cwd: string, scope?: string) {
-    const targetCwd = resolveDotCwd(cwd, scope)
+export async function initRosterRegistry(cwd: string, scope?: string) {
+    const targetCwd = resolveRosterCwd(cwd, scope)
     await initRegistry(targetCwd)
     return {
         ok: true,
-        dotDir: getDotDir(targetCwd),
+        rosterDir: getRosterDir(targetCwd),
         scope: scope || 'stage',
     }
 }
 
-export async function installDotAsset(cwd: string, input: {
+export async function installRosterAsset(cwd: string, input: {
     urn: string
     force?: boolean
     scope?: 'global' | 'stage'
 }) {
-    const targetCwd = resolveDotCwd(cwd, input.scope)
-    await ensureDotDir(targetCwd)
+    const targetCwd = resolveRosterCwd(cwd, input.scope)
+    await ensureRosterDir(targetCwd)
 
     if (input.urn.startsWith('performer/')) {
         const result = await installRegistryPerformerWithDepsNormalized(targetCwd, input.urn, input.force)
@@ -333,35 +333,35 @@ export async function installDotAsset(cwd: string, input: {
     return { ...result, scope: input.scope || 'stage' }
 }
 
-export async function getDotAuthUser() {
-    const auth = await readDotAuthUser()
+export async function getRosterAuthUser() {
+    const auth = await readRosterAuthUser()
     return {
         authenticated: !!auth,
         username: auth?.username || null,
     }
 }
 
-export async function loginToDot() {
+export async function loginToRoster() {
     const result = await startLogin()
     return { ok: true, ...result }
 }
 
-export async function logoutFromDot() {
-    await clearDotAuthUser()
+export async function logoutFromRoster() {
+    await clearRosterAuthUser()
     return { ok: true }
 }
 
-export async function saveDotLocalAsset(cwd: string, input: {
+export async function saveRosterLocalAsset(cwd: string, input: {
     kind: StudioAssetKind
     slug: string
     stage?: string
     author?: string
     payload: unknown
 }) {
-    const auth = await readDotAuthUser()
+    const auth = await readRosterAuthUser()
     const author = input.author || auth?.username
     if (!author) {
-        throw new Error('No author available. Sign in to Agent Roaster first.')
+        throw new Error('No author available. Sign in to Agent Roster first.')
     }
 
     const saved = await saveLocalStudioAsset({
@@ -376,7 +376,7 @@ export async function saveDotLocalAsset(cwd: string, input: {
     return { ok: true, ...saved }
 }
 
-export async function publishDotAsset(cwd: string, input: {
+export async function publishRosterAsset(cwd: string, input: {
     kind: StudioAssetKind
     slug: string
     stage?: string
@@ -389,9 +389,9 @@ export async function publishDotAsset(cwd: string, input: {
         tags?: string[]
     }>
 }) {
-    const auth = await readDotAuthUser()
+    const auth = await readRosterAuthUser()
     if (!auth) {
-        const error = Object.assign(new Error('You are not logged in. Sign in to Agent Roaster first.'), { status: 401 })
+        const error = Object.assign(new Error('You are not logged in. Sign in to Agent Roster first.'), { status: 401 })
         throw error
     }
 
@@ -409,7 +409,7 @@ export async function publishDotAsset(cwd: string, input: {
     return { ok: true, ...result }
 }
 
-export async function uninstallDotAsset(cwd: string, input: {
+export async function uninstallRosterAsset(cwd: string, input: {
     kind: StudioAssetKind
     urn: string
     cascade?: boolean
@@ -437,7 +437,7 @@ export async function uninstallDotAsset(cwd: string, input: {
     return { ok: true, ...result, deletedUrns }
 }
 
-export async function previewUninstallDotAsset(cwd: string, input: {
+export async function previewUninstallRosterAsset(cwd: string, input: {
     kind: StudioAssetKind
     urn: string
 }) {

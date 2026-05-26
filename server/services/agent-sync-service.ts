@@ -30,7 +30,7 @@ const providers: AgentSyncProvider[] = [{
 function findProvider(providerId: string) {
     const provider = providers.find((candidate) => candidate.id === providerId)
     if (!provider) {
-        throw new StudioValidationError(`Unknown agent sync provider: ${providerId}`)
+        throw new StudioValidationError(`Unknown assistant sync provider: ${providerId}`)
     }
     return provider
 }

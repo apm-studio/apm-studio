@@ -4,7 +4,7 @@ import os from 'os'
 import open from 'open'
 import path from 'path'
 import { promisify } from 'util'
-import { ensureDotDir } from '../lib/dot-source.js'
+import { ensureRosterDir } from '../lib/roster-source.js'
 import {
     getActiveProjectDir,
     getExplicitActiveProjectDir,
@@ -98,7 +98,7 @@ export async function updateStudioConfig(patch: Partial<StudioConfig>) {
 
 export async function initializeStudioProject(workingDir: string) {
     const resolved = path.resolve(workingDir)
-    await ensureDotDir(resolved)
+    await ensureRosterDir(resolved)
     setActiveProjectDir(resolved)
     invalidateAll()
     return getActiveProjectDir()

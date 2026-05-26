@@ -179,7 +179,7 @@ export function getPerformerCascadeReferences(asset: AssetPanelAsset | LibraryAs
 export function getPerformerSummary(asset: AssetPanelAsset | LibraryAsset) {
     if (asset.kind !== 'performer') return null
     const parts: string[] = []
-    if (asset.talUrn) parts.push('Tal linked')
+    if (asset.talUrn) parts.push('Persona linked')
     if (Array.isArray(asset.danceUrns) && asset.danceUrns.length > 0) {
         parts.push(`${asset.danceUrns.length} dance${asset.danceUrns.length > 1 ? 's' : ''}`)
     }

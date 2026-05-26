@@ -2,14 +2,14 @@ import os from 'node:os'
 import path from 'node:path'
 import { promises as fs } from 'node:fs'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ensurePublishableDependencies, publishStudioAsset, saveLocalStudioAsset } from './dot-authoring.js'
+import { ensurePublishableDependencies, publishStudioAsset, saveLocalStudioAsset } from './roster-authoring.js'
 import { stageFromWorkingDir } from '../../shared/publish-stage.js'
 
 describe('publish dependency validation', () => {
     let workingDir: string
 
     beforeEach(async () => {
-        workingDir = await fs.mkdtemp(path.join(os.tmpdir(), 'dot-studio-publish-check-'))
+        workingDir = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-roster-publish-check-'))
     })
 
     afterEach(async () => {

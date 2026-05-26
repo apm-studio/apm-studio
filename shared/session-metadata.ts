@@ -1,5 +1,5 @@
-const SESSION_TITLE_PREFIX = 'Agent Roaster:'
-const SESSION_METADATA_PATTERN = /^(?:Agent Roaster|DOT Studio):\s*(.*?)\s*\[studio:([^:\]]+):(.*)\]\s*$/
+const SESSION_TITLE_PREFIX = 'Agent Roster:'
+const SESSION_METADATA_PATTERN = /^(?:Agent Roster|DOT Studio):\s*(.*?)\s*\[studio:([^:\]]+):(.*)\]\s*$/
 const MAX_PROVISIONAL_THREAD_TITLE_LENGTH = 80
 
 export function buildStudioSessionTitle(performerId: string, performerName: string, configHash: string): string {

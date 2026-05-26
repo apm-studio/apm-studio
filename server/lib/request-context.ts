@@ -2,7 +2,8 @@ import type { Context } from 'hono'
 import path from 'path'
 import { getActiveProjectDir } from './config.js'
 
-const WORKING_DIR_HEADER = 'x-dot-working-dir'
+const WORKING_DIR_HEADER = 'x-roster-working-dir'
+const LEGACY_WORKING_DIR_HEADER = 'x-dot-working-dir'
 
 function normalizeWorkingDir(input: string): string | null {
     const trimmed = input.trim().replace(/\/+$/, '')
@@ -14,7 +15,7 @@ function normalizeWorkingDir(input: string): string | null {
 }
 
 export function extractRequestWorkingDir(c: Context): string | null {
-    const headerValue = c.req.header(WORKING_DIR_HEADER)
+    const headerValue = c.req.header(WORKING_DIR_HEADER) || c.req.header(LEGACY_WORKING_DIR_HEADER)
     if (headerValue) {
         return normalizeWorkingDir(headerValue)
     }

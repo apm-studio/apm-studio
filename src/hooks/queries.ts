@@ -9,7 +9,7 @@ import type { AssetCard, McpServer, ModelConfig, RuntimeToolResolution } from '.
 import { useStudioStore } from '../store'
 import type { RuntimeModelCatalogEntry } from '../../shared/model-variants'
 import type { GitHubDanceSyncStatus } from '../../shared/asset-contracts'
-import type { InstalledDanceLocator } from '../../shared/dot-contracts'
+import type { InstalledDanceLocator } from '../../shared/roster-contracts'
 
 type InstallableAssetKind = 'tal' | 'dance' | 'performer' | 'act'
 
@@ -23,8 +23,8 @@ export const queryKeys = {
     mcpServers: ['mcp-servers'] as const,
     runtimeTools: (workingDir: string, modelKey: string, serverKey: string) => ['runtime-tools', workingDir, modelKey, serverKey] as const,
     serverHealth: ['server-health'] as const,
-    dotStatus: (workingDir: string) => ['dot-status', workingDir] as const,
-    dotAuthUser: ['dot-auth-user'] as const,
+    rosterStatus: (workingDir: string) => ['roster-status', workingDir] as const,
+    rosterAuthUser: ['roster-auth-user'] as const,
     registrySearch: (workingDir: string, q: string) => ['registry-search', workingDir, q] as const,
     danceUpdateChecks: (workingDir: string, assetsKey: string, includeRepoDrift: boolean) =>
         ['dance-update-checks', workingDir, assetsKey, includeRepoDrift ? 'drift' : 'light'] as const,
@@ -134,20 +134,20 @@ export function useServerHealth() {
     })
 }
 
-// ── Agent Roaster Status ────────────────────────────────
-export function useDotStatus() {
+// ── Agent Roster Status ────────────────────────────────
+export function useRosterStatus() {
     const workingDir = useStudioStore((s) => s.workingDir)
-    return useQuery<{ initialized: boolean; dotDir: string; projectDir: string }>({
-        queryKey: queryKeys.dotStatus(workingDir),
-        queryFn: () => api.dot.status(),
+    return useQuery<{ initialized: boolean; rosterDir: string; projectDir: string }>({
+        queryKey: queryKeys.rosterStatus(workingDir),
+        queryFn: () => api.roster.status(),
         staleTime: 60_000,
     })
 }
 
-export function useDotAuthUser() {
+export function useRosterAuthUser() {
     return useQuery<{ authenticated: boolean; username: string | null }>({
-        queryKey: queryKeys.dotAuthUser,
-        queryFn: () => api.dot.authUser(),
+        queryKey: queryKeys.rosterAuthUser,
+        queryFn: () => api.roster.authUser(),
         staleTime: 60_000,
         retry: false,
         placeholderData: keepPreviousData,
@@ -163,7 +163,7 @@ export function useRegistrySearch(
     const workingDir = useStudioStore((s) => s.workingDir)
     return useQuery({
         queryKey: queryKeys.registrySearch(workingDir, `${kind}:${query}`),
-        queryFn: () => api.dot.search(query, kind === 'all' ? undefined : kind, 20),
+        queryFn: () => api.roster.search(query, kind === 'all' ? undefined : kind, 20),
         enabled: enabled && query.trim().length > 0,
         staleTime: 60_000,
         gcTime: 5 * 60_000,
@@ -184,7 +184,7 @@ export function useDanceUpdateChecks(
     return useQuery<Array<InstalledDanceLocator & { sync: GitHubDanceSyncStatus }>>({
         queryKey: queryKeys.danceUpdateChecks(workingDir, assetsKey, includeRepoDrift),
         queryFn: async () => {
-            const response = await api.dot.checkDanceUpdates({ assets, includeRepoDrift })
+            const response = await api.roster.checkDanceUpdates({ assets, includeRepoDrift })
             return response.results
         },
         enabled: enabled && assets.length > 0,
@@ -201,11 +201,11 @@ export function useInstallAsset() {
     const workingDir = useStudioStore((s) => s.workingDir)
     return useMutation({
         mutationFn: ({ urn, localName, scope }: { urn: string; localName?: string; scope?: 'global' | 'stage' }) =>
-            api.dot.install(urn, localName, undefined, scope),
+            api.roster.install(urn, localName, undefined, scope),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.assets(workingDir) })
             queryClient.invalidateQueries({ queryKey: queryKeys.assetInventory(workingDir) })
-            queryClient.invalidateQueries({ queryKey: queryKeys.dotStatus(workingDir) })
+            queryClient.invalidateQueries({ queryKey: queryKeys.rosterStatus(workingDir) })
         },
     })
 }
@@ -214,11 +214,11 @@ export function useAddDance() {
     const queryClient = useQueryClient()
     const workingDir = useStudioStore((s) => s.workingDir)
     return useMutation({
-        mutationFn: ({ source, scope }: { source: string; scope?: 'global' | 'stage' }) => api.dot.addFromGitHub(source, scope),
+        mutationFn: ({ source, scope }: { source: string; scope?: 'global' | 'stage' }) => api.roster.addFromGitHub(source, scope),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.assets(workingDir) })
             queryClient.invalidateQueries({ queryKey: queryKeys.assetInventory(workingDir) })
-            queryClient.invalidateQueries({ queryKey: queryKeys.dotStatus(workingDir) })
+            queryClient.invalidateQueries({ queryKey: queryKeys.rosterStatus(workingDir) })
         },
     })
 }
@@ -227,7 +227,7 @@ export function useApplyDanceUpdates() {
     const queryClient = useQueryClient()
     const workingDir = useStudioStore((s) => s.workingDir)
     return useMutation({
-        mutationFn: (assets: InstalledDanceLocator[]) => api.dot.applyDanceUpdates({ assets }),
+        mutationFn: (assets: InstalledDanceLocator[]) => api.roster.applyDanceUpdates({ assets }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.assets(workingDir) })
             queryClient.invalidateQueries({ queryKey: queryKeys.assetInventory(workingDir) })
@@ -240,7 +240,7 @@ export function useReimportDanceSource() {
     const queryClient = useQueryClient()
     const workingDir = useStudioStore((s) => s.workingDir)
     return useMutation({
-        mutationFn: (asset: InstalledDanceLocator) => api.dot.reimportDanceSource(asset),
+        mutationFn: (asset: InstalledDanceLocator) => api.roster.reimportDanceSource(asset),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.assets(workingDir) })
             queryClient.invalidateQueries({ queryKey: queryKeys.assetInventory(workingDir) })

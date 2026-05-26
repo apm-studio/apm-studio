@@ -1,16 +1,16 @@
 /**
- * draft-service.ts — Filesystem CRUD for `.agent-roaster/drafts/`
+ * draft-service.ts — Filesystem CRUD for `.agent-roster/drafts/`
  *
- * Tal / Performer / Act: .agent-roaster/drafts/<kind>/<id>.json
- * Dance (bundle):        .agent-roaster/drafts/dance/<id>/draft.json + SKILL.md + sibling dirs
- * Dance (legacy):        .agent-roaster/drafts/dance/<id>.json  (lazily migrated to bundle)
+ * Tal / Performer / Act: .agent-roster/drafts/<kind>/<id>.json
+ * Dance (bundle):        .agent-roster/drafts/dance/<id>/draft.json + SKILL.md + sibling dirs
+ * Dance (legacy):        .agent-roster/drafts/dance/<id>.json  (lazily migrated to bundle)
  * Project-local only — no global scope.
  */
 
 import fs from 'fs/promises'
 import path from 'path'
 import crypto from 'crypto'
-import { getDotDir, ensureDotDir } from '../lib/dot-source.js'
+import { getRosterDir, ensureRosterDir } from '../lib/roster-source.js'
 import {
     danceBundleDir,
     isDanceBundleDraft,
@@ -43,7 +43,7 @@ function isActDraftFile(draft: DraftFile): draft is TypedDraftFile<'act'> {
 }
 
 function draftsDir(cwd: string): string {
-    return path.join(getDotDir(cwd), 'drafts')
+    return path.join(getRosterDir(cwd), 'drafts')
 }
 
 function kindDir(cwd: string, kind: DraftAssetKind): string {
@@ -61,7 +61,7 @@ function generateDraftId(): string {
 }
 
 async function ensureDraftsDir(cwd: string, kind: DraftAssetKind): Promise<void> {
-    await ensureDotDir(cwd)
+    await ensureRosterDir(cwd)
     await fs.mkdir(kindDir(cwd, kind), { recursive: true })
 }
 

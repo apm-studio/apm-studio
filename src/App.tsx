@@ -95,7 +95,7 @@ export default function App() {
         setApiWorkingDirContext(config.projectDir || null);
         if (isStudioTheme(config.theme) && config.theme !== useStudioStore.getState().theme) {
           useStudioStore.setState({ theme: config.theme });
-          localStorage.setItem('dot-theme', config.theme);
+          localStorage.setItem('roster-theme', config.theme);
         }
 
         const workspaces = await api.workspaces.list(config.projectDir ? true : false).catch(() => []);

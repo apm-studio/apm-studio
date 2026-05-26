@@ -3,8 +3,8 @@ import { api } from '../../api';
 import { showToast } from '../../lib/toast';
 import { GitBranch, CheckCircle, AlertCircle, Settings, Moon, Sun, Hexagon, Terminal as TerminalIcon, Github, ChevronDown, Upload, LogIn, UserRound, MessageCircle, RefreshCcw } from 'lucide-react';
 import { useStudioStore } from '../../store';
-import { useServerHealth, useDotStatus } from '../../hooks/queries';
-import { useDotLogin } from '../../hooks/useDotLogin';
+import { useServerHealth, useRosterStatus } from '../../hooks/queries';
+import { useRosterLogin } from '../../hooks/useRosterLogin';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../../hooks/queries';
 import { DropdownMenu } from '../shared/DropdownMenu';
@@ -36,12 +36,12 @@ export default function WorkspaceToolbar() {
     const addCanvasTerminal = useStudioStore(s => s.addCanvasTerminal);
 
     const { data: serverHealthy } = useServerHealth();
-    const { data: dotStatus } = useDotStatus();
-    const { authUser, startLogin, logout, isAuthenticating, isLoggingOut } = useDotLogin();
+    const { data: rosterStatus } = useRosterStatus();
+    const { authUser, startLogin, logout, isAuthenticating, isLoggingOut } = useRosterLogin();
     const queryClient = useQueryClient();
 
     const serverConnected = !!serverHealthy;
-    const dotInitialized = dotStatus?.initialized ?? false;
+    const rosterInitialized = rosterStatus?.initialized ?? false;
     const [gitBranch, setGitBranch] = useState<string | null>(null);
     const [discordOnline, setDiscordOnline] = useState(false);
     const effectiveDiscordOnline = serverConnected && discordOnline;
@@ -81,19 +81,19 @@ export default function WorkspaceToolbar() {
         setSettingsOpen(true);
     };
 
-    const handleDotInit = async () => {
-        if (dotInitialized) return;
+    const handleRosterInit = async () => {
+        if (rosterInitialized) return;
         try {
-            await api.dot.init();
-            queryClient.invalidateQueries({ queryKey: queryKeys.dotStatus(workingDir) });
+            await api.roster.init();
+            queryClient.invalidateQueries({ queryKey: queryKeys.rosterStatus(workingDir) });
         } catch (err) {
-            console.error('Failed to init Agent Roaster workspace:', err);
-            showToast('Failed to initialize the Agent Roaster workspace for this project.', 'error', {
+            console.error('Failed to init Agent Roster workspace:', err);
+            showToast('Failed to initialize the Agent Roster workspace for this project.', 'error', {
                 title: 'Workspace init failed',
-                dedupeKey: `dot:init:${workingDir || 'unknown'}`,
+                dedupeKey: `roster:init:${workingDir || 'unknown'}`,
                 actionLabel: 'Retry',
                 onAction: () => {
-                    void handleDotInit()
+                    void handleRosterInit()
                 },
             });
         }
@@ -104,16 +104,16 @@ export default function WorkspaceToolbar() {
             <div className="toolbar">
                 <button
                     type="button"
-                    className={`toolbar__item dot-status ${dotInitialized ? 'dot-ok' : 'dot-missing'}`}
-                    onClick={handleDotInit}
-                    aria-label={dotInitialized ? 'Agent Roaster workspace initialized' : 'Initialize Agent Roaster workspace'}
-                    title={dotInitialized
-                        ? 'Agent Roaster initialized for this workspace'
-                        : 'Agent Roaster not initialized - click to init'
+                    className={`toolbar__item roster-status ${rosterInitialized ? 'roster-ok' : 'roster-missing'}`}
+                    onClick={handleRosterInit}
+                    aria-label={rosterInitialized ? 'Agent Roster workspace initialized' : 'Initialize Agent Roster workspace'}
+                    title={rosterInitialized
+                        ? 'Agent Roster initialized for this workspace'
+                        : 'Agent Roster not initialized - click to init'
                     }
                 >
                     <Hexagon size={12} />
-                    <span>Roaster</span>
+                    <span>Roster</span>
                 </button>
 
                 {gitBranch && (
@@ -128,8 +128,8 @@ export default function WorkspaceToolbar() {
                         trigger={
                             <button
                                 type="button"
-                                className="toolbar__item dot-auth-status dot-auth-status--ok"
-                                aria-label={`Agent Roaster account @${authUser.username}`}
+                                className="toolbar__item roster-auth-status roster-auth-status--ok"
+                                aria-label={`Agent Roster account @${authUser.username}`}
                                 title={`Signed in as @${authUser.username}`}
                             >
                                 <UserRound size={12} />
@@ -144,12 +144,12 @@ export default function WorkspaceToolbar() {
                 ) : (
                     <button
                         type="button"
-                        className="toolbar__item dot-auth-status dot-auth-status--warn"
+                        className="toolbar__item roster-auth-status roster-auth-status--warn"
                         onClick={() => void startLogin(true)}
-                        aria-label={isAuthenticating ? 'Agent Roaster sign in pending' : 'Sign in to Agent Roaster'}
+                        aria-label={isAuthenticating ? 'Agent Roster sign in pending' : 'Sign in to Agent Roster'}
                         title={isAuthenticating
-                            ? 'Waiting for Agent Roaster login to complete in the browser'
-                            : 'Review the Agent Roaster Terms of Service and sign in'
+                            ? 'Waiting for Agent Roster login to complete in the browser'
+                            : 'Review the Agent Roster Terms of Service and sign in'
                         }
                     >
                         <LogIn size={12} />
@@ -199,8 +199,8 @@ export default function WorkspaceToolbar() {
                     type="button"
                     className="icon-btn"
                     onClick={() => setWorkspaceMode('agent-sync')}
-                    title="Agent Sync"
-                    aria-label="Open Agent Sync"
+                    title="Assistant Sync"
+                    aria-label="Open Assistant Sync"
                 >
                     <RefreshCcw size={12} />
                 </button>

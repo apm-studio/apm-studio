@@ -1,10 +1,10 @@
 import path from 'path'
 import type { GitHubDanceRepoDrift, GitHubDanceSyncStatus } from '../../shared/asset-contracts.js'
 import type {
-    DotDanceReimportSourceResponse,
+    RosterDanceReimportSourceResponse,
     InstalledDanceLocator,
-} from '../../shared/dot-contracts.js'
-import { getGlobalCwd, parseSource } from '../lib/dot-source.js'
+} from '../../shared/roster-contracts.js'
+import { getGlobalCwd, parseSource } from '../lib/roster-source.js'
 import { invalidate } from '../lib/cache.js'
 import {
     buildGitHubDanceLockEntryInput,
@@ -371,7 +371,7 @@ export async function applyDanceGitHubUpdates(
 export async function reimportDanceGitHubSource(
     cwd: string,
     asset: InstalledDanceLocator,
-): Promise<DotDanceReimportSourceResponse> {
+): Promise<RosterDanceReimportSourceResponse> {
     const [target] = await resolveTargets(cwd, [asset])
     const rawSourceMap = await readGitHubDanceSourceMap(target.cwd)
     const rawSource = rawSourceMap.get(target.urn) || null
@@ -387,7 +387,7 @@ export async function reimportDanceGitHubSource(
         const installedPaths = new Set(snapshot.entries.map(({ entry }) => entry.repoRootSkillPath))
         const resolvedRef = await resolveGitHubRef(target.source.owner, target.source.repo, target.source.ref)
 
-        const installed: DotDanceReimportSourceResponse['installed'] = []
+        const installed: RosterDanceReimportSourceResponse['installed'] = []
         const skippedExistingUrns: string[] = []
 
         for (const discovered of snapshot.discoveredByPath.values()) {

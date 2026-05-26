@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const parseSourceMock = vi.hoisted(() => vi.fn())
 const shallowCloneMock = vi.hoisted(() => vi.fn())
-const ensureDotDirMock = vi.hoisted(() => vi.fn())
+const ensureRosterDirMock = vi.hoisted(() => vi.fn())
 const getGlobalCwdMock = vi.hoisted(() => vi.fn(() => '/tmp/global-dot'))
 const reportInstallMock = vi.hoisted(() => vi.fn(() => Promise.resolve()))
 const getOwnerRepoMock = vi.hoisted(() => vi.fn(() => 'acme/skill-pack'))
@@ -13,10 +13,10 @@ const getGitHubTreeShaMock = vi.hoisted(() => vi.fn())
 const copyGitHubDanceSkillMock = vi.hoisted(() => vi.fn())
 const upsertGitHubDanceLockEntryMock = vi.hoisted(() => vi.fn())
 
-vi.mock('../lib/dot-source.js', () => ({
+vi.mock('../lib/roster-source.js', () => ({
     parseSource: parseSourceMock,
     shallowClone: shallowCloneMock,
-    ensureDotDir: ensureDotDirMock,
+    ensureRosterDir: ensureRosterDirMock,
     getGlobalCwd: getGlobalCwdMock,
     reportInstall: reportInstallMock,
     getOwnerRepo: getOwnerRepoMock,
@@ -49,7 +49,7 @@ describe('addDanceFromGitHub', () => {
     beforeEach(() => {
         parseSourceMock.mockReset()
         shallowCloneMock.mockReset()
-        ensureDotDirMock.mockReset()
+        ensureRosterDirMock.mockReset()
         reportInstallMock.mockReset()
         discoverGitHubDanceSkillsMock.mockReset()
         resolveGitHubRefMock.mockReset()
@@ -85,7 +85,7 @@ describe('addDanceFromGitHub', () => {
         ])
         getGitHubTreeShaMock.mockResolvedValue({ status: 'ok', hash: 'remote-hash' })
 
-        const { addDanceFromGitHub } = await import('./dot-add-service.js')
+        const { addDanceFromGitHub } = await import('./roster-add-service.js')
         const result = await addDanceFromGitHub('/tmp/workspace', 'acme/skill-pack/skills', 'stage')
 
         expect(result.installed).toEqual([{

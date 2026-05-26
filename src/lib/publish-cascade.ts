@@ -43,8 +43,8 @@ function stageForContext(context: PublishContext) {
 
 function draftGuidanceForDance(scope: 'performer' | 'act') {
     return scope === 'performer'
-        ? 'Draft Dance refs are still attached. Export them, upload them to GitHub, import them from Asset Library, and re-apply them before publishing this performer.'
-        : 'Draft Dance refs are still attached inside this act. Export them, upload them to GitHub, import them from Asset Library, and re-apply them before publishing this act.'
+        ? 'Draft Skill Pack refs are still attached. Export them, upload them to GitHub, import them from Asset Library, and re-apply them before publishing this agent.'
+        : 'Draft Skill Pack refs are still attached inside this team. Export them, upload them to GitHub, import them from Asset Library, and re-apply them before publishing this team.'
 }
 
 function pushProvidedAsset(
@@ -113,7 +113,7 @@ function actPayloadFromResolvedParticipants(input: {
 
 function talPayloadFromDraft(urn: string, draft: DraftAsset) {
     if (typeof draft.content !== 'string' || !draft.content.trim()) {
-        throw new Error(`Tal draft '${draft.name || draft.id}' must contain markdown content before publishing.`)
+        throw new Error(`Persona draft '${draft.name || draft.id}' must contain markdown content before publishing.`)
     }
 
     return {
@@ -134,7 +134,7 @@ function promoteTalDraft(
 ) {
     const draft = context.drafts[draftId]
     if (!draft || draft.kind !== 'tal') {
-        throw new Error(`Tal draft '${draftId}' is missing. Reconnect it from Asset Library before publishing.`)
+        throw new Error(`Persona draft '${draftId}' is missing. Reconnect it from Asset Library before publishing.`)
     }
 
     const stage = stageForContext(context)
@@ -176,7 +176,7 @@ function promotePerformerNode(
     })
 
     if (!talUrn && danceUrns.length === 0) {
-        throw new Error('A performer asset requires at least one Tal or Dance reference.')
+        throw new Error('An agent package requires at least one Persona or Skill Pack reference.')
     }
 
     const payload = performerPayloadFromResolvedRefs({
@@ -256,7 +256,7 @@ export function getPerformerPublishBlockReasons(
     const reasons: string[] = []
 
     if (performer.talRef?.kind === 'draft' && (!drafts[performer.talRef.draftId] || drafts[performer.talRef.draftId]?.kind !== 'tal')) {
-        reasons.push('Tal draft is missing. Reconnect it from Asset Library before publishing this performer.')
+        reasons.push('Persona draft is missing. Reconnect it from Asset Library before publishing this agent.')
     }
 
     if ((performer.danceRefs || []).some((ref) => ref.kind === 'draft')) {
@@ -284,13 +284,13 @@ export function getActPublishDependencyIssues(
         }
 
         if (!performer.talRef && (performer.danceRefs || []).length === 0) {
-            reasons.push(`Participant "${label}" needs at least one Tal or Dance before publishing this act.`)
+            reasons.push(`Participant "${label}" needs at least one Persona or Skill Pack before publishing this team.`)
         }
 
         if (performer.talRef?.kind === 'draft') {
             const talDraft = drafts[performer.talRef.draftId]
             if (!talDraft || talDraft.kind !== 'tal') {
-                reasons.push(`Participant "${label}" is missing Tal draft '${performer.talRef.draftId}'. Recreate it before publishing this act.`)
+                reasons.push(`Participant "${label}" is missing Persona draft '${performer.talRef.draftId}'. Recreate it before publishing this team.`)
             }
         }
         if ((performer.danceRefs || []).some((ref) => ref.kind === 'draft')) {

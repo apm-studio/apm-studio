@@ -1,22 +1,22 @@
 {
-  "name": "agent-roaster",
+  "name": "agent-roster",
   "version": "0.2.13",
-  "description": "Agent Roaster packages coding agents and applies them to Codex, Claude, Gemini, and local AI coding assistants.",
+  "description": "Agent Roster packages coding agents and applies them to Codex, Claude, Gemini, and local AI coding assistants.",
   "license": "MIT",
   "author": "monarchjuno",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/agent-roaster/agent-roaster.git"
+    "url": "git+https://github.com/agent-roster/agent-roster.git"
   },
-  "homepage": "https://github.com/agent-roaster/agent-roaster",
+  "homepage": "https://github.com/agent-roster/agent-roster",
   "bugs": {
-    "url": "https://github.com/agent-roaster/agent-roaster/issues"
+    "url": "https://github.com/agent-roster/agent-roster/issues"
   },
   "publishConfig": {
     "access": "public"
   },
   "keywords": [
-    "agent-roaster",
+    "agent-roster",
     "agent-packages",
     "coding-agents",
     "opencode",
@@ -52,7 +52,7 @@
     "prepublishOnly": "npm run build:all"
   },
   "bin": {
-    "agent-roaster": "dist/cli.js"
+    "agent-roster": "dist/cli.js"
   },
   "files": [
     "dist/",

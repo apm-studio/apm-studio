@@ -1,4 +1,4 @@
-// Agent Roaster — Global Store (Zustand)
+// Agent Roster — Global Store (Zustand)
 
 import { create } from 'zustand'
 import type { StudioState } from './types'

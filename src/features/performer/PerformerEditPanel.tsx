@@ -89,7 +89,7 @@ export default function PerformerEditPanel({
 
     // ── Detail view titles ──
     const detailTitles: Record<string, string> = {
-        tal: 'Tal',
+        tal: 'Persona',
         dances: 'Dances',
         model: 'Model & Runtime',
         mcp: 'MCP & Relations',
@@ -175,7 +175,7 @@ export default function PerformerEditPanel({
                         cards={[
                             {
                                 key: 'tal',
-                                title: 'Tal',
+                                title: 'Persona',
                                 description: talDesc,
                                 icon: <Hexagon size={12} />,
                                 isOver: dropRefs.tal.isOver,

@@ -165,7 +165,7 @@ export default function ActMetaView() {
 
     return (
         <div className="act-panel__content edit-workbench act-edit-workbench">
-            <div className="act-edit-workbench__tabs" role="tablist" aria-label="Act edit sections">
+            <div className="act-edit-workbench__tabs" role="tablist" aria-label="Team edit sections">
                 {tabs.map((tab) => (
                     <button
                         key={tab.key}
@@ -195,7 +195,7 @@ export default function ActMetaView() {
                                 <label className="adv-field">
                                     <span className="adv-field__label">
                                         Name
-                                        <Tip text="The Act name is visible to all participant agents. Use a clear, descriptive name so agents can understand the workflow context." />
+                                        <Tip text="The Team name is visible to all participant agents. Use a clear, descriptive name so agents can understand the workflow context." />
                                     </span>
                                     <input
                                         key={`act-name:${activeActId}:${act.name}`}
@@ -219,7 +219,7 @@ export default function ActMetaView() {
                                         className="text-input act-edit-workbench__textarea"
                                         defaultValue={act.description || meta.description || ''}
                                         onBlur={(e) => commitDesc(e.target.value)}
-                                        placeholder="Describe the workflow this Act performs"
+                                        placeholder="Describe the workflow this Team performs"
                                         rows={4}
                                     />
                                 </label>
@@ -388,7 +388,7 @@ export default function ActMetaView() {
                     <>
                         <div className="adv-section">
                             <div className="adv-section__head">
-                                <span className="section-title">Act Rules</span>
+                                <span className="section-title">Team Rules</span>
                             </div>
                             <div className="adv-section__body">
                                 <div className="act-panel__tags">

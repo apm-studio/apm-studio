@@ -81,7 +81,7 @@ export default function ActParticipantBindingView() {
                 <button
                     type="button"
                     className="icon-btn"
-                    title="Back to Act Config"
+                    title="Back to Team Config"
                     onClick={() => openActEditor(activeActId, 'act', { tab: 'participants' })}
                 >
                     <ChevronLeft size={12} />

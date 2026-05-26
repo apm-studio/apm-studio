@@ -1,15 +1,15 @@
 import { Hono } from 'hono'
-import type { StudioAssetKind } from '../lib/dot-authoring.js'
+import type { StudioAssetKind } from '../lib/roster-authoring.js'
 import {
-    installDotAsset,
-    publishDotAsset,
-    saveDotLocalAsset,
-    uninstallDotAsset,
-    previewUninstallDotAsset,
-} from '../services/dot-service.js'
+    installRosterAsset,
+    publishRosterAsset,
+    saveRosterLocalAsset,
+    uninstallRosterAsset,
+    previewUninstallRosterAsset,
+} from '../services/roster-service.js'
 import { jsonError, requestWorkingDir } from './route-errors.js'
 
-const dotAssets = new Hono()
+const rosterAssets = new Hono()
 
 function errorMessage(error: unknown) {
     return error instanceof Error ? error.message : 'Unknown error'
@@ -21,7 +21,7 @@ function errorStatus(error: unknown) {
         : undefined
 }
 
-dotAssets.post('/api/dot/install', async (c) => {
+rosterAssets.post('/api/roster/install', async (c) => {
     const body = await c.req.json<{
         urn: string
         localName?: string
@@ -30,13 +30,13 @@ dotAssets.post('/api/dot/install', async (c) => {
     }>()
 
     try {
-        return c.json(await installDotAsset(requestWorkingDir(c), body))
+        return c.json(await installRosterAsset(requestWorkingDir(c), body))
     } catch (error: unknown) {
         return jsonError(c, errorMessage(error), 500)
     }
 })
 
-dotAssets.put('/api/dot/assets/local', async (c) => {
+rosterAssets.put('/api/roster/assets/local', async (c) => {
     const cwd = requestWorkingDir(c)
     const body = await c.req.json<{
         kind: StudioAssetKind
@@ -51,13 +51,13 @@ dotAssets.put('/api/dot/assets/local', async (c) => {
     }
 
     try {
-        return c.json(await saveDotLocalAsset(cwd, body))
+        return c.json(await saveRosterLocalAsset(cwd, body))
     } catch (error: unknown) {
         return jsonError(c, errorMessage(error), 400)
     }
 })
 
-dotAssets.post('/api/dot/assets/publish', async (c) => {
+rosterAssets.post('/api/roster/assets/publish', async (c) => {
     const cwd = requestWorkingDir(c)
     const body = await c.req.json<{
         kind: StudioAssetKind
@@ -78,17 +78,17 @@ dotAssets.post('/api/dot/assets/publish', async (c) => {
         return jsonError(c, 'kind and slug are required.', 400)
     }
     if (!body.acknowledgedTos) {
-        return jsonError(c, 'Review and accept the Agent Roaster Terms of Service before publishing: https://agentroaster.dev/tos', 400)
+        return jsonError(c, 'Review and accept the Agent Roster Terms of Service before publishing: https://agentroster.dev/tos', 400)
     }
 
     try {
-        return c.json(await publishDotAsset(cwd, body))
+        return c.json(await publishRosterAsset(cwd, body))
     } catch (error: unknown) {
         return jsonError(c, errorMessage(error), errorStatus(error) === 401 ? 401 : 400)
     }
 })
 
-dotAssets.delete('/api/dot/assets/local', async (c) => {
+rosterAssets.delete('/api/roster/assets/local', async (c) => {
     const cwd = requestWorkingDir(c)
     const body = await c.req.json<{
         kind: 'tal' | 'dance' | 'performer' | 'act'
@@ -101,13 +101,13 @@ dotAssets.delete('/api/dot/assets/local', async (c) => {
     }
 
     try {
-        return c.json(await uninstallDotAsset(cwd, body))
+        return c.json(await uninstallRosterAsset(cwd, body))
     } catch (error: unknown) {
         return jsonError(c, errorMessage(error), 404)
     }
 })
 
-dotAssets.post('/api/dot/assets/uninstall-preview', async (c) => {
+rosterAssets.post('/api/roster/assets/uninstall-preview', async (c) => {
     const cwd = requestWorkingDir(c)
     const body = await c.req.json<{
         kind: 'tal' | 'dance' | 'performer' | 'act'
@@ -119,10 +119,10 @@ dotAssets.post('/api/dot/assets/uninstall-preview', async (c) => {
     }
 
     try {
-        return c.json(await previewUninstallDotAsset(cwd, body))
+        return c.json(await previewUninstallRosterAsset(cwd, body))
     } catch (error: unknown) {
         return jsonError(c, errorMessage(error), 404)
     }
 })
 
-export default dotAssets
+export default rosterAssets

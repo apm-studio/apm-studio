@@ -1,13 +1,13 @@
-// Agent Roaster add service: installs Dance skills from a GitHub repo.
+// Agent Roster add service: installs Dance skills from a GitHub repo.
 import path from 'path'
 import {
     parseSource,
     getOwnerRepo,
     shallowClone,
-    ensureDotDir,
+    ensureRosterDir,
     getGlobalCwd,
     reportInstall,
-} from '../lib/dot-source.js'
+} from '../lib/roster-source.js'
 import { invalidate } from '../lib/cache.js'
 import {
     buildGitHubDanceLockEntryInput,
@@ -18,9 +18,10 @@ import {
     upsertGitHubDanceLockEntry,
 } from './dance-github-source.js'
 
-const REGISTRY_URL = process.env.AGENT_ROASTER_REGISTRY_URL
+const REGISTRY_URL = process.env.AGENT_ROSTER_REGISTRY_URL
+    || process.env.AGENT_ROASTER_REGISTRY_URL
     || process.env.DOT_REGISTRY_URL
-    || 'https://registry.agentroaster.dev'
+    || 'https://registry.agentroster.dev'
 
 export interface AddResult {
     installed: Array<{ urn: string; name: string; description: string }>
@@ -90,7 +91,7 @@ export async function addDanceFromGitHub(cwd: string, source: string, scope?: 'g
         const stage = parsed.repo
         const installed: AddResult['installed'] = []
 
-        await ensureDotDir(targetCwd)
+        await ensureRosterDir(targetCwd)
 
         for (const skill of skills) {
             const urn = `dance/@${owner}/${stage}/${skill.skill.name}`

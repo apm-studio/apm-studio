@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Agent Roaster CLI — agent-roaster [path] [options]
+// Agent Roster CLI — agent-roster [path] [options]
 
 import fs from 'fs/promises'
 import { resolve, basename, dirname, join } from 'path'
@@ -8,7 +8,7 @@ import os from 'os'
 import { fileURLToPath } from 'url'
 import { spawn, spawnSync } from 'child_process'
 import readline from 'readline/promises'
-import { parseDotAssetUrn } from './server/lib/dot-source.js'
+import { parseRosterAssetUrn } from './server/lib/roster-source.js'
 import { resolvePackageBin } from './server/lib/package-bin.js'
 import {
     ensureOpenProjectDir,
@@ -80,15 +80,15 @@ const STATUS_PREFIX: Record<DoctorCheck['status'], string> = {
 }
 
 function printUsage(packageMeta?: StudioPackageMeta) {
-    const header = packageMeta ? `${packageMeta.name} ${packageMeta.version}` : 'agent-roaster'
+    const header = packageMeta ? `${packageMeta.name} ${packageMeta.version}` : 'agent-roster'
     console.log(`${header}
 
 Usage:
-  agent-roaster [path] [options]
-  agent-roaster open [path] [options]
-  agent-roaster doctor [path] [options]
-  agent-roaster --help
-  agent-roaster --version
+  agent-roster [path] [options]
+  agent-roster open [path] [options]
+  agent-roster doctor [path] [options]
+  agent-roster --help
+  agent-roster --version
 
 Commands:
   open                  Open an agent package workspace. This is the default command.
@@ -99,32 +99,32 @@ Arguments:
 
 Options:
   -p, --port <port>     Port for the Studio server. Defaults to 43100.
-      --openai-oauth    Connect OpenAI through browser OAuth before Agent Roaster opens.
+      --openai-oauth    Connect OpenAI through browser OAuth before Agent Roster opens.
       --performer <urn>
                         Prepare and focus an agent package, installing/importing it when needed.
       --act <urn>
                         Prepare and focus a canvas act, installing/importing it when needed.
-      --no-open         Do not open the Agent Roaster browser window.
-      --open            Explicitly open the Agent Roaster browser window after startup.
+      --no-open         Do not open the Agent Roster browser window.
+      --open            Explicitly open the Agent Roster browser window after startup.
       --verbose         Print extra startup details.
   -h, --help            Show this help message.
-  -v, --version         Show the installed Agent Roaster version.
+  -v, --version         Show the installed Agent Roster version.
 
 Examples:
-  agent-roaster
-  agent-roaster .
-  agent-roaster --openai-oauth
-  agent-roaster --openai-oauth --act act/@acme/workflows/review-flow
-  agent-roaster ~/projects/my-app
-  agent-roaster ~/projects/my-app --performer performer/@acme/workflows/reviewer
-  agent-roaster open ~/projects/my-app --port 3010
-  agent-roaster open ~/projects/my-app --act act/@acme/workflows/review-flow
-  agent-roaster doctor
-  agent-roaster doctor ~/projects/my-app`)
+  agent-roster
+  agent-roster .
+  agent-roster --openai-oauth
+  agent-roster --openai-oauth --act act/@acme/workflows/review-flow
+  agent-roster ~/projects/my-app
+  agent-roster ~/projects/my-app --performer performer/@acme/workflows/reviewer
+  agent-roster open ~/projects/my-app --port 3010
+  agent-roster open ~/projects/my-app --act act/@acme/workflows/review-flow
+  agent-roster doctor
+  agent-roster doctor ~/projects/my-app`)
 }
 
 function failUsage(message: string): never {
-    throw new CliUsageError(`${message}\nRun agent-roaster --help for usage.`)
+    throw new CliUsageError(`${message}\nRun agent-roster --help for usage.`)
 }
 
 function parsePort(value: string | undefined, arg: string): number {
@@ -174,7 +174,7 @@ function parseAssetTargetUrn(value: string | undefined, kind: StartupAssetTarget
     }
 
     try {
-        parseDotAssetUrn(urn, kind)
+        parseRosterAssetUrn(urn, kind)
     } catch {
         failUsage(`Invalid ${arg} URN: ${urn}. Expected ${kind}/@<owner>/<stage>/<name>.`)
     }
@@ -388,7 +388,7 @@ async function readStudioPackageMeta(): Promise<StudioPackageMeta> {
         }
     }
 
-    throw new Error('Could not locate package.json for Agent Roaster.')
+    throw new Error('Could not locate package.json for Agent Roster.')
 }
 
 async function fetchLatestVersion(packageName: string) {
@@ -488,7 +488,7 @@ async function promptForNpmUpdate(packageMeta: StudioPackageMeta) {
         child.on('error', reject)
     })
 
-    console.log(`Updated ${packageMeta.name} to ${latestVersion}. Run agent-roaster again to start the new version.`)
+    console.log(`Updated ${packageMeta.name} to ${latestVersion}. Run agent-roster again to start the new version.`)
     return true
 }
 
@@ -583,7 +583,7 @@ async function runDoctor(command: DoctorCommand, packageMeta: StudioPackageMeta)
             ? `Port ${command.port} is reserved for the managed OpenCode sidecar`
             : portAvailable
             ? `Port ${command.port} is available`
-            : `Port ${command.port} is in use. Agent Roaster can use another port unless you force --port.`,
+            : `Port ${command.port} is in use. Agent Roster can use another port unless you force --port.`,
     })
 
     const executable = resolveOpencodeExecutable()
@@ -595,7 +595,7 @@ async function runDoctor(command: DoctorCommand, packageMeta: StudioPackageMeta)
             : 'Could not find an OpenCode executable. Install opencode-ai.',
     })
 
-    console.log('Agent Roaster doctor\n')
+    console.log('Agent Roster doctor\n')
     for (const check of checks) {
         console.log(`${STATUS_PREFIX[check.status].padEnd(4)} ${check.label}: ${check.detail}`)
     }
@@ -639,7 +639,7 @@ async function waitForStudioReady(healthUrl: string) {
         await sleep(STUDIO_READY_POLL_MS)
     }
 
-    throw new Error(`Agent Roaster did not become ready in time (${lastFailure}).`)
+    throw new Error(`Agent Roster did not become ready in time (${lastFailure}).`)
 }
 
 function isPromptVisible(prompt: ProviderAuthPrompt, values: Record<string, string>) {
@@ -804,7 +804,7 @@ async function runOpen(command: OpenCommand, packageMeta: StudioPackageMeta) {
     const resolvedPort = await resolveOpenPort(command.port)
 
     process.env.PROJECT_DIR = resolvedProjectDir
-    process.env.AGENT_ROASTER_PRODUCTION = '1'
+    process.env.AGENT_ROSTER_PRODUCTION = '1'
     process.env.PORT = String(resolvedPort)
     delete process.env.OPENCODE_URL
 
@@ -816,7 +816,7 @@ async function runOpen(command: OpenCommand, packageMeta: StudioPackageMeta) {
     const healthUrl = `http://127.0.0.1:${resolvedPort}/api/health`
 
     if (command.verbose) {
-        console.log(`Opening Agent Roaster for ${resolvedProjectDir}`)
+        console.log(`Opening Agent Roster for ${resolvedProjectDir}`)
         console.log('Using managed OpenCode sidecar')
         if (command.startupAssetTarget) {
             console.log(`Startup target: ${command.startupAssetTarget.kind} ${command.startupAssetTarget.urn}`)
@@ -838,7 +838,7 @@ async function runOpen(command: OpenCommand, packageMeta: StudioPackageMeta) {
         }
     }
 
-    console.log(`Agent Roaster running at ${studioUrl}`)
+    console.log(`Agent Roster running at ${studioUrl}`)
     console.log(`Workspace: ${resolvedProjectDir}`)
     if (command.startupAssetTarget) {
         console.log(`Launch URL: ${launchUrl}`)
@@ -876,7 +876,7 @@ const main = async () => {
             process.exit(1)
         }
 
-        console.error('Failed to start Agent Roaster:', error)
+        console.error('Failed to start Agent Roster:', error)
         process.exit(1)
     }
 }

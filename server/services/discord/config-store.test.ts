@@ -12,7 +12,7 @@ async function importStore() {
 }
 
 beforeEach(async () => {
-    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'dot-discord-test-'))
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'roster-discord-test-'))
 })
 
 afterEach(async () => {

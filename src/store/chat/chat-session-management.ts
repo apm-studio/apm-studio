@@ -56,7 +56,7 @@ export function createChatSessionManagement(set: ChatSet, get: ChatGet) {
     ): Promise<{ sessionId: string | null; runtimeConfig: ChatRuntimeConfig }> => {
         const target = resolveChatRuntimeTarget(get, chatKey)
         const runtimeConfig = target?.runtimeConfig || EMPTY_RUNTIME_CONFIG
-        const name = options?.performerName || target?.name || 'Untitled Performer'
+        const name = options?.performerName || target?.name || 'Untitled Agent'
 
         if (!target || target.notice || !hasModelConfig(runtimeConfig.model)) {
             return {

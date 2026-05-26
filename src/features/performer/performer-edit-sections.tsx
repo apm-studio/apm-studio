@@ -24,7 +24,7 @@ export function PerformerTalDetail({
         <div className="edit-advanced nodrag nowheel">
             <div className="adv-section">
                 <div className="adv-section__head">
-                    <span className="section-title">Tal</span>
+                    <span className="section-title">Persona</span>
                     {performer?.talRef && (
                         <button type="button" className="btn btn--sm" onClick={() => void onOpenAssetEditor('tal', performer.talRef, 'tal')}>
                             Edit
@@ -51,7 +51,7 @@ export function PerformerTalDetail({
                             </div>
                         </div>
                     ) : (
-                        <span className="adv-section__summary">No Tal connected. Drag & drop from the Asset Library.</span>
+                        <span className="adv-section__summary">No Persona connected. Drag & drop from the Asset Library.</span>
                     )}
                 </div>
             </div>
@@ -154,7 +154,7 @@ export function PerformerModelDetail({
                             model={performer.model}
                             value={performer.modelVariant || null}
                             onChange={onModelVariantChange}
-                            titlePrefix="Performer variant"
+                            titlePrefix="Agent variant"
                         />
                     </div>
                 </div>

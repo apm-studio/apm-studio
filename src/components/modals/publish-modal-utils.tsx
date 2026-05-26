@@ -57,7 +57,7 @@ export function getPerformerIssue(p: PerformerNode): string | undefined {
     const hasTal = !!p.talRef
     const hasDance = p.danceRefs.length > 0
     if (!hasTal && !hasDance) {
-        return 'Needs at least a Tal or Dance'
+        return 'Needs at least a Persona or Skill Pack'
     }
     return undefined
 }
@@ -94,10 +94,10 @@ export function getActPublishBlockReasons(act: WorkspaceAct): string[] {
     const participantIds = Object.keys(act.participants)
 
     if (participantIds.length === 0) {
-        reasons.push('Act has no participants.')
+        reasons.push('Team has no participants.')
     }
     if (act.relations.length === 0) {
-        reasons.push('Act has no relations. Create relations between participants first.')
+        reasons.push('Team has no relations. Create relations between participants first.')
     }
 
     // Disconnected participants
@@ -115,7 +115,7 @@ export function getActPublishBlockReasons(act: WorkspaceAct): string[] {
         // Dangling relations
         const dangling = act.relations.filter((r) => !act.participants[r.between[0]] || !act.participants[r.between[1]])
         if (dangling.length > 0) {
-            reasons.push(`${dangling.length} relation(s) reference participants not in this Act.`)
+            reasons.push(`${dangling.length} relation(s) reference participants not in this Team.`)
         }
     }
 
@@ -174,8 +174,8 @@ export function buildPerformerPreflight(performer: PerformerNode | null): Perfor
     if (!performer) return []
 
     const candidates: PerformerPreflightCandidate[] = [
-        ...(performer.talRef ? [{ label: 'Tal', ref: performer.talRef, required: true }] : []),
-        ...performer.danceRefs.map((ref, index) => ({ label: `Dance ${index + 1}`, ref, required: false })),
+        ...(performer.talRef ? [{ label: 'Persona', ref: performer.talRef, required: true }] : []),
+        ...performer.danceRefs.map((ref, index) => ({ label: `Skill Pack ${index + 1}`, ref, required: false })),
     ]
 
     return candidates.map((entry) => {
@@ -186,8 +186,8 @@ export function buildPerformerPreflight(performer: PerformerNode | null): Perfor
         if (entry.ref.kind === 'draft') {
             return {
                 ...entry,
-                status: entry.label === 'Tal' ? 'will_publish' as const : 'draft' as const,
-                detail: entry.label === 'Tal' ? 'Will publish from draft' : `draft:${entry.ref.draftId}`,
+                status: entry.label === 'Persona' ? 'will_publish' as const : 'draft' as const,
+                detail: entry.label === 'Persona' ? 'Will publish from draft' : `draft:${entry.ref.draftId}`,
             }
         }
         return { ...entry, status: 'missing' as const, detail: 'not set' }

@@ -1,7 +1,7 @@
 
 import { createHash } from 'crypto'
 import path from 'path'
-import { getAssetPayload } from '../../lib/dot-source.js'
+import { getAssetPayload } from '../../lib/roster-source.js'
 import { resolveRuntimeModel } from '../../lib/model-catalog.js'
 import { findRuntimeModelVariant, type RuntimeModelVariant } from '../../../shared/model-variants.js'
 import { toRelativePath, resolveAgentIdentity } from './projection-manifest.js'
@@ -506,7 +506,7 @@ function buildCodexAgentFile(input: {
     mcpServers?: McpCatalog
 }): AgentFile {
     const agentName = buildCodexAgentName(input.performerName, input.performerId)
-    const fileName = `agent_roaster_${agentName}.toml`
+    const fileName = `agent_roster_${agentName}.toml`
     const filePath = path.join(input.executionDir, '.codex', 'agents', fileName)
     const instructions = buildCodexDeveloperInstructions(input.talContent)
     const content = [

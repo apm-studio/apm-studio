@@ -85,10 +85,10 @@ export function buildRegistryGroups<T extends { kind: InstalledKind }>(registryR
 }
 
 export function labelForInstalledKind(kind: InstalledKind) {
-    if (kind === 'tal') return 'Tal'
-    if (kind === 'dance') return 'Dance'
-    if (kind === 'performer') return 'Performer'
-    return 'Act'
+    if (kind === 'tal') return 'Persona'
+    if (kind === 'dance') return 'Skill Pack'
+    if (kind === 'performer') return 'Agent'
+    return 'Team'
 }
 
 export function placeholderForLocalSection(localSection: LocalSection, runtimeKind: RuntimeKind) {

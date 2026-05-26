@@ -5,7 +5,7 @@ import { promises as fs } from 'node:fs'
 
 const instanceDisposeMock = vi.fn().mockResolvedValue({})
 const listStudioAssetsMock = vi.fn()
-const searchDotRegistryMock = vi.fn()
+const searchRosterRegistryMock = vi.fn()
 const searchSkillsCatalogMock = vi.fn()
 let studioDir = ''
 
@@ -25,8 +25,8 @@ vi.mock('../asset-service.js', () => ({
     listStudioAssets: listStudioAssetsMock,
 }))
 
-vi.mock('../dot-service.js', () => ({
-    searchDotRegistry: searchDotRegistryMock,
+vi.mock('../roster-service.js', () => ({
+    searchRosterRegistry: searchRosterRegistryMock,
     searchSkillsCatalog: searchSkillsCatalogMock,
 }))
 
@@ -38,7 +38,7 @@ describe('ensureAssistantAgent', () => {
         studioDir = path.join(executionDir, '.studio-home')
         instanceDisposeMock.mockClear()
         listStudioAssetsMock.mockReset().mockResolvedValue([])
-        searchDotRegistryMock.mockReset().mockResolvedValue([])
+        searchRosterRegistryMock.mockReset().mockResolvedValue([])
         searchSkillsCatalogMock.mockReset().mockResolvedValue([])
     })
 
@@ -51,7 +51,7 @@ describe('ensureAssistantAgent', () => {
             studioDir,
             'opencode',
             'skills',
-            'dot-studio',
+            'agent-roster',
             'studio-assistant-skill-creator-guide',
             'references',
             'stale.md',
@@ -62,7 +62,7 @@ describe('ensureAssistantAgent', () => {
             studioDir,
             'opencode',
             'skills',
-            'dot-studio',
+            'agent-roster',
             'legacy-flat-skill',
         )
         await fs.mkdir(staleSkillDir, { recursive: true })
@@ -72,12 +72,12 @@ describe('ensureAssistantAgent', () => {
 
         const agentName = await ensureAssistantAgent(executionDir)
 
-        expect(agentName).toBe('agent-roaster/studio-assistant')
+        expect(agentName).toBe('agent-roster/studio-assistant')
         const projectedAgent = await fs.readFile(path.join(
             studioDir,
             'opencode',
             'agents',
-            'agent-roaster',
+            'agent-roster',
             'studio-assistant.md',
         ), 'utf-8')
         expect(projectedAgent).toContain('"*": false')
@@ -89,7 +89,7 @@ describe('ensureAssistantAgent', () => {
             'tools',
             'apply_studio_actions.ts',
         ), 'utf-8')
-        expect(projectedTool).toContain('Apply Agent Roaster workspace mutations')
+        expect(projectedTool).toContain('Apply Agent Roster workspace mutations')
         expect(projectedTool).toContain('lintAssistantActionEnvelope')
         expect(projectedTool).toContain('rejected the mutation envelope')
         expect(projectedTool).not.toContain('../../shared/assistant-action-protocol.js')
@@ -97,7 +97,7 @@ describe('ensureAssistantAgent', () => {
             studioDir,
             'opencode',
             'skills',
-            'agent-roaster',
+            'agent-roster',
             'find-skills',
             'SKILL.md',
         ), 'utf-8')).resolves.toContain('Find Skills')
@@ -105,7 +105,7 @@ describe('ensureAssistantAgent', () => {
             studioDir,
             'opencode',
             'skills',
-            'agent-roaster',
+            'agent-roster',
             'studio-assistant-skill-creator-guide',
             'references',
             'bundle-authoring.md',
@@ -167,8 +167,8 @@ describe('ensureAssistantAgent', () => {
         await expect(fs.stat(path.join(executionDir, '.opencode', 'tools', 'apply_studio_actions.ts'))).rejects.toMatchObject({ code: 'ENOENT' })
         await expect(fs.stat(path.join(executionDir, '.opencode', 'agents', 'dot-studio', 'studio-assistant.md'))).rejects.toMatchObject({ code: 'ENOENT' })
         await expect(fs.stat(path.join(studioDir, 'opencode', 'tools', 'apply_studio_actions.ts'))).resolves.toBeTruthy()
-        await expect(fs.stat(path.join(studioDir, 'opencode', 'agents', 'agent-roaster', 'studio-assistant.md'))).resolves.toBeTruthy()
-        await expect(fs.stat(path.join(studioDir, 'opencode', 'skills', 'agent-roaster', 'find-skills', 'SKILL.md'))).resolves.toBeTruthy()
+        await expect(fs.stat(path.join(studioDir, 'opencode', 'agents', 'agent-roster', 'studio-assistant.md'))).resolves.toBeTruthy()
+        await expect(fs.stat(path.join(studioDir, 'opencode', 'skills', 'agent-roster', 'find-skills', 'SKILL.md'))).resolves.toBeTruthy()
     })
 
     it('builds a compact action prompt that steers clear mutations into the Studio tool', async () => {
@@ -196,9 +196,9 @@ describe('ensureAssistantAgent', () => {
         expect(prompt).toContain('Use `showPerformer`, `showAct`, `showDraft`, `setStudioPanel`, `setStudioNodeVisibility`, or `setStudioNodeFrame`')
         expect(prompt).toContain('Never invent ids')
         expect(prompt).toContain('Use same-call refs only for objects created earlier')
-        expect(prompt).toContain('Tal and Dance actions are draft-only')
+        expect(prompt).toContain('Persona and Skill Pack actions are draft-only')
         expect(prompt).toContain('Save Local and Publish are outside this tool surface')
-        expect(prompt).toContain('missing Tal/Dance/model details alone should not block mutation')
+        expect(prompt).toContain('missing Persona/Skill Pack/model details alone should not block mutation')
         expect(prompt).toContain('Relation payloads use `source...` and `target...` fields only')
         expect(prompt).toContain('`actRules` is always an array of strings')
     })
@@ -278,12 +278,12 @@ describe('ensureAssistantAgent', () => {
         expect(prompt).toContain('If you recommend or apply one of these, include a short security warning')
     })
 
-    it('steers create requests toward local Dance authoring instead of external search', async () => {
+    it('steers create requests toward local Skill Pack authoring instead of external search', async () => {
         const { buildAssistantDiscoveryPrompt } = await import('./assistant-service.js')
 
         const prompt = await buildAssistantDiscoveryPrompt(executionDir, 'create a new dance skill for release notes')
 
-        expect(prompt).toContain('The user likely wants to create or improve a local Dance skill bundle.')
+        expect(prompt).toContain('The user likely wants to create or improve a local Skill Pack bundle.')
         expect(prompt).toContain('Load and use `studio-assistant-skill-creator-guide`.')
         expect(prompt).not.toContain('skills.sh dance matches:')
     })
@@ -293,7 +293,7 @@ describe('ensureAssistantAgent', () => {
 
         const prompt = await buildAssistantDiscoveryPrompt(executionDir, '새 댄스 스킬 만들어줘')
 
-        expect(prompt).toContain('The user likely wants to create or improve a local Dance skill bundle.')
+        expect(prompt).toContain('The user likely wants to create or improve a local Skill Pack bundle.')
         expect(prompt).toContain('Load and use `studio-assistant-skill-creator-guide`.')
     })
 })

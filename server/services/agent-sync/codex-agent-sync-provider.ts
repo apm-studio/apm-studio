@@ -10,7 +10,7 @@ import type {
     AgentSyncStatus,
     AgentSyncStatusCounts,
 } from '../../../shared/agent-sync-contracts.js'
-import { getAssetPayload, getDotDir, readAsset } from '../../lib/dot-source.js'
+import { getAssetPayload, getRosterDir, readAsset } from '../../lib/roster-source.js'
 import { listWorkspacePerformersForDir } from '../workspace-service.js'
 import {
     danceBundleDir,
@@ -196,7 +196,7 @@ async function compileDanceReadOnly(
     }
 
     const draft = await readJsonFile<{ name?: string; description?: string; content?: unknown }>(
-        path.join(getDotDir(cwd), 'drafts', 'dance', `${ref.draftId}.json`),
+        path.join(getRosterDir(cwd), 'drafts', 'dance', `${ref.draftId}.json`),
     )
     const body = typeof draft?.content === 'string' ? draft.content : null
     if (!draft || !body) {

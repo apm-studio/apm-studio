@@ -16,14 +16,14 @@ type McpAddConfig = {
 export const CAPABILITY_LOADER_TOOL_NAME = 'load_capability_context'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-export function resolveDotCommand(): string[] {
+export function resolveRosterCommand(): string[] {
     const localBuiltCli = path.resolve(__dirname, '..', '..', 'cli.js')
-    return [resolvePackageBin('agent-roaster', 'agent-roaster') || localBuiltCli || 'agent-roaster']
+    return [resolvePackageBin('agent-roster', 'agent-roster') || localBuiltCli || 'agent-roster']
 }
 
-export function dotLoaderServerName(cwd: string): string {
+export function rosterLoaderServerName(cwd: string): string {
     const hash = createHash('sha1').update(path.resolve(cwd)).digest('hex').slice(0, 10)
-    return `agent-roaster-stage-${hash}`
+    return `agent-roster-stage-${hash}`
 }
 
 function resolveCapabilityToolId(toolIds: string[]) {
@@ -39,12 +39,12 @@ function resolveCapabilityToolId(toolIds: string[]) {
     )) || null
 }
 
-export async function ensureDotLoaderServer(cwd: string): Promise<{
+export async function ensureRosterLoaderServer(cwd: string): Promise<{
     available: boolean
     serverName: string
     toolName: string
 }> {
-    const serverName = dotLoaderServerName(cwd)
+    const serverName = rosterLoaderServerName(cwd)
     const oc = await getOpencode()
     const params = { directory: path.resolve(cwd) }
     const statusData = unwrapOpencodeResult<McpLiveStatusMap>(await oc.mcp.status(params)) || {}
@@ -53,10 +53,10 @@ export async function ensureDotLoaderServer(cwd: string): Promise<{
     if (!existing) {
         const config = {
             type: 'local',
-            command: resolveDotCommand(),
+            command: resolveRosterCommand(),
             enabled: true,
             environment: {
-                AGENT_ROASTER_PROJECT_DIR: path.resolve(cwd),
+                AGENT_ROSTER_PROJECT_DIR: path.resolve(cwd),
             },
         } as unknown as McpAddConfig
         unwrapOpencodeResult(await oc.mcp.add({

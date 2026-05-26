@@ -33,7 +33,7 @@ export default function ActInspectorPanel({ embedded = false }: ActInspectorPane
     const mode = actEditorState.mode
 
     const modeLabels = {
-        act: { icon: <Settings size={12} />, label: 'Act Config' },
+        act: { icon: <Settings size={12} />, label: 'Team Config' },
         participant: { icon: <User size={12} />, label: 'Participant' },
         relation: { icon: <ArrowRightLeft size={12} />, label: 'Relation' },
     }
@@ -52,7 +52,7 @@ export default function ActInspectorPanel({ embedded = false }: ActInspectorPane
                     <button
                         type="button"
                         className="icon-btn act-panel__close-btn"
-                        title="Close Act Editor"
+                        title="Close Team Editor"
                         onClick={closeActEditor}
                     >
                         <X size={12} />

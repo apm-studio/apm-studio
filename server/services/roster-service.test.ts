@@ -4,35 +4,35 @@ import path from 'node:path'
 import { promises as fs } from 'node:fs'
 
 const publishStudioAssetMock = vi.fn()
-const readDotAuthUserMock = vi.fn()
+const readRosterAuthUserMock = vi.fn()
 const searchRegistryMock = vi.fn()
 const getRegistryAssetDetailMock = vi.fn()
 const assetFilePathMock = vi.fn()
 const copySkillDirMock = vi.fn()
 const danceAssetDirMock = vi.fn()
-const ensureDotDirMock = vi.fn()
+const ensureRosterDirMock = vi.fn()
 const fetchRegistryPackageRawMock = vi.fn()
 const parseActAssetMock = vi.fn()
-const parseDotAssetMock = vi.fn()
+const parseRosterAssetMock = vi.fn()
 const parsePerformerAssetMock = vi.fn()
 const reportInstallMock = vi.fn()
 const shallowCloneMock = vi.fn()
 
-vi.mock('../lib/dot-source.js', () => ({
+vi.mock('../lib/roster-source.js', () => ({
     assetFilePath: assetFilePathMock,
     copySkillDir: copySkillDirMock,
     danceAssetDir: danceAssetDirMock,
-    ensureDotDir: ensureDotDirMock,
+    ensureRosterDir: ensureRosterDirMock,
     fetchRegistryPackageRaw: fetchRegistryPackageRawMock,
-    getDotDir: vi.fn(),
+    getRosterDir: vi.fn(),
     getGlobalCwd: vi.fn(),
-    getGlobalDotDir: vi.fn(),
+    getGlobalRosterDir: vi.fn(),
     initRegistry: vi.fn(),
     installActWithDependencies: vi.fn(),
     installAsset: vi.fn(),
     installPerformerWithDeps: vi.fn(),
     parseActAsset: parseActAssetMock,
-    parseDotAsset: parseDotAssetMock,
+    parseRosterAsset: parseRosterAssetMock,
     parsePerformerAsset: parsePerformerAssetMock,
     readAsset: vi.fn(),
     reportInstall: reportInstallMock,
@@ -41,10 +41,10 @@ vi.mock('../lib/dot-source.js', () => ({
     startLogin: vi.fn(),
 }))
 
-vi.mock('../lib/dot-authoring.js', () => ({
-    clearDotAuthUser: vi.fn(),
+vi.mock('../lib/roster-authoring.js', () => ({
+    clearRosterAuthUser: vi.fn(),
     publishStudioAsset: publishStudioAssetMock,
-    readDotAuthUser: readDotAuthUserMock,
+    readRosterAuthUser: readRosterAuthUserMock,
     saveLocalStudioAsset: vi.fn(),
     uninstallStudioAsset: vi.fn(),
 }))
@@ -58,25 +58,25 @@ vi.mock('./asset-service.js', () => ({
     getRegistryAssetDetail: getRegistryAssetDetailMock,
 }))
 
-describe('installDotAsset', () => {
+describe('installRosterAsset', () => {
     let cwd: string
     let cloneDir: string
 
     beforeEach(async () => {
-        cwd = await fs.mkdtemp(path.join(os.tmpdir(), 'dot-studio-install-'))
-        cloneDir = await fs.mkdtemp(path.join(os.tmpdir(), 'dot-studio-clone-'))
+        cwd = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-roster-install-'))
+        cloneDir = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-roster-clone-'))
 
         assetFilePathMock.mockReset().mockImplementation((targetCwd: string, urn: string) =>
-            path.join(targetCwd, '.agent-roaster', 'assets', `${urn.replace(/[\\/]/g, '__')}.json`),
+            path.join(targetCwd, '.agent-roster', 'assets', `${urn.replace(/[\\/]/g, '__')}.json`),
         )
         copySkillDirMock.mockReset()
         danceAssetDirMock.mockReset().mockImplementation((targetCwd: string, urn: string) =>
-            path.join(targetCwd, '.agent-roaster', 'dances', urn.replace(/[\\/]/g, '__')),
+            path.join(targetCwd, '.agent-roster', 'dances', urn.replace(/[\\/]/g, '__')),
         )
-        ensureDotDirMock.mockReset().mockResolvedValue(undefined)
+        ensureRosterDirMock.mockReset().mockResolvedValue(undefined)
         fetchRegistryPackageRawMock.mockReset()
         parseActAssetMock.mockReset().mockImplementation((asset) => asset)
-        parseDotAssetMock.mockReset().mockImplementation((asset) => asset)
+        parseRosterAssetMock.mockReset().mockImplementation((asset) => asset)
         parsePerformerAssetMock.mockReset().mockImplementation((asset) => asset)
         reportInstallMock.mockReset().mockResolvedValue(undefined)
         shallowCloneMock.mockReset().mockResolvedValue({
@@ -126,8 +126,8 @@ describe('installDotAsset', () => {
             return { payload: { kind, urn } }
         })
 
-        const { installDotAsset } = await import('./dot-service.js')
-        const result = await installDotAsset(cwd, {
+        const { installRosterAsset } = await import('./roster-service.js')
+        const result = await installRosterAsset(cwd, {
             urn: 'act/@acme/team/research',
             force: true,
             scope: 'stage',
@@ -142,14 +142,14 @@ describe('installDotAsset', () => {
     })
 })
 
-describe('publishDotAsset', () => {
+describe('publishRosterAsset', () => {
     beforeEach(() => {
         publishStudioAssetMock.mockReset()
-        readDotAuthUserMock.mockReset()
+        readRosterAuthUserMock.mockReset()
     })
 
     it('forwards providedAssets to the studio authoring publish boundary', async () => {
-        readDotAuthUserMock.mockResolvedValue({
+        readRosterAuthUserMock.mockResolvedValue({
             username: 'acme',
             token: 'token',
         })
@@ -161,7 +161,7 @@ describe('publishDotAsset', () => {
             dependenciesExisting: [],
         })
 
-        const { publishDotAsset } = await import('./dot-service.js')
+        const { publishRosterAsset } = await import('./roster-service.js')
         const providedAssets = [{
             kind: 'performer' as const,
             urn: 'performer/@acme/moneymaker/ceo',
@@ -176,7 +176,7 @@ describe('publishDotAsset', () => {
             tags: ['executive'],
         }]
 
-        await publishDotAsset('/tmp/moneymaker', {
+        await publishRosterAsset('/tmp/moneymaker', {
             kind: 'act',
             slug: 'exec-sync',
             payload: {
@@ -203,7 +203,7 @@ describe('publishDotAsset', () => {
     })
 })
 
-describe('searchDotRegistry', () => {
+describe('searchRosterRegistry', () => {
     beforeEach(() => {
         searchRegistryMock.mockReset()
         getRegistryAssetDetailMock.mockReset()
@@ -237,8 +237,8 @@ describe('searchDotRegistry', () => {
             mcpConfig: null,
         })
 
-        const { searchDotRegistry } = await import('./dot-service.js')
-        const results = await searchDotRegistry('k-lawyer', { kind: 'performer', limit: 10 })
+        const { searchRosterRegistry } = await import('./roster-service.js')
+        const results = await searchRosterRegistry('k-lawyer', { kind: 'performer', limit: 10 })
 
         expect(getRegistryAssetDetailMock).toHaveBeenCalledWith('', 'performer', 'monarchjuno', 'lawyer/k-lawyer')
         expect(results).toEqual([
@@ -291,8 +291,8 @@ describe('searchDotRegistry', () => {
             ],
         })
 
-        const { searchDotRegistry } = await import('./dot-service.js')
-        const results = await searchDotRegistry('k-lawyer-review', { kind: 'act', limit: 10 })
+        const { searchRosterRegistry } = await import('./roster-service.js')
+        const results = await searchRosterRegistry('k-lawyer-review', { kind: 'act', limit: 10 })
 
         expect(getRegistryAssetDetailMock).toHaveBeenCalledWith('', 'act', 'monarchjuno', 'lawyer/k-lawyer-review')
         expect(results).toEqual([
@@ -331,8 +331,8 @@ describe('searchDotRegistry', () => {
         ])
         getRegistryAssetDetailMock.mockRejectedValue(new Error('registry detail unavailable'))
 
-        const { searchDotRegistry } = await import('./dot-service.js')
-        const results = await searchDotRegistry('k-lawyer', { kind: 'performer', limit: 10 })
+        const { searchRosterRegistry } = await import('./roster-service.js')
+        const results = await searchRosterRegistry('k-lawyer', { kind: 'performer', limit: 10 })
 
         expect(results).toEqual([
             {

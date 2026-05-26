@@ -1,10 +1,10 @@
-// Agent Roaster — Core Types
+// Agent Roster — Core Types
 
 import type { RuntimeModelVariant } from '../../shared/model-variants'
 import type {
     ActParticipantV1 as InstalledActParticipant,
     ActRelationV1 as InstalledActRelation,
-} from '../../shared/dot-types'
+} from '../../shared/roster-types'
 import type { GitHubDanceSourceInfo } from '../../shared/asset-contracts'
 
 export type AssetKind = 'tal' | 'dance' | 'act' | 'performer' | 'model' | 'mcp'

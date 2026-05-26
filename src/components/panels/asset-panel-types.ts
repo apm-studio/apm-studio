@@ -1,7 +1,7 @@
 import type { AssetCard, McpServer } from '../../types'
 import type { AssetSource, AssetListItem, GitHubDanceSourceInfo } from '../../../shared/asset-contracts'
 import type { RuntimeModelCatalogEntry } from '../../../shared/model-variants'
-import type { ModelConfigV1 } from '../../../shared/dot-types'
+import type { ModelConfigV1 } from '../../../shared/roster-types'
 
 type InstalledAssetKind = 'tal' | 'dance' | 'performer' | 'act'
 

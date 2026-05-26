@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Performer chat, Act participant chat, and Studio Assistant chat all use the same session runtime.
+Agent chat, Team participant chat, and Studio Assistant chat all use the same session runtime.
 
 - do not reintroduce legacy dual-write behavior
 - do not build new logic on old flat chat or session fields
@@ -44,8 +44,8 @@ Key rules:
 
 ## Chat Key Rules
 
-- performer: performer id
-- Act participant: `act:{actId}:thread:{threadId}:participant:{participantKey}`
+- Agent: performer id
+- Team participant: `act:{actId}:thread:{threadId}:participant:{participantKey}`
 - assistant: `buildAssistantChatKey(...)`
 
 Important:
@@ -55,10 +55,10 @@ Important:
 
 ## Naming Rules
 
-- standalone performer session titles keep Studio metadata in the OpenCode title
+- standalone Agent session titles keep Studio metadata in the OpenCode title
 - sidebar labels are managed as provisional, generated, or manual Studio metadata
-- the source of truth for Act thread names is runtime thread metadata
-- participant session titles are not the source of truth for Act thread names
+- the source of truth for Team thread names is runtime thread metadata
+- participant session titles are not the source of truth for Team thread names
 - assistant sessions do not take part in automatic thread naming
 
 ## Mutation Boundary
@@ -80,7 +80,7 @@ Important commands:
 
 Deletion lifecycle:
 
-- use `src/store/session/session-lifecycle.ts` when deleting performers, Acts, or Act threads
+- use `src/store/session/session-lifecycle.ts` when deleting Agents, Teams, or Team threads
 - deletion cleanup must first collect affected chat keys, then detach local session state through session commands/runtime release helpers
 - remote OpenCode session deletion and local binding removal must not be implemented ad hoc in feature slices
 - missing OpenCode sessions are stale bindings; they should detach cleanly instead of surfacing as runtime failures
@@ -136,18 +136,18 @@ Before execution:
 
 - projection blocking applies only when projection refresh or dispose is actually needed
 - when dispose is needed, check all busy sessions in the same working directory
-- do not scope dispose safety to only one performer or one participant
+- do not scope dispose safety to only one Agent or one participant
 - if recovery from `Agent not found` would require dispose, do not force it while the working directory is busy
-- Act collaboration context is turn-scoped system prompt context
-- performer variant ownership belongs to projection and runtime config
-- prompt execution validates known provider/auth-incompatible model selections before calling OpenCode; Act auto-wakes should surface a model-selection error and open the participant circuit instead of streaming a doomed run
+- Team collaboration context is turn-scoped system prompt context
+- Agent variant ownership belongs to projection and runtime config
+- prompt execution validates known provider/auth-incompatible model selections before calling OpenCode; Team auto-wakes should surface a model-selection error and open the participant circuit instead of streaming a doomed run
 - synced message metadata is display-only and must not become the execution source of truth
 
 ## Review And Wake Rules
 
 - prefer `/api/chat/sessions/:id/diff` for review UI
 - unified-diff-only payloads must still render
-- Act wake queues are participant-scoped, not thread-scoped
+- Team wake queues are participant-scoped, not thread-scoped
 - a wake blocked by projection adoption should defer and retry, not disappear
 - a `wait_until` resume instruction takes priority over ordinary subscription wakes
 - stale `busy` or `retry` should be corrected to idle when the latest turn is settled or parked on `wait_until`
@@ -162,8 +162,8 @@ Do not spread file access logic across routes and services.
 
 Discord is an external chat client over the same session runtime.
 
-- standalone performer Discord messages must create or reuse normal performer-owned sessions
-- Act Discord messages must use `buildActParticipantChatKey(...)` and act-owned session ownership
+- standalone Agent Discord messages must create or reuse normal Agent-owned sessions
+- Team Discord messages must use `buildActParticipantChatKey(...)` and act-owned session ownership
 - Discord must call `createStudioChatSession` and `sendStudioChatMessage` instead of invoking OpenCode directly
 - Discord channel/session mappings are adapter metadata, not canonical session state
 - Discord-originated sends must be authorized before they reach the session runtime
@@ -174,7 +174,7 @@ Discord is an external chat client over the same session runtime.
 
 - successful fast requests should stay quiet
 - `4xx`, `5xx`, and slow requests should still log
-- Act runtime success-path diagnostics should stay behind `STUDIO_VERBOSE_SERVER_LOGS=1`
+- Team runtime success-path diagnostics should stay behind `STUDIO_VERBOSE_SERVER_LOGS=1`
 - degraded runtime warnings and errors should still print by default
 
 ## Dead Fields

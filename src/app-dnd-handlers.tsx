@@ -149,7 +149,7 @@ export async function loadMarkdownTemplateIntoEditor(
         throw new Error('Editor not found.')
     }
     if (editor.kind !== asset.kind) {
-        throw new Error(`${editor.kind === 'tal' ? 'Tal' : 'Dance'} editor only accepts ${editor.kind} assets.`)
+        throw new Error(`${editor.kind === 'tal' ? 'Persona' : 'Skill Pack'} editor only accepts ${editor.kind} assets.`)
     }
 
     const isLocalInstalled = isInstalledAsset(asset)
@@ -367,7 +367,7 @@ export function createDragEndHandler(
                 // Draft performer: create from draft content
                 if (asset.source === 'draft' && asset.draftContent) {
                     const cfg = asset.draftContent as DraftConfigLike
-                    store.addPerformerFromDraft(asset.name || 'Draft Performer', cfg, asset.description || undefined)
+                    store.addPerformerFromDraft(asset.name || 'Draft Agent', cfg, asset.description || undefined)
                     return true
                 }
                 store.addPerformerFromAsset(await resolvePerformerAssetForStudio(asset, showDropWarning))
@@ -378,7 +378,7 @@ export function createDragEndHandler(
                 // Draft act: create from draft content
                 if (asset.source === 'draft' && asset.draftContent) {
                     const cfg = asset.draftContent as DraftConfigLike
-                    store.importActFromDraft(asset.name || 'Draft Act', cfg)
+                    store.importActFromDraft(asset.name || 'Draft Team', cfg)
                     return true
                 }
                 await store.importActFromAsset(asset as import('./types').AssetCard)

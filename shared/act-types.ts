@@ -1,20 +1,20 @@
 // Choreography Act — Shared Types (PRD-005)
-// dot contract types are Source of Truth for the serialization schema.
+// Agent Roster contract types are source of truth for the serialization schema.
 // Studio extends them with runtime-only fields (id, performerRef, mailbox, etc.)
 
 import type { SharedAssetRef } from './chat-contracts.js'
 import type {
     ActRelationV1,
     ActParticipantSubscriptionsV1,
-} from './dot-types.js'
+} from './roster-types.js'
 
-// ── Re-export dot contract types as Studio aliases ──────
+// ── Re-export Agent Roster contract types as Studio aliases ─
 
-/** dot contract re-export — Subscriptions schema */
+/** Agent Roster contract re-export: subscriptions schema. */
 export type ParticipantSubscriptions = ActParticipantSubscriptionsV1
 
 // Re-export the V1 types for direct use
-export type { ActRelationV1, ActParticipantSubscriptionsV1 } from './dot-types.js'
+export type { ActRelationV1, ActParticipantSubscriptionsV1 } from './roster-types.js'
 
 // ── Mailbox Messages ────────────────────────────────────
 
@@ -97,8 +97,8 @@ export interface WakeCondition {
     status: 'waiting' | 'triggered' | 'expired'
 }
 
-// ── Act Relation (extends dot contract with Studio id) ──
-// dot ActRelationV1 = { between, direction, name, description }
+// ── Act Relation (extends Agent Roster contract with Studio id)
+// Agent Roster ActRelationV1 = { between, direction, name, description }
 // Studio adds `id` for internal tracking on the canvas.
 
 export interface ActRelation extends ActRelationV1 {
@@ -106,7 +106,7 @@ export interface ActRelation extends ActRelationV1 {
 }
 
 // ── Act Participant Binding ─────────────────────────────
-// dot ActParticipantV1 uses `performer: string` (asset URN).
+// Agent Roster ActParticipantV1 uses `performer: string` (asset URN).
 // Studio uses `performerRef: SharedAssetRef` (resolved ref).
 // These are semantically different, so Studio keeps its own type.
 

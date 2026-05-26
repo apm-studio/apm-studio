@@ -1,21 +1,21 @@
 ---
 name: studio-assistant-act-guide
-description: "Explains the current Agent Roaster Act contract: participants, relations, subscriptions, actRules, safety, and publish-safe field boundaries. Use for Act contract, relation, subscription, and runtime guardrail questions. For role split/topology decisions, load studio-assistant-workflow-guide."
-compatibility: Designed for the Agent Roaster built-in assistant projection.
+description: "Explains the current Agent Roster Team contract: participants, relations, subscriptions, actRules, safety, and publish-safe field boundaries. Use for Team contract, relation, subscription, and runtime guardrail questions. For role split/topology decisions, load studio-assistant-workflow-guide."
+compatibility: Designed for the Agent Roster built-in assistant projection.
 ---
 
-# Act Contract Guide
+# Team Contract Guide
 
-Use this skill when the user asks about Act structure, relation fields, subscriptions, actRules, safety, or contract-correct Act mutations.
+Use this skill when the user asks about Team structure, relation fields, subscriptions, actRules, safety, or contract-correct Team mutations.
 
 ## Mental Model
-- An Act is participant choreography.
-- Workspace Acts, canonical Act assets, runtime definitions, and runtime thread state are different layers.
+- A Team is participant choreography.
+- Workspace Teams, canonical Team assets, runtime definitions, and runtime thread state are different layers.
 - Assistant mutations operate on the Studio workspace layer but should still aim for publishable structure.
 
 ## Contract Facts
 - Participants are keyed records in Studio workspace state.
-- Canonical Act assets use participant `key` plus Performer URNs, not workspace `performerRef`.
+- Canonical Team assets use participant `key` plus Agent URNs, not workspace `performerRef`.
 - Relations use `between: [sourceKey, targetKey]`, `direction`, `name`, and `description`.
 - For `one-way`, relation order matters.
 - Opposite one-way relations are valid as separate relations.
@@ -24,7 +24,7 @@ Use this skill when the user asks about Act structure, relation fields, subscrip
 - Use `callboardKeys` as the canonical field name.
 
 ## Relation Rules
-- A multi-participant workflow Act should have at least one relation unless the user explicitly asks for an unconnected group.
+- A multi-participant workflow Team should have at least one relation unless the user explicitly asks for an unconnected group.
 - Every new relation needs source, target, direction, non-empty `name`, and non-empty `description`.
 - Use `source...` and `target...` locator fields in assistant payloads, not legacy `from...` or `to...`.
 - Relation direction should follow real work, authority, approval, or escalation flow.
@@ -33,7 +33,7 @@ Use this skill when the user asks about Act structure, relation fields, subscrip
 
 ## actRules, Safety, And Subscriptions
 - Use `actRules` for durable whole-team behavior.
-- Put participant-specific focus in the linked Performer `description`.
+- Put participant-specific focus in the linked Agent `description`.
 - Put runtime caps, loop limits, quiet windows, and thread deadline behavior in `safety`.
 - `safety.threadTimeoutMs` is a runtime limit, not a participant wake.
 - Participant subscriptions are wake filters, not permissions.
@@ -54,5 +54,5 @@ Use this skill when the user asks about Act structure, relation fields, subscrip
 
 ## Self-Check
 - Load `studio-assistant-action-surface-guide` before emitting payloads.
-- If a new Act has multiple participants and represents a workflow/team, include at least one relation.
+- If a new Team has multiple participants and represents a workflow/team, include at least one relation.
 - Keep relation payloads contract-correct and publish-safe.

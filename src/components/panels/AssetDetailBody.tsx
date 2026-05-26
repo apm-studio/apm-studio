@@ -149,10 +149,10 @@ export default function AssetDetailBody({
                         <div className="asset-popover__section">
                             <div className="section-title">References</div>
                             {asset.talUrn ? (
-                                <div className="asset-popover__section-item">Tal: {displayUrn(asset.talUrn)}</div>
+                                <div className="asset-popover__section-item">Persona: {displayUrn(asset.talUrn)}</div>
                             ) : null}
                             {Array.isArray(asset.danceUrns) && asset.danceUrns.map((danceUrn: string) => (
-                                <div key={danceUrn} className="asset-popover__section-item">Dance: {displayUrn(danceUrn)}</div>
+                                <div key={danceUrn} className="asset-popover__section-item">Skill Pack: {displayUrn(danceUrn)}</div>
                             ))}
                         </div>
                     )}
@@ -196,7 +196,7 @@ export default function AssetDetailBody({
             {asset.kind === 'act' && (
                 <>
                     <div className="asset-popover__section">
-                        <div className="section-title">Act Summary</div>
+                        <div className="section-title">Team Summary</div>
                         <div className="asset-popover__section-item">Participants: {participantCount}</div>
                         <div className="asset-popover__section-item">Relations: {relationCount}</div>
                     </div>

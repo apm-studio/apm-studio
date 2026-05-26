@@ -29,7 +29,7 @@ vi.mock('../api', () => ({
         assets: {
             list: listAssetsMock,
         },
-        dot: {
+        roster: {
             install: installMock,
         },
     },
@@ -137,10 +137,10 @@ describe('readStartupAssetTarget', () => {
         await expect(openStartupAssetTarget({ kind: 'act', urn })).resolves.toBe(false);
 
         expect(showToastMock).toHaveBeenCalledWith(
-            `Studio could not install act asset ${urn} from the registry. Registry package not found.`,
+            `Studio could not install team asset ${urn} from the registry. Registry package not found.`,
             'error',
             expect.objectContaining({
-                title: 'Act install failed',
+                title: 'Team install failed',
                 dedupeKey: `startup-asset-install-failed:act:${urn}`,
             }),
         );

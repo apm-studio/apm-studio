@@ -37,7 +37,7 @@ export default function ActRelationView() {
                 <button
                     type="button"
                     className="icon-btn"
-                    title="Back to Act Config"
+                    title="Back to Team Config"
                     onClick={() => openActEditor(activeActId, 'act', { tab: 'relations' })}
                 >
                     <ChevronLeft size={12} />

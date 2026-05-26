@@ -76,7 +76,7 @@ function parkedToolError(toolName: string) {
 actRuntimeTools.use('/api/act/*', async (c, next) => {
     const url = c.req.url
     const method = c.req.method
-    const workingDir = c.req.query('workingDir') || c.req.header('x-dot-working-dir') || 'NONE'
+    const workingDir = c.req.query('workingDir') || c.req.header('x-roster-working-dir') || c.req.header('x-dot-working-dir') || 'NONE'
     serverDebug('act-tool-req', `${method} ${url.replace(/\?.*/, '')} workingDir=${decodeURIComponent(workingDir).slice(-40)}`)
     await next()
 })

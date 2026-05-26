@@ -1,13 +1,13 @@
 import type {
     ActParticipantV1,
     ActRelationV1,
-    DotAssetKind,
+    RosterAssetKind,
     ModelConfigV1,
-} from './dot-types.js'
+} from './roster-types.js'
 
 export type AssetSource = 'global' | 'stage' | 'registry' | 'draft'
 
-export type InstalledAssetKind = DotAssetKind
+export type InstalledAssetKind = RosterAssetKind
 
 export type GitHubDanceSyncState =
     | 'up_to_date'

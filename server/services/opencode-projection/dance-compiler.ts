@@ -1,5 +1,5 @@
 import path from 'path'
-import { getAssetPayload, readAsset, danceAssetDir } from '../../lib/dot-source.js'
+import { getAssetPayload, readAsset, danceAssetDir } from '../../lib/roster-source.js'
 import { localSkillProjectionDir, toRelativePath } from './projection-manifest.js'
 import { readDraft } from '../draft-service.js'
 import {

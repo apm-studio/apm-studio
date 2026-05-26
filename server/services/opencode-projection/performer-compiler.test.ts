@@ -12,7 +12,7 @@ vi.mock('../draft-service.js', () => ({
     readDraftTextContent: readDraftTextContentMock,
 }))
 
-vi.mock('../../lib/dot-source.js', () => ({
+vi.mock('../../lib/roster-source.js', () => ({
     getAssetPayload: getAssetPayloadMock,
 }))
 
@@ -74,17 +74,17 @@ describe('compilePerformer scope boundaries', () => {
             description: 'Dance one',
             filePath: '/tmp/workspace/.opencode/skills/dance-one/SKILL.md',
             relativePath: '.opencode/skills/dance-one/SKILL.md',
-            codexFilePath: '/tmp/workspace/.agents/skills/agent-roaster-review-dance-one/SKILL.md',
-            codexRelativePath: '.agents/skills/agent-roaster-review-dance-one/SKILL.md',
-            codexLinkPath: '/tmp/workspace/.agents/skills/agent-roaster-review-dance-one',
-            codexLinkRelativePath: '.agents/skills/agent-roaster-review-dance-one',
+            codexFilePath: '/tmp/workspace/.agents/skills/agent-roster-review-dance-one/SKILL.md',
+            codexRelativePath: '.agents/skills/agent-roster-review-dance-one/SKILL.md',
+            codexLinkPath: '/tmp/workspace/.agents/skills/agent-roster-review-dance-one',
+            codexLinkRelativePath: '.agents/skills/agent-roster-review-dance-one',
             content: '---\nname: "dance-one"\n---\n\nDance body',
             additionalFiles: [],
             bundleChanged: false,
         }])
 
         expect(compiled.codexAgentName).toMatch(/^review_performer_[0-9a-f]{8}$/)
-        expect(compiled.codexAgentRelativePath).toMatch(/^\.codex\/agents\/agent_roaster_review_performer_[0-9a-f]{8}\.toml$/)
+        expect(compiled.codexAgentRelativePath).toMatch(/^\.codex\/agents\/agent_roster_review_performer_[0-9a-f]{8}\.toml$/)
         expect(compiled.allFiles).toContain(compiled.codexAgentRelativePath)
         expect(compiled.codexAgentContent).toContain(`name = "${compiled.codexAgentName}"`)
         expect(compiled.codexAgentContent).toContain('model = "gpt-5.4"')
@@ -95,7 +95,7 @@ describe('compilePerformer scope boundaries', () => {
         const instructions = compiled.codexAgentContent!.match(/developer_instructions = """\n([\s\S]*?)\n"""/)?.[1] || ''
         expect(instructions).toBe(talContent)
         expect(compiled.codexAgentContent).toContain('[[skills.config]]')
-        expect(compiled.codexAgentContent).toContain('path = "/tmp/workspace/.agents/skills/agent-roaster-review-dance-one/SKILL.md"')
+        expect(compiled.codexAgentContent).toContain('path = "/tmp/workspace/.agents/skills/agent-roster-review-dance-one/SKILL.md"')
         expect(compiled.codexAgentContent).not.toContain('path = "/tmp/workspace/.opencode/skills/dance-one/SKILL.md"')
         expect(compiled.codexAgentContent).toContain('enabled = true')
         expect(instructions).not.toContain('Dance body')

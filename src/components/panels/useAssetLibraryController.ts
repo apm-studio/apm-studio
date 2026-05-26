@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { api } from '../../api'
 import { useStudioStore } from '../../store'
 import type { GitHubDanceSyncStatus } from '../../../shared/asset-contracts'
-import type { InstalledDanceLocator } from '../../../shared/dot-contracts'
+import type { InstalledDanceLocator } from '../../../shared/roster-contracts'
 import {
     ALL_MODEL_PROVIDER_FILTER,
     buildRuntimeModelProviderTabs,
@@ -17,7 +17,7 @@ import {
     useAssetKind,
     useAssets,
     useDanceUpdateChecks,
-    useDotAuthUser,
+    useRosterAuthUser,
     useInstallAsset,
     useModels,
     queryKeys,
@@ -128,7 +128,7 @@ export function useAssetLibraryController() {
     const [detailActionStatus, setDetailActionStatus] = useState<string | null>(null)
     const [detailActionLoading, setDetailActionLoading] = useState<AssetPanelAction | null>(null)
 
-    const { data: authUser } = useDotAuthUser()
+    const { data: authUser } = useRosterAuthUser()
     const queryClient = useQueryClient()
 
     const showInstalledAssets = scope === 'local' && localSection === 'installed'
@@ -256,7 +256,7 @@ export function useAssetLibraryController() {
         if (item?.tags?.includes('skills.sh') && item.kind === 'dance') {
             // owner contains "owner/repo", name is the skill name → "owner/repo@name"
             const source = `${item.owner}@${item.name}`
-            return api.dot.addFromGitHub(source, targetScope)
+            return api.roster.addFromGitHub(source, targetScope)
         }
         return installMutation.mutateAsync({ urn, scope: targetScope })
     }
@@ -268,7 +268,7 @@ export function useAssetLibraryController() {
 
     const createNewPerformer = () => {
         const beforeIds = new Set(performers.map((performer) => performer.id))
-        addPerformer(`Performer ${performers.filter((performer) => performer.scope === 'shared').length + 1}`)
+        addPerformer(`Agent ${performers.filter((performer) => performer.scope === 'shared').length + 1}`)
         const created = useStudioStore.getState().performers.find((performer) => !beforeIds.has(performer.id))
         if (created) {
             selectPerformer(created.id)
@@ -279,7 +279,7 @@ export function useAssetLibraryController() {
 
     const createNewAct = () => {
         const acts = useStudioStore.getState().acts
-        const name = `Act ${acts.length + 1}`
+        const name = `Team ${acts.length + 1}`
         addAct(name)
         setAuthoringHint(`Created ${name}. Configure it from the inspector.`)
     }
@@ -316,7 +316,7 @@ export function useAssetLibraryController() {
         try {
             setDetailActionLoading(includeRepoDrift ? 'dance-check-repo' : 'dance-check-updates')
             setDetailActionStatus(null)
-            const response = await api.dot.checkDanceUpdates({
+            const response = await api.roster.checkDanceUpdates({
                 assets: [locator],
                 includeRepoDrift,
             })
@@ -326,7 +326,7 @@ export function useAssetLibraryController() {
                 setDetailActionStatus(sync.message || syncLabelForState(sync.state))
             }
         } catch (error: unknown) {
-            setDetailActionStatus(error instanceof Error ? error.message : 'Dance update check failed.')
+            setDetailActionStatus(error instanceof Error ? error.message : 'Skill Pack update check failed.')
         } finally {
             setDetailActionLoading(null)
         }
@@ -349,13 +349,13 @@ export function useAssetLibraryController() {
             if (response.updated.length > 0) {
                 recordInstalledDanceChange()
                 await invalidateInstalledAssetQueries('dance')
-                setDetailActionStatus(`Updated ${response.updated.length} Dance bundle${response.updated.length > 1 ? 's' : ''} from GitHub.`)
+                setDetailActionStatus(`Updated ${response.updated.length} Skill Pack bundle${response.updated.length > 1 ? 's' : ''} from GitHub.`)
                 return
             }
 
-            setDetailActionStatus(response.skipped[0]?.reason || 'No GitHub Dance assets were updated.')
+            setDetailActionStatus(response.skipped[0]?.reason || 'No GitHub Skill Pack assets were updated.')
         } catch (error: unknown) {
-            setDetailActionStatus(error instanceof Error ? error.message : 'Dance update failed.')
+            setDetailActionStatus(error instanceof Error ? error.message : 'Skill Pack update failed.')
         } finally {
             setDetailActionLoading(null)
         }
@@ -372,10 +372,10 @@ export function useAssetLibraryController() {
             recordInstalledDanceChange()
             await invalidateInstalledAssetQueries('dance')
             setDetailActionStatus(response.installed.length > 0
-                ? `Imported ${response.installed.length} newly available Dance bundle${response.installed.length > 1 ? 's' : ''}.`
-                : 'No newly available GitHub Dance bundles were found for this source.')
+                ? `Imported ${response.installed.length} newly available Skill Pack bundle${response.installed.length > 1 ? 's' : ''}.`
+                : 'No newly available GitHub Skill Pack bundles were found for this source.')
         } catch (error: unknown) {
-            setDetailActionStatus(error instanceof Error ? error.message : 'Dance re-import failed.')
+            setDetailActionStatus(error instanceof Error ? error.message : 'Skill Pack re-import failed.')
         } finally {
             setDetailActionLoading(null)
         }
@@ -389,7 +389,7 @@ export function useAssetLibraryController() {
             setDetailActionStatus(null)
 
             if (asset.kind === 'dance' && action === 'publish') {
-                throw new Error('Dance assets are exported from the Dance editor. Export the draft, upload it to GitHub, then import it from Asset Library as Dance.')
+                throw new Error('Skill Pack assets are exported from the Skill Pack editor. Export the draft, upload it to GitHub, then import it from Asset Library as a Skill Pack.')
             }
 
             const payload = buildAuthoringPayloadFromAsset(asset)
@@ -397,9 +397,9 @@ export function useAssetLibraryController() {
 
             if (action === 'save-local') {
                 if (!authUser?.username) {
-                    throw new Error('Sign in to Agent Roaster first to save a local fork under your namespace.')
+                    throw new Error('Sign in to Agent Roster first to save a local fork under your namespace.')
                 }
-                const result = await api.dot.saveLocalAsset(asset.kind, targetSlug, payload, authUser.username)
+                const result = await api.roster.saveLocalAsset(asset.kind, targetSlug, payload, authUser.username)
                 await invalidateInstalledAssetQueries(asset.kind)
 
                 if (asset.source === 'draft' && asset.draftId) {
@@ -423,7 +423,7 @@ export function useAssetLibraryController() {
                 return
             }
 
-            const result = await api.dot.publishAsset(asset.kind, targetSlug, payload, Array.isArray(asset.tags) ? asset.tags : [], undefined, true)
+            const result = await api.roster.publishAsset(asset.kind, targetSlug, payload, Array.isArray(asset.tags) ? asset.tags : [], undefined, true)
             await invalidateInstalledAssetQueries(asset.kind)
             setDetailActionStatus(result.published
                 ? `Published ${result.urn}.`
@@ -446,7 +446,7 @@ export function useAssetLibraryController() {
     const handleUninstallAsset = async (asset: AssetPanelAsset) => {
         if (!isLibraryAsset(asset) || !asset.urn) return
         try {
-            const plan = await api.dot.previewUninstall(asset.kind, asset.urn)
+            const plan = await api.roster.previewUninstall(asset.kind, asset.urn)
             // Always show confirmation dialog, even if no dependents
             setUninstallPlan({ asset, actionName: 'Uninstall', ...plan })
         } catch (err: unknown) {
@@ -461,7 +461,7 @@ export function useAssetLibraryController() {
         if (!isLibraryAsset(asset) || !asset.urn) return
         try {
             setUninstallLoading(true)
-            const result = await api.dot.uninstallAsset(asset.kind, asset.urn, cascade)
+            const result = await api.roster.uninstallAsset(asset.kind, asset.urn, cascade)
             // Apply canvas cascade for all deleted URNs
             useStudioStore.setState((state) => {
                 const newState: Partial<ReturnType<typeof useStudioStore.getState>> = {}

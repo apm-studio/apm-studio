@@ -1,25 +1,25 @@
 ---
 name: studio-assistant-workflow-guide
-description: "Helps design performer teams, role splits, handoff patterns, and connected Act topology in Agent Roaster. Use when the user wants a team, workflow, pipeline, role decomposition, or Act structure recommendation."
-compatibility: Designed for the Agent Roaster built-in assistant projection.
+description: "Helps design Agent teams, role splits, handoff patterns, and connected Team topology in Agent Roster. Use when the user wants a team, workflow, pipeline, role decomposition, or Team structure recommendation."
+compatibility: Designed for the Agent Roster built-in assistant projection.
 ---
 
-# Agent Roaster Workflow Guide
+# Agent Roster Workflow Guide
 
-Use this skill when the user wants help designing a Performer team or workflow shape.
+Use this skill when the user wants help designing an Agent team or workflow shape.
 
 ## Build Strategy
-- Reuse existing Performers when they already satisfy the role.
-- Create only missing Performers, then create or update the Act.
-- If the user asked for a workflow or team, do not stop after creating loose Performers.
+- Reuse existing Agents when they already satisfy the role.
+- Create only missing Agents, then create or update the Team.
+- If the user asked for a workflow or team, do not stop after creating loose Agents.
 - When new participants are created in the same reply, prefer `participantPerformerRefs` directly on `createAct`.
-- Keep dependent actions in cascade order: create Performers, then create/update Act, then optional relation/subscription updates.
+- Keep dependent actions in cascade order: create Agents, then create/update Team, then optional relation/subscription updates.
 - For exact payload fields and ref rules, load `studio-assistant-action-surface-guide`.
 
 ## Role Split Heuristics
 - Prefer small, legible role splits over large generic teams.
-- Give each Performer a distinct responsibility and a clear output or handoff.
-- If one Performer can plausibly solve the request, say so instead of forcing an Act.
+- Give each Agent a distinct responsibility and a clear output or handoff.
+- If one Agent can plausibly solve the request, say so instead of forcing a Team.
 - If the workflow has stages, mirror those stages in relation order.
 - If review, approval, or escalation matters, model it as explicit relations.
 - Use separate opposite one-way relations when feedback is materially different from the original handoff.
@@ -32,7 +32,7 @@ Use this skill when the user wants help designing a Performer team or workflow s
 - For contract field details, load `studio-assistant-act-guide`.
 
 ## Common Patterns
-- Single expert: one Performer with a clear role.
+- Single expert: one Agent with a clear role.
 - Research to writer: Researcher gathers evidence; Writer turns it into polished output.
 - Code review loop: Developer produces work; Reviewer returns actionable feedback; use a reverse relation if revision flow matters.
 - Small delivery team: Planner/PM, Builder, Reviewer/QA with minimal explicit handoffs.
@@ -42,10 +42,10 @@ Use this skill when the user wants help designing a Performer team or workflow s
 - Ask one short clarifying question only when the role split or handoff is materially unclear.
 - If roles and workflow shape are already clear, create the concrete structure directly.
 - Do not ignore a role the user explicitly requested.
-- Do not add Tal, Dance, model, or MCP choices the user explicitly asked to omit.
+- Do not add Persona, Skill Pack, model, or MCP choices the user explicitly asked to omit.
 
 ## Anti-Patterns
-- Generic Performers with overlapping jobs.
-- Unconnected multi-participant Acts for workflow requests.
-- One giant graph when a focused Act would do.
+- Generic Agents with overlapping jobs.
+- Unconnected multi-participant Teams for workflow requests.
+- One giant graph when a focused Team would do.
 - Invented registry assets, MCP names, model ids, or variant ids.

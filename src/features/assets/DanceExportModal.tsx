@@ -8,7 +8,7 @@ import type { DraftAsset } from '../../types'
 
 const EXPORT_EXISTS_PREFIX = 'Export destination already exists: '
 
-type ExportResponse = Awaited<ReturnType<typeof api.dot.exportDanceBundle>>
+type ExportResponse = Awaited<ReturnType<typeof api.roster.exportDanceBundle>>
 
 type Props = {
     open: boolean
@@ -51,7 +51,7 @@ export default function DanceExportModal({ open, draft, onClose }: Props) {
     const chooseDestination = async () => {
         try {
             setLoading('pick')
-            const result = await api.studio.pickDirectory('Select Parent Folder for Dance Export')
+            const result = await api.studio.pickDirectory('Select Parent Folder for Skill Pack Export')
             if (!result.path) return
             setDestinationParentPath(result.path)
             setExportInfo(null)
@@ -73,17 +73,17 @@ export default function DanceExportModal({ open, draft, onClose }: Props) {
         try {
             setLoading('export')
             setStatus(null)
-            const result = await api.dot.exportDanceBundle(draft.id, slug, destinationParentPath, overwrite)
+            const result = await api.roster.exportDanceBundle(draft.id, slug, destinationParentPath, overwrite)
             setExportInfo(result)
             setOverwriteTargetPath(null)
-            setStatus({ tone: 'success', message: `Exported Dance bundle to ${result.exportPath}.` })
+            setStatus({ tone: 'success', message: `Exported skill pack bundle to ${result.exportPath}.` })
         } catch (error) {
             const normalized = coerceStudioApiError(error)
             if (normalized.message.startsWith(EXPORT_EXISTS_PREFIX)) {
                 setOverwriteTargetPath(normalized.message.slice(EXPORT_EXISTS_PREFIX.length))
                 setStatus({
                     tone: 'error',
-                    message: 'A folder with this Dance slug already exists. Review the path, then confirm overwrite to replace it.',
+                    message: 'A folder with this skill pack slug already exists. Review the path, then confirm overwrite to replace it.',
                 })
             } else {
                 setStatus({ tone: 'error', message: formatStudioApiErrorMessage(error, false) })
@@ -98,8 +98,8 @@ export default function DanceExportModal({ open, draft, onClose }: Props) {
             <div className="dance-export-modal" onClick={(event) => event.stopPropagation()}>
                 <div className="dance-export-modal__header">
                     <div>
-                        <strong>Export Dance</strong>
-                        <p>Export a spec-aligned skill bundle to a folder you choose. Push it to GitHub yourself, then import it from Asset Library as Dance.</p>
+                        <strong>Export Skill Pack</strong>
+                        <p>Export a spec-aligned skill bundle to a folder you choose. Push it to GitHub yourself, then import it from Asset Library as a skill pack.</p>
                     </div>
                     <button className="icon-btn" onClick={onClose} title="Close export dialog">
                         <X size={12} />
@@ -110,7 +110,7 @@ export default function DanceExportModal({ open, draft, onClose }: Props) {
                     <section className="dance-export-modal__section">
                         <div className="dance-export-modal__section-title">Bundle Details</div>
                         <div className="dance-export-modal__meta">
-                            <div><span>Dance</span><strong>{draft.name || 'Untitled Dance'}</strong></div>
+                            <div><span>Skill Pack</span><strong>{draft.name || 'Untitled Skill Pack'}</strong></div>
                             <div><span>Slug</span><strong>{slug}</strong></div>
                             <div><span>Destination Folder</span><strong>{destinationParentPath || 'Choose a parent folder'}</strong></div>
                             <div><span>Export Path</span><strong>{resolvedExportPath}</strong></div>
@@ -129,7 +129,7 @@ export default function DanceExportModal({ open, draft, onClose }: Props) {
                                 onClick={() => void handleExport(!!overwriteTargetPath)}
                                 disabled={!destinationParentPath || loading === 'export'}
                             >
-                                <Upload size={12} /> {loading === 'export' ? 'Exporting…' : overwriteTargetPath ? 'Overwrite Export' : 'Export Dance'}
+                                <Upload size={12} /> {loading === 'export' ? 'Exporting…' : overwriteTargetPath ? 'Overwrite Export' : 'Export Skill Pack'}
                             </button>
                             {exportInfo?.exportPath ? (
                                 <button className="btn btn--sm dance-export-modal__action-btn" onClick={() => void api.studio.openPath(exportInfo.exportPath)}>
@@ -146,7 +146,7 @@ export default function DanceExportModal({ open, draft, onClose }: Props) {
 
                     <section className="dance-export-modal__section">
                         <div className="dance-export-modal__section-title">Next Steps</div>
-                        <p>After export, commit and push this folder to GitHub yourself. Then use Asset Library’s GitHub import row to install the Dance, and re-apply that installed Dance where needed.</p>
+                        <p>After export, commit and push this folder to GitHub yourself. Then use Asset Library’s GitHub import row to install the skill pack, and re-apply it where needed.</p>
                     </section>
 
                     {status ? (

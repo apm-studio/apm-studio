@@ -10,7 +10,7 @@ import type {
     ActRelation,
 } from '../types'
 import { api } from '../api'
-import { parseActAsset } from '../../shared/dot-contracts'
+import { parseActAsset } from '../../shared/roster-contracts'
 import { assetUrnDisplayName, parseStudioAssetUrn } from '../lib/asset-urn'
 import { resolvePerformerFromActBinding } from '../lib/act-participants'
 import { resolvePreferredActThreadId } from '../lib/act-threads'
@@ -562,7 +562,7 @@ async function buildMaterializedRegistryPerformers(
             meta: {
                 derivedFrom: seed.urn,
                 authoring: {
-                    description: `Auto-created for Act participant "${seed.key}" (${seed.urn}). Configure a model to make this participant runnable.`,
+                    description: `Auto-created for Team participant "${seed.key}" (${seed.urn}). Configure a model to make this participant runnable.`,
                 },
             },
         }
@@ -635,7 +635,7 @@ export async function importActFromAssetImpl(
 
     const nextAct = {
         id,
-        name: asset.name || `Act ${get().acts.length + 1}`,
+        name: asset.name || `Team ${get().acts.length + 1}`,
         description: asset.description,
         actRules: validated.payload.actRules,
         participants,
@@ -706,8 +706,8 @@ export function scheduleActRuntimeSync(get: GetState, set: SetState, actId: stri
                     await loadActThreadsImpl(get, set, actId)
                 } catch (error) {
                     console.error('[act-sync] Failed to sync act runtime definition', error)
-                    showToast('Studio could not sync the running Act threads.', 'error', {
-                        title: 'Act sync failed',
+                    showToast('Agent Roster could not sync the running Team threads.', 'error', {
+                        title: 'Team sync failed',
                         dedupeKey: `act:sync:${actId}`,
                     })
                 }

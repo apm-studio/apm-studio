@@ -50,7 +50,7 @@ export const useUISettings = create<UISettingsStore>()(
             setEditToolPartsExpanded: (value) => set({ editToolPartsExpanded: value }),
         }),
         {
-            name: 'agent-roaster-ui-settings',
+            name: 'agent-roster-ui-settings',
             version: 3,
             migrate: migrateUISettings,
         },
