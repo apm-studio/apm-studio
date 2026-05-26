@@ -30,6 +30,7 @@ export interface PerformerCompileInput {
     skillNames: string[]
     toolMap: Record<string, boolean>
     codexMcpServers?: McpCatalog
+    includeCodexAgent?: boolean
     taskAllowlist?: string[]
     relationPromptSection?: string | null
 }
@@ -560,7 +561,7 @@ export async function compilePerformer(
     })
     const projectionScope = input.scope === 'stage' ? 'workspace' : (input.scope || 'workspace')
     const codexModelId = resolveCodexProjectAgentModelId(input.model)
-    const codexAgent = projectionScope === 'workspace' && codexModelId
+    const codexAgent = input.includeCodexAgent !== false && projectionScope === 'workspace' && codexModelId
         ? buildCodexAgentFile({
             performerId: input.performerId,
             performerName: input.performerName,

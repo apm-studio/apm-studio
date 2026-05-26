@@ -1012,6 +1012,7 @@ export function setWorkingDirImpl(get: GetState, set: SetState, dir: string) {
         selectedPerformerId: null,
         selectedPerformerSessionId: null,
         selectedMarkdownEditorId: null,
+        workspaceMode: 'canvas',
         ...buildCanvasViewResetState(),
         seEntities: {},
         seMessages: {},

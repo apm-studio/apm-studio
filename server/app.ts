@@ -15,6 +15,7 @@ import dotRoutes from './routes/dot.js'
 import draftRoutes from './routes/drafts.js'
 import actRuntimeRoutes from './routes/act-runtime.js'
 import discordRoutes from './routes/discord.js'
+import agentSyncRoutes from './routes/agent-sync.js'
 import createTerminalRoutes from './routes/terminal.js'
 import { getActiveProjectDir, IS_PRODUCTION } from './lib/config.js'
 import { requestLogger } from './lib/server-logger.js'
@@ -40,6 +41,7 @@ function mountApiRoutes(app: Hono) {
     app.route('/', draftRoutes)
     app.route('/', actRuntimeRoutes)
     app.route('/', discordRoutes)
+    app.route('/', agentSyncRoutes)
     app.route('/', createTerminalRoutes(() => getActiveProjectDir()))
 }
 

@@ -26,6 +26,9 @@ const ToastViewport = lazy(() =>
 const TerminalPanel = lazy(() =>
   import('./features/workspace').then((module) => ({ default: module.TerminalPanel })),
 );
+const AgentSyncPage = lazy(() =>
+  import('./features/workspace').then((module) => ({ default: module.AgentSyncPage })),
+);
 const AssistantChat = lazy(() =>
   import('./features/assistant/AssistantChat').then((module) => ({ default: module.AssistantChat })),
 );
@@ -47,6 +50,7 @@ export default function App() {
   const isTerminalOpen = useStudioStore(s => s.isTerminalOpen);
   const setTerminalOpen = useStudioStore(s => s.setTerminalOpen);
   const isTrackingOpen = useStudioStore(s => s.isTrackingOpen);
+  const workspaceMode = useStudioStore(s => s.workspaceMode);
   const viewMode = useStudioStore(s => s.viewMode);
   const isAnyFullscreenActive = viewMode !== 'canvas';
 
@@ -167,28 +171,34 @@ export default function App() {
             </button>
           </div>
         ) : null}
-        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        {workspaceMode === 'agent-sync' ? (
           <Suspense fallback={null}>
-            <LeftSidebar />
+            <AgentSyncPage />
           </Suspense>
-          <ReactFlowProvider>
-            <CanvasArea />
-          </ReactFlowProvider>
-          {!isAnyFullscreenActive && (
+        ) : (
+          <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
             <Suspense fallback={null}>
-              {isTrackingOpen ? <WorkspaceTrackingPanel /> : <AssistantChat />}
+              <LeftSidebar />
             </Suspense>
-          )}
-        </div>
-        {!isAnyFullscreenActive && (
-          <Suspense fallback={null}>
-            <TerminalPanel
-              isOpen={isTerminalOpen}
-              onToggle={() => setTerminalOpen(!isTerminalOpen)}
-              height={termHeight}
-              onHeightChange={setTermHeight}
-            />
-          </Suspense>
+            <ReactFlowProvider>
+              <CanvasArea />
+            </ReactFlowProvider>
+            {!isAnyFullscreenActive && (
+              <Suspense fallback={null}>
+                {isTrackingOpen ? <WorkspaceTrackingPanel /> : <AssistantChat />}
+              </Suspense>
+            )}
+          </div>
+        )}
+        {workspaceMode !== 'agent-sync' && !isAnyFullscreenActive && (
+            <Suspense fallback={null}>
+              <TerminalPanel
+                isOpen={isTerminalOpen}
+                onToggle={() => setTerminalOpen(!isTerminalOpen)}
+                height={termHeight}
+                onHeightChange={setTermHeight}
+              />
+            </Suspense>
         )}
       </div>
       <DragOverlay dropAnimation={null}>

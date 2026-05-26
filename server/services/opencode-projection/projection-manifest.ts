@@ -19,6 +19,12 @@ function manifestPath(executionDir: string) {
     return path.join(executionDir, '.opencode', MANIFEST_FILENAME)
 }
 
+export function isManualAgentSyncProjectionPath(filePath: string) {
+    return (
+        filePath.startsWith('.codex/agents/dot_studio_') && filePath.endsWith('.toml')
+    ) || filePath.startsWith('.agents/skills/dot-studio-')
+}
+
 export async function readManifest(executionDir: string): Promise<ProjectionManifest | null> {
     try {
         const raw = await fs.readFile(manifestPath(executionDir), 'utf-8')
@@ -55,7 +61,7 @@ export async function cleanGroupFiles(
 
     const currentSet = new Set(currentFiles)
     for (const file of existing.groups[groupKey] || []) {
-        if (!currentSet.has(file)) {
+        if (!currentSet.has(file) && !isManualAgentSyncProjectionPath(file)) {
             await fs.rm(path.join(executionDir, file), { force: true, recursive: true }).catch(() => {})
         }
     }
@@ -68,9 +74,10 @@ export async function updateManifestGroup(
     files: string[],
 ) {
     const current = await readOrCreateManifest(executionDir, workspaceHash)
+    const previousManualFiles = (current.groups[groupKey] || []).filter(isManualAgentSyncProjectionPath)
 
     current.workspaceHash = workspaceHash
-    current.groups[groupKey] = files
+    current.groups[groupKey] = Array.from(new Set([...files, ...previousManualFiles]))
     await writeManifest(executionDir, current)
 }
 

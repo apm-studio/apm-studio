@@ -135,6 +135,7 @@ function buildClosedWorkspaceState(): Partial<StudioState> {
         selectedPerformerId: null,
         selectedPerformerSessionId: null,
         selectedMarkdownEditorId: null,
+        workspaceMode: 'canvas',
         selectedActId: null,
         actEditorState: null,
         activeThreadId: null,
@@ -183,6 +184,7 @@ export const createWorkspaceSlice: StateCreator<
     selectedPerformerId: null,
     selectedPerformerSessionId: null,
     selectedMarkdownEditorId: null,
+    workspaceMode: 'canvas',
     ...buildCanvasViewResetState(),
     canvasRevealTarget: null,
     inspectorFocus: null,
@@ -204,6 +206,9 @@ export const createWorkspaceSlice: StateCreator<
     setTrackingOpen: (open) => set(open
         ? { isTrackingOpen: true, isAssistantOpen: false }
         : { isTrackingOpen: false }),
+    setWorkspaceMode: (mode) => set(mode === 'agent-sync'
+        ? { workspaceMode: mode, isTrackingOpen: false, isAssistantOpen: false, isTerminalOpen: false }
+        : { workspaceMode: mode }),
     setAssetLibraryOpen: (open) => set({ isAssetLibraryOpen: open }),
 
     toggleTheme: () => set((s) => {

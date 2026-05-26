@@ -6,6 +6,7 @@ import { resolveRuntimeTools, type RuntimeToolResolution } from '../../lib/runti
 import { mcpToolPattern } from '../../../shared/mcp-catalog.js'
 import {
     cleanGroupFiles,
+    isManualAgentSyncProjectionPath,
     markProjectionRuntimePending,
     readManifest,
     toRelativePath,
@@ -17,22 +18,13 @@ import {
 import { compileDance, type CompiledSkill } from './dance-compiler.js'
 import {
     compilePerformer,
-    resolveCodexProjectAgentModelId,
     type CompiledPerformer,
     type PerformerCompileInput,
     type Posture,
 } from './performer-compiler.js'
 import type { ModelSelection } from '../../../shared/model-types.js'
 import { COLLABORATION_TOOL_NAMES, STALE_COLLABORATION_TOOL_NAMES } from '../act-runtime/act-tools.js'
-import {
-    attachCodexSkillPaths,
-    performerSnapshotToCodexProjectionInput,
-    resolveCodexMcpServers,
-    syncCodexSkillLinks,
-    updateCodexProjectionManifestGroup,
-} from './codex-projection-helpers.js'
 import type {
-    CodexProjectionPerformerSnapshot,
     PerformerProjectionInput,
 } from './performer-projection-types.js'
 export type {
@@ -95,17 +87,6 @@ export interface EnsuredPerformerProjection {
     codexChanged: boolean
 }
 
-export interface EnsuredCodexPerformerProjection {
-    performerId: string
-    codexAgentName?: string
-    codexAgentPath?: string
-    codexAgentRelativePath?: string
-    changed: boolean
-    codexChanged: boolean
-    skillChanged: boolean
-    skipped: boolean
-}
-
 function computeWorkspaceHash(workingDir: string) {
     return createHash('sha1').update(workingDir).digest('hex').slice(0, 12)
 }
@@ -131,13 +112,28 @@ export async function pruneStalePerformerProjections(workingDir: string, perform
         return false
     }
 
+    let changed = false
     for (const key of staleKeys) {
+        const retainedFiles: string[] = []
         for (const file of manifest.groups[key] || []) {
+            if (isManualAgentSyncProjectionPath(file)) {
+                retainedFiles.push(file)
+                continue
+            }
             await fs.rm(path.join(workingDir, file), { force: true, recursive: true }).catch(() => {})
+            changed = true
         }
-        delete manifest.groups[key]
+        if (retainedFiles.length > 0) {
+            manifest.groups[key] = retainedFiles
+        } else {
+            delete manifest.groups[key]
+            changed = true
+        }
     }
 
+    if (!changed) {
+        return false
+    }
     await writeManifest(workingDir, manifest)
     return true
 }
@@ -177,140 +173,6 @@ async function resolveCapabilitySnapshot(cwd: string, model: ModelSelection): Pr
     }
 }
 
-export async function ensureCodexPerformerProjection(
-    input: PerformerProjectionInput,
-): Promise<EnsuredCodexPerformerProjection> {
-    const workspaceHash = computeWorkspaceHash(input.workingDir)
-    const codexModelId = resolveCodexProjectAgentModelId(input.model)
-
-    if (!codexModelId) {
-        const pruned = await updateCodexProjectionManifestGroup({
-            workingDir: input.workingDir,
-            workspaceHash,
-            performerId: input.performerId,
-            currentFiles: [],
-        })
-        await updateGitExclude(input.workingDir)
-        return {
-            performerId: input.performerId,
-            changed: pruned,
-            codexChanged: pruned,
-            skillChanged: false,
-            skipped: true,
-        }
-    }
-
-    const codexMcpServers = await resolveCodexMcpServers(input.mcpServerNames)
-
-    const compiledSkills: CompiledSkill[] = []
-    for (const ref of input.danceRefs) {
-        compiledSkills.push(await compileDance(
-            input.workingDir,
-            ref,
-            workspaceHash,
-            input.performerId,
-            input.workingDir,
-            'workspace',
-        ))
-    }
-    const skills = attachCodexSkillPaths(input.workingDir, input.performerId, compiledSkills)
-
-    const compiled = await compilePerformer(
-        input.workingDir,
-        {
-            performerId: input.performerId,
-            performerName: input.performerName,
-            talRef: input.talRef,
-            model: input.model,
-            modelVariant: input.modelVariant || null,
-            workspaceHash,
-            executionDir: input.workingDir,
-            scope: 'stage',
-            skillNames: skills.map((skill) => skill.logicalName),
-            toolMap: {},
-            codexMcpServers,
-            relationPromptSection: null,
-        } satisfies PerformerCompileInput,
-        skills,
-    )
-
-    let skillChanged = false
-    for (const skill of skills) {
-        skillChanged = (await writeIfChanged(skill.filePath, skill.content)) || skillChanged
-        skillChanged = skill.bundleChanged || skillChanged
-    }
-    const skillLinkChanged = await syncCodexSkillLinks(skills)
-
-    const currentFiles = [
-        ...(compiled.codexAgentRelativePath ? [compiled.codexAgentRelativePath] : []),
-        ...skills.flatMap((skill) => [
-            skill.relativePath,
-            ...(skill.codexLinkRelativePath ? [skill.codexLinkRelativePath] : []),
-            ...skill.additionalFiles,
-        ]),
-    ]
-
-    const codexChanged = compiled.codexAgentPath && compiled.codexAgentContent
-        ? await writeIfChanged(compiled.codexAgentPath, compiled.codexAgentContent)
-        : false
-    const prunedCodex = await updateCodexProjectionManifestGroup({
-        workingDir: input.workingDir,
-        workspaceHash,
-        performerId: input.performerId,
-        currentFiles,
-    })
-
-    await updateGitExclude(input.workingDir)
-
-    return {
-        performerId: input.performerId,
-        codexAgentName: compiled.codexAgentName,
-        codexAgentPath: compiled.codexAgentPath,
-        codexAgentRelativePath: compiled.codexAgentRelativePath,
-        changed: skillChanged || skillLinkChanged || prunedCodex || codexChanged,
-        codexChanged: prunedCodex || codexChanged,
-        skillChanged: skillChanged || skillLinkChanged,
-        skipped: !compiled.codexAgentPath,
-    }
-}
-
-export async function syncCodexPerformerProjectionsForWorkspace(
-    workingDir: string,
-    performers: CodexProjectionPerformerSnapshot[],
-) {
-    const results: EnsuredCodexPerformerProjection[] = []
-    let invalidSkippedCount = 0
-    let failedCount = 0
-
-    for (const performer of performers) {
-        const projectionInput = performerSnapshotToCodexProjectionInput(workingDir, performer)
-        if (!projectionInput) {
-            invalidSkippedCount += 1
-            continue
-        }
-        try {
-            results.push(await ensureCodexPerformerProjection(projectionInput))
-        } catch (error) {
-            failedCount += 1
-            console.warn('[codex-projection] Failed to sync performer projection', {
-                workingDir,
-                performerId: performer.id,
-                error,
-            })
-        }
-    }
-
-    return {
-        performerCount: performers.length,
-        projectedCount: results.filter((result) => !result.skipped).length,
-        skippedCount: invalidSkippedCount + results.filter((result) => result.skipped).length,
-        failedCount,
-        changedCount: results.filter((result) => result.changed).length,
-        codexChangedCount: results.filter((result) => result.codexChanged).length,
-        results,
-    }
-}
-
 export async function ensurePerformerProjection(input: PerformerProjectionInput): Promise<EnsuredPerformerProjection> {
     const workspaceHash = computeWorkspaceHash(input.workingDir)
     const toolResolution = await resolveRuntimeTools(input.workingDir, input.model, input.mcpServerNames)
@@ -318,7 +180,6 @@ export async function ensurePerformerProjection(input: PerformerProjectionInput)
         toolResolution.resolvedTools.includes(mcpToolPattern(serverName)),
     )
     const toolMap = buildProjectedToolMap(resolvedServerNames)
-    const codexMcpServers = await resolveCodexMcpServers(input.mcpServerNames)
 
     if (input.extraTools) {
         for (const tool of input.extraTools) {
@@ -340,9 +201,7 @@ export async function ensurePerformerProjection(input: PerformerProjectionInput)
     }
 
     const compileScope = input.scope === 'workspace' ? 'stage' : input.scope
-    const skills = compileScope === 'act'
-        ? compiledSkills
-        : attachCodexSkillPaths(input.workingDir, input.performerId, compiledSkills)
+    const skills = compiledSkills
 
     const requestTargets: RequestRelationTarget[] = (input.requestTargets || []).map((target) => ({
         performerId: target.performerId,
@@ -366,17 +225,13 @@ export async function ensurePerformerProjection(input: PerformerProjectionInput)
             actId: input.actId,
             skillNames: skills.map((skill) => skill.logicalName),
             toolMap,
-            codexMcpServers,
+            includeCodexAgent: false,
             taskAllowlist: requestProjection.taskAllowlist,
             relationPromptSection: requestProjection.promptSection,
         } satisfies PerformerCompileInput,
         skills,
     )
-    if (compileScope !== 'act') {
-        compiled.allFiles.push(...skills.flatMap((skill) => (
-            skill.codexLinkRelativePath ? [skill.codexLinkRelativePath] : []
-        )))
-    }
+    compiled.allFiles = compiled.allFiles.filter((file) => !isManualAgentSyncProjectionPath(file))
 
     let changed = false
     if (input.extraTools) {
@@ -416,16 +271,10 @@ export async function ensurePerformerProjection(input: PerformerProjectionInput)
         changed = (await writeIfChanged(skill.filePath, skill.content)) || changed
         changed = skill.bundleChanged || changed
     }
-    const codexSkillLinkChanged = compileScope !== 'act'
-        ? await syncCodexSkillLinks(skills)
-        : false
     changed = (await writeIfChanged(compiled.agentPaths.build!, compiled.agentContents.build!)) || changed
     if (compiled.agentPaths.plan && compiled.agentContents.plan) {
         changed = (await writeIfChanged(compiled.agentPaths.plan, compiled.agentContents.plan)) || changed
     }
-    const codexChanged = compiled.codexAgentPath && compiled.codexAgentContent
-        ? await writeIfChanged(compiled.codexAgentPath, compiled.codexAgentContent)
-        : false
 
     await updateManifestGroup(
         input.workingDir,
@@ -444,7 +293,7 @@ export async function ensurePerformerProjection(input: PerformerProjectionInput)
         toolMap,
         capabilitySnapshot: await resolveCapabilitySnapshot(input.workingDir, input.model),
         changed,
-        codexChanged: codexChanged || codexSkillLinkChanged,
+        codexChanged: false,
     }
 }
 

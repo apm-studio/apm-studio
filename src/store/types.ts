@@ -21,6 +21,7 @@ import type { ProjectionDirtyState, RuntimeChangeClass, StudioChangeDescriptor }
 
 export type PerformerRelationSlice = Record<never, never>
 
+export type WorkspaceMode = 'canvas' | 'agent-sync'
 export type WorkspaceViewMode = 'canvas' | 'full' | 'split'
 export type FullscreenNodeType = 'performer' | 'act'
 
@@ -84,6 +85,7 @@ export interface WorkspaceSlice {
     selectedPerformerId: string | null
     selectedPerformerSessionId: string | null
     selectedMarkdownEditorId: string | null
+    workspaceMode: WorkspaceMode
     viewMode: WorkspaceViewMode
     splitView: SplitViewState
     focusSnapshot: FocusSnapshot | null
@@ -104,6 +106,7 @@ export interface WorkspaceSlice {
 
     setTerminalOpen: (open: boolean) => void
     setTrackingOpen: (open: boolean) => void
+    setWorkspaceMode: (mode: WorkspaceMode) => void
     setAssetLibraryOpen: (open: boolean) => void
     toggleTheme: () => void
     setCanvasCenter: (x: number, y: number) => void

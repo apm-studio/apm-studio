@@ -114,9 +114,9 @@ Every execution path should follow this order.
 - preview or prewarm may materialize projection files
 - preview or prewarm must not clear `projectionDirty`
 - files may exist in a `projection pending adoption` state until a later dispose
-- workspace saves should sync generated Codex subagent files immediately because Codex project-agent discovery is file-based and does not share OpenCode instance dispose constraints
-- server startup sync should prewarm generated Codex subagent files for saved workspace performers without clearing client-side dirty hints
-- workspace performer projection also materializes generated Codex project subagents at `.codex/agents/dot_studio_*.toml` when the performer uses a Codex-supported OpenAI model
+- workspace saves must not sync generated external-agent files such as Codex project subagents
+- server startup must not prewarm generated external-agent files such as Codex project subagents
+- workspace performer projection materializes only Studio/OpenCode runtime artifacts; Codex project subagents are exported manually from Agent Sync
 - Codex-supported projection models are kept conservative and follow the local Codex model catalog, including Codex Spark when available
 - generated Codex subagents should project Studio model variant reasoning effort to Codex-native `model_reasoning_effort` when the selected variant exposes `reasoning.effort`
 - when Studio stores the model variant as `null`/Default, generated Codex subagents should still write the Codex model's default `model_reasoning_effort` so the performer does not accidentally inherit the parent Codex session's effort
@@ -128,8 +128,12 @@ Every execution path should follow this order.
 - generated Codex subagent MCP projection should use Codex-native `bearer_token_env_var` and `env_http_headers` when Studio remote header values are environment references such as `$TOKEN` or `${TOKEN}`
 - generated Codex subagent MCP projection should use Codex-native `env_vars` when a local MCP environment value forwards the same variable name, such as `TOKEN=$TOKEN`
 - Codex project subagent files are generated from Studio performer state and should be treated as local projection output, not hand-authored source
+- Codex project subagent files are managed by `Agent Sync`, not by normal Studio save, startup, chat projection, or Act projection
+- `GET /api/agent-sync` must be dry-run status calculation and must not write Codex TOML, skill links, skill files, or manifests
+- `POST /api/agent-sync/codex/sync` is the manual path that may write Codex TOML, Dance skill files, `.agents/skills/dot-studio-*` symlinks, and manifest entries
+- `POST /api/agent-sync/codex/prune` may remove only Codex/provider-owned stale immediate artifacts such as `.codex/agents/dot_studio_*.toml` and `.agents/skills/dot-studio-*`
 - Codex-only projection writes do not require OpenCode `dispose`
-- Codex-only projection may write Codex TOML, Dance skill files, and `.agents/skills/dot-studio-*` symlinks needed by `[[skills.config]]`, but must not rewrite projected OpenCode agent markdown files or mark `projectionPending`
+- Codex-only manual sync may write Codex TOML, Dance skill files, and `.agents/skills/dot-studio-*` symlinks needed by `[[skills.config]]`, but must not rewrite projected OpenCode agent markdown files or mark `projectionPending`
 
 ## Act Rules
 

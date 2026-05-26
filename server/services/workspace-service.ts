@@ -5,10 +5,7 @@ import type { SharedAssetRef } from '../../shared/chat-contracts.js'
 import { getOpencode } from '../lib/opencode.js'
 import { unwrapOpencodeResult } from '../lib/opencode-errors.js'
 import { workspacesDir, workspaceDir } from '../lib/config.js'
-import {
-    pruneStalePerformerProjections,
-    syncCodexPerformerProjectionsForWorkspace,
-} from './opencode-projection/stage-projection-service.js'
+import { pruneStalePerformerProjections } from './opencode-projection/stage-projection-service.js'
 import {
     deleteSessionOwnership,
     listSessionOwnershipsForWorkingDir,
@@ -250,13 +247,6 @@ export async function saveWorkspaceSnapshot(body: WorkspaceLinkedSnapshot) {
 
     await fs.writeFile(filePath, JSON.stringify(workspace, null, 2), 'utf-8')
     const stat = await fs.stat(filePath)
-
-    await syncCodexPerformerProjectionsForWorkspace(
-        workingDir,
-        Array.isArray(workspace.performers) ? workspace.performers : [],
-    ).catch((error) => {
-        console.warn('[workspace-service] Failed to sync Codex performer projections during save', { workingDir, error })
-    })
 
     import('./studio-assistant/assistant-service.js').then(({ ensureAssistantAgent }) =>
         ensureAssistantAgent(workingDir).catch(() => {}),

@@ -387,4 +387,26 @@ describe('workspace side panels', () => {
         expect(harness.get().isAssistantOpen).toBe(true)
         expect(harness.get().isTrackingOpen).toBe(false)
     })
+
+    it('enters Agent Sync mode without dirtying the workspace and restores canvas mode', () => {
+        const harness = createHarness({
+            ...createBaseState(),
+            isTrackingOpen: true,
+            isAssistantOpen: true,
+            isTerminalOpen: true,
+            workspaceDirty: false,
+        } as StudioState)
+
+        harness.get().setWorkspaceMode('agent-sync')
+
+        expect(harness.get().workspaceMode).toBe('agent-sync')
+        expect(harness.get().isTrackingOpen).toBe(false)
+        expect(harness.get().isAssistantOpen).toBe(false)
+        expect(harness.get().isTerminalOpen).toBe(false)
+        expect(harness.get().workspaceDirty).toBe(false)
+
+        harness.get().setWorkspaceMode('canvas')
+
+        expect(harness.get().workspaceMode).toBe('canvas')
+    })
 })

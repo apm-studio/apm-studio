@@ -133,10 +133,6 @@ describe('ensurePerformerProjection source boundaries', () => {
     })
 
     it('projects performer MCP access as server glob patterns', async () => {
-        const githubMcpConfig = {
-            type: 'local' as const,
-            command: ['npx', '-y', '@modelcontextprotocol/server-github'],
-        }
         resolveRuntimeToolsMock.mockResolvedValueOnce({
             selectedMcpServers: ['github'],
             requestedTools: ['github_*'],
@@ -144,9 +140,6 @@ describe('ensurePerformerProjection source boundaries', () => {
             resolvedTools: ['github_*'],
             unavailableTools: [],
             unavailableDetails: [],
-        })
-        readGlobalMcpCatalogMock.mockResolvedValueOnce({
-            github: githubMcpConfig,
         })
 
         const { ensurePerformerProjection } = await import('./stage-projection-service.js')
@@ -169,15 +162,13 @@ describe('ensurePerformerProjection source boundaries', () => {
                 toolMap: {
                     'github_*': true,
                 },
-                codexMcpServers: {
-                    github: githubMcpConfig,
-                },
+                includeCodexAgent: false,
             }),
             expect.any(Array),
         )
     })
 
-    it('keeps Codex MCP projection catalog-based even when OpenCode tool resolution fails', async () => {
+    it('does not resolve Codex MCP projection during normal Studio projection', async () => {
         const githubMcpConfig = {
             type: 'local' as const,
             command: ['npx', '-y', '@modelcontextprotocol/server-github'],
@@ -212,19 +203,18 @@ describe('ensurePerformerProjection source boundaries', () => {
         })
 
         expect(result.toolMap).toEqual({})
+        expect(readGlobalMcpCatalogMock).not.toHaveBeenCalled()
         expect(compilePerformerMock).toHaveBeenCalledWith(
             workingDir,
             expect.objectContaining({
                 toolMap: {},
-                codexMcpServers: {
-                    github: githubMcpConfig,
-                },
+                includeCodexAgent: false,
             }),
             expect.any(Array),
         )
     })
 
-    it('writes Codex project agent definitions without forcing OpenCode runtime adoption', async () => {
+    it('does not write Codex project agent definitions during normal Studio projection', async () => {
         const buildContent = '---\ndescription: "Agent: Performer"\nmode: primary\n---\n\nbody'
         const buildPath = path.join(workingDir, '.opencode', 'agents', 'dot-studio', 'workspace', 'hash', 'performer-1--build.md')
         const codexRelativePath = '.codex/agents/dot_studio_performer_1_deadbeef.toml'
@@ -274,11 +264,11 @@ describe('ensurePerformerProjection source boundaries', () => {
         })
 
         expect(result.changed).toBe(false)
-        expect(result.codexChanged).toBe(true)
-        await expect(fs.readFile(codexPath, 'utf-8')).resolves.toBe(codexContent)
+        expect(result.codexChanged).toBe(false)
+        await expect(fs.readFile(codexPath, 'utf-8')).rejects.toBeTruthy()
 
         const manifest = JSON.parse(await fs.readFile(path.join(workingDir, '.opencode', 'dot-studio.manifest.json'), 'utf-8'))
-        expect(manifest.groups['performer:performer-1']).toContain(codexRelativePath)
+        expect(manifest.groups['performer:performer-1']).not.toContain(codexRelativePath)
         expect(manifest.runtime).toBeUndefined()
     })
 
@@ -341,7 +331,7 @@ describe('ensurePerformerProjection source boundaries', () => {
             ],
         })
 
-        const { ensureCodexPerformerProjection } = await import('./stage-projection-service.js')
+        const { ensureCodexPerformerProjection } = await import('../agent-sync/codex-agent-sync-provider.js')
         const result = await ensureCodexPerformerProjection({
             performerId: 'performer-1',
             performerName: 'Performer',
@@ -391,7 +381,7 @@ describe('ensurePerformerProjection source boundaries', () => {
             github: githubMcpConfig,
         })
 
-        const { ensureCodexPerformerProjection } = await import('./stage-projection-service.js')
+        const { ensureCodexPerformerProjection } = await import('../agent-sync/codex-agent-sync-provider.js')
         await ensureCodexPerformerProjection({
             performerId: 'performer-1',
             performerName: 'Performer',
@@ -410,6 +400,7 @@ describe('ensurePerformerProjection source boundaries', () => {
                 codexMcpServers: {
                     github: githubMcpConfig,
                 },
+                includeCodexAgent: true,
             }),
             expect.any(Array),
         )
@@ -438,7 +429,7 @@ describe('ensurePerformerProjection source boundaries', () => {
             'utf-8',
         )
 
-        const { ensureCodexPerformerProjection } = await import('./stage-projection-service.js')
+        const { ensureCodexPerformerProjection } = await import('../agent-sync/codex-agent-sync-provider.js')
         const result = await ensureCodexPerformerProjection({
             performerId: 'performer-1',
             performerName: 'Performer',
@@ -451,18 +442,18 @@ describe('ensurePerformerProjection source boundaries', () => {
         })
 
         expect(result).toEqual(expect.objectContaining({
-            changed: true,
-            codexChanged: true,
+            changed: false,
+            codexChanged: false,
             skillChanged: false,
             skipped: true,
         }))
         expect(compileDanceMock).not.toHaveBeenCalled()
         expect(compilePerformerMock).not.toHaveBeenCalled()
-        await expect(fs.access(oldCodexPath)).rejects.toBeTruthy()
-        await expect(fs.access(oldSkillLinkPath)).rejects.toBeTruthy()
+        await expect(fs.access(oldCodexPath)).resolves.toBeUndefined()
+        await expect(fs.access(oldSkillLinkPath)).resolves.toBeUndefined()
 
         const manifest = JSON.parse(await fs.readFile(path.join(workingDir, '.opencode', 'dot-studio.manifest.json'), 'utf-8'))
-        expect(manifest.groups['performer:performer-1']).toBeUndefined()
+        expect(manifest.groups['performer:performer-1']).toEqual([oldCodexRelativePath, oldSkillLinkRelativePath])
     })
 
     it('keeps act collaboration context out of projected agent files', async () => {

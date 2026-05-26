@@ -19,6 +19,7 @@ import { dotApi } from './api-clients/dot'
 import { opencodeApi } from './api-clients/opencode'
 import { workspaceApi } from './api-clients/workspace'
 import { discordApi } from './api-clients/discord'
+import { agentSyncApi } from './api-clients/agent-sync'
 
 export { setApiWorkingDirContext } from './api-core'
 
@@ -111,6 +112,7 @@ export const api = {
         } satisfies CompilePromptRequest),
 
     chat: chatApi,
+    agentSync: agentSyncApi,
 
     actRuntime: {
         createThread: (actId: string, actDefinition?: Record<string, unknown>) =>
