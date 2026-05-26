@@ -54,16 +54,9 @@ export default function AppModeHeader() {
 
     return (
         <header className="app-mode-header">
-            <div className="app-mode-header__identity" title={workingDir || undefined}>
-                <div className="app-mode-header__brand">
-                    <span className="app-mode-header__mark">8PM</span>
-                    <span className="app-mode-header__workspace">{workspaceLabel(workingDir)}</span>
-                </div>
-                <div className="app-mode-header__status" aria-label="Studio runtime context">
-                    <span>Local</span>
-                    <span>APM</span>
-                    <span>Codex</span>
-                </div>
+            <div className="app-mode-header__brand" title={workingDir || undefined}>
+                <span className="app-mode-header__mark">8PM</span>
+                <span className="app-mode-header__workspace">{workspaceLabel(workingDir)}</span>
             </div>
             <nav className="app-mode-header__nav" aria-label="Studio mode">
                 {APP_MODE_OPTIONS.map((option) => (
