@@ -1,7 +1,7 @@
 import { Suspense, lazy, useState, useEffect } from 'react';
 import { api } from '../../api';
 import { showToast } from '../../lib/toast';
-import { GitBranch, CheckCircle, AlertCircle, Settings, Moon, Sun, Hexagon, Terminal as TerminalIcon, Github, ChevronDown, Save, LogIn, UserRound, MessageCircle, RefreshCcw } from 'lucide-react';
+import { GitBranch, CheckCircle, AlertCircle, Settings, Moon, Sun, Hexagon, Terminal as TerminalIcon, Github, ChevronDown, Save, LogIn, UserRound, MessageCircle } from 'lucide-react';
 import { useStudioStore } from '../../store';
 import { useServerHealth, useRosterStatus } from '../../hooks/queries';
 import { useRosterLogin } from '../../hooks/useRosterLogin';
@@ -32,7 +32,6 @@ export default function WorkspaceToolbar() {
     const setTerminalOpen = useStudioStore(s => s.setTerminalOpen);
     const isTrackingOpen = useStudioStore(s => s.isTrackingOpen);
     const setTrackingOpen = useStudioStore(s => s.setTrackingOpen);
-    const setWorkspaceMode = useStudioStore(s => s.setWorkspaceMode);
     const addCanvasTerminal = useStudioStore(s => s.addCanvasTerminal);
 
     const { data: serverHealthy } = useServerHealth();
@@ -193,16 +192,6 @@ export default function WorkspaceToolbar() {
                     aria-pressed={isTrackingOpen}
                 >
                     <Github size={12} className={isTrackingOpen ? 'icon-active' : ''} />
-                </button>
-
-                <button
-                    type="button"
-                    className="icon-btn"
-                    onClick={() => setWorkspaceMode('agent-sync')}
-                    title="Agent Sync"
-                    aria-label="Open Agent Sync"
-                >
-                    <RefreshCcw size={12} />
                 </button>
 
                 <button

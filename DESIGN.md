@@ -132,6 +132,8 @@ Use active state sparingly and clearly:
 
 Do not invent a new nav visual treatment for each panel.
 
+Studio's primary workflow modes are Explore, Design, Run, and Sync. Keep them grouped in the app header so users can understand whether they are discovering presets, editing local packages, testing runtime behavior, or exporting assistant artifacts.
+
 ## Lists And Rows
 
 Rows should be compact, aligned, and easy to scan.

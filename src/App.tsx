@@ -16,6 +16,7 @@ import {
   readStartupAssetTarget,
 } from './lib/startup-asset-target';
 import { resolveStartupWorkspaceTarget } from './lib/startup-workspace';
+import AppModeHeader from './components/AppModeHeader';
 
 const LeftSidebar = lazy(() =>
   import('./features/workspace').then((module) => ({ default: module.LeftSidebar })),
@@ -29,6 +30,7 @@ const TerminalPanel = lazy(() =>
 const AgentSyncPage = lazy(() =>
   import('./features/workspace').then((module) => ({ default: module.AgentSyncPage })),
 );
+const ExplorePresetCatalog = lazy(() => import('./features/explore/ExplorePresetCatalog'));
 const AssistantChat = lazy(() =>
   import('./features/assistant/AssistantChat').then((module) => ({ default: module.AssistantChat })),
 );
@@ -53,6 +55,7 @@ export default function App() {
   const workspaceMode = useStudioStore(s => s.workspaceMode);
   const viewMode = useStudioStore(s => s.viewMode);
   const isAnyFullscreenActive = viewMode !== 'canvas';
+  const showWorkspaceSurface = workspaceMode !== 'agent-sync' && workspaceMode !== 'explore';
 
   const isInitialMount = useRef(true);
 
@@ -171,9 +174,14 @@ export default function App() {
             </button>
           </div>
         ) : null}
+        <AppModeHeader />
         {workspaceMode === 'agent-sync' ? (
           <Suspense fallback={null}>
             <AgentSyncPage />
+          </Suspense>
+        ) : workspaceMode === 'explore' ? (
+          <Suspense fallback={null}>
+            <ExplorePresetCatalog />
           </Suspense>
         ) : (
           <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
@@ -190,7 +198,7 @@ export default function App() {
             )}
           </div>
         )}
-        {workspaceMode !== 'agent-sync' && !isAnyFullscreenActive && (
+        {showWorkspaceSurface && !isAnyFullscreenActive && (
             <Suspense fallback={null}>
               <TerminalPanel
                 isOpen={isTerminalOpen}

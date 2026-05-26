@@ -206,9 +206,29 @@ export const createWorkspaceSlice: StateCreator<
     setTrackingOpen: (open) => set(open
         ? { isTrackingOpen: true, isAssistantOpen: false }
         : { isTrackingOpen: false }),
-    setWorkspaceMode: (mode) => set(mode === 'agent-sync'
-        ? { workspaceMode: mode, isTrackingOpen: false, isAssistantOpen: false, isTerminalOpen: false }
-        : { workspaceMode: mode }),
+    setWorkspaceMode: (mode) => set(() => {
+        if (mode === 'agent-sync' || mode === 'explore') {
+            return {
+                workspaceMode: mode,
+                isTrackingOpen: false,
+                isAssistantOpen: false,
+                isTerminalOpen: false,
+                isAssetLibraryOpen: false,
+            }
+        }
+
+        if (mode === 'run') {
+            return {
+                workspaceMode: mode,
+                isTrackingOpen: false,
+                isAssistantOpen: true,
+                isTerminalOpen: true,
+                isAssetLibraryOpen: false,
+            }
+        }
+
+        return { workspaceMode: mode }
+    }),
     setAssetLibraryOpen: (open) => set({ isAssetLibraryOpen: open }),
 
     toggleTheme: () => set((s) => {

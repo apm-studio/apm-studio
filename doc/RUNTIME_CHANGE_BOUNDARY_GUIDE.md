@@ -135,6 +135,7 @@ Every execution path should follow this order.
 - `POST /api/agent-sync/codex/prune` may remove only Codex/provider-owned stale immediate artifacts such as `.codex/agents/8pm_studio_*.toml` and `.agents/skills/8pm-studio-*`
 - Codex-only projection writes do not require OpenCode `dispose`
 - Codex-only manual sync may write Codex TOML, Skill files, and `.agents/skills/8pm-studio-*` symlinks needed by `[[skills.config]]`, but must not rewrite projected OpenCode agent markdown files or mark `projectionPending`
+- The Studio UI exposes this manual external-assistant export as the top-level `Sync` mode; that mode remains a manual export boundary and does not make external assistant sync part of normal workspace save or runtime preparation
 
 ## Team Rules
 

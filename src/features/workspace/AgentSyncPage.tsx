@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, RefreshCcw, RotateCw, Trash2 } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, RefreshCcw, RotateCw, Trash2 } from 'lucide-react'
 import { api } from '../../api'
 import { useStudioStore } from '../../store'
 import type {
@@ -43,7 +43,6 @@ function providerStatusTotal(provider: AgentSyncProviderSummary) {
 
 export function AgentSyncPage() {
     const workingDir = useStudioStore((state) => state.workingDir)
-    const setWorkspaceMode = useStudioStore((state) => state.setWorkspaceMode)
     const [overview, setOverview] = useState<AgentSyncOverview | null>(null)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -93,12 +92,25 @@ export function AgentSyncPage() {
     const actionBusy = runningAction !== null
     const pruneDisabled = !codexProvider || codexProvider.staleArtifactsCount === 0 || actionBusy
     const syncAllDisabled = rows.length === 0 || actionBusy || rows.every((row) => row.status === 'unsupported' || row.status === 'invalid')
+    const providerTotals = useMemo(() => {
+        const counts = codexProvider?.statusCounts
+        return {
+            total: codexProvider ? providerStatusTotal(codexProvider) : 0,
+            synced: counts?.synced || 0,
+            stale: counts?.stale || 0,
+            blocked: (counts?.unsupported || 0) + (counts?.invalid || 0),
+            failed: counts?.failed || 0,
+            staleArtifacts: codexProvider?.staleArtifactsCount || 0,
+            syncable: rows.filter((row) => row.status !== 'unsupported' && row.status !== 'invalid').length,
+        }
+    }, [codexProvider, rows])
 
     return (
         <main className="agent-sync-page">
             <header className="agent-sync-page__header">
                 <div className="agent-sync-page__title-block">
-                    <h1>Agent Sync</h1>
+                    <span className="section-title">Sync</span>
+                    <h1>Codex export queue</h1>
                     <p title={workingDir || undefined}>{workingDir || 'No workspace selected'}</p>
                 </div>
                 <div className="agent-sync-page__actions">
@@ -114,10 +126,6 @@ export function AgentSyncPage() {
                         <RotateCw size={13} />
                         Sync All
                     </button>
-                    <button className="btn" type="button" onClick={() => setWorkspaceMode('canvas')}>
-                        <ArrowLeft size={13} />
-                        Back to Canvas
-                    </button>
                 </div>
             </header>
 
@@ -127,42 +135,46 @@ export function AgentSyncPage() {
                 </div>
             ) : null}
 
-            <section className="agent-sync-page__providers" aria-label="Agent sync providers">
-                {overview?.providers.map((provider) => (
-                    <article key={provider.id} className="surface-card agent-sync-provider-card">
-                        <div className="agent-sync-provider-card__header">
-                            <div>
-                                <h2>{provider.label}</h2>
-                                <p>{provider.available ? `${providerStatusTotal(provider)} agents` : 'Unavailable'}</p>
-                            </div>
-                            <span className="badge badge--subtle">Checked {checkedLabel(provider)}</span>
-                        </div>
-                        <div className="agent-sync-provider-card__counts">
-                            {STATUS_ORDER.map((status) => (
-                                <span key={status} className={`agent-sync-status-count agent-sync-status-count--${status}`}>
-                                    {statusLabel(status)}
-                                    <strong>{provider.statusCounts[status]}</strong>
-                                </span>
-                            ))}
-                            <span className="agent-sync-status-count agent-sync-status-count--stale-artifacts">
-                                Stale artifacts
-                                <strong>{provider.staleArtifactsCount}</strong>
-                            </span>
-                        </div>
-                    </article>
-                ))}
-                {!overview && loading ? (
-                    <div className="surface-card agent-sync-provider-card agent-sync-provider-card--placeholder">
-                        Loading provider status…
+            <section className="agent-sync-page__summary" aria-label="Codex sync summary">
+                <article className="surface-card agent-sync-summary-card agent-sync-summary-card--primary">
+                    <div className="agent-sync-summary-card__header">
+                        <span className="badge badge--subtle">{codexProvider?.label || 'Codex'}</span>
+                        <span className="badge badge--subtle">Checked {codexProvider ? checkedLabel(codexProvider) : 'not yet'}</span>
                     </div>
-                ) : null}
+                    <div className="agent-sync-summary-card__body">
+                        <h2>{loading && !overview ? 'Checking export state...' : `${providerTotals.syncable} exportable agents`}</h2>
+                        <p>{codexProvider?.available === false ? 'Codex sync is unavailable for this workspace.' : 'Manual sync writes Codex-owned agent and skill artifacts from saved local packages.'}</p>
+                    </div>
+                </article>
+                <div className="agent-sync-stat-grid">
+                    <div className="surface-card agent-sync-stat-card">
+                        <CheckCircle2 size={14} />
+                        <span>Synced</span>
+                        <strong>{providerTotals.synced}</strong>
+                    </div>
+                    <div className="surface-card agent-sync-stat-card agent-sync-stat-card--warning">
+                        <RotateCw size={14} />
+                        <span>Needs Sync</span>
+                        <strong>{providerTotals.stale}</strong>
+                    </div>
+                    <div className="surface-card agent-sync-stat-card agent-sync-stat-card--warning">
+                        <Trash2 size={14} />
+                        <span>Stale Files</span>
+                        <strong>{providerTotals.staleArtifacts}</strong>
+                    </div>
+                    <div className="surface-card agent-sync-stat-card agent-sync-stat-card--danger">
+                        <AlertTriangle size={14} />
+                        <span>Blocked</span>
+                        <strong>{providerTotals.blocked + providerTotals.failed}</strong>
+                    </div>
+                </div>
             </section>
 
             <section className="surface-card agent-sync-table-card">
                 <div className="agent-sync-table-card__header">
                     <div>
-                        <h2>Codex Agents</h2>
-                        <p>APM-backed manual export status for Codex project agents.</p>
+                        <h2>Agents</h2>
+                        <p>{providerTotals.total} saved package{providerTotals.total === 1 ? '' : 's'} checked for Codex export.</p>
                     </div>
                     {runningAction ? <span className="badge badge--subtle">Working...</span> : null}
                 </div>
@@ -170,10 +182,9 @@ export function AgentSyncPage() {
                 <div className="agent-sync-table" role="table" aria-label="Codex assistant sync status">
                     <div className="agent-sync-table__row agent-sync-table__row--head" role="row">
                         <span role="columnheader">Agent</span>
-                        <span role="columnheader">Model</span>
-                        <span role="columnheader">Status</span>
+                        <span role="columnheader">State</span>
+                        <span role="columnheader">Package</span>
                         <span role="columnheader">Reason</span>
-                        <span role="columnheader">Agent</span>
                         <span role="columnheader">Action</span>
                     </div>
                     {rows.map((row) => {
@@ -181,21 +192,19 @@ export function AgentSyncPage() {
                         return (
                             <div key={`${row.providerId}:${row.performerId}`} className="agent-sync-table__row" role="row">
                                 <span role="cell" className="agent-sync-table__performer" title={row.performerName}>
-                                    {row.performerName}
-                                </span>
-                                <span role="cell" className="agent-sync-table__muted" title={modelLabel(row)}>
-                                    {modelLabel(row)}
+                                    <strong>{row.performerName}</strong>
+                                    <small title={modelLabel(row)}>{modelLabel(row)}</small>
                                 </span>
                                 <span role="cell">
                                     <span className={`agent-sync-status-badge agent-sync-status-badge--${row.status}`}>
                                         {statusLabel(row.status)}
                                     </span>
                                 </span>
-                                <span role="cell" className="agent-sync-table__reason" title={row.reason}>
-                                    {row.reason}
-                                </span>
                                 <span role="cell" className="agent-sync-table__muted" title={row.agentName || undefined}>
                                     {row.agentName || '--'}
+                                </span>
+                                <span role="cell" className="agent-sync-table__reason" title={row.reason}>
+                                    {row.reason}
                                 </span>
                                 <span role="cell" className="agent-sync-table__action">
                                     <button

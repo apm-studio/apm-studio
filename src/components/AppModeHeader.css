@@ -1,0 +1,115 @@
+.app-mode-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-5);
+    min-height: 42px;
+    padding: var(--space-2) var(--space-5);
+    border-bottom: 1px solid var(--border-main);
+    background: var(--bg-panel);
+    color: var(--text-primary);
+    flex: 0 0 auto;
+}
+
+.app-mode-header__brand {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-width: 0;
+}
+
+.app-mode-header__mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 24px;
+    padding: 0 var(--space-3);
+    border: 1px solid var(--border-main);
+    border-radius: var(--radius-sm);
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+    font-size: var(--font-xs);
+    font-weight: 800;
+}
+
+.app-mode-header__workspace {
+    min-width: 0;
+    max-width: 220px;
+    overflow: hidden;
+    color: var(--text-secondary);
+    font-size: var(--font-sm);
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.app-mode-header__nav {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    height: 30px;
+    padding: 2px;
+    border: 1px solid var(--border-main);
+    border-radius: var(--radius);
+    background: var(--bg-elevated);
+}
+
+.app-mode-header__mode {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-1);
+    height: 24px;
+    padding: 0 var(--space-3);
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: var(--font-sm);
+    font-weight: 800;
+    transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+    white-space: nowrap;
+}
+
+.app-mode-header__mode:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.app-mode-header__mode.is-active {
+    border-color: var(--border-active);
+    background: var(--bg-selected);
+    color: var(--text-primary);
+}
+
+.app-mode-header__mode.is-active svg {
+    color: var(--accent);
+}
+
+@media (max-width: 760px) {
+    .app-mode-header {
+        align-items: stretch;
+        flex-direction: column;
+        gap: var(--space-2);
+        padding: var(--space-2) var(--space-3);
+    }
+
+    .app-mode-header__workspace {
+        max-width: none;
+    }
+
+    .app-mode-header__nav {
+        width: 100%;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+
+    .app-mode-header__nav::-webkit-scrollbar {
+        display: none;
+    }
+
+    .app-mode-header__mode {
+        flex: 1 0 auto;
+    }
+}

@@ -21,7 +21,7 @@ import type { ProjectionDirtyState, RuntimeChangeClass, StudioChangeDescriptor }
 
 export type PerformerRelationSlice = Record<never, never>
 
-export type WorkspaceMode = 'canvas' | 'agent-sync'
+export type WorkspaceMode = 'canvas' | 'run' | 'explore' | 'agent-sync'
 export type WorkspaceViewMode = 'canvas' | 'full' | 'split'
 export type FullscreenNodeType = 'performer' | 'act'
 
