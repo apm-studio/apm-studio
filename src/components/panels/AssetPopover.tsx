@@ -212,7 +212,7 @@ export function PinnedDetailPanel({
             ) : null}
             {!authUser?.authenticated && (resolvedAsset?.source === 'global' || resolvedAsset?.source === 'stage') ? (
                 <div className="asset-detail-panel__note">
-                    Sign in with 8PM Studio from the toolbar before saving a local fork.
+                    Sign in with APM Studio from the toolbar before saving a local fork.
                 </div>
             ) : null}
             {actionStatus ? <div className="asset-detail-panel__note">{actionStatus}</div> : null}

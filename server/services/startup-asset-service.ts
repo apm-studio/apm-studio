@@ -5,14 +5,14 @@ import type {
     AssetListItem,
     PerformerAssetListItem,
 } from '../../shared/asset-contracts.js'
-import type { ModelConfigV1 } from '../../shared/roster-types.js'
+import type { ModelConfigV1 } from '../../shared/apm-asset-types.js'
 import type { RuntimeModelCatalogEntry } from '../../shared/model-variants.js'
 import { extractMcpServerNamesFromConfig } from '../../shared/mcp-config.js'
-import { parseActAsset } from '../lib/roster-source.js'
+import { parseActAsset } from '../lib/apm-asset-source.js'
 import { listRuntimeModels } from '../lib/model-catalog.js'
 import { readGlobalMcpCatalog } from '../lib/mcp-catalog.js'
 import { listStudioAssets } from './asset-service.js'
-import { installRosterAsset } from './roster-service.js'
+import { installApmAsset } from './apm-asset-service.js'
 import {
     getSavedWorkspace,
     listSavedWorkspaces,
@@ -473,7 +473,7 @@ async function ensureInstalledAssetByUrn(cwd: string, target: StartupAssetTarget
         return installedAsset
     }
 
-    await installRosterAsset(cwd, {
+    await installApmAsset(cwd, {
         urn: target.urn,
         force: false,
         scope: 'stage',

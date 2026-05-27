@@ -2,7 +2,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { promises as fs } from 'node:fs'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { parseDanceFromSkillMd } from '../../shared/roster-contracts.js'
+import { parseDanceFromSkillMd } from '../../shared/apm-asset-contracts.js'
 import { createDraft } from './draft-service.js'
 import { DANCE_EXPORT_EXISTS_PREFIX, exportDanceBundle } from './dance-export-service.js'
 
@@ -11,8 +11,8 @@ describe('dance export service', () => {
     let exportRoot: string
 
     beforeEach(async () => {
-        workingDir = await fs.mkdtemp(path.join(os.tmpdir(), '8pm-studio-dance-export-'))
-        exportRoot = await fs.mkdtemp(path.join(os.tmpdir(), '8pm-studio-dance-export-target-'))
+        workingDir = await fs.mkdtemp(path.join(os.tmpdir(), 'apm-studio-dance-export-'))
+        exportRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'apm-studio-dance-export-target-'))
     })
 
     afterEach(async () => {
@@ -42,8 +42,8 @@ describe('dance export service', () => {
             ].join('\n'),
         })
 
-        await fs.mkdir(path.join(workingDir, '.8pm-studio', 'drafts', 'dance', draft.id, 'scripts'), { recursive: true })
-        await fs.writeFile(path.join(workingDir, '.8pm-studio', 'drafts', 'dance', draft.id, 'scripts', 'check.sh'), 'echo ok\n', 'utf-8')
+        await fs.mkdir(path.join(workingDir, '.apm-studio', 'drafts', 'dance', draft.id, 'scripts'), { recursive: true })
+        await fs.writeFile(path.join(workingDir, '.apm-studio', 'drafts', 'dance', draft.id, 'scripts', 'check.sh'), 'echo ok\n', 'utf-8')
 
         const exported = await exportDanceBundle({
             cwd: workingDir,

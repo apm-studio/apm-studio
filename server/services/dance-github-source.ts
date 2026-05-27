@@ -12,7 +12,7 @@ import {
     upsertSkillLockEntry,
     type DiscoveredSkill,
     type ParsedSource,
-} from '../lib/roster-source.js'
+} from '../lib/apm-asset-source.js'
 
 type RawSkillLock = Awaited<ReturnType<typeof readSkillLock>>
 

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Agent chat, Team participant chat, and 8PM Assistant chat all use the same session runtime.
+Agent chat, Team participant chat, and APM Assistant chat all use the same session runtime.
 
 - do not reintroduce legacy dual-write behavior
 - do not build new logic on old flat chat or session fields

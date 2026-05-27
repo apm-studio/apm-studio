@@ -1,9 +1,9 @@
-# 8PM Studio Navigation Reference
+# APM Studio Navigation Reference
 
 ## Top Toolbar
-- `8PM Studio`: workspace initialization state.
+- `APM Studio`: workspace initialization state.
 - Branch label: current git branch when available.
-- `Sign in` or user menu: 8PM Studio registry login.
+- `Sign in` or user menu: APM Studio registry login.
 - Server status indicator.
 - `Terminal`: `Show/Hide Pinned Terminal`, `Add Terminal to Canvas`.
 - `Workspace Tracking`: opens the right-side tracking panel and closes Assistant.
@@ -58,4 +58,4 @@
 ## MCP Flow
 - Define servers in `Packages -> Local -> Runtime -> MCPs`.
 - Attach or drag the MCP card onto an Agent to enable it there.
-- 8PM Studio MCP library definitions are not the same as raw OpenCode project MCP config.
+- APM Studio MCP library definitions are not the same as raw OpenCode project MCP config.

@@ -4,7 +4,6 @@
 import { assetUrnDisplayName } from '../../lib/asset-urn'
 import type { McpServer } from '../../types'
 import type { RuntimeModelCatalogEntry } from '../../../shared/model-variants'
-import type { RegistryListing, RegistryListingKind } from '../../../shared/registry-contracts'
 import type { AssetPanelAsset, LibraryAsset, McpPanelAsset, ModelPanelAsset } from './asset-panel-types'
 export {
     ALL_MODEL_PROVIDER_FILTER,
@@ -13,13 +12,11 @@ export {
 } from '../../lib/runtime-models'
 
 export type InstalledKind = 'performer' | 'tal' | 'dance' | 'act'
-export type RuntimeKind = 'models' | 'mcps'
-export type AssetScope = 'local' | 'registry'
+export type PrimitiveKind = InstalledKind | 'mcp'
 export type SourceFilter = 'all' | 'global' | 'stage' | 'draft'
-export type LocalSection = 'installed' | 'runtime'
-export type RegistryKind = 'all' | InstalledKind
+export type LocalSection = 'packages' | 'primitives' | 'models'
 
-export const INSTALLED_KIND_ORDER: InstalledKind[] = ['performer', 'tal', 'dance', 'act']
+export const INSTALLED_KIND_ORDER: InstalledKind[] = ['performer', 'tal', 'dance']
 
 export function displayUrn(urn: string) {
     return assetUrnDisplayName(urn)
@@ -32,31 +29,6 @@ export function normalizeAuthor(author?: string) {
 
 export function isInstalledAssetKind(kind: string | null | undefined): kind is InstalledKind {
     return kind === 'tal' || kind === 'dance' || kind === 'performer' || kind === 'act'
-}
-
-export function installedKindForRegistryListingKind(kind: RegistryListingKind): InstalledKind | null {
-    if (kind === 'agent') return 'performer'
-    if (kind === 'instruction') return 'tal'
-    if (kind === 'skill') return 'dance'
-    if (kind === 'team') return 'act'
-    return null
-}
-
-export function registryListingToLibraryAsset(listing: RegistryListing): LibraryAsset {
-    const kind = installedKindForRegistryListingKind(listing.kind) || 'performer'
-    const [owner = 'community'] = listing.source.repo.split('/')
-    return {
-        kind,
-        urn: `registry:${listing.id}`,
-        slug: listing.slug,
-        name: listing.name,
-        author: owner,
-        source: 'registry',
-        description: listing.summary,
-        tags: listing.tags,
-        updatedAt: listing.updatedAt,
-        registryListing: listing,
-    } as LibraryAsset
 }
 
 type AssetUrnInput = {
@@ -106,7 +78,6 @@ export function resolveSelectedAssetSnapshot(
     selectedAsset: AssetPanelAsset | null,
     options: {
         installedAssets?: LibraryAsset[]
-        registryAssets?: LibraryAsset[]
         models?: RuntimeModelCatalogEntry[]
         mcps?: McpServer[]
     },
@@ -119,11 +90,6 @@ export function resolveSelectedAssetSnapshot(
     const installedMatch = (options.installedAssets || []).find((asset) => getAssetSelectionKey(asset) === selectedKey)
     if (installedMatch) {
         return installedMatch
-    }
-
-    const registryMatch = (options.registryAssets || []).find((asset) => getAssetSelectionKey(asset) === selectedKey)
-    if (registryMatch) {
-        return registryMatch
     }
 
     const modelMatch = (options.models || []).find((model) => (
@@ -156,7 +122,6 @@ export {
     buildModelHaystack,
     buildMcpHaystack,
     filterInstalledAssets,
-    buildRegistryGroups,
     labelForInstalledKind,
     placeholderForLocalSection,
     authoringNoteForInstalledKind,
@@ -166,6 +131,7 @@ export {
     buildInstalledAssetDragPayload,
     buildModelDragPayload,
     buildMcpDragPayload,
+    buildApmPackageDragPayload,
 } from './asset-library-drag'
 
 export {

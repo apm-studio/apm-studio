@@ -12,7 +12,7 @@ vi.mock('../draft-service.js', () => ({
     readDraftTextContent: readDraftTextContentMock,
 }))
 
-vi.mock('../../lib/roster-source.js', () => ({
+vi.mock('../../lib/apm-asset-source.js', () => ({
     getAssetPayload: getAssetPayloadMock,
 }))
 
@@ -52,7 +52,7 @@ describe('compilePerformer scope boundaries', () => {
         expect(buildContent).toContain('"wait_until": false')
     })
 
-    it('projects workspace performers as Codex project agent definitions', async () => {
+    it('keeps workspace performers in OpenCode projection output only', async () => {
         const { compilePerformer } = await import('./performer-compiler.js')
         const talContent = 'Respond as a careful reviewer.\nNever mention internal abstractions.'
         getAssetPayloadMock.mockResolvedValueOnce(talContent)
@@ -74,248 +74,17 @@ describe('compilePerformer scope boundaries', () => {
             description: 'Dance one',
             filePath: '/tmp/workspace/.opencode/skills/dance-one/SKILL.md',
             relativePath: '.opencode/skills/dance-one/SKILL.md',
-            codexFilePath: '/tmp/workspace/.agents/skills/8pm-studio-review-dance-one/SKILL.md',
-            codexRelativePath: '.agents/skills/8pm-studio-review-dance-one/SKILL.md',
-            codexLinkPath: '/tmp/workspace/.agents/skills/8pm-studio-review-dance-one',
-            codexLinkRelativePath: '.agents/skills/8pm-studio-review-dance-one',
             content: '---\nname: "dance-one"\n---\n\nDance body',
             additionalFiles: [],
             bundleChanged: false,
         }])
 
-        expect(compiled.codexAgentName).toMatch(/^review_performer_[0-9a-f]{8}$/)
-        expect(compiled.codexAgentRelativePath).toMatch(/^\.codex\/agents\/8pm_studio_review_performer_[0-9a-f]{8}\.toml$/)
-        expect(compiled.allFiles).toContain(compiled.codexAgentRelativePath)
-        expect(compiled.codexAgentContent).toContain(`name = "${compiled.codexAgentName}"`)
-        expect(compiled.codexAgentContent).toContain('model = "gpt-5.4"')
-        expect(compiled.codexAgentContent).toContain('model_reasoning_effort = "medium"')
-        expect(compiled.codexAgentContent).toContain('sandbox_mode = "workspace-write"')
-        expect(compiled.codexAgentContent).toContain('Custom agent for Review Performer.')
-        expect(compiled.codexAgentContent).toContain('developer_instructions = """\n')
-        const instructions = compiled.codexAgentContent!.match(/developer_instructions = """\n([\s\S]*?)\n"""/)?.[1] || ''
-        expect(instructions).toBe(talContent)
-        expect(compiled.codexAgentContent).toContain('[[skills.config]]')
-        expect(compiled.codexAgentContent).toContain('path = "/tmp/workspace/.agents/skills/8pm-studio-review-dance-one/SKILL.md"')
-        expect(compiled.codexAgentContent).not.toContain('path = "/tmp/workspace/.opencode/skills/dance-one/SKILL.md"')
-        expect(compiled.codexAgentContent).toContain('enabled = true')
-        expect(instructions).not.toContain('Dance body')
-        expect(instructions).not.toContain('Dance of Tal')
-        expect(instructions).not.toContain('Studio')
-    })
-
-    it('does not fall back to OpenCode-only skill paths in Codex project agents', async () => {
-        const { compilePerformer } = await import('./performer-compiler.js')
-
-        const compiled = await compilePerformer('/tmp/workspace', {
-            performerId: 'Review Performer',
-            performerName: 'Review Performer',
-            talRef: null,
-            model: { provider: 'openai', modelId: 'gpt-5.4' },
-            modelVariant: null,
-            workspaceHash: 'workspace-hash',
-            executionDir: '/tmp/workspace',
-            scope: 'stage',
-            skillNames: ['dance-one'],
-            toolMap: {},
-            relationPromptSection: null,
-        }, [{
-            logicalName: 'dance-one',
-            description: 'Dance one',
-            filePath: '/tmp/workspace/.opencode/skills/dance-one/SKILL.md',
-            relativePath: '.opencode/skills/dance-one/SKILL.md',
-            content: '---\nname: "dance-one"\n---\n\nDance body',
-            additionalFiles: [],
-            bundleChanged: false,
-        }])
-
-        expect(compiled.codexAgentContent).not.toContain('[[skills.config]]')
-        expect(compiled.codexAgentContent).not.toContain('path = "/tmp/workspace/.opencode/skills/dance-one/SKILL.md"')
-    })
-
-    it('projects Codex Spark performers when the local Codex catalog supports the model', async () => {
-        const { compilePerformer } = await import('./performer-compiler.js')
-
-        const compiled = await compilePerformer('/tmp/workspace', {
-            performerId: 'spark-reviewer',
-            performerName: 'Spark Reviewer',
-            talRef: null,
-            model: { provider: 'openai', modelId: 'gpt-5.3-codex-spark' },
-            modelVariant: null,
-            workspaceHash: 'workspace-hash',
-            executionDir: '/tmp/workspace',
-            scope: 'stage',
-            skillNames: [],
-            toolMap: {},
-            relationPromptSection: null,
-        }, [])
-
-        expect(compiled.codexAgentName).toMatch(/^spark_reviewer_[0-9a-f]{8}$/)
-        expect(compiled.codexAgentContent).toContain('model = "gpt-5.3-codex-spark"')
-        expect(compiled.codexAgentContent).toContain('model_reasoning_effort = "high"')
-    })
-
-    it('keeps Codex project agent identities distinct after name sanitization', async () => {
-        const { compilePerformer } = await import('./performer-compiler.js')
-
-        const first = await compilePerformer('/tmp/workspace', {
-            performerId: 'performer-alpha',
-            performerName: 'QA Lead',
-            talRef: null,
-            model: { provider: 'openai', modelId: 'gpt-5.4' },
-            modelVariant: null,
-            workspaceHash: 'workspace-hash',
-            executionDir: '/tmp/workspace',
-            scope: 'stage',
-            skillNames: [],
-            toolMap: {},
-            relationPromptSection: null,
-        }, [])
-        const second = await compilePerformer('/tmp/workspace', {
-            performerId: 'performer-beta',
-            performerName: 'QA-Lead',
-            talRef: null,
-            model: { provider: 'openai', modelId: 'gpt-5.4' },
-            modelVariant: null,
-            workspaceHash: 'workspace-hash',
-            executionDir: '/tmp/workspace',
-            scope: 'stage',
-            skillNames: [],
-            toolMap: {},
-            relationPromptSection: null,
-        }, [])
-
-        expect(first.codexAgentName).toMatch(/^qa_lead_[0-9a-f]{8}$/)
-        expect(second.codexAgentName).toMatch(/^qa_lead_[0-9a-f]{8}$/)
-        expect(first.codexAgentName).not.toBe(second.codexAgentName)
-        expect(first.codexAgentRelativePath).not.toBe(second.codexAgentRelativePath)
-        expect(first.codexAgentName).not.toContain('dot_studio')
-    })
-
-    it('projects reasoning effort from the selected model variant into Codex project agents', async () => {
-        resolveRuntimeModelMock.mockResolvedValueOnce({
-            provider: 'openai',
-            providerName: 'OpenAI',
-            id: 'gpt-5.4',
-            name: 'GPT-5.4',
-            connected: true,
-            context: 0,
-            output: 0,
-            toolCall: true,
-            reasoning: true,
-            attachment: true,
-            temperature: true,
-            modalities: { input: ['text'], output: ['text'] },
-            variants: [{
-                id: 'reasoning-high',
-                summary: 'reasoning.effort=high',
-                options: { reasoning: { effort: 'high' } },
-            }],
-        })
-        const { compilePerformer } = await import('./performer-compiler.js')
-
-        const compiled = await compilePerformer('/tmp/workspace', {
-            performerId: 'reasoning-reviewer',
-            performerName: 'Reasoning Reviewer',
-            talRef: null,
-            model: { provider: 'openai', modelId: 'gpt-5.4' },
-            modelVariant: 'reasoning-high',
-            workspaceHash: 'workspace-hash',
-            executionDir: '/tmp/workspace',
-            scope: 'stage',
-            skillNames: [],
-            toolMap: {},
-            relationPromptSection: null,
-        }, [])
-
-        expect(compiled.codexAgentContent).toContain('model = "gpt-5.4"')
-        expect(compiled.codexAgentContent).toContain('model_reasoning_effort = "high"')
-    })
-
-    it('projects performer MCP servers into Codex project agent definitions', async () => {
-        const { compilePerformer } = await import('./performer-compiler.js')
-
-        const compiled = await compilePerformer('/tmp/workspace', {
-            performerId: 'mcp-performer',
-            performerName: 'MCP Performer',
-            talRef: null,
-            model: { provider: 'openai', modelId: 'gpt-5.4' },
-            modelVariant: null,
-            workspaceHash: 'workspace-hash',
-            executionDir: '/tmp/workspace',
-            scope: 'stage',
-            skillNames: [],
-            toolMap: {
-                'docs_*': true,
-                'github_*': true,
-            },
-            codexMcpServers: {
-                github: {
-                    type: 'local',
-                    command: ['npx', '-y', '@modelcontextprotocol/server-github'],
-                    environment: {
-                        GITHUB_TOKEN: '$GITHUB_TOKEN',
-                        GITHUB_OWNER: 'dance-of-tal',
-                    },
-                    timeout: 1500,
-                },
-                'docs.remote': {
-                    type: 'remote',
-                    url: 'https://developers.openai.com/mcp',
-                    headers: {
-                        Authorization: 'Bearer ${OPENAI_DOCS_MCP_TOKEN}',
-                        'X-Docs-Env': '$DOCS_REGION',
-                        'X-Docs-Region': 'us-east-1',
-                    },
-                    timeout: 5000,
-                },
-            },
-            relationPromptSection: null,
-        }, [])
-
-        expect(compiled.codexAgentContent).toContain('[mcp_servers.github]')
-        expect(compiled.codexAgentContent).toContain('command = "npx"')
-        expect(compiled.codexAgentContent).toContain('args = ["-y", "@modelcontextprotocol/server-github"]')
-        expect(compiled.codexAgentContent).toContain('env_vars = ["GITHUB_TOKEN"]')
-        expect(compiled.codexAgentContent).toContain('startup_timeout_sec = 2')
-        expect(compiled.codexAgentContent).toContain('tool_timeout_sec = 2')
-        expect(compiled.codexAgentContent).toContain('[mcp_servers.github.env]')
-        expect(compiled.codexAgentContent).toContain('GITHUB_OWNER = "dance-of-tal"')
-        expect(compiled.codexAgentContent).not.toContain('GITHUB_TOKEN = "$GITHUB_TOKEN"')
-        expect(compiled.codexAgentContent).toContain('[mcp_servers."docs.remote"]')
-        expect(compiled.codexAgentContent).toContain('url = "https://developers.openai.com/mcp"')
-        expect(compiled.codexAgentContent).toContain('bearer_token_env_var = "OPENAI_DOCS_MCP_TOKEN"')
-        expect(compiled.codexAgentContent).toContain('http_headers = { "X-Docs-Region" = "us-east-1" }')
-        expect(compiled.codexAgentContent).toContain('env_http_headers = { "X-Docs-Env" = "DOCS_REGION" }')
-        expect(compiled.codexAgentContent).toContain('startup_timeout_sec = 5')
-        expect(compiled.codexAgentContent).toContain('tool_timeout_sec = 5')
-        expect(compiled.codexAgentContent).not.toContain('"Authorization"')
-    })
-
-    it('skips Codex projection when the performer model is not supported by Codex', async () => {
-        const { compilePerformer } = await import('./performer-compiler.js')
-
-        for (const model of [
-            { provider: 'openai', modelId: 'gpt-5' },
-            { provider: 'anthropic', modelId: 'claude-sonnet-4' },
-        ]) {
-            const compiled = await compilePerformer('/tmp/workspace', {
-                performerId: `researcher-${model.provider}`,
-                performerName: 'Researcher',
-                talRef: null,
-                model,
-                modelVariant: null,
-                workspaceHash: 'workspace-hash',
-                executionDir: '/tmp/workspace',
-                scope: 'stage',
-                skillNames: [],
-                toolMap: {},
-                relationPromptSection: null,
-            }, [])
-
-            expect(compiled.codexAgentName).toBeUndefined()
-            expect(compiled.codexAgentRelativePath).toBeUndefined()
-            expect(compiled.allFiles.some((file) => file.startsWith('.codex/agents/'))).toBe(false)
-        }
+        expect(compiled.agentNames.build).toBe('apm-studio/workspace/workspace-hash/Review Performer--build')
+        expect(compiled.allFiles).toContain('.opencode/agents/apm-studio/workspace/workspace-hash/Review Performer--build.md')
+        expect(compiled.allFiles).toContain('.opencode/agents/apm-studio/workspace/workspace-hash/Review Performer--plan.md')
+        expect(compiled.allFiles).toContain('.opencode/skills/dance-one/SKILL.md')
+        expect(compiled.allFiles.some((file) => file.startsWith('.codex/'))).toBe(false)
+        expect(compiled.allFiles.some((file) => file.startsWith('.agents/'))).toBe(false)
     })
 
     it('keeps act collaboration tools enabled only for act scope when requested', async () => {
@@ -350,6 +119,6 @@ describe('compilePerformer scope boundaries', () => {
         expect(buildContent).toContain('"list_shared_board": true')
         expect(buildContent).toContain('"get_shared_board_entry": true')
         expect(buildContent).toContain('"wait_until": true')
-        expect(compiled.codexAgentPath).toBeUndefined()
+        expect(compiled.allFiles.some((file) => file.startsWith('.codex/'))).toBe(false)
     })
 })

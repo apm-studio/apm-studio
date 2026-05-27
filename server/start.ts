@@ -91,7 +91,7 @@ function buildDevEnv(extraEnv: NodeJS.ProcessEnv = {}) {
     const env: NodeJS.ProcessEnv = {
         ...process.env,
         ...extraEnv,
-        EIGHTPM_STUDIO_PRODUCTION: '0',
+        APM_STUDIO_PRODUCTION: '0',
         PORT: String(STUDIO_API_PORT),
         OPENCODE_PORT: String(STUDIO_OPENCODE_PORT),
     }

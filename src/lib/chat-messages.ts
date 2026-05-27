@@ -34,11 +34,6 @@ export type SessionMessageLike = {
     id?: string
     role?: string
     agent?: string
-    variant?: string
-    providerID?: string
-    providerId?: string
-    modelID?: string
-    modelId?: string
     model?: {
         providerID?: string
         providerId?: string
@@ -116,15 +111,10 @@ function buildMessageMetadata(
     const provider = readSessionString(message, 'model', 'providerID')
         || readSessionString(message, 'model', 'providerId')
         || readSessionString(message, 'model', 'provider')
-        || readSessionString(message, 'providerID')
-        || readSessionString(message, 'providerId')
     const modelId = readSessionString(message, 'model', 'modelID')
         || readSessionString(message, 'model', 'modelId')
         || readSessionString(message, 'model', 'id')
-        || readSessionString(message, 'modelID')
-        || readSessionString(message, 'modelId')
     const variant = readSessionString(message, 'model', 'variant')
-        || readSessionString(message, 'variant')
         || readSessionString(message, 'info', 'variant')
 
     if (!agentName && !provider && !modelId && !variant) {

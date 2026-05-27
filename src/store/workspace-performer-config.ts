@@ -121,6 +121,18 @@ export function setPerformerTalRef(set: SetFn, get: GetFn, performerId: string, 
     scheduleLiveActWorkspacePersist(get, performerId)
 }
 
+export function setPerformerAgentBody(set: SetFn, get: GetFn, performerId: string, agentBody: string | null) {
+    const inlineInstruction = typeof agentBody === 'string' && agentBody.trim()
+        ? agentBody
+        : null
+    set((s) => ({
+        performers: mapPerformers(s.performers, performerId, (performer) => applyPerformerPatch(performer, { inlineInstruction })),
+        workspaceDirty: true,
+    }))
+    markPerformerProjectionDirty(get, performerId)
+    scheduleLiveActWorkspacePersist(get, performerId)
+}
+
 // ── Dance ───────────────────────────────────────────────
 
 export function addPerformerDance(set: SetFn, get: GetFn, performerId: string, dance: { urn: string }) {
@@ -344,6 +356,7 @@ export function updatePerformerAuthoringMeta(set: SetFn, get: GetFn, performerId
         )),
         workspaceDirty: true,
     }))
+    markPerformerProjectionDirty(get, performerId)
     scheduleLiveActWorkspacePersist(get, performerId)
 }
 

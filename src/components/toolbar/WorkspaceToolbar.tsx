@@ -3,8 +3,8 @@ import { api } from '../../api';
 import { showToast } from '../../lib/toast';
 import { GitBranch, CheckCircle, AlertCircle, Settings, Moon, Sun, Hexagon, Terminal as TerminalIcon, Github, ChevronDown, Save, LogIn, UserRound, MessageCircle } from 'lucide-react';
 import { useStudioStore } from '../../store';
-import { useServerHealth, useRosterStatus } from '../../hooks/queries';
-import { useRosterLogin } from '../../hooks/useRosterLogin';
+import { useServerHealth, useApmAssetStatus } from '../../hooks/queries';
+import { useApmLogin } from '../../hooks/useApmLogin';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../../hooks/queries';
 import { DropdownMenu } from '../shared/DropdownMenu';
@@ -35,12 +35,12 @@ export default function WorkspaceToolbar() {
     const addCanvasTerminal = useStudioStore(s => s.addCanvasTerminal);
 
     const { data: serverHealthy } = useServerHealth();
-    const { data: rosterStatus } = useRosterStatus();
-    const { authUser, startLogin, logout, isAuthenticating, isLoggingOut } = useRosterLogin();
+    const { data: apmAssetStatus } = useApmAssetStatus();
+    const { authUser, startLogin, logout, isAuthenticating, isLoggingOut } = useApmLogin();
     const queryClient = useQueryClient();
 
     const serverConnected = !!serverHealthy;
-    const rosterInitialized = rosterStatus?.initialized ?? false;
+    const apmInitialized = apmAssetStatus?.initialized ?? false;
     const [gitBranch, setGitBranch] = useState<string | null>(null);
     const [discordOnline, setDiscordOnline] = useState(false);
     const effectiveDiscordOnline = serverConnected && discordOnline;
@@ -80,19 +80,19 @@ export default function WorkspaceToolbar() {
         setSettingsOpen(true);
     };
 
-    const handleRosterInit = async () => {
-        if (rosterInitialized) return;
+    const handleApmInit = async () => {
+        if (apmInitialized) return;
         try {
-            await api.roster.init();
-            queryClient.invalidateQueries({ queryKey: queryKeys.rosterStatus(workingDir) });
+            await api.apmAssets.init();
+            queryClient.invalidateQueries({ queryKey: queryKeys.apmAssetStatus(workingDir) });
         } catch (err) {
-            console.error('Failed to init 8PM Studio workspace:', err);
-            showToast('Failed to initialize the 8PM Studio workspace for this project.', 'error', {
+            console.error('Failed to init APM Studio workspace:', err);
+            showToast('Failed to initialize the APM Studio workspace for this project.', 'error', {
                 title: 'Workspace init failed',
-                dedupeKey: `roster:init:${workingDir || 'unknown'}`,
+                dedupeKey: `apm:init:${workingDir || 'unknown'}`,
                 actionLabel: 'Retry',
                 onAction: () => {
-                    void handleRosterInit()
+                    void handleApmInit()
                 },
             });
         }
@@ -103,16 +103,16 @@ export default function WorkspaceToolbar() {
             <div className="toolbar">
                 <button
                     type="button"
-                    className={`toolbar__item roster-status ${rosterInitialized ? 'roster-ok' : 'roster-missing'}`}
-                    onClick={handleRosterInit}
-                    aria-label={rosterInitialized ? '8PM Studio workspace initialized' : 'Initialize 8PM Studio workspace'}
-                    title={rosterInitialized
-                        ? '8PM Studio initialized for this workspace'
-                        : '8PM Studio not initialized - click to init'
+                    className={`toolbar__item apm-status ${apmInitialized ? 'apm-ok' : 'apm-missing'}`}
+                    onClick={handleApmInit}
+                    aria-label={apmInitialized ? 'APM Studio workspace initialized' : 'Initialize APM Studio workspace'}
+                    title={apmInitialized
+                        ? 'APM Studio initialized for this workspace'
+                        : 'APM Studio not initialized - click to init'
                     }
                 >
                     <Hexagon size={12} />
-                    <span>8PM</span>
+                    <span>APM</span>
                 </button>
 
                 {gitBranch && (
@@ -127,8 +127,8 @@ export default function WorkspaceToolbar() {
                         trigger={
                             <button
                                 type="button"
-                                className="toolbar__item roster-auth-status roster-auth-status--ok"
-                                aria-label={`8PM Studio account @${authUser.username}`}
+                                className="toolbar__item apm-auth-status apm-auth-status--ok"
+                                aria-label={`APM Studio account @${authUser.username}`}
                                 title={`Signed in as @${authUser.username}`}
                             >
                                 <UserRound size={12} />
@@ -143,12 +143,12 @@ export default function WorkspaceToolbar() {
                 ) : (
                     <button
                         type="button"
-                        className="toolbar__item roster-auth-status roster-auth-status--warn"
+                        className="toolbar__item apm-auth-status apm-auth-status--warn"
                         onClick={() => void startLogin(true)}
-                        aria-label={isAuthenticating ? '8PM Studio sign in pending' : 'Sign in to 8PM Studio'}
+                        aria-label={isAuthenticating ? 'APM Studio sign in pending' : 'Sign in to APM Studio'}
                         title={isAuthenticating
-                            ? 'Waiting for 8PM Studio login to complete in the browser'
-                            : 'Review the 8PM Studio Terms of Service and sign in'
+                            ? 'Waiting for APM Studio login to complete in the browser'
+                            : 'Review the APM Studio Terms of Service and sign in'
                         }
                     >
                         <LogIn size={12} />
@@ -226,7 +226,7 @@ export default function WorkspaceToolbar() {
                     type="button"
                     className={`toolbar__assistant-btn ${isAssistantOpen ? 'is-active' : ''}`}
                     onClick={toggleAssistant}
-                    title={isAssistantOpen ? 'Hide 8PM Assistant' : 'Show 8PM Assistant'}
+                    title={isAssistantOpen ? 'Hide APM Assistant' : 'Show APM Assistant'}
                     aria-pressed={isAssistantOpen}
                 >
                     Assistant

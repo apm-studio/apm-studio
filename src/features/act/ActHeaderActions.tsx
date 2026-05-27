@@ -6,6 +6,8 @@ type ActHeaderActionsProps = {
     focused: boolean
     splitPane?: boolean
     editing: boolean
+    hideFocusControl?: boolean
+    hideEditControl?: boolean
     readiness?: ActReadinessResult
     onToggleFocus: () => void
     onRemoveSplitPane?: () => void
@@ -15,9 +17,9 @@ type ActHeaderActionsProps = {
 
 function readinessBadgeClass(readiness?: ActReadinessResult): string {
     if (!readiness) return ''
-    if (!readiness.runnable) return 'act-frame__readiness-roster--error'
-    if (readiness.issues.length > 0) return 'act-frame__readiness-roster--warning'
-    return 'act-frame__readiness-roster--ok'
+    if (!readiness.runnable) return 'act-frame__readiness-apm--error'
+    if (readiness.issues.length > 0) return 'act-frame__readiness-apm--warning'
+    return 'act-frame__readiness-apm--ok'
 }
 
 function readinessTitle(readiness?: ActReadinessResult): string {
@@ -34,6 +36,8 @@ export default function ActHeaderActions({
     focused,
     splitPane = false,
     editing,
+    hideFocusControl = false,
+    hideEditControl = false,
     readiness,
     onToggleFocus,
     onRemoveSplitPane,
@@ -61,7 +65,7 @@ export default function ActHeaderActions({
                 >
                     <X size={11} />
                 </button>
-            ) : (
+            ) : !hideFocusControl ? (
                 <button
                     className={`icon-btn act-frame__focus-btn ${focused ? 'active' : ''}`}
                     title={focused ? 'Exit focus mode' : 'Focus mode'}
@@ -72,19 +76,21 @@ export default function ActHeaderActions({
                 >
                     {focused ? <Minimize2 size={11} /> : <Maximize2 size={11} />}
                 </button>
-            )}
+            ) : null}
             {!fullscreenSurface && (
                 <>
-                    <button
-                        className={`icon-btn act-frame__edit-btn ${editing ? 'active' : ''}`}
-                        title={editing ? 'Exit edit mode' : 'Edit Team'}
-                        onClick={(event) => {
-                            event.stopPropagation()
-                            onToggleEdit()
-                        }}
-                    >
-                        {editing ? <X size={11} /> : <Pencil size={11} />}
-                    </button>
+                    {!hideEditControl ? (
+                        <button
+                            className={`icon-btn act-frame__edit-btn ${editing ? 'active' : ''}`}
+                            title={editing ? 'Exit edit mode' : 'Edit Team'}
+                            onClick={(event) => {
+                                event.stopPropagation()
+                                onToggleEdit()
+                            }}
+                        >
+                            {editing ? <X size={11} /> : <Pencil size={11} />}
+                        </button>
+                    ) : null}
                     <button
                         className="icon-btn act-frame__close-btn"
                         title="Hide Team"

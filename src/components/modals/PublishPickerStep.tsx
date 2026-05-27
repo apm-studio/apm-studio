@@ -1,5 +1,5 @@
 import { FileText, Wand2, Zap } from 'lucide-react'
-import { EIGHTPM_STUDIO_TOS_URL } from '../../lib/roster-terms'
+import { APM_STUDIO_TOS_URL } from '../../lib/apm-terms'
 import { PickerSection } from './publish-modal-utils'
 import type { PickerItem } from './publish-modal-utils'
 
@@ -45,12 +45,12 @@ export default function PublishPickerStep({
             {!authUser?.authenticated && (
                 <div className="publish-modal__auth-callout">
                     <div>
-                        <strong>8PM Studio sign-in required</strong>
+                        <strong>APM Studio sign-in required</strong>
                         <p>
-                            Save Local uses your 8PM Studio namespace.
-                            By signing in, you agree to the 8PM Studio Terms of Service:
+                            Save Local uses your APM Studio namespace.
+                            By signing in, you agree to the APM Studio Terms of Service:
                             {' '}
-                            <a href={EIGHTPM_STUDIO_TOS_URL} target="_blank" rel="noreferrer">{EIGHTPM_STUDIO_TOS_URL}</a>
+                            <a href={APM_STUDIO_TOS_URL} target="_blank" rel="noreferrer">{APM_STUDIO_TOS_URL}</a>
                         </p>
                     </div>
                     <button

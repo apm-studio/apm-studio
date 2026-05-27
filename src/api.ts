@@ -1,4 +1,4 @@
-// 8PM Studio — API Client
+// APM Studio — API Client
 
 import type {
     ActThreadStatus,
@@ -15,11 +15,10 @@ import type { AssetListItem } from '../shared/asset-contracts'
 import type { CompilePromptRequest } from '../shared/chat-contracts'
 import { fetchJSON, postJSON, putJSON, patchJSON, deleteJSON } from './api-core'
 import { chatApi } from './api-clients/chat'
-import { rosterApi } from './api-clients/roster'
+import { apmAssetsApi } from './api-clients/apm-assets'
 import { opencodeApi } from './api-clients/opencode'
 import { workspaceApi } from './api-clients/workspace'
 import { discordApi } from './api-clients/discord'
-import { agentSyncApi } from './api-clients/agent-sync'
 import { apmApi } from './api-clients/apm'
 import { exploreApi } from './api-clients/explore'
 
@@ -114,7 +113,6 @@ export const api = {
         } satisfies CompilePromptRequest),
 
     chat: chatApi,
-    agentSync: agentSyncApi,
     apm: apmApi,
     explore: exploreApi,
 
@@ -222,5 +220,5 @@ export const api = {
         pickDirectory: (prompt?: string) => fetchJSON<{ path?: string; error?: string }>(`/api/studio/pick-directory${prompt ? `?prompt=${encodeURIComponent(prompt)}` : ''}`),
     },
 
-    roster: rosterApi,
+    apmAssets: apmAssetsApi,
 }

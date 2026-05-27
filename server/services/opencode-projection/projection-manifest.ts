@@ -1,8 +1,8 @@
 import fs from 'fs/promises'
 import path from 'path'
 
-const MANIFEST_FILENAME = '8pm-studio.manifest.json'
-const NAMESPACE = '8pm-studio'
+const MANIFEST_FILENAME = 'apm-studio.manifest.json'
+const NAMESPACE = 'apm-studio'
 
 export interface ProjectionManifest {
     version: 1
@@ -17,12 +17,6 @@ export interface ProjectionManifest {
 
 function manifestPath(executionDir: string) {
     return path.join(executionDir, '.opencode', MANIFEST_FILENAME)
-}
-
-export function isManualAgentSyncProjectionPath(filePath: string) {
-    return (
-        filePath.startsWith('.codex/agents/8pm_studio_') && filePath.endsWith('.toml')
-    ) || filePath.startsWith('.agents/skills/8pm-studio-')
 }
 
 export async function readManifest(executionDir: string): Promise<ProjectionManifest | null> {
@@ -62,7 +56,7 @@ export async function cleanGroupFiles(
 
     const currentSet = new Set(currentFiles)
     for (const file of existing.groups[groupKey] || []) {
-        if (!currentSet.has(file) && !isManualAgentSyncProjectionPath(file)) {
+        if (!currentSet.has(file)) {
             await fs.rm(path.join(executionDir, file), { force: true, recursive: true }).catch(() => {})
         }
     }
@@ -75,10 +69,9 @@ export async function updateManifestGroup(
     files: string[],
 ) {
     const current = await readOrCreateManifest(executionDir, workspaceHash)
-    const previousManualFiles = (current.groups[groupKey] || []).filter(isManualAgentSyncProjectionPath)
 
     current.workspaceHash = workspaceHash
-    current.groups[groupKey] = Array.from(new Set([...files, ...previousManualFiles]))
+    current.groups[groupKey] = Array.from(new Set(files))
     await writeManifest(executionDir, current)
 }
 
@@ -121,14 +114,12 @@ export async function updateGitExclude(executionDir: string) {
     }
 
     const excludePath = path.join(gitDir, 'info', 'exclude')
-    const marker = '# 8pm-studio projection (auto-managed)'
+    const marker = '# apm-studio projection (auto-managed)'
     const patterns = [
         marker,
-        '.opencode/agents/8pm-studio/',
-        '.opencode/skills/8pm-studio/',
-        '.opencode/8pm-studio.manifest.json',
-        '.codex/agents/8pm_studio_*.toml',
-        '.agents/skills/8pm-studio-*',
+        '.opencode/agents/apm-studio/',
+        '.opencode/skills/apm-studio/',
+        '.opencode/apm-studio.manifest.json',
     ]
 
     let content = ''

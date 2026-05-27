@@ -1,22 +1,22 @@
 {
-  "name": "8pm-studio",
+  "name": "apm-studio",
   "version": "0.2.13",
-  "description": "8PM Studio packages agents, instructions, and skills for Codex, Claude, Gemini, and local AI coding assistants.",
+  "description": "APM Studio packages agents, instructions, and skills for Codex, Claude, Gemini, and local AI coding assistants.",
   "license": "MIT",
   "author": "monarchjuno",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/8pm-studio/8pm-studio.git"
+    "url": "git+https://github.com/apm-studio/apm-studio.git"
   },
-  "homepage": "https://github.com/8pm-studio/8pm-studio",
+  "homepage": "https://github.com/apm-studio/apm-studio",
   "bugs": {
-    "url": "https://github.com/8pm-studio/8pm-studio/issues"
+    "url": "https://github.com/apm-studio/apm-studio/issues"
   },
   "publishConfig": {
     "access": "public"
   },
   "keywords": [
-    "8pm-studio",
+    "apm-studio",
     "apm",
     "agent-packages",
     "coding-agents",
@@ -53,7 +53,7 @@
     "prepublishOnly": "npm run build:all"
   },
   "bin": {
-    "8pm-studio": "dist/cli.js"
+    "apm-studio": "dist/cli.js"
   },
   "files": [
     "dist/",

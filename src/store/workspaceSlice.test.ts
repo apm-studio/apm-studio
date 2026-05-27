@@ -398,33 +398,31 @@ describe('workspace side panels', () => {
             workspaceDirty: false,
         } as StudioState)
 
-        harness.get().setWorkspaceMode('agent-sync')
+        harness.get().setWorkspaceMode('export')
 
-        expect(harness.get().workspaceMode).toBe('agent-sync')
+        expect(harness.get().workspaceMode).toBe('export')
         expect(harness.get().isTrackingOpen).toBe(false)
         expect(harness.get().isAssistantOpen).toBe(false)
         expect(harness.get().isTerminalOpen).toBe(false)
         expect(harness.get().isAssetLibraryOpen).toBe(false)
+        expect(harness.get().workspaceDirty).toBe(false)
+
+        harness.get().setWorkspaceMode('import')
+
+        expect(harness.get().workspaceMode).toBe('import')
+        expect(harness.get().isAssistantOpen).toBe(false)
+        expect(harness.get().isTerminalOpen).toBe(false)
         expect(harness.get().workspaceDirty).toBe(false)
 
         harness.get().setWorkspaceMode('run')
 
         expect(harness.get().workspaceMode).toBe('run')
-        expect(harness.get().isTrackingOpen).toBe(false)
-        expect(harness.get().isAssistantOpen).toBe(true)
-        expect(harness.get().isTerminalOpen).toBe(true)
-        expect(harness.get().isAssetLibraryOpen).toBe(false)
-        expect(harness.get().workspaceDirty).toBe(false)
-
-        harness.get().setWorkspaceMode('explore')
-
-        expect(harness.get().workspaceMode).toBe('explore')
         expect(harness.get().isAssistantOpen).toBe(false)
         expect(harness.get().isTerminalOpen).toBe(false)
         expect(harness.get().workspaceDirty).toBe(false)
 
-        harness.get().setWorkspaceMode('canvas')
+        harness.get().setWorkspaceMode('manage')
 
-        expect(harness.get().workspaceMode).toBe('canvas')
+        expect(harness.get().workspaceMode).toBe('manage')
     })
 })

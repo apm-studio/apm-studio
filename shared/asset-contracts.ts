@@ -1,13 +1,13 @@
 import type {
     ActParticipantV1,
     ActRelationV1,
-    RosterAssetKind,
+    ApmAssetKind,
     ModelConfigV1,
-} from './roster-types.js'
+} from './apm-asset-types.js'
 
 export type AssetSource = 'global' | 'stage' | 'registry' | 'draft'
 
-export type InstalledAssetKind = RosterAssetKind
+export type InstalledAssetKind = ApmAssetKind
 
 export type GitHubDanceSyncState =
     | 'up_to_date'

@@ -1,4 +1,4 @@
-// 8PM Studio — Hono API Server (Entry Point)
+// APM Studio — Hono API Server (Entry Point)
 
 import { serve } from '@hono/node-server'
 import { WebSocketServer } from 'ws'
@@ -31,7 +31,7 @@ async function shutdown(signal: NodeJS.Signals) {
     }
     shuttingDown = true
 
-    console.log(`\n${signal} received. Shutting down 8PM Studio...`)
+    console.log(`\n${signal} received. Shutting down APM Studio...`)
     await closeServer().catch(() => {})
     terminalManager.disposeAll()
     await stopOpencodeSidecar().catch((err) => {
@@ -52,13 +52,13 @@ await ensureOpencodeSidecar().catch((err) => {
     console.warn(`OpenCode sidecar is not ready yet: ${err instanceof Error ? err.message : String(err)}`)
 })
 await refreshAssistantProjectionOnServerStartup().catch((err) => {
-    console.warn(`8PM Assistant projection refresh failed on startup: ${err instanceof Error ? err.message : String(err)}`)
+    console.warn(`APM Assistant projection refresh failed on startup: ${err instanceof Error ? err.message : String(err)}`)
 })
 await discordIntegrationService.initialize().catch((err) => {
     console.warn(`Discord integration startup failed: ${err instanceof Error ? err.message : String(err)}`)
 })
 
-console.log(`\n8PM Studio Server${IS_PRODUCTION ? ' (production)' : ' (dev)'}`)
+console.log(`\nAPM Studio Server${IS_PRODUCTION ? ' (production)' : ' (dev)'}`)
 console.log(`   API:      http://localhost:${PORT}`)
 console.log(`   OpenCode: ${OPENCODE_URL} (managed sidecar)`)
 console.log(`   Project:  ${getActiveProjectDir()}`)

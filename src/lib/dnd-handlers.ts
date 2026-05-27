@@ -18,9 +18,21 @@ export type DragPreview = {
 };
 
 export type DragAsset = Omit<Partial<AssetCard>, 'kind' | 'source'> & {
-    kind?: AssetCard['kind'];
+    kind?: AssetCard['kind'] | 'apm-package';
     label?: string;
     source?: string;
+    scope?: 'stage' | 'global';
+    packageId?: string;
+    packageKind?: string;
+    manifestPath?: string;
+    packageRoot?: string;
+    primitiveCounts?: {
+        agents?: number;
+        instructions?: number;
+        skills?: number;
+        prompts?: number;
+    };
+    agentName?: string;
     paneId?: string;
     nodeId?: string;
     nodeType?: FullscreenNodeType;
@@ -29,10 +41,14 @@ export type DragAsset = Omit<Partial<AssetCard>, 'kind' | 'source'> & {
     semanticType?: string;
     value?: unknown;
     mcpConfig?: Record<string, unknown> | null;
+    mcpServerNames?: string[];
     mcpBindingMap?: Record<string, string>;
     declaredMcpServerNames?: string[];
     matchedMcpServerNames?: string[];
     missingMcpServerNames?: string[];
+    inlineInstruction?: string | null;
+    agentId?: string | null;
+    planMode?: boolean;
     /** Structured draft content for performer/act drafts */
     draftContent?: unknown;
 };

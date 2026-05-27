@@ -22,7 +22,7 @@ const copyGitHubDanceSkillMock = vi.hoisted(() => vi.fn())
 const upsertGitHubDanceLockEntryMock = vi.hoisted(() => vi.fn())
 const resolveGitHubRefMock = vi.hoisted(() => vi.fn())
 
-vi.mock('../lib/roster-source.js', () => ({
+vi.mock('../lib/apm-asset-source.js', () => ({
     getGlobalCwd: getGlobalCwdMock,
     parseSource: parseSourceMock,
 }))

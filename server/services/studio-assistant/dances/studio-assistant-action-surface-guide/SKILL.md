@@ -1,10 +1,10 @@
 ---
 name: studio-assistant-action-surface-guide
-description: "Lists the exact 8PM Assistant apply_studio_actions mutation surface, field rules, ref ordering, and payload self-checks. Use before emitting or validating any 8PM Studio mutation tool call."
-compatibility: Designed for the 8PM Studio built-in assistant projection.
+description: "Lists the exact APM Assistant apply_studio_actions mutation surface, field rules, ref ordering, and payload self-checks. Use before emitting or validating any APM Studio mutation tool call."
+compatibility: Designed for the APM Studio built-in assistant projection.
 ---
 
-# 8PM Studio Assistant Action Surface
+# APM Studio Assistant Action Surface
 
 Use this skill when you need to produce, inspect, or verify an `apply_studio_actions` payload.
 

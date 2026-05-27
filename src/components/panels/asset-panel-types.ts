@@ -1,8 +1,8 @@
 import type { AssetCard, McpServer } from '../../types'
 import type { AssetSource, AssetListItem, GitHubDanceSourceInfo } from '../../../shared/asset-contracts'
 import type { RuntimeModelCatalogEntry } from '../../../shared/model-variants'
-import type { ModelConfigV1 } from '../../../shared/roster-types'
-import type { RegistryListing } from '../../../shared/registry-contracts'
+import type { ModelConfigV1 } from '../../../shared/apm-asset-types'
+import type { ApmPackageSummary } from '../../../shared/apm-contracts'
 
 type InstalledAssetKind = 'tal' | 'dance' | 'performer' | 'act'
 
@@ -60,10 +60,13 @@ type PanelAssetSharedFields = {
     tier?: string
     updatedAt?: string
     github?: GitHubDanceSourceInfo
-    registryListing?: RegistryListing
 }
 
 export type LibraryAsset = ((AssetCard & { kind: InstalledAssetKind }) | (AssetListItem & { kind: InstalledAssetKind })) & PanelAssetSharedFields
+
+export type ScopedApmPackageSummary = ApmPackageSummary & {
+    scope: 'stage' | 'global'
+}
 
 export type ModelPanelAsset = RuntimeModelCatalogEntry & PanelAssetSharedFields & {
     kind: 'model'
@@ -88,9 +91,3 @@ export type AssetPanelAction = 'save-local' | 'import'
     | 'dance-reimport'
 
 export type AssetPanelHandler = (asset: AssetPanelAsset) => void | Promise<void>
-
-export type RegistryGroup<T extends { kind: string } = LibraryAsset> = {
-    kind: string
-    label: string
-    items: T[]
-}

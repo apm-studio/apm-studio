@@ -5,7 +5,7 @@ import type { SharedAssetRef } from './chat-contracts.js'
 export type DraftAssetKind = 'tal' | 'dance' | 'performer' | 'act'
 
 /**
- * A draft file stored at `.8pm-studio/drafts/<kind>/<id>.json`.
+ * A draft file stored at `.apm-studio/drafts/<kind>/<id>.json`.
  * Drafts are project-local only — no global scope.
  *
  * @template T – The content type. Defaults to `unknown`;
@@ -46,6 +46,7 @@ export type TypedDraftFile<K extends DraftAssetKind> = DraftFile<DraftContentMap
  */
 export interface PerformerDraftContent {
     talRef: { kind: 'registry'; urn: string } | { kind: 'draft'; draftId: string } | null
+    inlineInstruction?: string | null
     danceRefs: Array<{ kind: 'registry'; urn: string } | { kind: 'draft'; draftId: string }>
     model: { provider: string; modelId: string } | null
     modelVariant?: string | null

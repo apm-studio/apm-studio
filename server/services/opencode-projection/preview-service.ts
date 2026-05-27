@@ -36,8 +36,8 @@ export async function compileProjectionPreview(
                 detail: 'Studio sets model, variant, tool policy, skill allowlist, and task allowlist in the generated agent file.',
             },
             {
-                label: 'Agent Instruction',
-                detail: request.inlineInstruction || request.talRef ? 'The selected Instruction is inserted as the primary agent body.' : 'No Instruction is selected for this agent.',
+                label: 'Agent Body',
+                detail: request.inlineInstruction ? 'The Agent Body is inserted into the projected agent file.' : 'No Agent Body is set for this agent.',
             },
             ...(getCompileRequestTargets(request).length > 0 ? [{
                 label: 'Team relation context',

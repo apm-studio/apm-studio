@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { api } from '../../api'
 import { useStudioStore } from '../../store'
 import type { GitHubDanceSyncStatus } from '../../../shared/asset-contracts'
-import type { InstalledDanceLocator } from '../../../shared/roster-contracts'
+import type { InstalledDanceLocator } from '../../../shared/apm-asset-contracts'
 import {
     ALL_MODEL_PROVIDER_FILTER,
     buildRuntimeModelProviderTabs,
@@ -15,41 +15,38 @@ import { removeMarkdownEditorsByDraftIds } from '../../store/workspace-helpers'
 import {
     useApplyDanceUpdates,
     useAssetKind,
-    useAssets,
     useDanceUpdateChecks,
     useApmPackages,
-    useRosterAuthUser,
+    useApmAuthUser,
     useModels,
     queryKeys,
     useReimportDanceSource,
-    useRegistrySearch,
 } from '../../hooks/queries'
-import { createPerformerNode } from '../../lib/performers'
 import { useMcpCatalog } from './useMcpCatalog'
 import type { AssetPanelAction, AssetPanelAsset, LibraryAsset } from './asset-panel-types'
+import {
+    filterApmPackages,
+    scopeApmPackages,
+} from './asset-library-packages'
 import type {
-    AssetScope,
     InstalledKind,
     LocalSection,
     ModelProviderFilter,
-    RegistryKind,
-    RuntimeKind,
+    PrimitiveKind,
     SourceFilter,
 } from './asset-library-utils'
 import {
     buildAuthoringPayloadFromAsset,
     buildDraftAssetCards,
     buildMcpHaystack,
-    buildRegistryGroups,
     filterInstalledAssets,
     getAssetSelectionKey,
-    getAssetUrn,
     groupModels,
     isInstalledAssetKind,
+    labelForInstalledKind,
     placeholderForLocalSection,
     resolveSelectedAssetSnapshot,
 } from './asset-library-utils'
-
 function getInstalledDanceLocator(asset: AssetPanelAsset | LibraryAsset | null | undefined): InstalledDanceLocator | null {
     if (!asset || asset.kind !== 'dance' || !asset.urn || (asset.source !== 'global' && asset.source !== 'stage')) {
         return null
@@ -113,40 +110,37 @@ export function useAssetLibraryController() {
     const addAct = useStudioStore((state) => state.addAct)
 
     const [filter, setFilter] = useState('')
-    const [scope, setScope] = useState<AssetScope>('local')
-    const [localSection, setLocalSection] = useState<LocalSection>('installed')
+    const [localSection, setLocalSection] = useState<LocalSection>('packages')
     const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all')
-    const [installedKind, setInstalledKind] = useState<InstalledKind>('performer')
-    const [runtimeKind, setRuntimeKind] = useState<RuntimeKind>('models')
-    const [registryKind, setRegistryKind] = useState<RegistryKind>('all')
+    const [primitiveKind, setPrimitiveKind] = useState<PrimitiveKind>('performer')
     const [modelProviderFilter, setModelProviderFilter] = useState<ModelProviderFilter>(ALL_MODEL_PROVIDER_FILTER)
 
-    const [registryQuery, setRegistryQuery] = useState('')
-    const [searchEnabled, setSearchEnabled] = useState(false)
     const [selectedAsset, setSelectedAsset] = useState<AssetPanelAsset | null>(null)
     const [expandedModelProviders, setExpandedModelProviders] = useState<Record<string, boolean>>({})
     const [authoringHint, setAuthoringHint] = useState<string | null>(null)
     const [detailActionStatus, setDetailActionStatus] = useState<string | null>(null)
     const [detailActionLoading, setDetailActionLoading] = useState<AssetPanelAction | null>(null)
 
-    const { data: authUser } = useRosterAuthUser()
+    const { data: authUser } = useApmAuthUser()
     const queryClient = useQueryClient()
+    const installedKind: InstalledKind = primitiveKind === 'mcp' ? 'performer' : primitiveKind
 
-    const showInstalledAssets = scope === 'local' && localSection === 'installed'
-    const showModels = scope === 'local' && localSection === 'runtime' && runtimeKind === 'models'
-    const showMcps = scope === 'local' && localSection === 'runtime' && runtimeKind === 'mcps'
+    const showInstalledAssets = localSection === 'primitives' && primitiveKind !== 'mcp'
+    const showApmPackages = localSection === 'packages'
+    const showModels = localSection === 'models'
+    const showMcps = localSection === 'primitives' && primitiveKind === 'mcp'
 
     const { data: installedAssetResults = [], isLoading: assetsLoading } = useAssetKind(installedKind, showInstalledAssets)
     const installedAssets = installedAssetResults as LibraryAsset[]
-    const { data: assetInventoryResults = [] } = useAssets(scope === 'registry')
-    const assetInventory = assetInventoryResults as LibraryAsset[]
     const { data: models = [] } = useModels(showModels)
-    const { data: registryResults = [], isLoading: registryLoading, error: registryError } = useRegistrySearch(
-        registryQuery,
-        registryKind,
-        searchEnabled,
+    const { data: stageApmPackages = [], isLoading: stageApmPackagesLoading } = useApmPackages(
+        showApmPackages,
+        'stage',
     )
-    const { data: apmPackages = [] } = useApmPackages(scope === 'registry')
+    const { data: globalApmPackages = [], isLoading: globalApmPackagesLoading } = useApmPackages(
+        showApmPackages,
+        'global',
+    )
 
     const mcp = useMcpCatalog(workingDir, showMcps)
     const mcpServers = useMemo(() => mcp.mcpServers ?? [], [mcp.mcpServers])
@@ -212,11 +206,17 @@ export function useAssetLibraryController() {
 
     useEffect(() => {
         setSelectedAsset(null)
-    }, [scope, localSection, installedKind, runtimeKind, registryKind])
+    }, [localSection, primitiveKind])
 
     useEffect(() => {
         setAuthoringHint(null)
-    }, [scope, localSection, installedKind])
+    }, [localSection, primitiveKind])
+
+    useEffect(() => {
+        if ((localSection !== 'primitives' || primitiveKind === 'mcp') && sourceFilter === 'draft') {
+            setSourceFilter('all')
+        }
+    }, [localSection, primitiveKind, sourceFilter])
 
     useEffect(() => {
         setExpandedModelProviders({})
@@ -234,104 +234,14 @@ export function useAssetLibraryController() {
         setModelProviderFilter(ALL_MODEL_PROVIDER_FILTER)
     }, [modelProviderFilter, modelProviderTabs])
 
-    const installedUrns = useMemo(
-        () => new Set(assetInventory.map((asset) => getAssetUrn(asset)).filter(Boolean) as string[]),
-        [assetInventory],
+    const scopedApmPackages = useMemo(
+        () => scopeApmPackages(stageApmPackages, globalApmPackages),
+        [globalApmPackages, stageApmPackages],
     )
-    const importedRegistryListingIds = useMemo(
-        () => new Set(apmPackages
-            .map((summary) => summary.derivedFrom)
-            .filter((source): source is string => typeof source === 'string' && source.startsWith('registry:'))
-            .map((source) => source.slice('registry:'.length))),
-        [apmPackages],
-    )
-
-    const triggerSearch = () => {
-        if (registryQuery.trim()) {
-            setSearchEnabled(true)
-        }
-    }
-
-    const handleQueryChange = (value: string) => {
-        setRegistryQuery(value)
-        setSearchEnabled(false)
-    }
-
-    const handleRegistryInstall = async (urn: string) => {
-        const item = registryResults.find((entry) => getAssetUrn(entry) === urn)
-        const listingId = item?.registryListing?.id
-        if (!listingId) {
-            throw new Error('Registry listing is missing its source reference.')
-        }
-
-        const response = await api.explore.importListing(listingId)
-        const packageResponse = await api.apm.readPackage(response.packageId)
-        const agent = packageResponse.manifest['x-8pm']?.agent
-        if (agent) {
-            useStudioStore.setState((state) => {
-                const existing = state.performers.find((performer) => performer.id === agent.performerId)
-                if (existing) {
-                    return {
-                        selectedPerformerId: existing.id,
-                        selectedPerformerSessionId: null,
-                        selectedMarkdownEditorId: null,
-                        activeChatPerformerId: existing.id,
-                        canvasRevealTarget: {
-                            id: existing.id,
-                            type: 'performer',
-                            nonce: (state.canvasRevealTarget?.nonce || 0) + 1,
-                        },
-                    }
-                }
-
-                const center = state.canvasCenter || { x: 0, y: 0 }
-                const node = createPerformerNode({
-                    id: agent.performerId,
-                    name: agent.performerName,
-                    x: center.x,
-                    y: center.y,
-                    model: agent.model,
-                    modelVariant: agent.modelVariant || null,
-                    inlineInstruction: agent.inlineInstruction || null,
-                    talRef: agent.talRef || null,
-                    danceRefs: agent.danceRefs || [],
-                    mcpServerNames: agent.mcpServerNames || [],
-                    agentId: agent.agentId || null,
-                    planMode: agent.planMode === true,
-                    meta: {
-                        derivedFrom: agent.derivedFrom || `registry:${listingId}`,
-                        authoring: {
-                            slug: item.slug || item.registryListing?.slug,
-                            description: item.description,
-                            tags: item.tags,
-                        },
-                    },
-                })
-                return {
-                    performers: [...state.performers, node],
-                    editingTarget: null,
-                    selectedPerformerId: node.id,
-                    selectedPerformerSessionId: null,
-                    selectedMarkdownEditorId: null,
-                    activeChatPerformerId: node.id,
-                    canvasRevealTarget: {
-                        id: node.id,
-                        type: 'performer',
-                        nonce: (state.canvasRevealTarget?.nonce || 0) + 1,
-                    },
-                    inspectorFocus: null,
-                    workspaceDirty: true,
-                }
-            })
-            useStudioStore.getState().recordStudioChange({ kind: 'performer', performerIds: [agent.performerId] })
-        }
-        await queryClient.invalidateQueries({ queryKey: queryKeys.apmPackages(workingDir) })
-        return response
-    }
 
     const createNewPerformerDraftEntry = (kind: 'tal' | 'dance') => {
         createMarkdownEditor(kind)
-        setAuthoringHint(`Opened a new ${kind} editor on the canvas.`)
+        setAuthoringHint(`Opened a new ${kind === 'tal' ? 'Instruction' : 'Skill'} editor on the canvas.`)
     }
 
     const createNewPerformer = () => {
@@ -384,7 +294,7 @@ export function useAssetLibraryController() {
         try {
             setDetailActionLoading(includeRepoDrift ? 'dance-check-repo' : 'dance-check-updates')
             setDetailActionStatus(null)
-            const response = await api.roster.checkDanceUpdates({
+            const response = await api.apmAssets.checkDanceUpdates({
                 assets: [locator],
                 includeRepoDrift,
             })
@@ -460,9 +370,9 @@ export function useAssetLibraryController() {
             const targetSlug = asset.slug || slugifyAssetName(asset.name)
 
             if (!authUser?.username) {
-                throw new Error('Sign in to 8PM Studio first to save a local fork under your namespace.')
+                throw new Error('Sign in to APM Studio first to save a local fork under your namespace.')
             }
-            const result = await api.roster.saveLocalAsset(asset.kind, targetSlug, payload, authUser.username)
+            const result = await api.apmAssets.saveLocalAsset(asset.kind, targetSlug, payload, authUser.username)
             await invalidateInstalledAssetQueries(asset.kind)
 
             if (asset.source === 'draft' && asset.draftId) {
@@ -481,8 +391,8 @@ export function useAssetLibraryController() {
             }
 
             setDetailActionStatus(result.existed
-                ? `Updated local ${asset.kind} asset at ${result.urn}.`
-                : `Saved local ${asset.kind} asset at ${result.urn}.`)
+                ? `Updated local ${labelForInstalledKind(asset.kind)} at ${result.urn}.`
+                : `Saved local ${labelForInstalledKind(asset.kind)} at ${result.urn}.`)
         } catch (error: unknown) {
             setDetailActionStatus(error instanceof Error ? error.message : 'Asset action failed.')
         } finally {
@@ -501,7 +411,7 @@ export function useAssetLibraryController() {
     const handleUninstallAsset = async (asset: AssetPanelAsset) => {
         if (!isLibraryAsset(asset) || !asset.urn) return
         try {
-            const plan = await api.roster.previewUninstall(asset.kind, asset.urn)
+            const plan = await api.apmAssets.previewUninstall(asset.kind, asset.urn)
             // Always show confirmation dialog, even if no dependents
             setUninstallPlan({ asset, actionName: 'Uninstall', ...plan })
         } catch (err: unknown) {
@@ -516,7 +426,7 @@ export function useAssetLibraryController() {
         if (!isLibraryAsset(asset) || !asset.urn) return
         try {
             setUninstallLoading(true)
-            const result = await api.roster.uninstallAsset(asset.kind, asset.urn, cascade)
+            const result = await api.apmAssets.uninstallAsset(asset.kind, asset.urn, cascade)
             // Apply canvas cascade for all deleted URNs
             useStudioStore.setState((state) => {
                 const newState: Partial<ReturnType<typeof useStudioStore.getState>> = {}
@@ -639,6 +549,10 @@ export function useAssetLibraryController() {
     }
 
     const queryText = filter.trim().toLowerCase()
+    const filteredApmPackages = useMemo(
+        () => filterApmPackages(scopedApmPackages, sourceFilter, queryText),
+        [queryText, scopedApmPackages, sourceFilter],
+    )
     const filteredInstalledAssets = useMemo(
         () => filterInstalledAssets(visibleInstalledAssets, sourceFilter, queryText),
         [visibleInstalledAssets, queryText, sourceFilter],
@@ -651,19 +565,14 @@ export function useAssetLibraryController() {
         () => mcpServers.filter((mcpServer) => !queryText || buildMcpHaystack(mcpServer).includes(queryText)),
         [mcpServers, queryText],
     )
-    const registryGroups = useMemo(
-        () => buildRegistryGroups(registryResults),
-        [registryResults],
-    )
 
     const resolvedSelectedAsset = useMemo(
         () => resolveSelectedAssetSnapshot(selectedAsset, {
             installedAssets: visibleInstalledAssets,
-            registryAssets: registryResults as LibraryAsset[],
             models,
             mcps: mcpServers,
         }),
-        [mcpServers, models, registryResults, selectedAsset, visibleInstalledAssets],
+        [mcpServers, models, selectedAsset, visibleInstalledAssets],
     )
 
     const selectedAssetKey = resolvedSelectedAsset ? getAssetSelectionKey(resolvedSelectedAsset) : null
@@ -674,26 +583,17 @@ export function useAssetLibraryController() {
 
     const selectedInstalled = useMemo(() => {
         if (!resolvedSelectedAsset) return false
-        if (resolvedSelectedAsset.source === 'registry') {
-            const listingId = resolvedSelectedAsset.registryListing?.id
-            return !!listingId && importedRegistryListingIds.has(listingId)
-        }
         if (resolvedSelectedAsset.source && resolvedSelectedAsset.urn) return true
-        const urn = getAssetUrn(resolvedSelectedAsset)
-        return urn ? installedUrns.has(urn) : false
-    }, [importedRegistryListingIds, installedUrns, resolvedSelectedAsset])
+        return false
+    }, [resolvedSelectedAsset])
 
-    const localPlaceholder = placeholderForLocalSection(localSection, runtimeKind)
+    const localPlaceholder = placeholderForLocalSection(localSection, primitiveKind)
 
     return {
-        scope,
-        setScope,
         localSection,
         setLocalSection,
-        installedKind,
-        setInstalledKind,
-        runtimeKind,
-        setRuntimeKind,
+        primitiveKind,
+        setPrimitiveKind,
         sourceFilter,
         setSourceFilter,
         modelProviderFilter,
@@ -702,6 +602,8 @@ export function useAssetLibraryController() {
         setFilter,
         localPlaceholder,
         authoringHint,
+        apmPackagesLoading: stageApmPackagesLoading || globalApmPackagesLoading,
+        filteredApmPackages,
         assetsLoading,
         filteredInstalledAssets,
         groupedModels,
@@ -738,18 +640,6 @@ export function useAssetLibraryController() {
         expandedModelProviders,
         setExpandedModelProviders,
         modelProviderTabs,
-        registryQuery,
-        registryLoading,
-        registryResults,
-        registryError,
-        registryKind,
-        setRegistryKind,
-        registryGroups,
-        installedUrns,
-        importedRegistryListingIds,
-        triggerSearch,
-        handleQueryChange,
-        handleRegistryInstall,
         handlePinnedAssetAction,
         handleCheckDanceUpdates,
         handleUpdateDance,
@@ -761,6 +651,5 @@ export function useAssetLibraryController() {
         uninstallLoading,
         confirmUninstall,
         cancelUninstall,
-        setSearchEnabled,
     }
 }

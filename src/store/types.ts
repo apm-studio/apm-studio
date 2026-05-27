@@ -21,7 +21,7 @@ import type { ProjectionDirtyState, RuntimeChangeClass, StudioChangeDescriptor }
 
 export type PerformerRelationSlice = Record<never, never>
 
-export type WorkspaceMode = 'canvas' | 'run' | 'explore' | 'agent-sync'
+export type WorkspaceMode = 'import' | 'manage' | 'run' | 'export'
 export type WorkspaceViewMode = 'canvas' | 'full' | 'split'
 export type FullscreenNodeType = 'performer' | 'act'
 
@@ -118,9 +118,13 @@ export interface WorkspaceSlice {
         model?: ModelConfig | string | null
         modelVariant?: string | null
         modelPlaceholder?: ModelConfig | null
+        inlineInstruction?: string | null
+        agentId?: string | null
+        planMode?: boolean
         mcpServerNames?: string[]
         mcpBindingMap?: Record<string, string>
         mcpConfig?: Record<string, unknown> | null
+        description?: string
     }, x?: number, y?: number) => void
     applyPerformerAsset: (performerId: string, asset: {
         name: string
@@ -129,9 +133,13 @@ export interface WorkspaceSlice {
         model?: ModelConfig | string | null
         modelVariant?: string | null
         modelPlaceholder?: ModelConfig | null
+        inlineInstruction?: string | null
+        agentId?: string | null
+        planMode?: boolean
         mcpServerNames?: string[]
         mcpBindingMap?: Record<string, string>
         mcpConfig?: Record<string, unknown> | null
+        description?: string
     }) => void
     removePerformer: (id: string) => void
     updatePerformerPosition: (id: string, x: number, y: number) => void
@@ -181,6 +189,7 @@ export interface WorkspaceSlice {
 
     setPerformerTal: (performerId: string, tal: AssetCard | null) => void
     setPerformerTalRef: (performerId: string, talRef: AssetRef | null) => void
+    setPerformerAgentBody: (performerId: string, agentBody: string | null) => void
     addPerformerDance: (performerId: string, dance: AssetCard) => void
     addPerformerDanceRef: (performerId: string, danceRef: AssetRef) => void
     replacePerformerDanceRef: (performerId: string, currentRef: AssetRef, nextRef: AssetRef) => void

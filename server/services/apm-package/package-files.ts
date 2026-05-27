@@ -1,6 +1,7 @@
 import fs from 'fs/promises'
 import type { ApmPackageLock, ApmPackageManifest } from '../../../shared/apm-contracts.js'
 import { buildApmLockForManifest, validateApmPackageManifest } from './manifest.js'
+import { syncMicrosoftApmSourceTree } from './microsoft-apm-source.js'
 import { LOCK_FILE, MANIFEST_FILE, lockPath, manifestPath, packageDir } from './paths.js'
 import { parseYamlRecord, readText, yamlString } from './yaml-io.js'
 
@@ -31,5 +32,6 @@ export async function writePackageFiles(
     const lock = buildApmLockForManifest(manifest)
     await fs.writeFile(manifestPath(workingDir, packageId), yamlString(manifest), 'utf-8')
     await fs.writeFile(lockPath(workingDir, packageId), yamlString(lock), 'utf-8')
+    await syncMicrosoftApmSourceTree(workingDir, packageId, manifest)
     return { manifest, lock }
 }

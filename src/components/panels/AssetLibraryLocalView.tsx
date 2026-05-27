@@ -1,29 +1,26 @@
-import type { Dispatch, ReactNode, SetStateAction } from 'react'
+import type { Dispatch, SetStateAction } from 'react'
 import type { McpServer } from '../../types'
 import type { RuntimeModelCatalogEntry } from '../../../shared/model-variants'
-import { Cpu, FolderOpen, HardDrive, Hexagon, Plus, Search, Server, Users, Zap } from 'lucide-react'
+import { Cpu, FolderOpen, HardDrive, Hexagon, Layers3, PackageOpen, Plus, Search, Server, Users, Zap } from 'lucide-react'
 import type {
-    AssetScope,
     InstalledKind,
     LocalSection,
     ModelProviderFilter,
-    RuntimeKind,
+    PrimitiveKind,
     SourceFilter,
 } from './asset-library-utils'
 import { authoringNoteForInstalledKind, labelForInstalledKind } from './asset-library-utils'
 import AssetLibraryMcpManager from './AssetLibraryMcpManager'
 import AssetLibraryModelList from './AssetLibraryModelList'
+import AssetLibraryPackageList from './AssetLibraryPackageList'
 import type { McpCatalogState } from './useMcpCatalog'
-import type { AssetPanelAction, AssetPanelAsset, AssetPanelAuthUser, AssetPanelHandler, LibraryAsset } from './asset-panel-types'
+import type { AssetPanelAction, AssetPanelAsset, AssetPanelAuthUser, AssetPanelHandler, LibraryAsset, ScopedApmPackageSummary } from './asset-panel-types'
 
 type Props = {
-    scope: AssetScope
     localSection: LocalSection
     setLocalSection: (value: LocalSection) => void
-    installedKind: InstalledKind
-    setInstalledKind: (value: InstalledKind) => void
-    runtimeKind: RuntimeKind
-    setRuntimeKind: (value: RuntimeKind) => void
+    primitiveKind: PrimitiveKind
+    setPrimitiveKind: (value: PrimitiveKind) => void
     sourceFilter: SourceFilter
     setSourceFilter: (value: SourceFilter) => void
     modelProviderFilter: ModelProviderFilter
@@ -32,6 +29,8 @@ type Props = {
     setFilter: (value: string) => void
     localPlaceholder: string
     authoringHint: string | null
+    apmPackagesLoading: boolean
+    filteredApmPackages: ScopedApmPackageSummary[]
     assetsLoading: boolean
     filteredInstalledAssets: LibraryAsset[]
     groupedModels: Array<{ key: string; label: string; items: RuntimeModelCatalogEntry[]; connected?: boolean }>
@@ -78,10 +77,8 @@ type Props = {
 export default function AssetLibraryLocalView({
     localSection,
     setLocalSection,
-    installedKind,
-    setInstalledKind,
-    runtimeKind,
-    setRuntimeKind,
+    primitiveKind,
+    setPrimitiveKind,
     sourceFilter,
     setSourceFilter,
     modelProviderFilter,
@@ -90,6 +87,8 @@ export default function AssetLibraryLocalView({
     setFilter,
     localPlaceholder,
     authoringHint,
+    apmPackagesLoading,
+    filteredApmPackages,
     assetsLoading,
     filteredInstalledAssets,
     groupedModels,
@@ -132,41 +131,41 @@ export default function AssetLibraryLocalView({
     setExpandedModelProviders,
     modelProviderTabs,
 }: Props) {
-    const installedTabs: Array<{ key: InstalledKind; label: string; icon: React.ReactNode }> = [
+    const primitiveTabs: Array<{ key: PrimitiveKind; label: string; icon: React.ReactNode }> = [
         { key: 'performer', label: 'Agents', icon: <Users size={10} /> },
         { key: 'tal', label: 'Instructions', icon: <Hexagon size={10} /> },
         { key: 'dance', label: 'Skills', icon: <Zap size={10} /> },
-        { key: 'act', label: 'Teams', icon: <Zap size={10} /> },
+        { key: 'mcp', label: 'MCP', icon: <Server size={10} /> },
     ]
 
-    const runtimeTabs: Array<{ key: RuntimeKind; label: string; icon: ReactNode }> = [
-        { key: 'models', label: 'Models', icon: <Cpu size={10} /> },
-        { key: 'mcps', label: 'MCPs', icon: <Server size={10} /> },
-    ]
-
-    const installedEmptyMessage = `No ${labelForInstalledKind(installedKind).toLowerCase()} assets found.`
+    const installedKind: InstalledKind = primitiveKind === 'mcp' ? 'performer' : primitiveKind
+    const installedEmptyMessage = `No ${labelForInstalledKind(installedKind).toLowerCase()} primitives found.`
 
     return (
         <div className="asset-library-local-view">
             <div className="scope-selector asset-scope-selector">
-                <button className={`scope-btn ${localSection === 'installed' ? 'active' : ''}`} onClick={() => setLocalSection('installed')}>
-                    Installed Assets
+                <button className={`scope-btn ${localSection === 'packages' ? 'active' : ''}`} onClick={() => setLocalSection('packages')}>
+                    <PackageOpen size={11} />
+                    <span>Packages</span>
                 </button>
-                <button className={`scope-btn ${localSection === 'runtime' ? 'active' : ''}`} onClick={() => setLocalSection('runtime')}>
-                    Runtime
+                <button className={`scope-btn ${localSection === 'primitives' ? 'active' : ''}`} onClick={() => setLocalSection('primitives')}>
+                    <Layers3 size={11} />
+                    <span>Primitives</span>
+                </button>
+                <button className={`scope-btn ${localSection === 'models' ? 'active' : ''}`} onClick={() => setLocalSection('models')}>
+                    <Cpu size={11} />
+                    <span>Models</span>
                 </button>
             </div>
 
+            {localSection === 'primitives' && (
             <div className="assets-tabs">
-                {(localSection === 'installed' ? installedTabs : runtimeTabs).map((tab) => {
-                    const active = localSection === 'installed' ? installedKind === tab.key : runtimeKind === tab.key
+                {primitiveTabs.map((tab) => {
                     return (
                         <button
                             key={tab.key}
-                            className={`asset-tab ${active ? 'active' : ''}`}
-                            onClick={() => localSection === 'installed'
-                                ? setInstalledKind(tab.key as InstalledKind)
-                                : setRuntimeKind(tab.key as RuntimeKind)}
+                            className={`asset-tab ${primitiveKind === tab.key ? 'active' : ''}`}
+                            onClick={() => setPrimitiveKind(tab.key)}
                         >
                             {tab.icon}
                             <span>{tab.label}</span>
@@ -174,10 +173,14 @@ export default function AssetLibraryLocalView({
                     )
                 })}
             </div>
+            )}
 
-            {localSection === 'installed' && (
+            {(localSection === 'packages' || (localSection === 'primitives' && primitiveKind !== 'mcp')) && (
                 <div className="sub-scope-row">
-                    {(['all', 'global', 'stage', 'draft'] as SourceFilter[]).map((value) => (
+                    {(localSection === 'packages'
+                        ? (['all', 'stage', 'global'] as SourceFilter[])
+                        : (['all', 'stage', 'global', 'draft'] as SourceFilter[])
+                    ).map((value) => (
                         <button
                             key={value}
                             className={`sub-scope-tag ${sourceFilter === value ? 'active' : ''}`}
@@ -195,7 +198,7 @@ export default function AssetLibraryLocalView({
                 </div>
             )}
 
-            {localSection === 'installed' && (
+            {localSection === 'primitives' && primitiveKind !== 'mcp' && (
                 <div className="asset-authoring-row">
                     {installedKind === 'performer' && (
                         <button className="btn" onClick={createNewPerformer}>
@@ -233,6 +236,13 @@ export default function AssetLibraryLocalView({
 
             {authoringHint ? <div className="asset-authoring-hint">{authoringHint}</div> : null}
 
+            {localSection === 'packages' ? (
+                <AssetLibraryPackageList
+                    packages={filteredApmPackages}
+                    loading={apmPackagesLoading}
+                />
+            ) : null}
+
             {showMcps ? (
                 <div className="asset-library-body asset-library-body--mcp">
                     <AssetLibraryMcpManager
@@ -262,7 +272,7 @@ export default function AssetLibraryLocalView({
                 </div>
             ) : null}
 
-            {!showMcps ? (
+            {!showMcps && localSection !== 'packages' ? (
                 <AssetLibraryModelList
                     showInstalledAssets={showInstalledAssets}
                     showModels={showModels}

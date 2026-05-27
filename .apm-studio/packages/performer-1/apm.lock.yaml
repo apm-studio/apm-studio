@@ -1,0 +1,10 @@
+apm_version: apm-studio-native-v1
+dependencies: []
+lockfile_version: "1"
+mcp_servers: []
+packages:
+  - manifest_hash: sha256:15d2e724c62edb96ddeafb7403fa9f46279513ba3190b3e9370d2603d68c948e
+    name: agent-2
+    package_id: performer-1
+    source: apm-studio
+    version: 0.1.0

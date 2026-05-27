@@ -20,6 +20,7 @@ type GetState = () => StudioState
 
 type PerformerDraftContent = {
     talRef?: AssetRef | null
+    inlineInstruction?: string | null
     danceRefs?: AssetRef[]
     model?: StudioState['performers'][number]['model']
     modelVariant?: string | null
@@ -171,6 +172,7 @@ export async function savePerformerAsDraftImpl(get: GetState, set: SetState, per
 
     const draftContent = {
         talRef: performer.talRef || null,
+        inlineInstruction: performer.inlineInstruction || null,
         danceRefs: performer.danceRefs || [],
         model: performer.model || null,
         modelVariant: performer.modelVariant || null,
@@ -320,6 +322,7 @@ export function addPerformerFromDraftImpl(
         x: finalX,
         y: finalY,
         talRef: draftContent.talRef || null,
+        inlineInstruction: draftContent.inlineInstruction || null,
         danceRefs: draftContent.danceRefs || [],
         model: draftContent.model || null,
         modelVariant: draftContent.modelVariant || null,
@@ -464,6 +467,7 @@ export function importActFromDraftImpl(
             x: spawnPosition.x,
             y: spawnPosition.y,
             talRef: perfContent?.talRef || null,
+            inlineInstruction: perfContent?.inlineInstruction || null,
             danceRefs: perfContent?.danceRefs || [],
             model: perfContent?.model || null,
             modelVariant: perfContent?.modelVariant || null,

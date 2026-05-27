@@ -1,6 +1,6 @@
 import type { ChatMessage } from '../types'
 
-const CHAT_DEBUG_STORAGE_KEYS = ['8pm-studio-chat-debug']
+const CHAT_DEBUG_STORAGE_KEYS = ['apm-studio-chat-debug']
 
 function readStorageFlag(storage: Storage | undefined) {
     if (!storage) return false
@@ -20,9 +20,9 @@ export function isChatDebugEnabled() {
     }
 
     const flags = window as Window & {
-        __EIGHTPM_STUDIO_CHAT_DEBUG__?: unknown
+        __APM_STUDIO_CHAT_DEBUG__?: unknown
     }
-    const fromWindow = flags.__EIGHTPM_STUDIO_CHAT_DEBUG__
+    const fromWindow = flags.__APM_STUDIO_CHAT_DEBUG__
     if (fromWindow === true) {
         return true
     }

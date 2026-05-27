@@ -10,7 +10,7 @@ import type {
     ActRelation,
 } from '../types'
 import { api } from '../api'
-import { parseActAsset } from '../../shared/roster-contracts'
+import { parseActAsset } from '../../shared/apm-asset-contracts'
 import { assetUrnDisplayName, parseStudioAssetUrn } from '../lib/asset-urn'
 import { resolvePerformerFromActBinding } from '../lib/act-participants'
 import { resolvePreferredActThreadId } from '../lib/act-threads'
@@ -706,7 +706,7 @@ export function scheduleActRuntimeSync(get: GetState, set: SetState, actId: stri
                     await loadActThreadsImpl(get, set, actId)
                 } catch (error) {
                     console.error('[team-sync] Failed to sync Team runtime definition', error)
-                    showToast('8PM Studio could not sync the running Team threads.', 'error', {
+                    showToast('APM Studio could not sync the running Team threads.', 'error', {
                         title: 'Team sync failed',
                         dedupeKey: `act:sync:${actId}`,
                     })

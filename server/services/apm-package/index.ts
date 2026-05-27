@@ -4,7 +4,7 @@ export {
     validateApmPackageManifest,
 } from './manifest.js'
 export {
-    readEightPmWorkspaceSnapshotForDir,
+    readApmWorkspaceSnapshotForDir,
     writeApmPackagesForWorkspace,
 } from './workspace.js'
 export {
@@ -15,3 +15,15 @@ export {
     readApmPackage,
     writeApmPackage,
 } from './repository.js'
+export {
+    getApmToolingStatus,
+} from './tooling.js'
+export {
+    getApmSyncTargets,
+    runApmTargetSync,
+} from './target-sync.js'
+export {
+    importApmPackagesFromGitHub,
+    listApmGitHubSourceAssets,
+    previewApmPackagesFromGitHub,
+} from './github-import.js'

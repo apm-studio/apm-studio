@@ -1,5 +1,5 @@
 import path from 'path'
-import { getAssetPayload, readAsset, danceAssetDir } from '../../lib/roster-source.js'
+import { getAssetPayload, readAsset, danceAssetDir } from '../../lib/apm-asset-source.js'
 import { localSkillProjectionDir, toRelativePath } from './projection-manifest.js'
 import { readDraft } from '../draft-service.js'
 import {
@@ -17,10 +17,6 @@ export interface CompiledSkill {
     description: string
     filePath: string
     relativePath: string
-    codexFilePath?: string
-    codexRelativePath?: string
-    codexLinkPath?: string
-    codexLinkRelativePath?: string
     content: string
     /** Additional files projected from bundle (relative paths) */
     additionalFiles: string[]

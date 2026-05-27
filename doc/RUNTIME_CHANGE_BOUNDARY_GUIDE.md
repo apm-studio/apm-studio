@@ -115,34 +115,24 @@ Every execution path should follow this order.
 - preview or prewarm may materialize projection files
 - preview or prewarm must not clear `projectionDirty`
 - files may exist in a `projection pending adoption` state until a later dispose
-- workspace saves must not sync generated external-agent files such as Codex project subagents
-- server startup must not prewarm generated external-agent files such as Codex project subagents
-- workspace Agent projection materializes only Studio/OpenCode runtime artifacts; Codex project subagents are exported manually from Agent Sync
-- Codex-supported projection models are kept conservative and follow the local Codex model catalog, including Codex Spark when available
-- generated Codex subagents should project Studio model variant reasoning effort to Codex-native `model_reasoning_effort` when the selected variant exposes `reasoning.effort`
-- when Studio stores the model variant as `null`/Default, generated Codex subagents should still write the Codex model's default `model_reasoning_effort` so the Agent does not accidentally inherit the parent Codex session's effort
-- generated Codex subagent names are derived from the Agent name with a short agent-id hash suffix so sanitized names cannot collide
-- generated Codex subagent files use the `8pm_studio_*.toml` filename namespace for local cleanup, but the Codex-visible `name` should not include that namespace
-- generated Codex subagent `developer_instructions` must contain only the raw Agent Instruction content
-- generated Codex subagent Skill access must use Codex-native `[[skills.config]]` entries that point at Codex-discoverable `.agents/skills/8pm-studio-*` skill links backed by 8PM Studio's projected `.opencode/skills/...` files
-- generated Codex subagents must project the Agent's selected MCP servers directly from Studio's MCP catalog, using Codex `[mcp_servers.<name>]` TOML tables; do not require OpenCode runtime tool resolution for Codex-only MCP projection
-- generated Codex subagent MCP projection should use Codex-native `bearer_token_env_var` and `env_http_headers` when Studio remote header values are environment references such as `$TOKEN` or `${TOKEN}`
-- generated Codex subagent MCP projection should use Codex-native `env_vars` when a local MCP environment value forwards the same variable name, such as `TOKEN=$TOKEN`
-- Codex project subagent files are generated from Studio Agent state and should be treated as local projection output, not hand-authored source
-- Codex project subagent files are managed by `Agent Sync`, not by normal Studio save, startup, chat projection, or Team projection
-- `GET /api/agent-sync` must be dry-run status calculation and must not write Codex TOML, skill links, skill files, or manifests
-- `POST /api/agent-sync/codex/sync` is the manual path that may write Codex TOML, Skill files, `.agents/skills/8pm-studio-*` symlinks, and manifest entries
-- `POST /api/agent-sync/codex/prune` may remove only Codex/provider-owned stale immediate artifacts such as `.codex/agents/8pm_studio_*.toml` and `.agents/skills/8pm-studio-*`
-- Codex-only projection writes do not require OpenCode `dispose`
-- Codex-only manual sync may write Codex TOML, Skill files, and `.agents/skills/8pm-studio-*` symlinks needed by `[[skills.config]]`, but must not rewrite projected OpenCode agent markdown files or mark `projectionPending`
-- The Studio UI exposes this manual external-assistant export as the top-level `Sync` mode; that mode remains a manual export boundary and does not make external assistant sync part of normal workspace save or runtime preparation
+- workspace saves must not sync generated external-agent files such as Codex, Claude, or Gemini assistant exports
+- server startup must not prewarm generated external-agent files such as Codex, Claude, or Gemini assistant exports
+- workspace Agent projection materializes only Studio/OpenCode runtime artifacts; external assistant targets such as Codex, Claude, or Gemini are exported manually through APM target sync
+- external assistant files are generated from local APM package roots and should be treated as target projection output, not hand-authored source
+- external assistant files are managed by `Export`, not by normal Studio save, startup, chat projection, or Team projection
+- `GET /api/apm/targets` must be a dry-run target/tooling status calculation and must not write assistant files
+- `POST /api/apm/sync` is the manual path that may run `apm install <package-root> --target <target>` for one or more targets selected from Codex, Gemini, Claude, OpenCode, Cursor, Windsurf, and Copilot
+- target export writes do not require OpenCode `dispose`
+- The Studio UI exposes this manual external-assistant export as the top-level `Export` mode; that mode remains a manual export boundary and does not make external assistant export part of normal workspace save or runtime preparation
+- The Export screen lives under `src/features/export`; it should not be reintroduced through workspace/canvas feature barrels because external assistant export is not a workspace editing surface.
+- APM target inspection and manual sync HTTP routes live in `server/routes/apm-sync.ts`; package CRUD and import routes should stay in their own APM route modules.
 
 ## Team Rules
 
 - Team thread create and runtime sync may prewarm projections
 - prewarm must not call `dispose`
 - Team participant execution should reuse the standalone Agent projection
-- Team-scoped participant projection must not create transient Codex project subagents
+- Team-scoped participant projection must not create external assistant target files
 - Team collaboration context belongs in turn-scoped system prompt context
 - merely targeting a Team participant must not widen adoption scope by itself
 - if projection adoption is blocked by a busy working directory, defer and retry the wake instead of dropping it
@@ -160,7 +150,8 @@ Every execution path should follow this order.
 - managed process shutdown must account for Windows process trees as well as Unix signals
 - managed sidecar readiness should use OpenCode `/global/health`
 - if a managed sidecar child is already alive, readiness retries must wait on that child rather than spawning a duplicate process
-- dev sidecar/tooling paths should use the repo-local 8PM Studio contract and registry implementation
+- if the managed sidecar port already has a reachable OpenCode process from a previous Studio run, Studio may reuse it for readiness instead of blocking startup; restart remains unavailable unless Studio owns the child process
+- dev sidecar/tooling paths should use the repo-local APM Studio contract and registry implementation
 - production sidecar/tooling paths must not depend on `dance-of-tal`
 - managed config root is `STUDIO_DIR/opencode`
 - do not silently migrate MCP or config state from `~/.config/opencode`
@@ -173,7 +164,7 @@ Every execution path should follow this order.
 - terminal exit and kill behavior belongs to `server/services/terminal-service.ts`
 - terminal WebSocket routing belongs to the Hono route in `server/routes/terminal.ts`
 - terminal shell selection follows this order:
-  - `EIGHTPM_STUDIO_TERMINAL_SHELL`
+  - `APM_STUDIO_TERMINAL_SHELL`
   - Studio-owned OpenCode global config `shell`
   - platform default (`SHELL`/`zsh` on Unix, `ComSpec`/`cmd.exe` on Windows)
 - Studio terminal WebSocket disconnects should reconnect to the existing Studio-owned PTY when the PTY itself is still alive

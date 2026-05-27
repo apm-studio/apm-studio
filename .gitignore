@@ -54,3 +54,7 @@ fork-error.json
 
 # opencode-source
 .opencode-source/
+
+
+# APM dependencies
+apm_modules/

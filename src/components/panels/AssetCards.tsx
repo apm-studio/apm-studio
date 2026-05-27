@@ -1,5 +1,5 @@
 // Draggable asset card sub-components
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import {
     Hexagon,
@@ -7,16 +7,12 @@ import {
     Package,
     Cpu,
     Server,
-    Download,
     GripVertical,
     Workflow,
     Trash2,
     Pencil,
-    Loader2,
 } from 'lucide-react';
 import {
-    normalizeAuthor,
-    getAssetUrn,
     buildInstalledAssetDragPayload,
     buildModelDragPayload,
     buildMcpDragPayload,
@@ -55,6 +51,10 @@ function danceSyncLabel(asset: LibraryAsset) {
         default:
             return null
     }
+}
+
+function sourceLabel(source: string) {
+    return source === 'stage' ? 'workspace' : source
 }
 
 function assetKindIcon(kind: string, className = 'asset-icon combo') {
@@ -137,7 +137,7 @@ export function DraggableAsset({
                     dragHandle
                     trailing={
                         <>
-                            {asset.source ? <span className={`source-badge ${asset.source}`}>{asset.source}</span> : undefined}
+                            {asset.source ? <span className={`source-badge ${asset.source}`}>{sourceLabel(asset.source)}</span> : undefined}
                             {danceSyncLabel(asset) ? <span className={`asset-sync-badge asset-sync-badge--${asset.github?.sync?.state}`}>{danceSyncLabel(asset)}</span> : undefined}
                             {asset.source === 'draft' && (asset.kind === 'tal' || asset.kind === 'dance') && onEditDraft && (
                                 <button
@@ -289,94 +289,6 @@ export function DraggableMcp({
                 <div className="asset-card__desc">
                     {dragDisabled ? 'Save this server before dragging.' : 'Drag onto an agent to enable it there.'}
                 </div>
-            </div>
-        </HoverableCard>
-    )
-}
-
-// ── RegistryResult ──────────────────────────────────────
-
-export function RegistryResult({
-    item,
-    installed,
-    selected,
-    onInstall,
-    onSelect,
-}: {
-    item: LibraryAsset
-    installed: boolean
-    selected: boolean
-    onInstall: (urn: string) => Promise<unknown>
-    onSelect: AssetPanelHandler
-}) {
-    const [installing, setInstalling] = useState(false)
-    const [localInstalled, setLocalInstalled] = useState(installed)
-    const [error, setError] = useState<string | null>(null)
-
-    useEffect(() => {
-        setLocalInstalled(installed)
-    }, [installed])
-
-    const urn = getAssetUrn(item) || ''
-
-    const handleInstall = async () => {
-        setInstalling(true)
-        setError(null)
-        try {
-            await onInstall(urn)
-            setLocalInstalled(true)
-        } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : 'Install failed')
-        } finally {
-            setInstalling(false)
-        }
-    }
-
-    return (
-        <HoverableCard asset={item} installed={localInstalled}>
-            <div
-                className={`asset-card registry-result ${error ? 'has-error' : ''} ${selected ? 'is-selected' : ''}`}
-                onClick={() => onSelect(item)}
-            >
-                <AssetCardHeader
-                    icon={assetKindIcon(item.kind)}
-                    name={item.name}
-                    trailing={(
-                        <>
-                            <span className="badge">{item.kind}</span>
-                            <div
-                                style={{ position: 'relative', marginLeft: 'auto' }}
-                                onClick={(event) => event.stopPropagation()}
-                            >
-                                <button
-                                    className={`registry-install-btn ${localInstalled ? 'is-installed' : ''}`}
-                                    onClick={handleInstall}
-                                    disabled={installing || localInstalled}
-                                    title={localInstalled ? 'Already imported' : `Import ${item.name}`}
-                                >
-                                    {localInstalled ? 'Imported' : installing ? <Loader2 size={11} className="spin-icon" /> : <Download size={11} />}
-                                </button>
-                            </div>
-                        </>
-                    )}
-                />
-                <div className="asset-card__author">{normalizeAuthor(item.author)}</div>
-                <div className="asset-card__desc">{item.description || 'No description.'}</div>
-                {performerMcpSummary(item) ? (
-                    <div className="asset-card__desc">{performerMcpSummary(item)}</div>
-                ) : null}
-                {Array.isArray(item.tags) && item.tags.length > 0 && (
-                    <div className="badges">
-                        {item.tags.slice(0, 3).map((tag: string) => (
-                            <span key={tag} className="badge">{tag}</span>
-                        ))}
-                    </div>
-                )}
-                {error && (
-                    <div className="install-error">
-                        {error}
-                    </div>
-                )}
             </div>
         </HoverableCard>
     )

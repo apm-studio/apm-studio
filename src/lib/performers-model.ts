@@ -97,7 +97,10 @@ export function normalizeAssetMcpForStudio<T extends {
 }>(asset: T, availableMcpServerNames: string[]): T & {
     mcpServerNames: string[]
 } {
-    const declaredNames = extractMcpServerNamesFromConfig(asset.mcpConfig)
+    const declaredNames = Array.from(new Set([
+        ...(asset.mcpServerNames || []),
+        ...extractMcpServerNamesFromConfig(asset.mcpConfig),
+    ].filter(Boolean)))
     const allowed = new Set(availableMcpServerNames)
     return {
         ...asset,

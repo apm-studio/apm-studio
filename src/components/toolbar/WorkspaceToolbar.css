@@ -2,22 +2,22 @@
     display: flex;
     align-items: center;
     gap: var(--space-1);
-    height: 30px;
+    height: 34px;
     min-width: 0;
-    padding: 2px;
+    padding: 3px;
     border: 1px solid var(--border-main);
-    border-radius: var(--radius);
-    background: var(--bg-panel);
+    border-radius: var(--radius-lg);
+    background: var(--bg-elevated);
 }
 
 .toolbar__item {
     display: flex;
     align-items: center;
     gap: var(--space-1);
-    min-height: 24px;
+    min-height: 28px;
     padding: 0 var(--space-2);
     border: none;
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius);
     background: transparent;
     font-size: var(--font-sm);
     font-weight: 700;
@@ -35,28 +35,28 @@ button.toolbar__item:hover {
     color: var(--text-primary);
 }
 
-.roster-status.roster-ok {
+.apm-status.apm-ok {
     color: var(--status-success);
     cursor: default;
 }
 
-.roster-status.roster-missing {
+.apm-status.apm-missing {
     color: var(--status-danger);
 }
 
-.roster-auth-status {
+.apm-auth-status {
     transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
 }
 
-.roster-auth-status--ok {
+.apm-auth-status--ok {
     color: var(--status-success);
 }
 
-.roster-auth-status--warn {
+.apm-auth-status--warn {
     color: var(--text-main);
 }
 
-.roster-auth-status--warn:hover {
+.apm-auth-status--warn:hover {
     background: var(--bg-hover);
 }
 
@@ -77,18 +77,18 @@ button.toolbar__item:hover {
 
 .toolbar .icon-btn {
     flex: 0 0 auto;
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
 }
 
 /* ── Assistant text button ─── */
 .toolbar__assistant-btn {
     display: flex;
     align-items: center;
-    height: 24px;
+    height: 28px;
     padding: 0 var(--space-3);
     border: 1px solid var(--border-light);
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius);
     background: transparent;
     font-size: var(--font-sm);
     font-weight: 700;

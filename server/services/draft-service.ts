@@ -1,15 +1,15 @@
 /**
- * draft-service.ts — Filesystem CRUD for `.8pm-studio/drafts/`
+ * draft-service.ts — Filesystem CRUD for `.apm-studio/drafts/`
  *
- * Instruction / Agent / Team: .8pm-studio/drafts/<kind>/<id>.json
- * Skill bundle:              .8pm-studio/drafts/dance/<id>/draft.json + SKILL.md + sibling dirs
+ * Instruction / Agent / Team: .apm-studio/drafts/<kind>/<id>.json
+ * Skill bundle:              .apm-studio/drafts/dance/<id>/draft.json + SKILL.md + sibling dirs
  * Project-local only — no global scope.
  */
 
 import fs from 'fs/promises'
 import path from 'path'
 import crypto from 'crypto'
-import { getRosterDir, ensureRosterDir } from '../lib/roster-source.js'
+import { getApmAssetDir, ensureApmAssetDir } from '../lib/apm-asset-source.js'
 import {
     danceBundleDir,
     isDanceBundleDraft,
@@ -42,7 +42,7 @@ function isActDraftFile(draft: DraftFile): draft is TypedDraftFile<'act'> {
 }
 
 function draftsDir(cwd: string): string {
-    return path.join(getRosterDir(cwd), 'drafts')
+    return path.join(getApmAssetDir(cwd), 'drafts')
 }
 
 function kindDir(cwd: string, kind: DraftAssetKind): string {
@@ -60,7 +60,7 @@ function generateDraftId(): string {
 }
 
 async function ensureDraftsDir(cwd: string, kind: DraftAssetKind): Promise<void> {
-    await ensureRosterDir(cwd)
+    await ensureApmAssetDir(cwd)
     await fs.mkdir(kindDir(cwd, kind), { recursive: true })
 }
 
@@ -223,7 +223,7 @@ export async function listDrafts(cwd: string, kind?: DraftAssetKind): Promise<Dr
                 continue
             }
 
-            // Legacy JSON files
+            // JSON draft files
             if (!entry.isFile() || !entry.name.endsWith('.json')) continue
 
             try {
@@ -280,7 +280,7 @@ export async function updateDraft(
         return updated
     }
 
-    // Legacy JSON
+    // JSON draft file
     await fs.writeFile(
         draftFilePath(cwd, kind, id),
         JSON.stringify(updated, null, 2),
@@ -389,7 +389,7 @@ async function deleteSingleDraft(cwd: string, kind: DraftAssetKind, id: string):
         return true
     }
 
-    // Legacy JSON
+    // JSON draft file
     try {
         await fs.unlink(draftFilePath(cwd, kind, id))
         return true

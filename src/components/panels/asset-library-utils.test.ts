@@ -11,7 +11,6 @@ import {
     classifyModelProvider,
     scoreModel,
     filterInstalledAssets,
-    buildRegistryGroups,
     placeholderForLocalSection,
     buildDraftAssetCards,
     labelForInstalledKind,
@@ -20,7 +19,6 @@ import {
 } from './asset-library-utils'
 import type { AssetCard, DraftAsset, McpServer } from '../../types'
 import type { LibraryAsset, ModelPanelAsset } from './asset-panel-types'
-import type { InstalledKind } from './asset-library-utils'
 
 describe('normalizeAuthor', () => {
     it('prefixes @ when missing', () => {
@@ -207,37 +205,21 @@ describe('filterInstalledAssets', () => {
     })
 })
 
-describe('buildRegistryGroups', () => {
-    it('groups by kind and maintains order', () => {
-        const results: Array<{ kind: InstalledKind; name: string }> = [
-            { kind: 'tal', name: 'T1' },
-            { kind: 'dance', name: 'D1' },
-            { kind: 'tal', name: 'T2' },
-        ]
-        const groups = buildRegistryGroups(results)
-        expect(groups).toHaveLength(2) // performer (0 items) filtered out
-        expect(groups[0].kind).toBe('tal')
-        expect(groups[0].items).toHaveLength(2)
-        expect(groups[1].kind).toBe('dance')
-    })
-
-    it('filters out empty groups', () => {
-        const groups = buildRegistryGroups([{ kind: 'tal', name: 'T1' }])
-        expect(groups).toHaveLength(1)
-    })
-})
-
 describe('placeholderForLocalSection', () => {
-    it('returns installed placeholder', () => {
-        expect(placeholderForLocalSection('installed', 'models')).toBe('name, urn, author, tag...')
+    it('returns package placeholder for package lists', () => {
+        expect(placeholderForLocalSection('packages')).toBe('package, primitive, apm.yml path...')
     })
 
-    it('returns model placeholder for runtime models', () => {
-        expect(placeholderForLocalSection('runtime', 'models')).toBe('model, provider, capability...')
+    it('returns primitives placeholder', () => {
+        expect(placeholderForLocalSection('primitives', 'performer')).toBe('primitive, urn, author, tag...')
     })
 
-    it('returns mcp placeholder for runtime mcps', () => {
-        expect(placeholderForLocalSection('runtime', 'mcps')).toBe('server, tool, status...')
+    it('returns model placeholder for model lists', () => {
+        expect(placeholderForLocalSection('models')).toBe('model, provider, capability...')
+    })
+
+    it('returns mcp placeholder for primitive mcps', () => {
+        expect(placeholderForLocalSection('primitives', 'mcp')).toBe('mcp server, tool, status...')
     })
 })
 

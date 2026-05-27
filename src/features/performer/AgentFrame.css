@@ -307,6 +307,12 @@
     letter-spacing: 0.04em;
 }
 
+.adv-field__textarea {
+    min-height: 96px;
+    resize: vertical;
+    line-height: 1.45;
+}
+
 /* ── Advanced List ── */
 .adv-list {
     display: flex;

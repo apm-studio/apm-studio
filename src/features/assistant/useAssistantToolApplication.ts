@@ -44,8 +44,8 @@ export function useAssistantToolApplication({
                 if (summary.failed > 0) {
                     showToast(
                         summary.applied > 0
-                            ? `8PM Assistant applied ${summary.applied} change(s), but ${summary.failed} action(s) could not be applied.`
-                            : '8PM Assistant suggested changes, but they could not be applied to the current stage.',
+                            ? `APM Assistant applied ${summary.applied} change(s), but ${summary.failed} action(s) could not be applied.`
+                            : 'APM Assistant suggested changes, but they could not be applied to the current stage.',
                         summary.applied > 0 ? 'warning' : 'error',
                         {
                             title: 'Assistant mutation issue',

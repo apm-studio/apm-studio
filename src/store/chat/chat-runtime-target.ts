@@ -201,7 +201,7 @@ export function resolveChatRuntimeTarget(get: ChatGet, chatKey: string): Resolve
         return {
             chatKey,
             kind: 'assistant',
-            name: '8PM Assistant',
+            name: 'APM Assistant',
             runtimeConfig: {
                 ...EMPTY_RUNTIME_CONFIG,
                 model: state.assistantModel
@@ -218,7 +218,7 @@ export function resolveChatRuntimeTarget(get: ChatGet, chatKey: string): Resolve
             },
             requestTarget: {
                 performerId: chatKey,
-                performerName: '8PM Assistant',
+                performerName: 'APM Assistant',
             },
         }
     }

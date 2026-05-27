@@ -1,4 +1,4 @@
-/* 8PM Studio — Layout, Canvas & App Shell */
+/* APM Studio — Layout, Canvas & App Shell */
 
 .studio-app {
     display: flex;
@@ -139,20 +139,20 @@
     display: flex;
     align-items: center;
     gap: 0;
-    height: 30px;
-    background: var(--bg-panel);
+    height: 34px;
+    background: var(--bg-elevated);
     border: 1px solid var(--border-main);
-    border-radius: var(--radius);
+    border-radius: var(--radius-lg);
     overflow: hidden;
 }
 
 .canvas-controls__btn {
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--bg-panel);
+    background: var(--bg-elevated);
     border: none;
     border-right: 1px solid var(--border-light);
     color: var(--text-secondary);
@@ -180,7 +180,7 @@
 }
 
 .canvas-controls__btn:disabled:hover {
-    background: var(--bg-panel);
+    background: var(--bg-elevated);
     color: var(--text-secondary);
 }
 

@@ -84,7 +84,15 @@ function ParticipantModelDropRow({
     )
 }
 
-export default function ActMetaView() {
+type ActMetaViewProps = {
+    actId?: string
+    manageMode?: boolean
+}
+
+export default function ActMetaView({
+    actId: actIdOverride,
+    manageMode = false,
+}: ActMetaViewProps = {}) {
     const {
         acts, performers,
         actEditorState,
@@ -111,14 +119,16 @@ export default function ActMetaView() {
         removeRelation: state.removeRelation,
         updateActRules: state.updateActRules,
     })))
-    const activeActId = actEditorState?.actId || null
+    const activeActId = actIdOverride || actEditorState?.actId || null
     const act = acts.find((a) => a.id === activeActId)
 
     const meta = act?.meta?.authoring || {}
     const [ruleInput, setRuleInput] = useState('')
-    const activeTab: ActEditorTab = actEditorState?.mode === 'act' && actEditorState.tab
-        ? actEditorState.tab
-        : 'overview'
+    const activeTab: ActEditorTab = manageMode
+        ? 'overview'
+        : (actEditorState?.mode === 'act' && actEditorState.tab)
+            ? actEditorState.tab
+            : 'overview'
 
     const participantKeys = act ? Object.keys(act.participants) : []
 
@@ -165,24 +175,26 @@ export default function ActMetaView() {
 
     return (
         <div className="act-panel__content edit-workbench act-edit-workbench">
-            <div className="act-edit-workbench__tabs" role="tablist" aria-label="Team edit sections">
-                {tabs.map((tab) => (
-                    <button
-                        key={tab.key}
-                        type="button"
-                        role="tab"
-                        aria-selected={activeTab === tab.key}
-                        className={`act-edit-workbench__tab ${activeTab === tab.key ? 'act-edit-workbench__tab--active' : ''}`}
-                        onClick={() => openActEditor(activeActId, 'act', { tab: tab.key })}
-                    >
-                        {tab.icon}
-                        <span>{tab.label}</span>
-                        {typeof tab.count === 'number' ? (
-                            <span className="act-edit-workbench__tab-count">{tab.count}</span>
-                        ) : null}
-                    </button>
-                ))}
-            </div>
+            {!manageMode ? (
+                <div className="act-edit-workbench__tabs" role="tablist" aria-label="Team edit sections">
+                    {tabs.map((tab) => (
+                        <button
+                            key={tab.key}
+                            type="button"
+                            role="tab"
+                            aria-selected={activeTab === tab.key}
+                            className={`act-edit-workbench__tab ${activeTab === tab.key ? 'act-edit-workbench__tab--active' : ''}`}
+                            onClick={() => openActEditor(activeActId, 'act', { tab: tab.key })}
+                        >
+                            {tab.icon}
+                            <span>{tab.label}</span>
+                            {typeof tab.count === 'number' ? (
+                                <span className="act-edit-workbench__tab-count">{tab.count}</span>
+                            ) : null}
+                        </button>
+                    ))}
+                </div>
+            ) : null}
 
             <div className="edit-advanced act-edit-workbench__body">
                 {activeTab === 'overview' && (

@@ -18,7 +18,6 @@ import { resolveFocusNodeId, syncFocusViewport } from '../../lib/focus-utils';
 import { buildSyncFullscreenViewportState } from '../../store/workspace-focus-actions';
 import { isSplitViewNodeDrag } from '../../lib/dnd-handlers';
 import OffsetBezierEdge from './OffsetBezierEdge';
-import StudioViewHeader from './StudioViewHeader';
 import SplitViewDropOverlay from './SplitViewDropOverlay';
 import SplitViewResizeOverlay from './SplitViewResizeOverlay';
 
@@ -351,7 +350,6 @@ export default function CanvasArea() {
 
     return (
         <div className={`canvas-area ${isFullscreenActive ? 'canvas-area--focus' : ''}`} ref={setCanvasAreaRef}>
-            <StudioViewHeader />
             <div className="canvas-flow-shell" ref={setFlowShellRefs}>
                 {showFullEmptyState ? (
                     <div className="canvas-fullscreen-empty-state">

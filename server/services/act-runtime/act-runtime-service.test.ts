@@ -71,8 +71,8 @@ describe('ActRuntimeService projection prewarm', () => {
     let workingDir: string
 
     beforeEach(async () => {
-        studioDir = await fs.mkdtemp(path.join(os.tmpdir(), '8pm-studio-act-service-'))
-        workingDir = await fs.mkdtemp(path.join(os.tmpdir(), '8pm-studio-working-'))
+        studioDir = await fs.mkdtemp(path.join(os.tmpdir(), 'apm-studio-act-service-'))
+        workingDir = await fs.mkdtemp(path.join(os.tmpdir(), 'apm-studio-working-'))
         process.env.STUDIO_DIR = studioDir
         vi.resetModules()
         ensurePerformerProjectionMock.mockReset().mockResolvedValue({

@@ -1,7 +1,7 @@
 ---
 name: studio-assistant-act-guide
-description: "Explains the current 8PM Studio Team contract: participants, relations, subscriptions, actRules, safety, and publish-safe field boundaries. Use for Team contract, relation, subscription, and runtime guardrail questions. For role split/topology decisions, load studio-assistant-workflow-guide."
-compatibility: Designed for the 8PM Studio built-in assistant projection.
+description: "Explains the current APM Studio Team contract: participants, relations, subscriptions, actRules, safety, and publish-safe field boundaries. Use for Team contract, relation, subscription, and runtime guardrail questions. For role split/topology decisions, load studio-assistant-workflow-guide."
+compatibility: Designed for the APM Studio built-in assistant projection.
 ---
 
 # Team Contract Guide

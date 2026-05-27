@@ -1,8 +1,8 @@
 /**
- * assistant-service.ts — Agent + skill projection for 8PM Assistant.
+ * assistant-service.ts — Agent + skill projection for APM Assistant.
  *
  * Produces:
- *   ~/.8pm-studio/opencode/{agents,skills,tools}/8pm-studio/...
+ *   ~/.apm-studio/opencode/{agents,skills,tools}/apm-studio/...
  *
  * Builtin assistant dances are authored as Agent Skills under:
  *   server/services/studio-assistant/dances/<skill-name>/SKILL.md
@@ -15,12 +15,12 @@
 import fs from 'fs/promises'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { parseDanceFromSkillMd } from '../../../shared/roster-contracts.js'
+import { parseDanceFromSkillMd } from '../../../shared/apm-asset-contracts.js'
 import type { AssistantStageContext } from '../../../shared/assistant-actions.js'
 import { STUDIO_DIR } from '../../lib/config.js'
 import { getOpencode } from '../../lib/opencode.js'
 import { listStudioAssets } from '../asset-service.js'
-import { searchSkillsCatalog } from '../roster-service.js'
+import { searchSkillsCatalog } from '../apm-asset-service.js'
 import { searchExploreCatalog } from '../explore-registry-service.js'
 import { syncSkillBundleSiblings } from '../opencode-projection/skill-bundle-sync.js'
 import { ASSISTANT_TOOL_NAMES, getStaticAssistantTools } from './assistant-tools.js'
@@ -44,11 +44,11 @@ function workspaceAssistantProjectionRoot(executionDir: string) {
 }
 
 function agentFilePath(executionDir: string) {
-    return path.join(assistantProjectionRoot(executionDir), 'agents', '8pm-studio', AGENT_FILENAME)
+    return path.join(assistantProjectionRoot(executionDir), 'agents', 'apm-studio', AGENT_FILENAME)
 }
 
 function skillDir(executionDir: string, skillName: string) {
-    return path.join(assistantProjectionRoot(executionDir), 'skills', '8pm-studio', skillName)
+    return path.join(assistantProjectionRoot(executionDir), 'skills', 'apm-studio', skillName)
 }
 
 function skillFilePath(executionDir: string, skillName: string) {
@@ -60,11 +60,11 @@ function toolFilePath(executionDir: string, toolName: string) {
 }
 
 function assistantAgentPath(opencodeRoot: string) {
-    return path.join(opencodeRoot, 'agents', '8pm-studio', AGENT_FILENAME)
+    return path.join(opencodeRoot, 'agents', 'apm-studio', AGENT_FILENAME)
 }
 
 function assistantSkillDir(opencodeRoot: string, skillName: string) {
-    return path.join(opencodeRoot, 'skills', '8pm-studio', skillName)
+    return path.join(opencodeRoot, 'skills', 'apm-studio', skillName)
 }
 
 function assistantToolPath(opencodeRoot: string, toolName: string) {
@@ -115,7 +115,7 @@ async function removeStaleBuiltinSkills(
     executionDir: string,
     expectedSkillNames: string[],
 ): Promise<boolean> {
-    const skillsRoot = path.join(assistantProjectionRoot(executionDir), 'skills', '8pm-studio')
+    const skillsRoot = path.join(assistantProjectionRoot(executionDir), 'skills', 'apm-studio')
     const expected = new Set(expectedSkillNames)
     let changed = false
 
@@ -175,12 +175,12 @@ async function removeAssistantProjectionAtRoot(
         changed = true
     }
 
-    const skillsRoot = path.join(opencodeRoot, 'skills', '8pm-studio')
+    const skillsRoot = path.join(opencodeRoot, 'skills', 'apm-studio')
     const remainingSkillEntries = await fs.readdir(skillsRoot, { withFileTypes: true }).catch(() => [])
     if (remainingSkillEntries.length === 0) {
         await fs.rm(skillsRoot, { recursive: true, force: true }).catch(() => {})
     }
-    const agentDir = path.join(opencodeRoot, 'agents', '8pm-studio')
+    const agentDir = path.join(opencodeRoot, 'agents', 'apm-studio')
     const remainingAgentEntries = await fs.readdir(agentDir, { withFileTypes: true }).catch(() => [])
     if (remainingAgentEntries.length === 0) {
         await fs.rm(agentDir, { recursive: true, force: true }).catch(() => {})
@@ -263,7 +263,7 @@ async function removeManagedWorkspaceAssistantProjection(
 // ── Frontmatter ───────────────────────────────────────
 function buildFrontmatter(skillNames: string[], toolNames: string[]): string {
     const lines = ['---']
-    lines.push('description: "8PM Assistant"')
+    lines.push('description: "APM Assistant"')
     lines.push('mode: primary')
     // Model is NOT specified here — passed via promptAsync() to avoid staleness.
 
@@ -972,5 +972,5 @@ export async function ensureAssistantAgent(
         await oc.instance.dispose({ directory: executionDir }).catch(() => {})
     }
 
-    return `8pm-studio/${AGENT_FILENAME.replace(/\.md$/, '')}`
+    return `apm-studio/${AGENT_FILENAME.replace(/\.md$/, '')}`
 }

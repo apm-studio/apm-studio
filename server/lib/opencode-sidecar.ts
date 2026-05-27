@@ -155,7 +155,10 @@ export async function ensureOpencodeSidecar(): Promise<void> {
     }
 
     if (await getReachability(true)) {
-        throw new Error(`OpenCode sidecar port ${resolvePort()} is already in use by a process not started by this Studio instance. Stop that process or run npm run kill-ports, then start Studio again.`)
+        // A previous Studio process can leave a healthy OpenCode sidecar on the
+        // managed port. Reuse it for readiness instead of blocking dev startup.
+        reachabilityCache = { ok: true, checkedAt: Date.now() }
+        return
     }
 
     startupPromise = (async () => {

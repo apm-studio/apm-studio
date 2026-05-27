@@ -32,7 +32,7 @@ function runCli(args: string[], env: Record<string, string> = {}) {
     })
 }
 
-describe('8pm-studio CLI', () => {
+describe('apm-studio CLI', () => {
     it('rejects malformed port strings instead of truncating them', async () => {
         const result = await runCli(['doctor', '.', '--port', '12abc'])
 
@@ -58,18 +58,24 @@ describe('8pm-studio CLI', () => {
         expect(result.stdout).toContain('FAIL Studio port: Port 43110 is reserved for the managed OpenCode sidecar')
     })
 
-    it('documents OpenAI OAuth startup setup in help', async () => {
+    it('does not document removed startup shortcuts in help', async () => {
         const result = await runCli(['--help'])
 
         expect(result.code).toBe(0)
-        expect(result.stdout).toContain('--openai-oauth')
-        expect(result.stdout).toContain('8pm-studio --openai-oauth --team <team-urn>')
+        expect(result.stdout).not.toContain('--openai-oauth')
+        expect(result.stdout).not.toContain('--agent')
+        expect(result.stdout).not.toContain('--team')
+        expect(result.stdout).not.toContain('--performer')
+        expect(result.stdout).not.toContain('--act')
     })
 
-    it('rejects OpenAI OAuth setup on doctor because it only applies to open', async () => {
-        const result = await runCli(['doctor', '.', '--openai-oauth'])
+    it.each(['--openai-oauth', '--agent', '--team', '--performer', '--act'])('rejects removed option %s', async (option) => {
+        const args = option === '--openai-oauth'
+            ? [option]
+            : [option, 'performer/@acme/workflows/reviewer']
+        const result = await runCli(args)
 
         expect(result.code).toBe(1)
-        expect(result.stderr).toContain('--openai-oauth can only be used with the open command')
+        expect(result.stderr).toContain(`Unknown option: ${option}`)
     })
 })

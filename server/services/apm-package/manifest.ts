@@ -3,7 +3,7 @@ import type {
     ApmPackageLock,
     ApmPackageManifest,
     ApmValidationResult,
-    EightPmAgentExtension,
+    ApmAgentExtension,
 } from '../../../shared/apm-contracts.js'
 import type { SharedAssetRef } from '../../../shared/chat-contracts.js'
 import type { WorkspacePerformerSnapshot } from '../workspace-service.js'
@@ -38,16 +38,6 @@ function hashManifest(manifest: ApmPackageManifest) {
     return `sha256:${crypto.createHash('sha256').update(JSON.stringify(sortForHash(manifest))).digest('hex')}`
 }
 
-function dependencyFromRef(ref: SharedAssetRef) {
-    if (ref.kind === 'registry') {
-        return ref.urn
-    }
-    return {
-        path: `./.8pm-studio/drafts/${ref.draftId}`,
-        source: '8pm-studio-draft',
-    }
-}
-
 function manifestRef(ref: SharedAssetRef | null | undefined) {
     if (!ref) return null
     return ref.kind === 'registry'
@@ -55,7 +45,12 @@ function manifestRef(ref: SharedAssetRef | null | undefined) {
         : { source: 'local', draftId: ref.draftId }
 }
 
-function inlineInstructionFromManifest(manifest: ApmPackageManifest): string | null {
+function authoringDescription(performer: WorkspacePerformerSnapshot) {
+    const value = performer.meta?.authoring?.description
+    return typeof value === 'string' && value.trim() ? value.trim() : null
+}
+
+function agentBodyFromManifest(manifest: ApmPackageManifest): string | null {
     const agent = Array.isArray(manifest.agents) ? manifest.agents[0] : null
     if (isRecord(agent)) {
         const instruction = agent.instruction
@@ -67,6 +62,15 @@ function inlineInstructionFromManifest(manifest: ApmPackageManifest): string | n
         }
     }
 
+    return null
+}
+
+function legacyInlineInstructionFromManifest(manifest: ApmPackageManifest): string | null {
+    const agentBody = agentBodyFromManifest(manifest)
+    if (agentBody) {
+        return agentBody
+    }
+
     const instruction = Array.isArray(manifest.instructions) ? manifest.instructions[0] : null
     if (typeof instruction === 'string' && instruction.trim()) {
         return instruction
@@ -76,6 +80,30 @@ function inlineInstructionFromManifest(manifest: ApmPackageManifest): string | n
     }
 
     return null
+}
+
+function extensionAgentNodeId(extension: ApmAgentExtension) {
+    return extension.agentNodeId || extension.performerId || extension.agentName || extension.performerName || 'agent'
+}
+
+function extensionAgentName(extension: ApmAgentExtension) {
+    return extension.agentName || extension.performerName || extensionAgentNodeId(extension)
+}
+
+function extensionAgentBody(extension: ApmAgentExtension, manifest?: ApmPackageManifest) {
+    const body = extension.agentBody ?? extension.inlineInstruction
+    if (typeof body === 'string' && body.trim()) {
+        return body
+    }
+    return manifest ? legacyInlineInstructionFromManifest(manifest) : null
+}
+
+function extensionInstructionRef(extension: ApmAgentExtension) {
+    return extension.instructionRef || extension.talRef || null
+}
+
+function extensionSkillRefs(extension: ApmAgentExtension) {
+    return extension.skillRefs || extension.danceRefs || []
 }
 
 export function normalizePerformer(value: unknown): WorkspacePerformerSnapshot | null {
@@ -103,21 +131,28 @@ export function normalizePerformer(value: unknown): WorkspacePerformerSnapshot |
 }
 
 export function performerFromExtension(
-    extension: EightPmAgentExtension,
+    extension: ApmAgentExtension,
     manifest?: ApmPackageManifest,
 ): WorkspacePerformerSnapshot {
+    const agentName = extensionAgentName(extension)
+    const description = extension.description
+        || (typeof manifest?.description === 'string' ? manifest.description : null)
+        || null
     return {
-        id: extension.performerId,
-        name: extension.performerName,
+        id: extensionAgentNodeId(extension),
+        name: agentName,
         model: extension.model,
         modelVariant: extension.modelVariant || null,
-        inlineInstruction: extension.inlineInstruction || (manifest ? inlineInstructionFromManifest(manifest) : null),
-        talRef: extension.talRef || null,
-        danceRefs: extension.danceRefs || [],
+        inlineInstruction: extensionAgentBody(extension, manifest),
+        talRef: extensionInstructionRef(extension),
+        danceRefs: extensionSkillRefs(extension),
         mcpServerNames: extension.mcpServerNames || [],
         agentId: extension.agentId || null,
         planMode: extension.planMode === true,
-        meta: extension.derivedFrom ? { derivedFrom: extension.derivedFrom } : undefined,
+        meta: {
+            ...(extension.derivedFrom ? { derivedFrom: extension.derivedFrom } : {}),
+            ...(description ? { authoring: { description } } : {}),
+        },
     }
 }
 
@@ -131,23 +166,38 @@ export function validateApmPackageManifest(manifest: unknown): ApmValidationResu
     if (typeof manifest.name !== 'string' || !manifest.name.trim()) {
         errors.push('Manifest name is required.')
     }
-    if (manifest.version !== undefined && typeof manifest.version !== 'string') {
-        errors.push('Manifest version must be a string when provided.')
+    if (typeof manifest.version !== 'string' || !manifest.version.trim()) {
+        errors.push('Manifest version is required.')
     }
-    const extension = manifest['x-8pm']
+    if (manifest.target !== undefined) {
+        const target = manifest.target
+        const validTarget = typeof target === 'string'
+            || (Array.isArray(target) && target.every((entry) => typeof entry === 'string'))
+        if (!validTarget) {
+            errors.push('Manifest target must be a string or string array when provided.')
+        }
+    }
+    if (manifest.includes !== undefined && manifest.includes !== 'auto') {
+        const validIncludes = Array.isArray(manifest.includes)
+            && manifest.includes.every((entry) => typeof entry === 'string')
+        if (!validIncludes) {
+            errors.push('Manifest includes must be "auto" or a string array when provided.')
+        }
+    }
+    const extension = manifest['x-apm']
     if (extension !== undefined) {
         if (!isRecord(extension)) {
-            errors.push('x-8pm must be an object when provided.')
+            errors.push('x-apm must be an object when provided.')
         } else {
             if (extension.schemaVersion !== 1) {
-                errors.push('x-8pm.schemaVersion must be 1.')
+                errors.push('x-apm.schemaVersion must be 1.')
             }
             if (typeof extension.packageId !== 'string' || !extension.packageId.trim()) {
-                errors.push('x-8pm.packageId is required.')
+                errors.push('x-apm.packageId is required.')
             }
         }
     } else {
-        warnings.push('x-8pm metadata is missing; Studio-only canvas state may be unavailable.')
+        warnings.push('x-apm metadata is missing; Studio-only canvas state may be unavailable.')
     }
 
     return { valid: errors.length === 0, errors, warnings }
@@ -158,16 +208,18 @@ export function buildApmManifestForAgent(performer: WorkspacePerformerSnapshot):
     const name = slugifyName(performer.name)
     const danceRefs = performer.danceRefs || []
     const talRef = performer.talRef || null
-    const inlineInstruction = performer.inlineInstruction || null
+    const agentBody = performer.inlineInstruction || null
     const mcpServerNames = performer.mcpServerNames || []
-    const agentExtension: EightPmAgentExtension = {
-        performerId: performer.id,
-        performerName: performer.name,
+    const description = authoringDescription(performer)
+    const agentExtension: ApmAgentExtension = {
+        agentNodeId: performer.id,
+        agentName: performer.name,
+        description,
         model: performer.model || null,
         modelVariant: performer.modelVariant || null,
-        inlineInstruction,
-        talRef,
-        danceRefs,
+        agentBody,
+        instructionRef: talRef,
+        skillRefs: danceRefs,
         mcpServerNames,
         agentId: performer.agentId || null,
         planMode: performer.planMode === true,
@@ -177,26 +229,26 @@ export function buildApmManifestForAgent(performer: WorkspacePerformerSnapshot):
     return {
         name,
         version: '0.1.0',
-        description: `${performer.name} agent package for 8PM Studio.`,
+        type: 'hybrid',
+        includes: 'auto',
+        description: description || `${performer.name} agent package for APM Studio.`,
         dependencies: {
-            apm: danceRefs.map(dependencyFromRef),
+            apm: [],
             mcp: mcpServerNames.map((serverName) => ({ name: serverName })),
         },
         agents: [{
             id: performer.id,
             name: performer.name,
+            ...(description ? { description } : {}),
             model: performer.model || null,
-            instruction: inlineInstruction
-                ? { source: 'inline', content: inlineInstruction }
-                : manifestRef(talRef),
-            skills: danceRefs.map(manifestRef),
+            ...(agentBody ? {
+                instruction: { source: 'inline', content: agentBody },
+            } : {}),
         }],
-        instructions: inlineInstruction
-            ? [{ source: 'inline', content: inlineInstruction }]
-            : (talRef ? [manifestRef(talRef)] : []),
+        instructions: talRef ? [manifestRef(talRef)] : [],
         skills: danceRefs.map(manifestRef),
         scripts: {},
-        'x-8pm': {
+        'x-apm': {
             schemaVersion: 1,
             packageId,
             kind: 'agent',
@@ -206,17 +258,22 @@ export function buildApmManifestForAgent(performer: WorkspacePerformerSnapshot):
 }
 
 export function buildApmLockForManifest(manifest: ApmPackageManifest): ApmPackageLock {
-    const extension = manifest['x-8pm']
+    const extension = manifest['x-apm']
     const packageId = extension?.packageId || manifest.name
     return {
         lockfile_version: '1',
         apm_version: APM_VERSION,
         dependencies: [],
+        mcp_servers: Array.isArray(manifest.dependencies?.mcp)
+            ? manifest.dependencies.mcp
+                .map((entry) => typeof entry === 'string' ? entry : entry.name)
+                .filter((entry): entry is string => typeof entry === 'string' && !!entry)
+            : [],
         packages: [{
             package_id: packageId,
             name: manifest.name,
             version: manifest.version,
-            source: '8pm-studio',
+            source: 'apm-studio',
             manifest_hash: hashManifest(manifest),
         }],
     }

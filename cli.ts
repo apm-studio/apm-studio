@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// 8PM Studio CLI — 8pm-studio [path] [options]
+// APM Studio CLI — apm-studio [path] [options]
 
 import fs from 'fs/promises'
 import { resolve, basename, dirname, join } from 'path'
@@ -8,14 +8,12 @@ import os from 'os'
 import { fileURLToPath } from 'url'
 import { spawn, spawnSync } from 'child_process'
 import readline from 'readline/promises'
-import { parseRosterAssetUrn } from './server/lib/roster-source.js'
 import { resolvePackageBin } from './server/lib/package-bin.js'
 import {
     ensureOpenProjectDir,
     validateExistingProjectDir,
 } from './server/lib/cli-utils.js'
 import { STUDIO_RELEASE_APP_PORT, STUDIO_RELEASE_OPENCODE_PORT } from './shared/default-ports.js'
-import type { ProviderAuthMethod, ProviderAuthMethodMap, ProviderAuthPrompt } from './shared/provider-auth.js'
 
 type StudioPackageMeta = {
     name: string
@@ -27,11 +25,9 @@ type StudioPackageMeta = {
 
 type OpenCommand = {
     kind: 'open'
-    openaiOauth: boolean
     openBrowser: boolean
     projectDir: string
     port: number | null
-    startupAssetTarget: StartupAssetTarget | null
     verbose: boolean
 }
 
@@ -52,11 +48,6 @@ type VersionCommand = {
 
 type CliCommand = OpenCommand | DoctorCommand | HelpCommand | VersionCommand
 
-type StartupAssetTarget = {
-    kind: 'performer' | 'act'
-    urn: string
-}
-
 type DoctorCheck = {
     label: string
     status: 'ok' | 'warn' | 'fail' | 'info'
@@ -71,7 +62,6 @@ const MIN_PORT = 1
 const MAX_PORT = 65535
 const STUDIO_READY_TIMEOUT_MS = 30_000
 const STUDIO_READY_POLL_MS = 250
-const OPENAI_PROVIDER_ID = 'openai'
 const STATUS_PREFIX: Record<DoctorCheck['status'], string> = {
     ok: 'OK',
     warn: 'WARN',
@@ -80,15 +70,15 @@ const STATUS_PREFIX: Record<DoctorCheck['status'], string> = {
 }
 
 function printUsage(packageMeta?: StudioPackageMeta) {
-    const header = packageMeta ? `${packageMeta.name} ${packageMeta.version}` : '8pm-studio'
+    const header = packageMeta ? `${packageMeta.name} ${packageMeta.version}` : 'apm-studio'
     console.log(`${header}
 
 Usage:
-  8pm-studio [path] [options]
-  8pm-studio open [path] [options]
-  8pm-studio doctor [path] [options]
-  8pm-studio --help
-  8pm-studio --version
+  apm-studio [path] [options]
+  apm-studio open [path] [options]
+  apm-studio doctor [path] [options]
+  apm-studio --help
+  apm-studio --version
 
 Commands:
   open                  Open an agent package workspace. This is the default command.
@@ -99,32 +89,23 @@ Arguments:
 
 Options:
   -p, --port <port>     Port for the Studio server. Defaults to 43100.
-      --openai-oauth    Connect OpenAI through browser OAuth before 8PM Studio opens.
-      --agent <urn>
-                        Prepare and focus an agent package, installing/importing it when needed.
-      --team <urn>
-                        Prepare and focus a team workflow, installing/importing it when needed.
-      --no-open         Do not open the 8PM Studio browser window.
-      --open            Explicitly open the 8PM Studio browser window after startup.
+      --no-open         Do not open the APM Studio browser window.
+      --open            Explicitly open the APM Studio browser window after startup.
       --verbose         Print extra startup details.
   -h, --help            Show this help message.
-  -v, --version         Show the installed 8PM Studio version.
+  -v, --version         Show the installed APM Studio version.
 
 Examples:
-  8pm-studio
-  8pm-studio .
-  8pm-studio --openai-oauth
-  8pm-studio --openai-oauth --team <team-urn>
-  8pm-studio ~/projects/my-app
-  8pm-studio ~/projects/my-app --agent <agent-urn>
-  8pm-studio open ~/projects/my-app --port 3010
-  8pm-studio open ~/projects/my-app --team <team-urn>
-  8pm-studio doctor
-  8pm-studio doctor ~/projects/my-app`)
+  apm-studio
+  apm-studio .
+  apm-studio ~/projects/my-app
+  apm-studio open ~/projects/my-app --port 3010
+  apm-studio doctor
+  apm-studio doctor ~/projects/my-app`)
 }
 
 function failUsage(message: string): never {
-    throw new CliUsageError(`${message}\nRun 8pm-studio --help for usage.`)
+    throw new CliUsageError(`${message}\nRun apm-studio --help for usage.`)
 }
 
 function parsePort(value: string | undefined, arg: string): number {
@@ -163,34 +144,12 @@ function sleep(ms: number) {
     })
 }
 
-function isInteractiveTerminal() {
-    return Boolean(process.stdin.isTTY && process.stdout.isTTY)
-}
-
-function parseAssetTargetUrn(value: string | undefined, kind: StartupAssetTarget['kind'], arg: string): StartupAssetTarget {
-    const urn = (value || '').trim()
-    if (!urn) {
-        failUsage(`Missing value for ${arg}`)
-    }
-
-    try {
-        parseRosterAssetUrn(urn, kind)
-    } catch {
-        const label = kind === 'performer' ? 'agent package' : 'team workflow'
-        failUsage(`Invalid ${arg} URN: ${urn}. Expected a valid ${label} URN.`)
-    }
-
-    return { kind, urn }
-}
-
 function parseCliArgs(argv: string[]): CliCommand {
     let command: CliCommand['kind'] = 'open'
     let commandExplicit = false
     let openBrowser = true
-    let openaiOauth = false
     let projectDir: string | null = null
     let port: number | null = null
-    let startupAssetTarget: StartupAssetTarget | null = null
     let verbose = false
 
     for (let index = 0; index < argv.length; index += 1) {
@@ -225,31 +184,8 @@ function parseCliArgs(argv: string[]): CliCommand {
             continue
         }
 
-        if (arg === '--openai-oauth') {
-            openaiOauth = true
-            continue
-        }
-
         if (arg === '--port' || arg === '-p') {
             port = parsePort(argv[index + 1], arg)
-            index += 1
-            continue
-        }
-
-        if (arg === '--agent' || arg === '--performer') {
-            if (startupAssetTarget) {
-                failUsage('Use only one of --agent or --team')
-            }
-            startupAssetTarget = parseAssetTargetUrn(argv[index + 1], 'performer', arg)
-            index += 1
-            continue
-        }
-
-        if (arg === '--team' || arg === '--act') {
-            if (startupAssetTarget) {
-                failUsage('Use only one of --agent or --team')
-            }
-            startupAssetTarget = parseAssetTargetUrn(argv[index + 1], 'act', arg)
             index += 1
             continue
         }
@@ -270,12 +206,6 @@ function parseCliArgs(argv: string[]): CliCommand {
     resolveSidecarPort()
 
     if (command === 'doctor') {
-        if (startupAssetTarget) {
-            failUsage('--agent and --team can only be used with the open command')
-        }
-        if (openaiOauth) {
-            failUsage('--openai-oauth can only be used with the open command')
-        }
         return {
             kind: 'doctor',
             projectDir: resolvedProjectDir,
@@ -286,11 +216,9 @@ function parseCliArgs(argv: string[]): CliCommand {
 
     return {
         kind: 'open',
-        openaiOauth,
         openBrowser,
         projectDir: resolvedProjectDir,
         port,
-        startupAssetTarget,
         verbose,
     }
 }
@@ -389,7 +317,7 @@ async function readStudioPackageMeta(): Promise<StudioPackageMeta> {
         }
     }
 
-    throw new Error('Could not locate package.json for 8PM Studio.')
+    throw new Error('Could not locate package.json for APM Studio.')
 }
 
 async function fetchLatestVersion(packageName: string) {
@@ -489,7 +417,7 @@ async function promptForNpmUpdate(packageMeta: StudioPackageMeta) {
         child.on('error', reject)
     })
 
-    console.log(`Updated ${packageMeta.name} to ${latestVersion}. Run 8pm-studio again to start the new version.`)
+    console.log(`Updated ${packageMeta.name} to ${latestVersion}. Run apm-studio again to start the new version.`)
     return true
 }
 
@@ -584,7 +512,7 @@ async function runDoctor(command: DoctorCommand, packageMeta: StudioPackageMeta)
             ? `Port ${command.port} is reserved for the managed OpenCode sidecar`
             : portAvailable
             ? `Port ${command.port} is available`
-            : `Port ${command.port} is in use. 8PM Studio can use another port unless you force --port.`,
+            : `Port ${command.port} is in use. APM Studio can use another port unless you force --port.`,
     })
 
     const executable = resolveOpencodeExecutable()
@@ -596,7 +524,7 @@ async function runDoctor(command: DoctorCommand, packageMeta: StudioPackageMeta)
             : 'Could not find an OpenCode executable. Install opencode-ai.',
     })
 
-    console.log('8PM Studio doctor\n')
+    console.log('APM Studio doctor\n')
     for (const check of checks) {
         console.log(`${STATUS_PREFIX[check.status].padEnd(4)} ${check.label}: ${check.detail}`)
     }
@@ -610,16 +538,6 @@ async function runDoctor(command: DoctorCommand, packageMeta: StudioPackageMeta)
 
     const hasFailure = checks.some((check) => check.status === 'fail')
     process.exit(hasFailure ? 1 : 0)
-}
-
-function buildStudioLaunchUrl(baseUrl: string, startupAssetTarget: StartupAssetTarget | null) {
-    if (!startupAssetTarget) {
-        return baseUrl
-    }
-
-    const url = new URL(baseUrl)
-    url.searchParams.set(startupAssetTarget.kind, startupAssetTarget.urn)
-    return url.toString()
 }
 
 async function waitForStudioReady(healthUrl: string) {
@@ -640,159 +558,7 @@ async function waitForStudioReady(healthUrl: string) {
         await sleep(STUDIO_READY_POLL_MS)
     }
 
-    throw new Error(`8PM Studio did not become ready in time (${lastFailure}).`)
-}
-
-function isPromptVisible(prompt: ProviderAuthPrompt, values: Record<string, string>) {
-    if (!prompt.when) {
-        return true
-    }
-
-    const actual = values[prompt.when.key] || ''
-    return prompt.when.op === 'eq'
-        ? actual === prompt.when.value
-        : actual !== prompt.when.value
-}
-
-async function promptLine(message: string) {
-    const rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout,
-    })
-    try {
-        return (await rl.question(message)).trim()
-    } finally {
-        rl.close()
-    }
-}
-
-async function collectOauthPromptInputs(providerName: string, method: ProviderAuthMethod) {
-    const prompts = method.prompts || []
-    if (prompts.length === 0) {
-        return undefined
-    }
-
-    const values: Record<string, string> = {}
-    const interactive = isInteractiveTerminal()
-
-    console.log(`OpenAI OAuth needs a little setup for ${providerName}.`)
-    for (const prompt of prompts) {
-        if (!isPromptVisible(prompt, values)) {
-            continue
-        }
-
-        if (prompt.type === 'select') {
-            const defaultOption = prompt.options[0]
-            if (!defaultOption) {
-                continue
-            }
-
-            if (!interactive) {
-                values[prompt.key] = defaultOption.value
-                continue
-            }
-
-            console.log(prompt.message)
-            prompt.options.forEach((option, index) => {
-                const suffix = option.hint ? ` - ${option.hint}` : ''
-                console.log(`  ${index + 1}. ${option.label}${suffix}`)
-            })
-
-            const answer = await promptLine(`Select [1]: `)
-            const numericChoice = answer ? Number.parseInt(answer, 10) : 1
-            const selected = Number.isInteger(numericChoice)
-                ? prompt.options[numericChoice - 1]
-                : prompt.options.find((option) => option.value === answer)
-            if (!selected) {
-                failUsage(`Invalid OAuth prompt selection for ${prompt.key}.`)
-            }
-            values[prompt.key] = selected.value
-            continue
-        }
-
-        if (!interactive) {
-            throw new Error(`OpenAI OAuth requires interactive input for: ${prompt.message}`)
-        }
-
-        values[prompt.key] = await promptLine(`${prompt.message}${prompt.placeholder ? ` (${prompt.placeholder})` : ''}: `)
-    }
-
-    const entries = Object.entries(values)
-        .map(([key, value]) => [key, value.trim()] as const)
-        .filter(([, value]) => value.length > 0)
-
-    return entries.length > 0 ? Object.fromEntries(entries) : undefined
-}
-
-async function promptForOauthCode(providerName: string) {
-    if (!isInteractiveTerminal()) {
-        throw new Error(`${providerName} OAuth requires an authorization code, but this terminal is not interactive.`)
-    }
-
-    const code = await promptLine(`Paste ${providerName} authorization code: `)
-    if (!code) {
-        throw new Error(`${providerName} OAuth authorization code is required.`)
-    }
-    return code
-}
-
-async function isProviderAlreadyConnected(directory: string, providerId: string) {
-    const { listProviderSummaries } = await import('./server/lib/model-catalog.js')
-    const providers = await listProviderSummaries(directory).catch(() => [])
-    const provider = providers.find((entry) => entry.id === providerId)
-    return provider?.connected === true
-}
-
-async function findOpenAiOauthMethod(directory: string) {
-    const { getProviderAuthMethods } = await import('./server/services/opencode-service.js')
-    const authMethods = await getProviderAuthMethods(directory) as ProviderAuthMethodMap
-    const methods = authMethods[OPENAI_PROVIDER_ID] || []
-    const browserOauthIndex = methods.findIndex((method) => (
-        method.type === 'oauth'
-        && /browser|oauth/i.test(method.label)
-    ))
-    const methodIndex = browserOauthIndex >= 0
-        ? browserOauthIndex
-        : methods.findIndex((method) => method.type === 'oauth')
-    const method = methods[methodIndex]
-
-    if (methodIndex < 0 || !method || method.type !== 'oauth') {
-        throw new Error('OpenAI OAuth is not available from the current OpenCode provider auth methods.')
-    }
-
-    return { methodIndex, method }
-}
-
-async function runOpenAiOauthSetup(directory: string) {
-    if (await isProviderAlreadyConnected(directory, OPENAI_PROVIDER_ID)) {
-        console.log('OpenAI provider is already connected.')
-        return
-    }
-
-    const { authorizeProviderOauth, completeProviderOauth } = await import('./server/services/opencode-service.js')
-    const { methodIndex, method } = await findOpenAiOauthMethod(directory)
-    const inputs = await collectOauthPromptInputs('OpenAI', method)
-    const authorization = await authorizeProviderOauth(directory, OPENAI_PROVIDER_ID, methodIndex, inputs)
-
-    if (authorization.instructions) {
-        console.log(authorization.instructions)
-    }
-
-    if (authorization.url) {
-        console.log(`Opening OpenAI OAuth: ${authorization.url}`)
-        const open = await import('open')
-        await open.default(authorization.url)
-    }
-
-    if (authorization.method === 'code') {
-        const code = await promptForOauthCode('OpenAI')
-        await completeProviderOauth(directory, OPENAI_PROVIDER_ID, methodIndex, code)
-    } else {
-        console.log('Waiting for OpenAI OAuth to complete...')
-        await completeProviderOauth(directory, OPENAI_PROVIDER_ID, methodIndex)
-    }
-
-    console.log('OpenAI provider connected.')
+    throw new Error(`APM Studio did not become ready in time (${lastFailure}).`)
 }
 
 async function runOpen(command: OpenCommand, packageMeta: StudioPackageMeta) {
@@ -805,7 +571,8 @@ async function runOpen(command: OpenCommand, packageMeta: StudioPackageMeta) {
     const resolvedPort = await resolveOpenPort(command.port)
 
     process.env.PROJECT_DIR = resolvedProjectDir
-    process.env.EIGHTPM_STUDIO_PRODUCTION = '1'
+    process.env.APM_STUDIO_PROJECT_DIR = resolvedProjectDir
+    process.env.APM_STUDIO_PRODUCTION = '1'
     process.env.PORT = String(resolvedPort)
     delete process.env.OPENCODE_URL
 
@@ -813,40 +580,21 @@ async function runOpen(command: OpenCommand, packageMeta: StudioPackageMeta) {
     await initializeStudioProject(resolvedProjectDir)
 
     const studioUrl = `http://localhost:${resolvedPort}`
-    const launchUrl = buildStudioLaunchUrl(studioUrl, command.startupAssetTarget)
     const healthUrl = `http://127.0.0.1:${resolvedPort}/api/health`
 
     if (command.verbose) {
-        console.log(`Opening 8PM Studio for ${resolvedProjectDir}`)
+        console.log(`Opening APM Studio for ${resolvedProjectDir}`)
         console.log('Using managed OpenCode sidecar')
-        if (command.startupAssetTarget) {
-            console.log(`Startup target: ${command.startupAssetTarget.kind} ${command.startupAssetTarget.urn}`)
-        }
     }
 
     await import('./server/index.js')
     await waitForStudioReady(healthUrl)
 
-    if (command.openaiOauth) {
-        await runOpenAiOauthSetup(resolvedProjectDir)
-    }
-
-    if (command.startupAssetTarget) {
-        const { prepareStartupAssetTarget } = await import('./server/services/startup-asset-service.js')
-        const prepared = await prepareStartupAssetTarget(resolvedProjectDir, command.startupAssetTarget)
-        if (command.verbose) {
-            console.log(`${prepared.created ? 'Prepared' : 'Found'} startup ${prepared.kind}: ${prepared.urn}`)
-        }
-    }
-
-    console.log(`8PM Studio running at ${studioUrl}`)
+    console.log(`APM Studio running at ${studioUrl}`)
     console.log(`Workspace: ${resolvedProjectDir}`)
-    if (command.startupAssetTarget) {
-        console.log(`Launch URL: ${launchUrl}`)
-    }
     if (command.openBrowser) {
         const open = await import('open')
-        await open.default(launchUrl)
+        await open.default(studioUrl)
     }
 }
 
@@ -877,7 +625,7 @@ const main = async () => {
             process.exit(1)
         }
 
-        console.error('Failed to start 8PM Studio:', error)
+        console.error('Failed to start APM Studio:', error)
         process.exit(1)
     }
 }

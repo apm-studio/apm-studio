@@ -25,7 +25,7 @@ vi.mock('../asset-service.js', () => ({
     listStudioAssets: listStudioAssetsMock,
 }))
 
-vi.mock('../roster-service.js', () => ({
+vi.mock('../apm-asset-service.js', () => ({
     searchSkillsCatalog: searchSkillsCatalogMock,
 }))
 
@@ -54,7 +54,7 @@ describe('ensureAssistantAgent', () => {
             studioDir,
             'opencode',
             'skills',
-            '8pm-studio',
+            'apm-studio',
             'studio-assistant-skill-creator-guide',
             'references',
             'stale.md',
@@ -65,22 +65,22 @@ describe('ensureAssistantAgent', () => {
             studioDir,
             'opencode',
             'skills',
-            '8pm-studio',
-            'legacy-flat-skill',
+            'apm-studio',
+            'stale-flat-skill',
         )
         await fs.mkdir(staleSkillDir, { recursive: true })
-        await fs.writeFile(path.join(staleSkillDir, 'SKILL.md'), '# legacy\n', 'utf-8')
+        await fs.writeFile(path.join(staleSkillDir, 'SKILL.md'), '# stale\n', 'utf-8')
 
         const { ensureAssistantAgent } = await import('./assistant-service.js')
 
         const agentName = await ensureAssistantAgent(executionDir)
 
-        expect(agentName).toBe('8pm-studio/studio-assistant')
+        expect(agentName).toBe('apm-studio/studio-assistant')
         const projectedAgent = await fs.readFile(path.join(
             studioDir,
             'opencode',
             'agents',
-            '8pm-studio',
+            'apm-studio',
             'studio-assistant.md',
         ), 'utf-8')
         expect(projectedAgent).toContain('"*": false')
@@ -92,7 +92,7 @@ describe('ensureAssistantAgent', () => {
             'tools',
             'apply_studio_actions.ts',
         ), 'utf-8')
-        expect(projectedTool).toContain('Apply 8PM Studio workspace mutations')
+        expect(projectedTool).toContain('Apply APM Studio workspace mutations')
         expect(projectedTool).toContain('lintAssistantActionEnvelope')
         expect(projectedTool).toContain('rejected the mutation envelope')
         expect(projectedTool).not.toContain('../../shared/assistant-action-protocol.js')
@@ -100,7 +100,7 @@ describe('ensureAssistantAgent', () => {
             studioDir,
             'opencode',
             'skills',
-            '8pm-studio',
+            'apm-studio',
             'find-skills',
             'SKILL.md',
         ), 'utf-8')).resolves.toContain('Find Skills')
@@ -108,7 +108,7 @@ describe('ensureAssistantAgent', () => {
             studioDir,
             'opencode',
             'skills',
-            '8pm-studio',
+            'apm-studio',
             'studio-assistant-skill-creator-guide',
             'references',
             'bundle-authoring.md',
@@ -123,18 +123,18 @@ describe('ensureAssistantAgent', () => {
         const childDir = path.join(executionDir, 'nested', 'workspace')
 
         await fs.mkdir(path.join(ancestorDir, '.opencode', 'tools'), { recursive: true })
-        await fs.mkdir(path.join(ancestorDir, '.opencode', 'agents', '8pm-studio'), { recursive: true })
-        await fs.mkdir(path.join(ancestorDir, '.opencode', 'skills', '8pm-studio', 'find-skills'), { recursive: true })
+        await fs.mkdir(path.join(ancestorDir, '.opencode', 'agents', 'apm-studio'), { recursive: true })
+        await fs.mkdir(path.join(ancestorDir, '.opencode', 'skills', 'apm-studio', 'find-skills'), { recursive: true })
         await fs.writeFile(path.join(ancestorDir, '.opencode', 'tools', 'apply_studio_actions.ts'), 'local tool\n', 'utf-8')
-        await fs.writeFile(path.join(ancestorDir, '.opencode', 'agents', '8pm-studio', 'studio-assistant.md'), 'local agent\n', 'utf-8')
-        await fs.writeFile(path.join(ancestorDir, '.opencode', 'skills', '8pm-studio', 'find-skills', 'SKILL.md'), 'local skill\n', 'utf-8')
+        await fs.writeFile(path.join(ancestorDir, '.opencode', 'agents', 'apm-studio', 'studio-assistant.md'), 'local agent\n', 'utf-8')
+        await fs.writeFile(path.join(ancestorDir, '.opencode', 'skills', 'apm-studio', 'find-skills', 'SKILL.md'), 'local skill\n', 'utf-8')
 
         const { ensureAssistantAgent } = await import('./assistant-service.js')
         await ensureAssistantAgent(childDir)
 
         await expect(fs.stat(path.join(ancestorDir, '.opencode', 'tools', 'apply_studio_actions.ts'))).rejects.toMatchObject({ code: 'ENOENT' })
-        await expect(fs.stat(path.join(ancestorDir, '.opencode', 'agents', '8pm-studio', 'studio-assistant.md'))).rejects.toMatchObject({ code: 'ENOENT' })
-        await expect(fs.stat(path.join(ancestorDir, '.opencode', 'skills', '8pm-studio', 'find-skills'))).rejects.toMatchObject({ code: 'ENOENT' })
+        await expect(fs.stat(path.join(ancestorDir, '.opencode', 'agents', 'apm-studio', 'studio-assistant.md'))).rejects.toMatchObject({ code: 'ENOENT' })
+        await expect(fs.stat(path.join(ancestorDir, '.opencode', 'skills', 'apm-studio', 'find-skills'))).rejects.toMatchObject({ code: 'ENOENT' })
         await expect(fs.stat(path.join(studioDir, 'opencode', 'tools', 'apply_studio_actions.ts'))).resolves.toBeTruthy()
     })
 
@@ -143,35 +143,35 @@ describe('ensureAssistantAgent', () => {
         const childDir = path.join(executionDir, 'nested', 'workspace')
 
         await fs.mkdir(path.join(childDir, '.opencode', 'tools'), { recursive: true })
-        await fs.mkdir(path.join(childDir, '.opencode', 'agents', '8pm-studio'), { recursive: true })
-        await fs.mkdir(path.join(childDir, '.opencode', 'skills', '8pm-studio', 'find-skills'), { recursive: true })
+        await fs.mkdir(path.join(childDir, '.opencode', 'agents', 'apm-studio'), { recursive: true })
+        await fs.mkdir(path.join(childDir, '.opencode', 'skills', 'apm-studio', 'find-skills'), { recursive: true })
         await fs.writeFile(path.join(childDir, '.opencode', 'tools', 'apply_studio_actions.ts'), 'local tool\n', 'utf-8')
-        await fs.writeFile(path.join(childDir, '.opencode', 'agents', '8pm-studio', 'studio-assistant.md'), 'local agent\n', 'utf-8')
-        await fs.writeFile(path.join(childDir, '.opencode', 'skills', '8pm-studio', 'find-skills', 'SKILL.md'), 'local skill\n', 'utf-8')
+        await fs.writeFile(path.join(childDir, '.opencode', 'agents', 'apm-studio', 'studio-assistant.md'), 'local agent\n', 'utf-8')
+        await fs.writeFile(path.join(childDir, '.opencode', 'skills', 'apm-studio', 'find-skills', 'SKILL.md'), 'local skill\n', 'utf-8')
 
         const { ensureAssistantAgent } = await import('./assistant-service.js')
         await ensureAssistantAgent(parentDir)
 
         await expect(fs.stat(path.join(childDir, '.opencode', 'tools', 'apply_studio_actions.ts'))).rejects.toMatchObject({ code: 'ENOENT' })
-        await expect(fs.stat(path.join(childDir, '.opencode', 'agents', '8pm-studio', 'studio-assistant.md'))).rejects.toMatchObject({ code: 'ENOENT' })
-        await expect(fs.stat(path.join(childDir, '.opencode', 'skills', '8pm-studio', 'find-skills'))).rejects.toMatchObject({ code: 'ENOENT' })
+        await expect(fs.stat(path.join(childDir, '.opencode', 'agents', 'apm-studio', 'studio-assistant.md'))).rejects.toMatchObject({ code: 'ENOENT' })
+        await expect(fs.stat(path.join(childDir, '.opencode', 'skills', 'apm-studio', 'find-skills'))).rejects.toMatchObject({ code: 'ENOENT' })
         await expect(fs.stat(path.join(studioDir, 'opencode', 'tools', 'apply_studio_actions.ts'))).resolves.toBeTruthy()
     })
 
     it('projects assistant artifacts into the global sidecar config and prunes local duplicates', async () => {
         await fs.mkdir(path.join(executionDir, '.opencode', 'tools'), { recursive: true })
-        await fs.mkdir(path.join(executionDir, '.opencode', 'agents', '8pm-studio'), { recursive: true })
+        await fs.mkdir(path.join(executionDir, '.opencode', 'agents', 'apm-studio'), { recursive: true })
         await fs.writeFile(path.join(executionDir, '.opencode', 'tools', 'apply_studio_actions.ts'), 'local tool\n', 'utf-8')
-        await fs.writeFile(path.join(executionDir, '.opencode', 'agents', '8pm-studio', 'studio-assistant.md'), 'local agent\n', 'utf-8')
+        await fs.writeFile(path.join(executionDir, '.opencode', 'agents', 'apm-studio', 'studio-assistant.md'), 'local agent\n', 'utf-8')
 
         const { ensureAssistantAgent } = await import('./assistant-service.js')
         await ensureAssistantAgent(executionDir)
 
         await expect(fs.stat(path.join(executionDir, '.opencode', 'tools', 'apply_studio_actions.ts'))).rejects.toMatchObject({ code: 'ENOENT' })
-        await expect(fs.stat(path.join(executionDir, '.opencode', 'agents', '8pm-studio', 'studio-assistant.md'))).rejects.toMatchObject({ code: 'ENOENT' })
+        await expect(fs.stat(path.join(executionDir, '.opencode', 'agents', 'apm-studio', 'studio-assistant.md'))).rejects.toMatchObject({ code: 'ENOENT' })
         await expect(fs.stat(path.join(studioDir, 'opencode', 'tools', 'apply_studio_actions.ts'))).resolves.toBeTruthy()
-        await expect(fs.stat(path.join(studioDir, 'opencode', 'agents', '8pm-studio', 'studio-assistant.md'))).resolves.toBeTruthy()
-        await expect(fs.stat(path.join(studioDir, 'opencode', 'skills', '8pm-studio', 'find-skills', 'SKILL.md'))).resolves.toBeTruthy()
+        await expect(fs.stat(path.join(studioDir, 'opencode', 'agents', 'apm-studio', 'studio-assistant.md'))).resolves.toBeTruthy()
+        await expect(fs.stat(path.join(studioDir, 'opencode', 'skills', 'apm-studio', 'find-skills', 'SKILL.md'))).resolves.toBeTruthy()
     })
 
     it('builds a compact action prompt that steers clear mutations into the Studio tool', async () => {

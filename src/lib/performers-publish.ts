@@ -300,9 +300,13 @@ export function normalizePerformerAssetInput(asset: {
     model?: ModelConfig | string | null
     modelVariant?: string | null
     modelPlaceholder?: ModelConfig | null
+    inlineInstruction?: string | null
+    agentId?: string | null
+    planMode?: boolean
     mcpServerNames?: string[]
     mcpBindingMap?: Record<string, string>
     mcpConfig?: Record<string, unknown> | null
+    description?: string
 }) {
     const declaredMcpConfig = asset.mcpConfig && typeof asset.mcpConfig === 'object'
         ? asset.mcpConfig
@@ -310,6 +314,13 @@ export function normalizePerformerAssetInput(asset: {
     const normalizedMcpServerNames = unique(asset.mcpServerNames || extractMcpServerNamesFromConfig(declaredMcpConfig))
     const autoBindingMap = buildAutoMcpBindingMap(declaredMcpConfig, normalizedMcpServerNames)
     const directMcpServerNames = normalizedMcpServerNames.filter((name) => !(name in autoBindingMap))
+    const authoringDescription = typeof asset.description === 'string' && asset.description.trim()
+        ? asset.description.trim()
+        : null
+    const meta = {
+        ...(asset.urn ? { derivedFrom: asset.urn, publishBindingUrn: asset.urn } : {}),
+        ...(authoringDescription ? { authoring: { description: authoringDescription } } : {}),
+    }
 
     return {
         name: asset.name,
@@ -318,13 +329,16 @@ export function normalizePerformerAssetInput(asset: {
         model: normalizeModelValue(asset.model),
         modelVariant: asset.modelVariant || null,
         modelPlaceholder: asset.modelPlaceholder || null,
+        inlineInstruction: typeof asset.inlineInstruction === 'string' ? asset.inlineInstruction : null,
+        agentId: asset.agentId || null,
+        planMode: asset.planMode === true,
         mcpServerNames: directMcpServerNames,
         mcpBindingMap: {
             ...autoBindingMap,
             ...(asset.mcpBindingMap || {}),
         },
         declaredMcpConfig,
-        meta: asset.urn ? { derivedFrom: asset.urn, publishBindingUrn: asset.urn } : undefined,
+        meta: Object.keys(meta).length > 0 ? meta : undefined,
     }
 }
 

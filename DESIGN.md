@@ -1,8 +1,8 @@
-# 8PM Studio Design System
+# APM Studio Design System
 
 ## Purpose
 
-This document describes the visual and interaction language for 8PM Studio, the local visual editor for managing APM-backed agent packages. It is the collaboration guide for humans and coding agents. The executable source of truth remains `src/tokens.css` and `src/primitives.css`.
+This document describes the visual and interaction language for APM Studio, the local visual editor for managing APM-backed agent packages. It is the collaboration guide for humans and coding agents. The executable source of truth remains `src/tokens.css` and `src/primitives.css`.
 
 Use this file before adding or changing frontend UI. It should help new work feel like part of Studio instead of a one-off screen.
 
@@ -132,7 +132,13 @@ Use active state sparingly and clearly:
 
 Do not invent a new nav visual treatment for each panel.
 
-Studio's primary workflow modes are Explore, Design, Run, and Sync. Keep them grouped in the app header so users can understand whether they are discovering presets, editing local packages, testing runtime behavior, or exporting assistant artifacts.
+Studio's primary workflow modes are Import, Manage, Run, and Export. Keep them grouped in the app header so users can understand whether they are bringing in sources, editing local packages, running agents/teams, or exporting assistant artifacts.
+
+The app header is the single top-level workspace header. Canvas controls, Run view controls, and page-specific actions should appear as dynamic header content instead of adding a second page or canvas header directly below it.
+
+Import should behave like a compact source workbench: default to all package source groups, keep search prominent, and show GitHub-derived Agent, Skill, and MCP assets as separate scan-friendly sections that reuse the Packages sidebar `asset-card` classes.
+
+The Packages drawer should stay local-only. It should follow APM structure: Packages first, Primitives (Agents, Instructions, Skills, MCP) second, and Models third. Agent package rows should be draggable to the canvas; Instructions, Skills, and MCP should be dragged from Primitives. Do not add a Local/Explore switch there; put registry search and community discovery surfaces on the Explore page.
 
 ## Lists And Rows
 

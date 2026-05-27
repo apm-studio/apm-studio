@@ -24,21 +24,6 @@ const defaults: UISettings = {
     editToolPartsExpanded: false,
 }
 
-export function migrateUISettings(persistedState: unknown): UISettings {
-    const record = (persistedState && typeof persistedState === 'object')
-        ? persistedState as Partial<UISettingsStore> & { followup?: unknown; setFollowup?: unknown }
-        : {}
-    const rest = Object.fromEntries(
-        Object.entries(record).filter(([key]) => key !== 'followup' && key !== 'setFollowup'),
-    ) as Partial<UISettingsStore>
-
-    return {
-        ...defaults,
-        ...rest,
-        showReasoningSummaries: true,
-    }
-}
-
 export const useUISettings = create<UISettingsStore>()(
     persist(
         (set) => ({
@@ -48,9 +33,8 @@ export const useUISettings = create<UISettingsStore>()(
             setEditToolPartsExpanded: (value) => set({ editToolPartsExpanded: value }),
         }),
         {
-            name: '8pm-studio-ui-settings',
-            version: 3,
-            migrate: migrateUISettings,
+            name: 'apm-studio-ui-settings',
+            version: 1,
         },
     ),
 )

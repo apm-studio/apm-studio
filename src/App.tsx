@@ -17,6 +17,8 @@ import {
 } from './lib/startup-asset-target';
 import { resolveStartupWorkspaceTarget } from './lib/startup-workspace';
 import AppModeHeader from './components/AppModeHeader';
+import { AppHeaderContext } from './components/AppHeaderContext';
+import type { AppHeaderConfig } from './components/AppHeaderContext';
 
 const LeftSidebar = lazy(() =>
   import('./features/workspace').then((module) => ({ default: module.LeftSidebar })),
@@ -27,8 +29,8 @@ const ToastViewport = lazy(() =>
 const TerminalPanel = lazy(() =>
   import('./features/workspace').then((module) => ({ default: module.TerminalPanel })),
 );
-const AgentSyncPage = lazy(() =>
-  import('./features/workspace').then((module) => ({ default: module.AgentSyncPage })),
+const ExportPage = lazy(() =>
+  import('./features/export').then((module) => ({ default: module.ExportPage })),
 );
 const ExplorePresetCatalog = lazy(() => import('./features/explore/ExplorePresetCatalog'));
 const AssistantChat = lazy(() =>
@@ -52,10 +54,11 @@ export default function App() {
   const isTerminalOpen = useStudioStore(s => s.isTerminalOpen);
   const setTerminalOpen = useStudioStore(s => s.setTerminalOpen);
   const isTrackingOpen = useStudioStore(s => s.isTrackingOpen);
+  const isAssistantOpen = useStudioStore(s => s.isAssistantOpen);
   const workspaceMode = useStudioStore(s => s.workspaceMode);
   const viewMode = useStudioStore(s => s.viewMode);
   const isAnyFullscreenActive = viewMode !== 'canvas';
-  const showWorkspaceSurface = workspaceMode !== 'agent-sync' && workspaceMode !== 'explore';
+  const showWorkspaceSurface = workspaceMode === 'manage' || workspaceMode === 'run';
 
   const isInitialMount = useRef(true);
 
@@ -98,7 +101,7 @@ export default function App() {
         setApiWorkingDirContext(config.projectDir || null);
         if (isStudioTheme(config.theme) && config.theme !== useStudioStore.getState().theme) {
           useStudioStore.setState({ theme: config.theme });
-          localStorage.setItem('roster-theme', config.theme);
+          localStorage.setItem('apm-theme', config.theme);
         }
 
         const workspaces = await api.workspaces.list(config.projectDir ? true : false).catch(() => []);
@@ -132,6 +135,7 @@ export default function App() {
   const [dropWarning, setDropWarning] = useState<string | null>(null);
   const [dropWarningVersion, setDropWarningVersion] = useState(0);
   const [termHeight, setTermHeight] = useState(250);
+  const [pageHeader, setPageHeader] = useState<AppHeaderConfig | null>(null);
 
   useEffect(() => {
     if (!dropWarning) {
@@ -174,40 +178,46 @@ export default function App() {
             </button>
           </div>
         ) : null}
-        <AppModeHeader />
-        {workspaceMode === 'agent-sync' ? (
-          <Suspense fallback={null}>
-            <AgentSyncPage />
-          </Suspense>
-        ) : workspaceMode === 'explore' ? (
-          <Suspense fallback={null}>
-            <ExplorePresetCatalog />
-          </Suspense>
-        ) : (
-          <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-            <Suspense fallback={null}>
-              <LeftSidebar />
-            </Suspense>
-            <ReactFlowProvider>
-              <CanvasArea />
-            </ReactFlowProvider>
-            {!isAnyFullscreenActive && (
+        <AppHeaderContext.Provider value={setPageHeader}>
+          <ReactFlowProvider>
+            <AppModeHeader pageHeader={pageHeader} />
+            {workspaceMode === 'export' ? (
               <Suspense fallback={null}>
-                {isTrackingOpen ? <WorkspaceTrackingPanel /> : <AssistantChat />}
+                <ExportPage />
+              </Suspense>
+            ) : workspaceMode === 'import' ? (
+              <Suspense fallback={null}>
+                <ExplorePresetCatalog />
+              </Suspense>
+            ) : (
+              <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+                <Suspense fallback={null}>
+                  <LeftSidebar />
+                </Suspense>
+                <CanvasArea />
+                {!isAnyFullscreenActive && (
+                  <Suspense fallback={null}>
+                    {isTrackingOpen ? (
+                      <WorkspaceTrackingPanel />
+                    ) : isAssistantOpen ? (
+                      <AssistantChat />
+                    ) : null}
+                  </Suspense>
+                )}
+              </div>
+            )}
+            {showWorkspaceSurface && !isAnyFullscreenActive && (
+              <Suspense fallback={null}>
+                <TerminalPanel
+                  isOpen={isTerminalOpen}
+                  onToggle={() => setTerminalOpen(!isTerminalOpen)}
+                  height={termHeight}
+                  onHeightChange={setTermHeight}
+                />
               </Suspense>
             )}
-          </div>
-        )}
-        {showWorkspaceSurface && !isAnyFullscreenActive && (
-            <Suspense fallback={null}>
-              <TerminalPanel
-                isOpen={isTerminalOpen}
-                onToggle={() => setTerminalOpen(!isTerminalOpen)}
-                height={termHeight}
-                onHeightChange={setTermHeight}
-              />
-            </Suspense>
-        )}
+          </ReactFlowProvider>
+        </AppHeaderContext.Provider>
       </div>
       <DragOverlay dropAnimation={null}>
         {activeDrag ? (

@@ -1,12 +1,12 @@
 ---
 name: studio-assistant-skill-creator-guide
-description: Helps the 8PM Studio Assistant create or extend Skills in an app-safe way. Use when the user wants a new Skill, a better SKILL.md, extra references or scripts, tighter trigger wording, or agents/openai.yaml metadata inside a Skill draft folder.
-compatibility: Designed for the 8PM Studio built-in assistant projection.
+description: Helps the APM Studio Assistant create or extend Skills in an app-safe way. Use when the user wants a new Skill, a better SKILL.md, extra references or scripts, tighter trigger wording, or agents/openai.yaml metadata inside a Skill draft folder.
+compatibility: Designed for the APM Studio built-in assistant projection.
 ---
 
-# 8PM Studio Skill Creator
+# APM Studio Skill Creator
 
-Use this skill when the user wants to build a Skill through 8PM Assistant.
+Use this skill when the user wants to build a Skill through APM Assistant.
 
 ## Studio-safe authoring model
 - Use `createDanceDraft` or `updateDanceDraft` only for `SKILL.md`.

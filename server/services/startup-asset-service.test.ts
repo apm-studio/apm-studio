@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const {
     getSavedWorkspaceMock,
-    installRosterAssetMock,
+    installApmAssetMock,
     listRuntimeModelsMock,
     listSavedWorkspacesMock,
     listStudioAssetsMock,
@@ -10,7 +10,7 @@ const {
     saveWorkspaceSnapshotMock,
 } = vi.hoisted(() => ({
     getSavedWorkspaceMock: vi.fn(),
-    installRosterAssetMock: vi.fn(),
+    installApmAssetMock: vi.fn(),
     listRuntimeModelsMock: vi.fn(),
     listSavedWorkspacesMock: vi.fn(),
     listStudioAssetsMock: vi.fn(),
@@ -22,8 +22,8 @@ vi.mock('./asset-service.js', () => ({
     listStudioAssets: listStudioAssetsMock,
 }))
 
-vi.mock('./roster-service.js', () => ({
-    installRosterAsset: installRosterAssetMock,
+vi.mock('./apm-asset-service.js', () => ({
+    installApmAsset: installApmAssetMock,
 }))
 
 vi.mock('./workspace-service.js', () => ({
@@ -75,7 +75,7 @@ const performerAsset = {
 describe('prepareStartupAssetTarget', () => {
     beforeEach(() => {
         getSavedWorkspaceMock.mockReset()
-        installRosterAssetMock.mockReset().mockResolvedValue({ ok: true })
+        installApmAssetMock.mockReset().mockResolvedValue({ ok: true })
         listRuntimeModelsMock.mockReset().mockResolvedValue([runtimeModel])
         listSavedWorkspacesMock.mockReset().mockResolvedValue([])
         listStudioAssetsMock.mockReset()
@@ -102,7 +102,7 @@ describe('prepareStartupAssetTarget', () => {
             urn: performerAsset.urn,
         })
 
-        expect(installRosterAssetMock).toHaveBeenCalledWith('/tmp/workspace', {
+        expect(installApmAssetMock).toHaveBeenCalledWith('/tmp/workspace', {
             urn: performerAsset.urn,
             force: false,
             scope: 'stage',
@@ -164,7 +164,7 @@ describe('prepareStartupAssetTarget', () => {
             }
             return []
         })
-        installRosterAssetMock.mockImplementation(async () => {
+        installApmAssetMock.mockImplementation(async () => {
             actInstalled = true
             return { ok: true }
         })
@@ -253,6 +253,6 @@ describe('prepareStartupAssetTarget', () => {
             created: false,
         })
         expect(saveWorkspaceSnapshotMock).not.toHaveBeenCalled()
-        expect(installRosterAssetMock).not.toHaveBeenCalled()
+        expect(installApmAssetMock).not.toHaveBeenCalled()
     })
 })

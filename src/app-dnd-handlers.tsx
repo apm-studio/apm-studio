@@ -7,6 +7,8 @@ import { loadPerformerImportContext, normalizeImportedPerformerAsset } from './l
 import { showToast } from './lib/toast'
 import { extractMcpServerNamesFromConfig } from '../shared/mcp-config'
 import { resolvePerformerMcpPortability } from '../shared/performer-mcp-portability'
+import type { ApmAgentExtension, ApmPackageManifest, ApmPackageReadResponse } from '../shared/apm-contracts'
+import type { SharedAssetRef } from '../shared/chat-contracts'
 import {
     toDragPreview,
     isInstalledAsset,
@@ -29,6 +31,131 @@ type McpConfigEntryLike = {
 
 type DraftConfigLike = Record<string, unknown>
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return !!value && typeof value === 'object' && !Array.isArray(value)
+}
+
+function uniqueStrings(values: Array<string | null | undefined>) {
+    return Array.from(new Set(values.filter((value): value is string => !!value && !!value.trim())))
+}
+
+function registryUrnFromSharedRef(ref: SharedAssetRef | null | undefined) {
+    return ref?.kind === 'registry' ? ref.urn : null
+}
+
+function registryUrnsFromSharedRefs(refs: SharedAssetRef[] | null | undefined) {
+    return (refs || [])
+        .map((ref) => registryUrnFromSharedRef(ref))
+        .filter((urn): urn is string => !!urn)
+}
+
+function agentBodyFromManifest(manifest: ApmPackageManifest, agent: ApmAgentExtension | null | undefined) {
+    const directBody = agent?.agentBody ?? agent?.inlineInstruction
+    if (typeof directBody === 'string' && directBody.trim()) {
+        return directBody
+    }
+
+    const firstAgent = Array.isArray(manifest.agents) ? manifest.agents[0] : null
+    if (isRecord(firstAgent)) {
+        const instruction = firstAgent.instruction
+        if (typeof instruction === 'string' && instruction.trim()) {
+            return instruction
+        }
+        if (isRecord(instruction) && typeof instruction.content === 'string' && instruction.content.trim()) {
+            return instruction.content
+        }
+    }
+
+    const firstInstruction = Array.isArray(manifest.instructions) ? manifest.instructions[0] : null
+    if (typeof firstInstruction === 'string' && firstInstruction.trim()) {
+        return firstInstruction
+    }
+    if (isRecord(firstInstruction) && typeof firstInstruction.content === 'string' && firstInstruction.content.trim()) {
+        return firstInstruction.content
+    }
+
+    return null
+}
+
+function mcpServerNamesFromApmPackage(result: ApmPackageReadResponse, agent: ApmAgentExtension | null | undefined) {
+    const dependencyNames = Array.isArray(result.manifest.dependencies?.mcp)
+        ? result.manifest.dependencies.mcp
+            .map((entry) => typeof entry === 'string' ? entry : entry.name)
+            .filter((entry): entry is string => typeof entry === 'string' && !!entry.trim())
+        : []
+    return uniqueStrings([
+        ...(agent?.mcpServerNames || []),
+        ...(result.lock?.mcp_servers || []),
+        ...dependencyNames,
+    ])
+}
+
+function apmPackageMcpConfig(result: ApmPackageReadResponse, mcpServerNames: string[]) {
+    if (result.lock?.mcp_configs && Object.keys(result.lock.mcp_configs).length > 0) {
+        return result.lock.mcp_configs
+    }
+    return mcpServerNames.length > 0 ? { servers: mcpServerNames } : null
+}
+
+async function resolveApmPackagePerformerAsset(
+    asset: DragAsset,
+    showDropWarning: (message: string) => void,
+): Promise<DragAsset | null> {
+    const packageId = asset.packageId || asset.name
+    if (!packageId) {
+        showDropWarning('This APM package is missing a package id.')
+        return null
+    }
+
+    const hasAgentPrimitive = asset.packageKind === 'agent'
+        || !!asset.agentName
+        || Number(asset.primitiveCounts?.agents || 0) > 0
+    if (!hasAgentPrimitive) {
+        showDropWarning('Only APM packages with an Agent primitive can be dropped onto the canvas. Use Primitives for Instructions, Skills, and MCP.')
+        return null
+    }
+
+    const scope = asset.scope === 'global' ? 'global' : 'stage'
+    let result: ApmPackageReadResponse
+    try {
+        result = await api.apm.readPackage(packageId, scope)
+    } catch (error) {
+        console.error('Failed to read APM package for drop', error)
+        showDropWarning(`Could not read APM package "${packageId}" before dropping it.`)
+        return null
+    }
+
+    const manifest = result.manifest
+    const agent = manifest['x-apm']?.agent || null
+    const agentName = agent?.agentName
+        || agent?.performerName
+        || asset.agentName
+        || asset.name
+        || manifest.name
+        || packageId
+    const model = agent?.model && typeof agent.model === 'object' ? agent.model : null
+    const mcpServerNames = mcpServerNamesFromApmPackage(result, agent)
+
+    return {
+        kind: 'performer',
+        urn: `apm-package/${scope}/${result.packageId || packageId}`,
+        source: scope,
+        name: agentName,
+        description: agent?.description
+            || (typeof manifest.description === 'string' ? manifest.description : undefined)
+            || asset.description,
+        talUrn: registryUrnFromSharedRef(agent?.instructionRef || agent?.talRef || null),
+        danceUrns: registryUrnsFromSharedRefs(agent?.skillRefs || agent?.danceRefs || []),
+        model,
+        modelVariant: agent?.modelVariant || null,
+        inlineInstruction: agentBodyFromManifest(manifest, agent),
+        agentId: agent?.agentId || null,
+        planMode: agent?.planMode === true,
+        mcpServerNames,
+        mcpConfig: apmPackageMcpConfig(result, mcpServerNames),
+    }
+}
+
 function markdownContentFromAssetDetail(detail: { content?: string }) {
     return typeof detail.content === 'string' ? detail.content : ''
 }
@@ -41,6 +168,7 @@ export function getDragIcon(kind: string) {
         case 'mcp': return <Server size={12} className="asset-icon mcp" />
         case 'act': return <Workflow size={12} className="asset-icon act" />
         case 'performer': return <Package size={12} className="asset-icon performer" />
+        case 'apm-package': return <Package size={12} className="asset-icon performer" />
         case 'workspace-performer': return <MessageSquare size={12} className="asset-icon performer" />
         case 'workspace-act': return <Workflow size={12} className="asset-icon act" />
         default: return <Package size={12} />
@@ -374,6 +502,15 @@ export function createDragEndHandler(
                 return true
             }
 
+            if (asset.kind === 'apm-package') {
+                const packagePerformer = await resolveApmPackagePerformerAsset(asset, showDropWarning)
+                if (!packagePerformer) {
+                    return true
+                }
+                store.addPerformerFromAsset(await resolvePerformerAssetForStudio(packagePerformer, showDropWarning))
+                return true
+            }
+
             if (asset.kind === 'act') {
                 // Draft act: create from draft content
                 if (asset.source === 'draft' && asset.draftContent) {
@@ -421,6 +558,13 @@ export function createDragEndHandler(
 
         // Standalone performer drops
         if (dropData.performerId) {
+            if (asset.kind === 'apm-package') {
+                const packagePerformer = await resolveApmPackagePerformerAsset(asset, showDropWarning)
+                if (packagePerformer) {
+                    store.applyPerformerAsset(dropData.performerId, await resolvePerformerAssetForStudio(packagePerformer, showDropWarning))
+                }
+                return
+            }
             await applyAssetToPerformerTarget(
                 store,
                 dropData.performerId,

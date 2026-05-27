@@ -46,8 +46,8 @@ describe('explore registry service', () => {
     let workingDir: string
 
     beforeEach(async () => {
-        workingDir = await fs.mkdtemp(path.join(os.tmpdir(), '8pm-explore-'))
-        vi.stubEnv('EIGHTPM_STUDIO_REGISTRY_URL', 'https://registry.test')
+        workingDir = await fs.mkdtemp(path.join(os.tmpdir(), 'apm-explore-'))
+        vi.stubEnv('APM_STUDIO_REGISTRY_URL', 'https://registry.test')
     })
 
     afterEach(async () => {
@@ -92,8 +92,8 @@ describe('explore registry service', () => {
 
         const pkg = await readApmPackage(workingDir, result.packageId)
         expect(result.ok).toBe(true)
-        expect(pkg?.manifest['x-8pm']?.agent?.derivedFrom).toBe('registry:voltagent-codex-reviewer')
-        expect(pkg?.manifest['x-8pm']?.agent?.inlineInstruction).toContain('Review for bugs first.')
+        expect(pkg?.manifest['x-apm']?.agent?.derivedFrom).toBe('registry:voltagent-codex-reviewer')
+        expect(pkg?.manifest['x-apm']?.agent?.agentBody).toContain('Review for bugs first.')
         expect(pkg?.manifest.agents?.[0]).toMatchObject({
             name: 'code-reviewer',
             model: { provider: 'openai', modelId: 'gpt-5.4' },

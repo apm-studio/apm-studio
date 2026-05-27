@@ -95,7 +95,7 @@ describe('wake-cascade participant scheduling', () => {
             changed: false,
             compiled: {
                 agentNames: {
-                    build: '8pm-studio/act/hash/Researcher--build',
+                    build: 'apm-studio/act/hash/Researcher--build',
                 },
             },
             toolMap: {
@@ -111,7 +111,7 @@ describe('wake-cascade participant scheduling', () => {
         }))
         countRunningSessions.mockReset().mockResolvedValue({ runningSessions: 0 })
         assertRuntimeModelPromptable.mockReset().mockResolvedValue(undefined)
-        tempDir = await fs.mkdtemp(path.join(os.tmpdir(), '8pm-studio-wake-cascade-'))
+        tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'apm-studio-wake-cascade-'))
         resolveSessionExecutionContext.mockReset().mockResolvedValue({ workingDir: tempDir })
     })
 
@@ -579,7 +579,7 @@ describe('wake-cascade participant scheduling', () => {
             changed: true,
             compiled: {
                 agentNames: {
-                    build: '8pm-studio/act/hash/participant-researcher--build',
+                    build: 'apm-studio/act/hash/participant-researcher--build',
                 },
             },
             toolMap: {
@@ -587,7 +587,7 @@ describe('wake-cascade participant scheduling', () => {
             },
         })
         promptAsync
-            .mockRejectedValueOnce(new Error('Agent not found: "8pm-studio/act/hash/participant-researcher--build". Available agents: build'))
+            .mockRejectedValueOnce(new Error('Agent not found: "apm-studio/act/hash/participant-researcher--build". Available agents: build'))
             .mockResolvedValueOnce({ data: { ok: true } })
 
         const threadManager = {
@@ -612,10 +612,10 @@ describe('wake-cascade participant scheduling', () => {
         expect(disposeInstance).toHaveBeenCalledWith({ directory: tempDir })
         expect(promptAsync).toHaveBeenCalledTimes(2)
         expect(promptAsync).toHaveBeenNthCalledWith(1, expect.objectContaining({
-            agent: '8pm-studio/act/hash/participant-researcher--build',
+            agent: 'apm-studio/act/hash/participant-researcher--build',
         }))
         expect(promptAsync).toHaveBeenNthCalledWith(2, expect.objectContaining({
-            agent: '8pm-studio/act/hash/participant-researcher--build',
+            agent: 'apm-studio/act/hash/participant-researcher--build',
         }))
     })
 })

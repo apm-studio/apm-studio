@@ -24,7 +24,7 @@ describe('refreshAssistantProjectionOnServerStartup', () => {
             { id: 'b', workingDir: '/tmp/work-b', updatedAt: 2 },
             { id: 'c', workingDir: '/tmp/work-a', updatedAt: 3 },
         ])
-        ensureAssistantAgentMock.mockReset().mockResolvedValue('8pm-studio/studio-assistant')
+        ensureAssistantAgentMock.mockReset().mockResolvedValue('apm-studio/studio-assistant')
     })
 
     it('refreshes assistant projection for the current active dir and all saved workspaces', async () => {

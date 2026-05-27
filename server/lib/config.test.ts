@@ -14,7 +14,7 @@ describe('server config mode and port resolution', () => {
     })
 
     it('defaults to dev mode with the dev API port and parent project fallback', async () => {
-        vi.stubEnv('EIGHTPM_STUDIO_PRODUCTION', '')
+        vi.stubEnv('APM_STUDIO_PRODUCTION', '')
         vi.stubEnv('PORT', '')
         vi.stubEnv('PROJECT_DIR', '')
         vi.stubEnv('OPENCODE_PORT', '')
@@ -28,7 +28,7 @@ describe('server config mode and port resolution', () => {
     })
 
     it('defaults production mode to the published CLI port set', async () => {
-        vi.stubEnv('EIGHTPM_STUDIO_PRODUCTION', '1')
+        vi.stubEnv('APM_STUDIO_PRODUCTION', '1')
         vi.stubEnv('PORT', '')
         vi.stubEnv('PROJECT_DIR', '')
         vi.stubEnv('OPENCODE_PORT', '')
@@ -42,8 +42,8 @@ describe('server config mode and port resolution', () => {
     })
 
     it('uses production mode only for an explicit production flag', async () => {
-        vi.stubEnv('EIGHTPM_STUDIO_PRODUCTION', '1')
-        vi.stubEnv('PROJECT_DIR', '/tmp/8pm-studio-project')
+        vi.stubEnv('APM_STUDIO_PRODUCTION', '1')
+        vi.stubEnv('PROJECT_DIR', '/tmp/apm-studio-project')
         vi.stubEnv('PORT', '43170')
         vi.stubEnv('OPENCODE_PORT', '43171')
 
@@ -52,11 +52,11 @@ describe('server config mode and port resolution', () => {
         expect(config.IS_PRODUCTION).toBe(true)
         expect(config.PORT).toBe(43170)
         expect(config.OPENCODE_PORT).toBe(43171)
-        expect(config.DEFAULT_PROJECT_DIR).toBe('/tmp/8pm-studio-project')
+        expect(config.DEFAULT_PROJECT_DIR).toBe('/tmp/apm-studio-project')
     })
 
-    it('lets the 8PM production flag explicitly disable production mode', async () => {
-        vi.stubEnv('EIGHTPM_STUDIO_PRODUCTION', '0')
+    it('lets the APM production flag explicitly disable production mode', async () => {
+        vi.stubEnv('APM_STUDIO_PRODUCTION', '0')
         vi.stubEnv('PORT', '')
         vi.stubEnv('PROJECT_DIR', '')
         vi.stubEnv('OPENCODE_PORT', '')

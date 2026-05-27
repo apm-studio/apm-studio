@@ -1,4 +1,4 @@
-// 8PM Studio — Performer Relation Slice
+// APM Studio — Performer Relation Slice
 // Stand-alone edges have been removed. Edges now live inside Act.relations.
 // This slice is kept as an empty shell to satisfy StudioState composition.
 

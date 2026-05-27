@@ -131,7 +131,7 @@ export const createActSlice: StateCreator<StudioState, [], [], ActSlice> = (set,
         void api.actRuntime.deleteAct(id)
             .catch((error) => {
                 console.error('Failed to delete Team runtime sessions', error)
-                showToast('8PM Studio could not delete every runtime thread for that Team.', 'error', {
+                showToast('APM Studio could not delete every runtime thread for that Team.', 'error', {
                     title: 'Team cleanup failed',
                     dedupeKey: `act:delete-runtime:${id}`,
                 })
@@ -579,7 +579,7 @@ export const createActSlice: StateCreator<StudioState, [], [], ActSlice> = (set,
                     [actId]: previousThreads,
                 },
             }))
-            showToast('8PM Studio could not rename that Team thread.', 'error', {
+            showToast('APM Studio could not rename that Team thread.', 'error', {
                 title: 'Thread rename failed',
                 dedupeKey: `act-thread:rename:${actId}:${threadId}`,
             })

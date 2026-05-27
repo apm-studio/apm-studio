@@ -1,6 +1,6 @@
 import type { McpServer } from '../../types'
 import type { RuntimeModelCatalogEntry } from '../../../shared/model-variants'
-import type { LibraryAsset } from './asset-panel-types'
+import type { LibraryAsset, ScopedApmPackageSummary } from './asset-panel-types'
 
 // Drag payload builders for the Packages
 
@@ -103,5 +103,24 @@ export function buildMcpDragPayload(mcp: McpServer) {
         status: mcp.status,
         tools: Array.isArray(mcp.tools) ? mcp.tools : [],
         resources: Array.isArray(mcp.resources) ? mcp.resources : [],
+    }
+}
+
+export function buildApmPackageDragPayload(pkg: ScopedApmPackageSummary) {
+    const title = pkg.agentName || pkg.name || pkg.packageId
+    return {
+        kind: 'apm-package',
+        urn: `apm-package/${pkg.scope}/${pkg.packageId}`,
+        packageId: pkg.packageId,
+        packageKind: pkg.kind,
+        scope: pkg.scope,
+        source: pkg.scope,
+        name: title,
+        label: title,
+        description: pkg.description || '',
+        agentName: pkg.agentName,
+        manifestPath: pkg.manifestPath,
+        packageRoot: pkg.microsoftApm?.packageRoot,
+        primitiveCounts: pkg.microsoftApm?.primitiveCounts,
     }
 }

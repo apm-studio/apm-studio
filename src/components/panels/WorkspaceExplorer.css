@@ -109,6 +109,13 @@
     letter-spacing: 0.06em;
 }
 
+.explorer__title-note {
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
 .explorer__context {
     display: flex;
     flex-direction: column;

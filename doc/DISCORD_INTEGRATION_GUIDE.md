@@ -4,7 +4,7 @@
 
 Discord is an external Studio chat client.
 
-- it does not create, edit, save, or publish 8PM Studio assets
+- it does not create, edit, save, or publish APM Studio assets
 - it reuses Studio Agent and Team chat runtime services
 - Studio web owns configuration and sync controls
 
@@ -14,8 +14,8 @@ Discord is an external Studio chat client.
 - settings UI: `src/components/modals/SettingsDiscord.tsx`
 - API routes: `server/routes/discord.ts`
 - bot lifecycle and Discord event handling: `server/services/discord/discord-service.ts`
-- config storage: `~/.8pm-studio/discord-config.json`
-- channel/role mappings: `~/.8pm-studio/discord-mappings.json`
+- config storage: `~/.apm-studio/discord-config.json`
+- channel/role mappings: `~/.apm-studio/discord-mappings.json`
 
 ## Configuration
 
@@ -24,7 +24,7 @@ Discord is configured from the Studio web Settings modal.
 - token is write-only from the client perspective
 - API responses must return only `hasToken`
 - one selected Discord server is supported in v1
-- config and mapping files are written under the 8PM Studio config directory with private file permissions
+- config and mapping files are written under the APM Studio config directory with private file permissions
 - Studio enforces Discord actor authorization before handling control, command, or chat events
 - default access requires Discord `Manage Server`
 - configured role IDs and user IDs may be used as explicit allowlist exceptions
@@ -48,13 +48,13 @@ Workspace sync creates:
 - one category per Team, prefixed with `👥` and named after that Team
 - lazily-created thread channels under those Agent and Team categories as threads are opened
 - `/team message` agent autocomplete for Team thread input, scoped to the mapped Team channel
-- Discord-visible category and channel names avoid Studio-specific text prefixes such as `roster`, `t-`, and `a-`
+- Discord-visible category and channel names avoid Studio-specific text prefixes such as `apm`, `t-`, and `a-`
 - unnamed Discord-created thread channels use numbered `new-thread-N` names instead of Studio/OpenCode metadata ids
-- sync keeps the active workspace root category scoped to the selected workspace instead of renaming a shared legacy category across workspace switches
+- sync keeps the active workspace root category scoped to the selected workspace across workspace switches
 - sync removes active-workspace Discord thread channels and adapter mappings when the corresponding Studio standalone Agent session or Team thread no longer exists
 - sync treats unreadable active thread lists as unknown instead of stale, and only prunes adapter mappings after the Discord channel is confirmed deleted or already missing
 - sync positions the archive category at the bottom of the Discord category list
-- sync moves inactive workspace thread channels to the archive, removes inactive Agent and Team categories only after Discord confirms deletion, and deletes unmapped empty Studio Agent/Team categories left by older syncs
+- sync moves inactive workspace thread channels to the archive, removes inactive Agent and Team categories only after Discord confirms deletion, and deletes unmapped empty Studio Agent/Team categories
 
 Packages is intentionally not projected to Discord.
 
@@ -71,7 +71,6 @@ Discord slash commands are grouped by Studio scope:
 - `/team message agent:<agent> message:<text>` sends a message to one agent in the current Team thread. The agent option uses channel-scoped autocomplete from the mapped Team only.
 - `/team sync` backfills recent visible agent messages and is accepted only in mapped Team thread channels.
 
-The older `/studio menu`, `/studio sync`, and `/thread new` commands remain as compatibility aliases.
 Commands must still pass the selected-server and actor authorization checks before they can read mappings or call Studio runtime services.
 
 ## Runtime Rules
@@ -92,7 +91,7 @@ When an Agent or Team thread channel is opened:
 - recent text-only Studio history is backfilled into Discord by the bot, capped at 20 messages
 - tool output, reasoning, system-only content, and prior permission/question metadata are not backfilled
 - backfilled message ids are stored in `discord-mappings.json` to avoid duplicates
-- Team thread history sync is assistant-output-only per agent; Discord user input is posted by the bot as normalized `[Roster User -> Agent]` text, while runtime-injected user prompts such as teammate wake/direct-message prompts stay hidden
+- Team thread history sync is assistant-output-only per agent; Discord user input is posted by the bot as normalized `[APM User -> Agent]` text, while runtime-injected user prompts such as teammate wake/direct-message prompts stay hidden
 
 When a session pauses for user input:
 
@@ -143,8 +142,8 @@ Key rules:
 - settings UI: `src/components/modals/SettingsDiscord.tsx`
 - API routes: `server/routes/discord.ts`
 - bot lifecycle and Discord event handling: `server/services/discord/discord-service.ts`
-- config storage: `~/.8pm-studio/discord-config.json`
-- channel/role mappings: `~/.8pm-studio/discord-mappings.json`
+- config storage: `~/.apm-studio/discord-config.json`
+- channel/role mappings: `~/.apm-studio/discord-mappings.json`
 
 Runtime boundaries:
 

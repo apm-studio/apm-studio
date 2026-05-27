@@ -1,0 +1,33 @@
+agents:
+  - description: Agent 2 agent package for APM Studio.
+    id: performer-1
+    model: null
+    name: Agent 2
+dependencies:
+  apm: []
+  mcp: []
+description: Agent 2 agent package for APM Studio.
+includes: auto
+instructions: []
+name: agent-2
+scripts: {}
+skills: []
+type: hybrid
+version: 0.1.0
+x-apm:
+  agent:
+    agentBody: null
+    agentId: null
+    agentName: Agent 2
+    agentNodeId: performer-1
+    derivedFrom: null
+    description: Agent 2 agent package for APM Studio.
+    instructionRef: null
+    mcpServerNames: []
+    model: null
+    modelVariant: null
+    planMode: false
+    skillRefs: []
+  kind: agent
+  packageId: performer-1
+  schemaVersion: 1

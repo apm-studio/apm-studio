@@ -1,10 +1,10 @@
-// 8PM Studio — Core Types
+// APM Studio — Core Types
 
 import type { RuntimeModelVariant } from '../../shared/model-variants'
 import type {
     ActParticipantV1 as InstalledActParticipant,
     ActRelationV1 as InstalledActRelation,
-} from '../../shared/roster-types'
+} from '../../shared/apm-asset-types'
 import type { GitHubDanceSourceInfo } from '../../shared/asset-contracts'
 
 export type AssetKind = 'tal' | 'dance' | 'act' | 'performer' | 'model' | 'mcp'

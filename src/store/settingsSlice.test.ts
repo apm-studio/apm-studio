@@ -34,19 +34,12 @@ describe('settingsSlice', () => {
         vi.resetModules()
     })
 
-    it('drops deprecated follow-up settings during migration', async () => {
-        const { migrateUISettings } = await import('./settingsSlice')
-        const state = migrateUISettings({
-            showReasoningSummaries: false,
-            shellToolPartsExpanded: false,
-            editToolPartsExpanded: true,
-            followup: 'queue',
-        })
+    it('starts from current UI defaults', async () => {
+        const { useUISettings } = await import('./settingsSlice')
+        const state = useUISettings.getState()
 
         expect(state.showReasoningSummaries).toBe(true)
-        expect(state.shellToolPartsExpanded).toBe(false)
-        expect(state.editToolPartsExpanded).toBe(true)
-        expect(Object.prototype.hasOwnProperty.call(state, 'followup')).toBe(false)
-        expect(Object.prototype.hasOwnProperty.call(state, 'setFollowup')).toBe(false)
+        expect(state.shellToolPartsExpanded).toBe(true)
+        expect(state.editToolPartsExpanded).toBe(false)
     })
 })

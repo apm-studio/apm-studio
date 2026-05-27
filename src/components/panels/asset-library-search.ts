@@ -1,7 +1,6 @@
 // Search, filter, and haystack utilities for the Packages
 
-import type { InstalledKind, LocalSection, RuntimeKind, SourceFilter } from './asset-library-utils'
-import type { RegistryGroup } from './asset-panel-types'
+import type { InstalledKind, LocalSection, PrimitiveKind, SourceFilter } from './asset-library-utils'
 
 type SearchableAsset = {
     name?: string
@@ -73,17 +72,6 @@ export function filterInstalledAssets<T extends SearchableAsset>(
         .filter((asset) => !queryText || buildSearchHaystack(asset).includes(queryText))
 }
 
-export function buildRegistryGroups<T extends { kind: InstalledKind }>(registryResults: T[]): RegistryGroup<T>[] {
-    const INSTALLED_KIND_ORDER: InstalledKind[] = ['performer', 'tal', 'dance', 'act']
-    return INSTALLED_KIND_ORDER
-        .map((kind) => ({
-            kind,
-            label: labelForInstalledKind(kind),
-            items: registryResults.filter((item) => item.kind === kind),
-        }))
-        .filter((group) => group.items.length > 0)
-}
-
 export function labelForInstalledKind(kind: InstalledKind) {
     if (kind === 'tal') return 'Instruction'
     if (kind === 'dance') return 'Skill'
@@ -91,22 +79,30 @@ export function labelForInstalledKind(kind: InstalledKind) {
     return 'Team'
 }
 
-export function placeholderForLocalSection(localSection: LocalSection, runtimeKind: RuntimeKind) {
-    if (localSection === 'installed') {
-        return 'name, urn, author, tag...'
+export function placeholderForLocalSection(
+    localSection: LocalSection,
+    primitiveKind?: PrimitiveKind,
+) {
+    if (localSection === 'packages') {
+        return 'package, primitive, apm.yml path...'
     }
 
-    return runtimeKind === 'models'
-        ? 'model, provider, capability...'
-        : 'server, tool, status...'
+    if (localSection === 'primitives') {
+        if (primitiveKind === 'mcp') {
+            return 'mcp server, tool, status...'
+        }
+        return 'primitive, urn, author, tag...'
+    }
+
+    return 'model, provider, capability...'
 }
 
 export function authoringNoteForInstalledKind(installedKind: InstalledKind) {
     if (installedKind === 'tal' || installedKind === 'dance') {
-        return 'Drag & drop onto an agent, or edit from the draft card.'
+        return 'Drag & drop onto an agent, or edit a draft primitive.'
     }
     if (installedKind === 'performer') {
-        return 'Drag & drop onto the canvas to create a new agent.'
+        return 'Drag & drop onto the canvas to create an agent.'
     }
     return 'Drag & drop onto the canvas to create a new team.'
 }

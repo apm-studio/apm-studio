@@ -2,7 +2,7 @@ import type { Context } from 'hono'
 import path from 'path'
 import { getActiveProjectDir } from './config.js'
 
-const WORKING_DIR_HEADER = 'x-8pm-working-dir'
+const WORKING_DIR_HEADER = 'x-apm-working-dir'
 
 function normalizeWorkingDir(input: string): string | null {
     const trimmed = input.trim().replace(/\/+$/, '')

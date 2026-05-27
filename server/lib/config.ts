@@ -33,6 +33,10 @@ function resolvePort(name: 'PORT' | 'OPENCODE_PORT', value: string | undefined, 
 }
 
 function resolveDefaultProjectDir() {
+    if (process.env.APM_STUDIO_PROJECT_DIR) {
+        return path.resolve(process.env.APM_STUDIO_PROJECT_DIR)
+    }
+
     if (process.env.PROJECT_DIR) {
         return path.resolve(process.env.PROJECT_DIR)
     }
@@ -45,24 +49,24 @@ function resolveDefaultProjectDir() {
 }
 
 function resolveProductionMode() {
-    const eightPm = process.env.EIGHTPM_STUDIO_PRODUCTION?.trim()
-    if (eightPm) {
-        return eightPm === '1'
+    const apmProductionFlag = process.env.APM_STUDIO_PRODUCTION?.trim()
+    if (apmProductionFlag) {
+        return apmProductionFlag === '1'
     }
 
     return false
 }
 
 function resolveStudioDir() {
-    if (process.env.EIGHTPM_STUDIO_HOME) {
-        return process.env.EIGHTPM_STUDIO_HOME
+    if (process.env.APM_STUDIO_HOME) {
+        return process.env.APM_STUDIO_HOME
     }
 
     if (process.env.STUDIO_DIR) {
         return process.env.STUDIO_DIR
     }
 
-    return path.join(os.homedir(), '.8pm-studio')
+    return path.join(os.homedir(), '.apm-studio')
 }
 
 // ── Constants ───────────────────────────────────────────

@@ -41,7 +41,7 @@ vi.mock('../../api', () => ({
                 deleteFile: deleteDanceBundleFileMock,
             },
         },
-        roster: {
+        apm: {
             install: vi.fn(),
             addFromGitHub: vi.fn(),
         },

@@ -7,17 +7,17 @@ import type {
     DanceAsset,
     PerformerAsset,
     TalAsset,
-} from '../../shared/roster-types.js'
+} from '../../shared/apm-asset-types.js'
 import {
     assetFilePath,
-    getRosterDir,
+    getApmAssetDir,
     getGlobalCwd,
-    getGlobalRosterDir,
+    getGlobalApmAssetDir,
     getRegistryPackage,
-    parseRosterAsset,
-    parseRosterAssetUrn,
+    parseApmAsset,
+    parseApmAssetUrn,
     readAsset,
-} from '../lib/roster-source.js'
+} from '../lib/apm-asset-source.js'
 import { readGlobalMcpCatalog } from '../lib/mcp-catalog.js'
 import { resolvePerformerMcpPortability } from '../../shared/performer-mcp-portability.js'
 import { readGitHubDanceSourceMap } from './dance-github-source.js'
@@ -43,11 +43,11 @@ export type UninstallPlan = {
 }
 
 function assetSlug(asset: ParsedInstalledAsset) {
-    return parseRosterAssetUrn(asset.urn).name
+    return parseApmAssetUrn(asset.urn).name
 }
 
 function assetAuthor(asset: ParsedInstalledAsset) {
-    return `@${parseRosterAssetUrn(asset.urn).owner}`
+    return `@${parseApmAssetUrn(asset.urn).owner}`
 }
 
 function normalizeAsset(
@@ -152,7 +152,7 @@ function extractReferencedUrns(asset: ParsedInstalledAsset): string[] {
 async function parseInstalledAssetFile(filePath: string): Promise<ParsedInstalledAsset | null> {
     try {
         const raw = JSON.parse(await fs.readFile(filePath, 'utf-8'))
-        return parseRosterAsset(raw) as ParsedInstalledAsset
+        return parseApmAsset(raw) as ParsedInstalledAsset
     } catch {
         return null
     }
@@ -192,7 +192,7 @@ async function scanAssetDir(
                         const parsed = await readAsset(cwd, urn)
                         if (!parsed) continue
                         try {
-                            const asset = parseRosterAsset(parsed) as ParsedInstalledAsset
+                            const asset = parseApmAsset(parsed) as ParsedInstalledAsset
                             resultsMap.set(asset.urn, normalizeAsset(asset, source, availableMcpServerNames, githubSources.get(asset.urn) || null, false))
                         } catch {
                             // invalid asset, skip
@@ -224,8 +224,8 @@ async function scanAssetDir(
 async function collectAllInstalledAssets(cwd: string): Promise<InstalledAssetEntry[]> {
     const entries: InstalledAssetEntry[] = []
     const scopes = [
-        { dir: getGlobalRosterDir(), cwd: getGlobalCwd(), source: 'global' as const },
-        { dir: getRosterDir(cwd), cwd, source: 'stage' as const },
+        { dir: getGlobalApmAssetDir(), cwd: getGlobalCwd(), source: 'global' as const },
+        { dir: getApmAssetDir(cwd), cwd, source: 'stage' as const },
     ]
 
     for (const scope of scopes) {
@@ -255,7 +255,7 @@ async function collectAllInstalledAssets(cwd: string): Promise<InstalledAssetEnt
                                 const parsed = await readAsset(scope.cwd, urn)
                                 if (!parsed) continue
                                 try {
-                                    const asset = parseRosterAsset(parsed) as ParsedInstalledAsset
+                                    const asset = parseApmAsset(parsed) as ParsedInstalledAsset
                                     entries.push({ asset, source: scope.source })
                                 } catch {
                                     // invalid asset, skip
@@ -301,8 +301,8 @@ export async function listStudioAssets(
         ])
         : [new Map<string, GitHubDanceSourceInfo>(), new Map<string, GitHubDanceSourceInfo>()]
 
-    await scanAssetDir(getGlobalRosterDir(), getGlobalCwd(), kind, 'global', resultsMap, availableMcpServerNames, globalGithubSources)
-    await scanAssetDir(getRosterDir(cwd), cwd, kind, 'stage', resultsMap, availableMcpServerNames, stageGithubSources)
+    await scanAssetDir(getGlobalApmAssetDir(), getGlobalCwd(), kind, 'global', resultsMap, availableMcpServerNames, globalGithubSources)
+    await scanAssetDir(getApmAssetDir(cwd), cwd, kind, 'stage', resultsMap, availableMcpServerNames, stageGithubSources)
     return Array.from(resultsMap.values())
 }
 
@@ -310,7 +310,7 @@ export async function resolveStudioAssetSource(cwd: string, urn: string): Promis
     const [kind] = urn.split('/')
     if (kind === 'dance') {
         // Dance is a directory bundle — check for the dir, not a file
-        const { danceAssetDir: danceDir } = await import('../lib/roster-source.js')
+        const { danceAssetDir: danceDir } = await import('../lib/apm-asset-source.js')
         try {
             await fs.access(danceDir(cwd, urn))
             return 'stage'
@@ -352,7 +352,7 @@ export async function getStudioAsset(cwd: string, kind: string, author: string, 
         throw new Error(`Asset not found: ${resolvedUrn}`)
     }
 
-    const parsed = parseRosterAsset(raw) as ParsedInstalledAsset
+    const parsed = parseApmAsset(raw) as ParsedInstalledAsset
     const source = await resolveStudioAssetSource(cwd, resolvedUrn)
     const availableMcpServerNames = Object.keys(await readGlobalMcpCatalog())
     const githubSources = parsed.kind === 'dance'
@@ -364,7 +364,7 @@ export async function getStudioAsset(cwd: string, kind: string, author: string, 
 export async function getRegistryAssetDetail(_cwd: string, kind: string, author: string, assetPath: string) {
     const { stage, name } = parseCanonicalAssetPath(assetPath)
     const pkg = await getRegistryPackage(kind, author, stage, name) as unknown as Record<string, unknown>
-    const parsed = parseRosterAsset(pkg.payload) as ParsedInstalledAsset
+    const parsed = parseApmAsset(pkg.payload) as ParsedInstalledAsset
     const availableMcpServerNames = Object.keys(await readGlobalMcpCatalog())
 
     return {

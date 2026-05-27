@@ -1,4 +1,4 @@
-// 8PM Studio — Global Store (Zustand)
+// APM Studio — Global Store (Zustand)
 
 import { create } from 'zustand'
 import type { StudioState } from './types'

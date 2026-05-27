@@ -23,6 +23,10 @@ function syncLabel(state: string) {
     }
 }
 
+function sourceLabel(source: string) {
+    return source === 'stage' ? 'workspace' : source
+}
+
 export default function AssetDetailBody({
     asset,
     loading,
@@ -65,7 +69,7 @@ export default function AssetDetailBody({
                 {asset.kind && ` · ${asset.kind}`}
                 {asset.source && (
                     <span className={`source-badge ${asset.source}`} style={{ marginLeft: 6 }}>
-                        {asset.source}
+                        {sourceLabel(asset.source)}
                     </span>
                 )}
                 {installed && asset.source !== 'stage' && asset.source !== 'global' && (

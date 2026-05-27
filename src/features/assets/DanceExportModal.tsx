@@ -8,7 +8,7 @@ import type { DraftAsset } from '../../types'
 
 const EXPORT_EXISTS_PREFIX = 'Export destination already exists: '
 
-type ExportResponse = Awaited<ReturnType<typeof api.roster.exportDanceBundle>>
+type ExportResponse = Awaited<ReturnType<typeof api.apmAssets.exportDanceBundle>>
 
 type Props = {
     open: boolean
@@ -73,7 +73,7 @@ export default function DanceExportModal({ open, draft, onClose }: Props) {
         try {
             setLoading('export')
             setStatus(null)
-            const result = await api.roster.exportDanceBundle(draft.id, slug, destinationParentPath, overwrite)
+            const result = await api.apmAssets.exportDanceBundle(draft.id, slug, destinationParentPath, overwrite)
             setExportInfo(result)
             setOverwriteTargetPath(null)
             setStatus({ tone: 'success', message: `Exported Skill to ${result.exportPath}.` })

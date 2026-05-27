@@ -5,7 +5,6 @@ export type PerformerProjectionStartupSummary = {
     skippedCount: number
     failedCount: number
     changedCount: number
-    codexChangedCount: number
     prunedWorkspaceCount: number
 }
 
@@ -17,7 +16,6 @@ function emptySummary(): PerformerProjectionStartupSummary {
         skippedCount: 0,
         failedCount: 0,
         changedCount: 0,
-        codexChangedCount: 0,
         prunedWorkspaceCount: 0,
     }
 }
@@ -25,6 +23,7 @@ function emptySummary(): PerformerProjectionStartupSummary {
 export async function syncWorkspacePerformerProjectionsOnStartup(
     _workingDir: string,
 ): Promise<PerformerProjectionStartupSummary> {
+    void _workingDir
     const summary = emptySummary()
     summary.workspaceCount = 1
     return summary

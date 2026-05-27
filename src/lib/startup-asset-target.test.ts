@@ -29,7 +29,7 @@ vi.mock('../api', () => ({
         assets: {
             list: listAssetsMock,
         },
-        roster: {
+        apmAssets: {
             install: installMock,
         },
     },
@@ -98,15 +98,9 @@ describe('readStartupAssetTarget', () => {
         expect(readStartupAssetTarget('?foo=bar')).toBeNull();
     });
 
-    it('keeps legacy performer and act query params working', () => {
-        expect(readStartupAssetTarget('?performer=performer/@acme/workflows/reviewer')).toEqual({
-            kind: 'performer',
-            urn: 'performer/@acme/workflows/reviewer',
-        });
-        expect(readStartupAssetTarget('?act=act/@acme/workflows/review-flow')).toEqual({
-            kind: 'act',
-            urn: 'act/@acme/workflows/review-flow',
-        });
+    it('ignores noncanonical performer and act query params', () => {
+        expect(readStartupAssetTarget('?performer=performer/@acme/workflows/reviewer')).toBeNull();
+        expect(readStartupAssetTarget('?act=act/@acme/workflows/review-flow')).toBeNull();
     });
 
     it('returns null for ambiguous URLs that include both agent and team', () => {

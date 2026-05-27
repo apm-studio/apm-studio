@@ -1,12 +1,12 @@
 ---
 name: studio-assistant-ui-operations-guide
-description: "Tells the 8PM Studio Assistant how to open, reveal, inspect, hide, show, move, resize, and panel-toggle UI surfaces through apply_studio_actions. Use for direct UI manipulation requests."
-compatibility: Designed for the 8PM Studio built-in assistant projection.
+description: "Tells the APM Studio Assistant how to open, reveal, inspect, hide, show, move, resize, and panel-toggle UI surfaces through apply_studio_actions. Use for direct UI manipulation requests."
+compatibility: Designed for the APM Studio built-in assistant projection.
 ---
 
-# 8PM Studio UI Operations Guide
+# APM Studio UI Operations Guide
 
-Use this skill when the user asks 8PM Assistant to manipulate the 8PM Studio interface.
+Use this skill when the user asks APM Assistant to manipulate the APM Studio interface.
 
 ## When To Use
 - Open, show, reveal, select, focus, or inspect an Agent, Team, or draft.

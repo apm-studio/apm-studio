@@ -4,7 +4,7 @@ import os from 'os'
 import open from 'open'
 import path from 'path'
 import { promisify } from 'util'
-import { ensureRosterDir } from '../lib/roster-source.js'
+import { ensureApmAssetDir } from '../lib/apm-asset-source.js'
 import {
     getActiveProjectDir,
     getExplicitActiveProjectDir,
@@ -98,7 +98,7 @@ export async function updateStudioConfig(patch: Partial<StudioConfig>) {
 
 export async function initializeStudioProject(workingDir: string) {
     const resolved = path.resolve(workingDir)
-    await ensureRosterDir(resolved)
+    await ensureApmAssetDir(resolved)
     setActiveProjectDir(resolved)
     invalidateAll()
     return getActiveProjectDir()

@@ -1,10 +1,10 @@
 ---
 name: studio-assistant-performer-guide
-description: "Helps design or revise 8PM Studio Agents with strong role focus, Instruction/Skill/model choices, and Team participant readiness. Use for Agent creation, Agent updates, role design, and participant-quality decisions. For exact payload fields, load studio-assistant-action-surface-guide."
-compatibility: Designed for the 8PM Studio built-in assistant projection.
+description: "Helps design or revise APM Studio Agents with strong role focus, Instruction/Skill/model choices, and Team participant readiness. Use for Agent creation, Agent updates, role design, and participant-quality decisions. For exact payload fields, load studio-assistant-action-surface-guide."
+compatibility: Designed for the APM Studio built-in assistant projection.
 ---
 
-# 8PM Studio Agent Guide
+# APM Studio Agent Guide
 
 Use this skill when the user wants an Agent created, revised, inspected, or attached as a useful Team participant.
 

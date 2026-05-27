@@ -5,7 +5,6 @@ const messagesMock = vi.fn()
 const todoMock = vi.fn()
 const permissionListMock = vi.fn()
 const permissionReplyMock = vi.fn()
-const deprecatedPermissionRespondMock = vi.fn()
 const questionListMock = vi.fn()
 const questionReplyMock = vi.fn()
 const questionRejectMock = vi.fn()
@@ -21,7 +20,6 @@ vi.mock('../lib/opencode.js', () => ({
         permission: {
             list: permissionListMock,
             reply: permissionReplyMock,
-            respond: deprecatedPermissionRespondMock,
         },
         question: {
             list: questionListMock,
@@ -46,7 +44,6 @@ describe('getStudioChatSessionStatus', () => {
         todoMock.mockResolvedValue({ data: [] })
         permissionListMock.mockResolvedValue({ data: [] })
         permissionReplyMock.mockResolvedValue({ data: true })
-        deprecatedPermissionRespondMock.mockResolvedValue({ data: true })
         questionListMock.mockResolvedValue({ data: [] })
         questionReplyMock.mockResolvedValue({ data: true })
         questionRejectMock.mockResolvedValue({ data: true })
@@ -140,7 +137,6 @@ describe('OpenCode permission, question, and todo integration', () => {
         todoMock.mockResolvedValue({ data: [] })
         permissionListMock.mockResolvedValue({ data: [] })
         permissionReplyMock.mockResolvedValue({ data: true })
-        deprecatedPermissionRespondMock.mockResolvedValue({ data: true })
         questionListMock.mockResolvedValue({ data: [] })
         questionReplyMock.mockResolvedValue({ data: true })
         questionRejectMock.mockResolvedValue({ data: true })
@@ -157,7 +153,6 @@ describe('OpenCode permission, question, and todo integration', () => {
             requestID: 'permission-1',
             reply: 'once',
         })
-        expect(deprecatedPermissionRespondMock).not.toHaveBeenCalled()
     })
 
     it('filters pending permissions and questions to sessions owned by the requested working directory', async () => {

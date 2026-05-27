@@ -11,25 +11,36 @@ export type ApmDependency =
         transport?: string
     } & Record<string, unknown>)
 
-export interface EightPmAgentExtension {
-    performerId: string
-    performerName: string
+export interface ApmAgentExtension {
+    agentNodeId: string
+    agentName: string
+    description?: string | null
     model: ModelSelection
     modelVariant?: string | null
-    inlineInstruction?: string | null
-    talRef?: SharedAssetRef | null
-    danceRefs: SharedAssetRef[]
+    agentBody?: string | null
+    instructionRef?: SharedAssetRef | null
+    skillRefs: SharedAssetRef[]
     mcpServerNames: string[]
     agentId?: string | null
     planMode?: boolean
     derivedFrom?: string | null
+    /** @deprecated read-only legacy field; use agentNodeId. */
+    performerId?: string
+    /** @deprecated read-only legacy field; use agentName. */
+    performerName?: string
+    /** @deprecated read-only legacy field; use agentBody. */
+    inlineInstruction?: string | null
+    /** @deprecated read-only legacy field; use instructionRef. */
+    talRef?: SharedAssetRef | null
+    /** @deprecated read-only legacy field; use skillRefs. */
+    danceRefs?: SharedAssetRef[]
 }
 
-export interface EightPmManifestExtension {
+export interface ApmManifestExtension {
     schemaVersion: 1
     packageId: string
-    kind: 'agent' | 'team' | 'workspace'
-    agent?: EightPmAgentExtension
+    kind: 'agent' | 'team' | 'workspace' | 'skill' | 'instruction' | 'prompt' | 'mcp' | 'package'
+    agent?: ApmAgentExtension
     canvas?: Record<string, unknown>
     workflow?: Record<string, unknown>
 }
@@ -40,29 +51,83 @@ export interface ApmPackageManifest extends Record<string, unknown> {
     description?: string
     author?: string
     license?: string
+    target?: string | string[]
+    type?: 'instructions' | 'skill' | 'hybrid' | 'prompts' | string
+    includes?: 'auto' | string[]
     dependencies?: {
         apm?: ApmDependency[]
         mcp?: ApmDependency[]
         [key: string]: unknown
     }
+    devDependencies?: {
+        apm?: ApmDependency[]
+        mcp?: ApmDependency[]
+        [key: string]: unknown
+    }
+    compilation?: Record<string, unknown>
+    policy?: Record<string, unknown>
+    marketplace?: Record<string, unknown>
     agents?: unknown[]
     instructions?: unknown[]
+    prompts?: unknown[]
     skills?: unknown[]
     scripts?: Record<string, unknown>
-    'x-8pm'?: EightPmManifestExtension
+    'x-apm'?: ApmManifestExtension
 }
 
 export interface ApmPackageLock extends Record<string, unknown> {
     lockfile_version: '1'
+    generated_at?: string
     apm_version?: string
-    dependencies?: unknown[]
+    dependencies: unknown[]
+    mcp_servers?: string[]
+    mcp_configs?: Record<string, unknown>
+    local_deployed_files?: string[]
+    local_deployed_file_hashes?: Record<string, string>
     packages?: Array<{
         package_id: string
         name: string
         version?: string
-        source: '8pm-studio'
+        source: 'apm-studio'
         manifest_hash: string
     }>
+}
+
+export interface MicrosoftApmPrimitiveCounts {
+    agents: number
+    instructions: number
+    skills: number
+    /** Prompt primitives are preserved as package files when imported but are not managed by Studio. */
+    prompts?: number
+}
+
+export interface MicrosoftApmPackageSourceSummary {
+    packageRoot: string
+    sourceDir: string
+    installCommand: string
+    validateCommand: string
+    packCommand: string
+    primitiveCounts: MicrosoftApmPrimitiveCounts
+    primitivePaths: string[]
+    warnings: string[]
+}
+
+export interface ApmToolingRunnerStatus {
+    id: 'apm' | 'uvx' | 'pipx' | 'python3'
+    label: string
+    available: boolean
+    version?: string
+    command: string
+    role: 'cli' | 'runner' | 'runtime'
+}
+
+export interface ApmToolingStatus {
+    available: boolean
+    recommendedCommand: string | null
+    version?: string
+    runners: ApmToolingRunnerStatus[]
+    installHints: string[]
+    deploymentNote: string
 }
 
 export interface ApmPackageSummary {
@@ -70,13 +135,14 @@ export interface ApmPackageSummary {
     name: string
     version?: string
     description?: string
-    kind: EightPmManifestExtension['kind'] | 'unknown'
+    kind: ApmManifestExtension['kind'] | 'unknown'
     agentName?: string
     derivedFrom?: string | null
     manifestPath?: string
     lockPath?: string
     source: 'apm'
     updatedAt?: number
+    microsoftApm?: MicrosoftApmPackageSourceSummary
 }
 
 export interface ApmValidationResult {
@@ -89,12 +155,17 @@ export interface ApmPackageListResponse {
     packages: ApmPackageSummary[]
 }
 
+export interface ApmToolingResponse {
+    tooling: ApmToolingStatus
+}
+
 export interface ApmPackageReadResponse {
     packageId: string
     manifest: ApmPackageManifest
     lock?: ApmPackageLock
     manifestYaml: string
     lockYaml?: string
+    microsoftApm?: MicrosoftApmPackageSourceSummary
 }
 
 export interface ApmPackageWriteRequest {
@@ -111,10 +182,170 @@ export interface ApmPackageImportRequest {
     manifest?: ApmPackageManifest
 }
 
+export type ApmGitHubImportFormat =
+    | 'auto'
+    | 'apm'
+    | 'skill-md'
+    | 'codex-toml'
+    | 'claude-md'
+    | 'instruction-md'
+    | 'mcp-config'
+
+export interface ApmGitHubImportRequest {
+    source: string
+    ref?: string
+    format?: ApmGitHubImportFormat
+    limit?: number
+    candidateIds?: string[]
+    scope?: 'stage' | 'global'
+}
+
+export interface ApmGitHubImportPackage {
+    packageId: string
+    name: string
+    kind: 'agent' | 'skill' | 'instruction' | 'mcp' | 'package'
+    sourcePath: string
+    packagePath: string
+    manifestPath: string
+}
+
+export interface ApmGitHubImportResponse {
+    ok: true
+    scope: 'stage' | 'global'
+    targetWorkingDir: string
+    source: {
+        repo: string
+        ref: string
+        subpath?: string
+        stars?: number
+        href?: string
+    }
+    packages: ApmGitHubImportPackage[]
+    warnings: string[]
+}
+
+export interface ApmGitHubImportCandidate {
+    id: string
+    name: string
+    description: string
+    kind: ApmGitHubImportPackage['kind']
+    format: Exclude<ApmGitHubImportFormat, 'auto'>
+    sourcePath: string
+    packageId: string
+    targets: string[]
+    primitiveCounts: Partial<MicrosoftApmPrimitiveCounts>
+}
+
+export interface ApmGitHubImportPreviewResponse {
+    ok: true
+    source: {
+        repo: string
+        ref: string
+        subpath?: string
+        stars?: number
+        href?: string
+    }
+    candidates: ApmGitHubImportCandidate[]
+    warnings: string[]
+}
+
+export type ApmGitHubSourceCatalogId =
+    | 'awesome-copilot'
+    | 'addy-agent-skills'
+    | 'vercel-agent-skills'
+    | 'vercel-skills'
+    | 'microsoft-skills'
+    | 'microsoft-apm'
+    | 'awesome-agent-skills'
+    | 'awesome-claude-code-subagents'
+
+export type ApmGitHubSourceAssetKind = 'agent' | 'skill' | 'mcp' | 'package'
+
+export interface ApmGitHubSourceCatalogRequest {
+    sources?: ApmGitHubSourceCatalogId[]
+    limitPerSource?: number
+}
+
+export interface ApmGitHubSourceCatalogSource {
+    id: ApmGitHubSourceCatalogId
+    name: string
+    repo: string
+    ref: string
+    href: string
+    stars?: number
+}
+
+export interface ApmGitHubSourceAsset {
+    id: string
+    kind: ApmGitHubSourceAssetKind
+    name: string
+    description: string
+    sourceName: string
+    repo: string
+    href: string
+    sourcePath?: string
+    sourceUrl?: string
+    tags: string[]
+    targets: string[]
+    stars?: number
+    importRequest?: ApmGitHubImportRequest
+}
+
+export interface ApmGitHubSourceCatalogResponse {
+    ok: true
+    sources: ApmGitHubSourceCatalogSource[]
+    assets: ApmGitHubSourceAsset[]
+    warnings: string[]
+}
+
 export interface ApmPackageExportResponse {
     packageId: string
     manifestYaml: string
     lockYaml: string
     manifestPath: string
     lockPath: string
+    microsoftApm?: MicrosoftApmPackageSourceSummary
+}
+
+export type ApmSyncTargetId = 'codex' | 'gemini' | 'claude' | 'opencode' | 'cursor' | 'windsurf' | 'copilot'
+
+export interface ApmSyncTargetSummary {
+    id: ApmSyncTargetId
+    label: string
+    description: string
+    commandPreview: string
+    available: boolean
+    disabledReason?: string
+}
+
+export interface ApmSyncTargetsResponse {
+    tooling: ApmToolingStatus
+    targets: ApmSyncTargetSummary[]
+}
+
+export interface ApmSyncRunRequest {
+    target?: ApmSyncTargetId
+    targets?: ApmSyncTargetId[]
+    packageIds?: string[]
+    frozen?: boolean
+}
+
+export interface ApmSyncPackageResult {
+    packageId: string
+    name: string
+    target: ApmSyncTargetId
+    command: string
+    status: 'synced' | 'failed' | 'skipped'
+    stdout?: string
+    stderr?: string
+    error?: string
+}
+
+export interface ApmSyncRunResponse {
+    ok: true
+    target?: ApmSyncTargetId
+    targets: ApmSyncTargetId[]
+    startedAt: number
+    finishedAt: number
+    results: ApmSyncPackageResult[]
 }

@@ -229,7 +229,7 @@ export function formatDiscordBackfillMessages(params: {
             if (known.has(id)) {
                 return null
             }
-            const label = role === 'assistant' ? params.assistantLabel : 'Roster User'
+            const label = role === 'assistant' ? params.assistantLabel : 'APM User'
             return {
                 id,
                 content: `**[${label}]**\n${text}`,

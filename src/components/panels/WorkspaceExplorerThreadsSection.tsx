@@ -224,7 +224,9 @@ export default function WorkspaceExplorerThreadsSection({
             {/* ── Teams Pane ── */}
             <div className="explorer__pane" style={{ flex: 1 }}>
                 <div className="explorer__subheader explorer__subheader--inline">
-                    <span className="explorer__title">Teams</span>
+                    <span className="explorer__title">
+                        Teams <span className="explorer__title-note">(Experimental)</span>
+                    </span>
                     <div className="explorer__actions">
                         <button className="icon-btn" onClick={onAddAct} title="Add Team" disabled={!workspaceId}>
                             <Workflow size={12} />

@@ -101,7 +101,7 @@ describe('sendStudioChatMessage', () => {
         listWorkspacePerformersForDirMock.mockReset().mockResolvedValue([])
         assertRuntimeModelPromptableMock.mockReset().mockResolvedValue(undefined)
         prepareAssistantChatRequestMock.mockReset().mockResolvedValue({
-            assistantAgentName: '8pm-studio/studio-assistant',
+            assistantAgentName: 'apm-studio/studio-assistant',
             capabilitySnapshot: null,
             promptTools: {
                 apply_studio_actions: true,
@@ -111,7 +111,7 @@ describe('sendStudioChatMessage', () => {
         ensurePerformerProjectionMock.mockReset().mockResolvedValue({
             compiled: {
                 agentNames: {
-                    build: '8pm-studio/workspace/hash/performer-1--build',
+                    build: 'apm-studio/workspace/hash/performer-1--build',
                 },
             },
             toolResolution: {
@@ -155,7 +155,7 @@ describe('sendStudioChatMessage', () => {
         expect(promptAsyncMock).toHaveBeenCalledWith(expect.objectContaining({
             sessionID: 'session-1',
             directory: '/tmp/workspace',
-            agent: '8pm-studio/workspace/hash/performer-1--build',
+            agent: 'apm-studio/workspace/hash/performer-1--build',
             tools: {
                 'playwright_*': true,
             },
@@ -195,7 +195,7 @@ describe('sendStudioChatMessage', () => {
         ensurePerformerProjectionMock.mockResolvedValueOnce({
             compiled: {
                 agentNames: {
-                    build: '8pm-studio/workspace/hash/performer-1--build',
+                    build: 'apm-studio/workspace/hash/performer-1--build',
                 },
             },
             toolResolution: {
@@ -259,7 +259,7 @@ describe('sendStudioChatMessage', () => {
         ensurePerformerProjectionMock.mockImplementation(async ({ performerId }: { performerId: string }) => ({
             compiled: {
                 agentNames: {
-                    build: `8pm-studio/workspace/hash/${performerId}--build`,
+                    build: `apm-studio/workspace/hash/${performerId}--build`,
                 },
             },
             toolResolution: {
@@ -307,7 +307,7 @@ describe('sendStudioChatMessage', () => {
             performerId: 'performer-2',
         }))
         expect(promptAsyncMock).toHaveBeenCalledWith(expect.objectContaining({
-            agent: '8pm-studio/workspace/hash/performer-1--build',
+            agent: 'apm-studio/workspace/hash/performer-1--build',
         }))
         expect(publishProjectionConsumedMock).toHaveBeenCalledWith('/tmp/workspace', {
             performerIds: ['performer-1', 'performer-2'],
@@ -442,7 +442,7 @@ describe('sendStudioChatMessage', () => {
         ensurePerformerProjectionMock.mockImplementation(async ({ performerId }: { performerId: string }) => ({
             compiled: {
                 agentNames: {
-                    build: `8pm-studio/workspace/hash/${performerId}--build`,
+                    build: `apm-studio/workspace/hash/${performerId}--build`,
                 },
             },
             toolResolution: {
@@ -548,7 +548,7 @@ describe('sendStudioChatMessage', () => {
                 message: 'Create a new performer.',
                 performer: {
                     performerId: 'studio-assistant',
-                    performerName: 'Roster Assistant',
+                    performerName: 'APM Assistant',
                     talRef: null,
                     danceRefs: [],
                     model: {
@@ -563,7 +563,7 @@ describe('sendStudioChatMessage', () => {
             message: 'Create a new performer.',
         }))
         expect(promptAsyncMock).toHaveBeenCalledWith(expect.objectContaining({
-            agent: '8pm-studio/studio-assistant',
+            agent: 'apm-studio/studio-assistant',
             system: 'Assistant system prompt',
             parts: [{
                 type: 'text',
@@ -581,7 +581,7 @@ describe('sendStudioChatMessage', () => {
         ensurePerformerProjectionMock.mockResolvedValue({
             compiled: {
                 agentNames: {
-                    build: '8pm-studio/act/hash/participant-lead--build',
+                    build: 'apm-studio/act/hash/participant-lead--build',
                 },
             },
             toolResolution: {
@@ -596,7 +596,7 @@ describe('sendStudioChatMessage', () => {
             capabilitySnapshot: null,
         })
         promptAsyncMock
-            .mockRejectedValueOnce(new Error('Agent not found: "8pm-studio/act/hash/participant-lead--build". Available agents: build'))
+            .mockRejectedValueOnce(new Error('Agent not found: "apm-studio/act/hash/participant-lead--build". Available agents: build'))
             .mockResolvedValueOnce({ data: undefined })
 
         const { sendStudioChatMessage } = await import('./chat-service.js')
@@ -625,10 +625,10 @@ describe('sendStudioChatMessage', () => {
         expect(disposeInstanceMock).toHaveBeenCalledWith({ directory: '/tmp/workspace' })
         expect(promptAsyncMock).toHaveBeenCalledTimes(2)
         expect(promptAsyncMock).toHaveBeenNthCalledWith(1, expect.objectContaining({
-            agent: '8pm-studio/act/hash/participant-lead--build',
+            agent: 'apm-studio/act/hash/participant-lead--build',
         }))
         expect(promptAsyncMock).toHaveBeenNthCalledWith(2, expect.objectContaining({
-            agent: '8pm-studio/act/hash/participant-lead--build',
+            agent: 'apm-studio/act/hash/participant-lead--build',
         }))
     })
 })

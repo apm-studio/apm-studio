@@ -5,9 +5,9 @@ export type WorkspacePackageSnapshot = {
     [key: string]: unknown
 }
 
-export type EightPmWorkspaceDocument = {
+export type ApmWorkspaceDocument = {
     schemaVersion: 1
-    product: '8PM Studio'
+    product: 'APM Studio'
     workingDir: string
     savedAt: number
     activePackageIds: string[]

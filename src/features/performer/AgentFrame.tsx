@@ -73,11 +73,13 @@ export default function AgentFrame({ data, id }: AgentFrameProps) {
         updatePerformerName,
         updatePerformerAuthoringMeta,
         setPerformerTalRef,
+        setPerformerAgentBody,
         setPerformerModel, setPerformerModelVariant,
         removePerformerMcp, setPerformerMcpBinding, removePerformerDance,
         enterFocusMode, exitFocusMode,
         focusSnapshot,
         viewMode,
+        workspaceMode,
         splitView,
         removeSplitViewPane,
     } = useStudioStore(useShallow((state) => ({
@@ -92,6 +94,7 @@ export default function AgentFrame({ data, id }: AgentFrameProps) {
         updatePerformerName: state.updatePerformerName,
         updatePerformerAuthoringMeta: state.updatePerformerAuthoringMeta,
         setPerformerTalRef: state.setPerformerTalRef,
+        setPerformerAgentBody: state.setPerformerAgentBody,
         setPerformerModel: state.setPerformerModel,
         setPerformerModelVariant: state.setPerformerModelVariant,
         removePerformerMcp: state.removePerformerMcp,
@@ -101,6 +104,7 @@ export default function AgentFrame({ data, id }: AgentFrameProps) {
         exitFocusMode: state.exitFocusMode,
         focusSnapshot: state.focusSnapshot,
         viewMode: state.viewMode,
+        workspaceMode: state.workspaceMode,
         splitView: state.splitView,
         removeSplitViewPane: state.removeSplitViewPane,
     })))
@@ -114,6 +118,8 @@ export default function AgentFrame({ data, id }: AgentFrameProps) {
     const splitPane = splitView.panes.find((pane) => pane.type === 'performer' && pane.nodeId === id) || null
     const isSplitPane = isSplitViewTarget(viewMode, splitView, id, 'performer')
     const isFullscreenSurface = isFullView || isSplitPane
+    const isManageMode = workspaceMode === 'manage' && !isFullscreenSurface
+    const hideFocusControl = isManageMode || (workspaceMode === 'run' && isFullView)
     const chatSession = useChatSession(id)
     const messages = chatSession.messages
     const isLoading = chatSession.isLoading
@@ -122,7 +128,7 @@ export default function AgentFrame({ data, id }: AgentFrameProps) {
     const modelConfigured = hasModelConfig(data.model)
     const isEditMode = editingTarget?.type === 'performer' && editingTarget.id === id
     const isActEditMode = !!data.actEditConnectVisible
-    const shouldShowEditPanel = isEditMode || isActEditMode
+    const shouldShowEditPanel = isManageMode || isEditMode || isActEditMode
     const performer = performers.find((item) => item.id === id) || null
     const sessionId = chatSession.sessionId
     const hasActiveSession = !!sessionId
@@ -185,13 +191,14 @@ export default function AgentFrame({ data, id }: AgentFrameProps) {
     }, [])
 
     const handleToggleFocus = useCallback(() => {
+        if (workspaceMode === 'run' && isFullView) return
         if (isFullView) {
             exitFocusMode()
             return
         }
 
         enterFocusMode(id, 'performer', getCanvasViewportSize())
-    }, [enterFocusMode, exitFocusMode, id, isFullView])
+    }, [enterFocusMode, exitFocusMode, id, isFullView, workspaceMode])
 
     const handleRemoveSplitPane = useCallback(() => {
         if (!splitPane) return
@@ -293,7 +300,7 @@ export default function AgentFrame({ data, id }: AgentFrameProps) {
                             >
                                 <X size={11} />
                             </button>
-                        ) : (
+                        ) : !hideFocusControl ? (
                             <button
                                 className={`icon-btn ${isFullView ? 'icon-btn--active' : ''}`}
                                 onClick={(e) => {
@@ -305,7 +312,7 @@ export default function AgentFrame({ data, id }: AgentFrameProps) {
                             >
                                 {isFullView ? <Minimize2 size={11} /> : <Maximize2 size={11} />}
                             </button>
-                        )}
+                        ) : null}
                         {!isFullscreenSurface && !shouldShowEditPanel && (
                             <button
                                 className="icon-btn"
@@ -335,7 +342,7 @@ export default function AgentFrame({ data, id }: AgentFrameProps) {
                     <PerformerEditPanel
                         performerId={id}
                         performer={performer}
-                        hideBackButton={isActEditMode}
+                        hideBackButton={isActEditMode || isManageMode}
                         presentation={performerPresentation}
                         runtimeTools={runtimeTools || null}
                         requestRelations={requestRelations}
@@ -350,6 +357,7 @@ export default function AgentFrame({ data, id }: AgentFrameProps) {
                         onClose={closeEditor}
                         onNameChange={(value) => updatePerformerName(id, value)}
                         onDescriptionChange={(value) => updatePerformerAuthoringMeta(id, { description: value })}
+                        onAgentBodyChange={(value) => setPerformerAgentBody(id, value)}
                         onTalRefChange={(ref) => setPerformerTalRef(id, ref)}
                         onModelChange={(model) => setPerformerModel(id, model)}
                         onModelVariantChange={(variant) => setPerformerModelVariant(id, variant)}

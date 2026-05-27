@@ -7,7 +7,7 @@ describe('mergeMcpToolOverrides', () => {
             {
                 bash: true,
                 'github_*': false,
-                'legacy_*': false,
+                'external_*': false,
             },
             {
                 github: {
@@ -23,7 +23,7 @@ describe('mergeMcpToolOverrides', () => {
             },
         )).toEqual({
             bash: true,
-            'legacy_*': false,
+            'external_*': false,
             'sentry_*': false,
         })
     })

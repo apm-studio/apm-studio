@@ -1,0 +1,10 @@
+name: studio
+version: 1.0.0
+description: APM project for studio
+author: monarchjuno
+dependencies:
+  apm:
+  - /Users/junhoyoon/windsurfpjt/dance-of-tal/studio/.apm-studio/packages/api-designer-86d95cf4
+  mcp: []
+includes: auto
+scripts: {}

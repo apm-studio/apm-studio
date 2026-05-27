@@ -1,0 +1,10 @@
+apm_version: apm-studio-native-v1
+dependencies: []
+lockfile_version: "1"
+mcp_servers: []
+packages:
+  - manifest_hash: sha256:66842ecde810e2b09dcb79e5cbbcb455bae0d281df2b7b3308e22d3ef4b285af
+    name: api-designer-2
+    package_id: performer-2
+    source: apm-studio
+    version: 0.1.0

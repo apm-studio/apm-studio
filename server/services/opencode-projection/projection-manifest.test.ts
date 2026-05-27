@@ -6,30 +6,33 @@ import { toProjectionPath, updateGitExclude } from './projection-manifest.js'
 
 describe('projection path normalization', () => {
     it('uses forward slashes for OpenCode agent and manifest paths', () => {
-        expect(toProjectionPath('8pm-studio\\workspace\\hash\\performer--build')).toBe('8pm-studio/workspace/hash/performer--build')
-        expect(toProjectionPath('.opencode\\agents\\8pm-studio\\workspace\\hash\\performer--build.md')).toBe('.opencode/agents/8pm-studio/workspace/hash/performer--build.md')
+        expect(toProjectionPath('apm-studio\\workspace\\hash\\performer--build')).toBe('apm-studio/workspace/hash/performer--build')
+        expect(toProjectionPath('.opencode\\agents\\apm-studio\\workspace\\hash\\performer--build.md')).toBe('.opencode/agents/apm-studio/workspace/hash/performer--build.md')
     })
 
-    it('adds generated Codex agent excludes to existing Studio markers', async () => {
-        const workingDir = await fs.mkdtemp(path.join(os.tmpdir(), '8pm-studio-manifest-'))
+    it('keeps generated OpenCode excludes under the Studio marker', async () => {
+        const workingDir = await fs.mkdtemp(path.join(os.tmpdir(), 'apm-studio-manifest-'))
         try {
             const excludePath = path.join(workingDir, '.git', 'info', 'exclude')
             await fs.mkdir(path.dirname(excludePath), { recursive: true })
             await fs.writeFile(excludePath, [
-                '# 8pm-studio projection (auto-managed)',
-                '.opencode/agents/8pm-studio/',
-                '.opencode/skills/8pm-studio/',
-                '.opencode/8pm-studio.manifest.json',
+                '# apm-studio projection (auto-managed)',
+                '.opencode/agents/apm-studio/',
+                '.opencode/skills/apm-studio/',
+                '.opencode/apm-studio.manifest.json',
                 '',
             ].join('\n'), 'utf-8')
 
             await updateGitExclude(workingDir)
 
             const content = await fs.readFile(excludePath, 'utf-8')
-            expect(content).toContain('.codex/agents/8pm_studio_*.toml')
-            expect(content.match(/\.codex\/agents\/8pm_studio_\*\.toml/g)).toHaveLength(1)
-            expect(content).toContain('.agents/skills/8pm-studio-*')
-            expect(content.match(/\.agents\/skills\/8pm-studio-\*/g)).toHaveLength(1)
+            expect(content).toContain('.opencode/agents/apm-studio/')
+            expect(content.match(/\.opencode\/agents\/apm-studio\//g)).toHaveLength(1)
+            expect(content).toContain('.opencode/skills/apm-studio/')
+            expect(content.match(/\.opencode\/skills\/apm-studio\//g)).toHaveLength(1)
+            expect(content).toContain('.opencode/apm-studio.manifest.json')
+            expect(content).not.toContain('.codex/')
+            expect(content).not.toContain('.agents/skills/')
         } finally {
             await fs.rm(workingDir, { recursive: true, force: true }).catch(() => {})
         }

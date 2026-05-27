@@ -1,7 +1,7 @@
 ---
 name: find-skills
 description: Finds, compares, and applies existing external Skills before creating a new one. Use when the user asks to find a Skill, search skills.sh, recommend an existing Skill, or install/apply a GitHub or skills.sh Skill.
-compatibility: Designed for the 8PM Studio built-in assistant projection.
+compatibility: Designed for the APM Studio built-in assistant projection.
 ---
 
 # Find Skills
@@ -15,7 +15,7 @@ Use this skill when the user likely wants an existing external skill, not a bran
 
 ## Search Order
 - Prefer installed local matches first.
-- Then consider 8PM Studio registry matches.
+- Then consider APM Studio registry matches.
 - Then consider `skills.sh` or GitHub Skill candidates.
 - Treat `skills.sh` hints as candidates, not guarantees.
 

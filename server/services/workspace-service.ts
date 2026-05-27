@@ -11,7 +11,7 @@ import {
     listSessionOwnershipsForWorkingDir,
 } from './session-ownership-service.js'
 import {
-    readEightPmWorkspaceSnapshotForDir,
+    readApmWorkspaceSnapshotForDir,
     writeApmPackagesForWorkspace,
 } from './apm-package-service.js'
 
@@ -40,6 +40,11 @@ export type WorkspacePerformerSnapshot = {
     planMode?: boolean
     meta?: {
         derivedFrom?: string | null
+        authoring?: {
+            slug?: string
+            description?: string
+            tags?: string[]
+        }
     }
 }
 
@@ -88,9 +93,9 @@ async function readWorkspaceSnapshotForDir(workingDir: string): Promise<Workspac
         return null
     }
 
-    const eightPmWorkspace = await readEightPmWorkspaceSnapshotForDir(normalized)
-    if (eightPmWorkspace) {
-        return eightPmWorkspace as WorkspaceLinkedSnapshot
+    const apmWorkspace = await readApmWorkspaceSnapshotForDir(normalized)
+    if (apmWorkspace) {
+        return apmWorkspace as WorkspaceLinkedSnapshot
     }
 
     return readSavedWorkspaceSnapshotForDir(normalized)
@@ -220,11 +225,37 @@ export async function getSavedWorkspace(rawId: string) {
         return { ok: false as const, status: 400, error: 'Invalid workspace id' }
     }
 
+    let workspace: WorkspaceLinkedSnapshot
     try {
         const raw = await fs.readFile(filePath, 'utf-8')
-        return { ok: true as const, workspace: JSON.parse(raw) }
+        workspace = JSON.parse(raw) as WorkspaceLinkedSnapshot
     } catch {
         return { ok: false as const, status: 404, error: 'Workspace not found' }
+    }
+
+    const workingDir = normalizeWorkingDir(workspace.workingDir || '')
+    if (!workingDir) {
+        return { ok: true as const, workspace }
+    }
+
+    try {
+        const apmWorkspace = await readApmWorkspaceSnapshotForDir(workingDir)
+        if (!apmWorkspace) {
+            return { ok: true as const, workspace }
+        }
+
+        return {
+            ok: true as const,
+            workspace: {
+                ...workspace,
+                ...apmWorkspace,
+                workingDir,
+                hiddenFromList: workspace.hiddenFromList ?? apmWorkspace.hiddenFromList,
+            },
+        }
+    } catch (error) {
+        console.warn('[workspace-service] Failed to read APM package state for saved workspace', { workingDir, error })
+        return { ok: false as const, status: 500, error: 'Failed to read APM package state' }
     }
 }
 
@@ -245,7 +276,11 @@ export async function saveWorkspaceSnapshot(body: WorkspaceLinkedSnapshot) {
     })
 
     const id = workspaceIdForWorkingDir(workingDir)
-    const existingWorkspace = await readSavedWorkspaceSnapshotForDir(workingDir) || await readWorkspaceSnapshotForDir(workingDir)
+    const existingWorkspace = await readSavedWorkspaceSnapshotForDir(workingDir)
+        || await readWorkspaceSnapshotForDir(workingDir).catch((error) => {
+            console.warn('[workspace-service] Failed to read existing APM workspace state during save', { workingDir, error })
+            return null
+        })
     const workspace = {
         ...body,
         workingDir,
@@ -259,10 +294,14 @@ export async function saveWorkspaceSnapshot(body: WorkspaceLinkedSnapshot) {
         return { ok: false as const, status: 400, error: 'Invalid workspace id' }
     }
 
+    try {
+        await writeApmPackagesForWorkspace(workingDir, workspace)
+    } catch (error) {
+        console.warn('[workspace-service] Failed to write APM package state during save', { workingDir, error })
+        return { ok: false as const, status: 500, error: 'Failed to write APM package state' }
+    }
+
     await fs.writeFile(filePath, JSON.stringify(workspace, null, 2), 'utf-8')
-    await writeApmPackagesForWorkspace(workingDir, workspace).catch((error) => {
-        console.warn('[workspace-service] Failed to write 8PM Studio APM package state during save', { workingDir, error })
-    })
     const stat = await fs.stat(filePath)
 
     import('./studio-assistant/assistant-service.js').then(({ ensureAssistantAgent }) =>

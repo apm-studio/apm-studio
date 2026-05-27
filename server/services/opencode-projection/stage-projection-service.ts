@@ -6,7 +6,6 @@ import { resolveRuntimeTools, type RuntimeToolResolution } from '../../lib/runti
 import { mcpToolPattern } from '../../../shared/mcp-catalog.js'
 import {
     cleanGroupFiles,
-    isManualAgentSyncProjectionPath,
     markProjectionRuntimePending,
     readManifest,
     toRelativePath,
@@ -84,7 +83,6 @@ export interface EnsuredPerformerProjection {
     toolMap: Record<string, boolean>
     capabilitySnapshot: CapabilitySnapshot
     changed: boolean
-    codexChanged: boolean
 }
 
 function computeWorkspaceHash(workingDir: string) {
@@ -114,21 +112,12 @@ export async function pruneStalePerformerProjections(workingDir: string, perform
 
     let changed = false
     for (const key of staleKeys) {
-        const retainedFiles: string[] = []
         for (const file of manifest.groups[key] || []) {
-            if (isManualAgentSyncProjectionPath(file)) {
-                retainedFiles.push(file)
-                continue
-            }
             await fs.rm(path.join(workingDir, file), { force: true, recursive: true }).catch(() => {})
             changed = true
         }
-        if (retainedFiles.length > 0) {
-            manifest.groups[key] = retainedFiles
-        } else {
-            delete manifest.groups[key]
-            changed = true
-        }
+        delete manifest.groups[key]
+        changed = true
     }
 
     if (!changed) {
@@ -226,14 +215,11 @@ export async function ensurePerformerProjection(input: PerformerProjectionInput)
             actId: input.actId,
             skillNames: skills.map((skill) => skill.logicalName),
             toolMap,
-            includeCodexAgent: false,
             taskAllowlist: requestProjection.taskAllowlist,
             relationPromptSection: requestProjection.promptSection,
         } satisfies PerformerCompileInput,
         skills,
     )
-    compiled.allFiles = compiled.allFiles.filter((file) => !isManualAgentSyncProjectionPath(file))
-
     let changed = false
     if (input.extraTools) {
         // Clean stale act tool files that don't belong to the current extra tools set.
@@ -294,7 +280,6 @@ export async function ensurePerformerProjection(input: PerformerProjectionInput)
         toolMap,
         capabilitySnapshot: await resolveCapabilitySnapshot(input.workingDir, input.model),
         changed,
-        codexChanged: false,
     }
 }
 

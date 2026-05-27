@@ -7,8 +7,8 @@ export type StartupAssetTarget =
 
 export function readStartupAssetTarget(search: string): StartupAssetTarget | null {
     const params = new URLSearchParams(search);
-    const performerUrn = params.get('agent')?.trim() || params.get('performer')?.trim() || '';
-    const actUrn = params.get('team')?.trim() || params.get('act')?.trim() || '';
+    const performerUrn = params.get('agent')?.trim() || '';
+    const actUrn = params.get('team')?.trim() || '';
 
     if (performerUrn && actUrn) {
         return null;
@@ -29,8 +29,6 @@ export function clearStartupAssetTargetFromUrl() {
     const url = new URL(window.location.href);
     url.searchParams.delete('agent');
     url.searchParams.delete('team');
-    url.searchParams.delete('performer');
-    url.searchParams.delete('act');
     const search = url.searchParams.toString();
     const nextUrl = `${url.pathname}${search ? `?${search}` : ''}${url.hash}`;
     window.history.replaceState({}, document.title, nextUrl);
@@ -133,7 +131,7 @@ function showInstallFailedToast(
 async function ensureInstalledAssetByUrn(
     api: {
         assets: { list: (kind: string) => Promise<Array<Record<string, unknown>>> }
-        roster: { install: (urn: string, localName?: string, force?: boolean, scope?: 'global' | 'stage') => Promise<unknown> }
+        apmAssets: { install: (urn: string, localName?: string, force?: boolean, scope?: 'global' | 'stage') => Promise<unknown> }
     },
     showToast: (message: string, kind: 'info' | 'success' | 'error' | 'warning', options?: Record<string, unknown>) => void,
     target: StartupAssetTarget,
@@ -144,7 +142,7 @@ async function ensureInstalledAssetByUrn(
     }
 
     try {
-        await api.roster.install(target.urn, undefined, false, 'stage');
+        await api.apmAssets.install(target.urn, undefined, false, 'stage');
     } catch (error) {
         showInstallFailedToast(showToast, target, error);
         return null;

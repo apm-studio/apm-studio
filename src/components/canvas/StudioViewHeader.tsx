@@ -19,6 +19,7 @@ const WorkspaceToolbar = lazy(() => import('../toolbar/WorkspaceToolbar'))
 type PickerKind = FullscreenNodeType
 type ViewMode = 'canvas' | 'full' | 'split'
 type ViewModeTarget = { id: string; type: FullscreenNodeType }
+type HeaderModeOption = 'full' | 'split'
 
 function paneLabel(pane: SplitViewPane, acts: WorkspaceAct[], performers: PerformerNode[]) {
     if (pane.type === 'act') {
@@ -40,7 +41,7 @@ function ModeIcon({ viewMode }: { viewMode: ViewMode }) {
     return <PanelTop size={13} />
 }
 
-const VIEW_MODE_OPTIONS: ViewMode[] = ['canvas', 'full', 'split']
+const RUN_VIEW_MODE_OPTIONS: HeaderModeOption[] = ['full', 'split']
 
 type SplitPanePillProps = {
     pane: SplitViewPane
@@ -84,7 +85,7 @@ export default function StudioViewHeader() {
     const [pickerOpen, setPickerOpen] = useState(false)
     const [pickerKind, setPickerKind] = useState<PickerKind>('act')
     const [query, setQuery] = useState('')
-    const headerRef = useRef<HTMLElement | null>(null)
+    const headerRef = useRef<HTMLDivElement | null>(null)
     const searchRef = useRef<HTMLInputElement | null>(null)
 
     const {
@@ -93,6 +94,7 @@ export default function StudioViewHeader() {
         focusSnapshot,
         viewMode,
         splitView,
+        workspaceMode,
         selectedPerformerId,
         selectedActId,
         enterFocusMode,
@@ -108,6 +110,7 @@ export default function StudioViewHeader() {
         focusSnapshot: state.focusSnapshot,
         viewMode: state.viewMode,
         splitView: state.splitView,
+        workspaceMode: state.workspaceMode,
         selectedPerformerId: state.selectedPerformerId,
         selectedActId: state.selectedActId,
         enterFocusMode: state.enterFocusMode,
@@ -254,25 +257,29 @@ export default function StudioViewHeader() {
     }, [showPicker])
 
     return (
-        <header ref={headerRef} className={`studio-view-header studio-view-header--${viewMode}`}>
+        <div ref={headerRef} className={`studio-view-header studio-view-header--${viewMode} studio-view-header--${workspaceMode}`}>
             <div className="studio-view-header__context">
-                <div className="studio-view-header__mode-switch" aria-label="View mode">
-                    {VIEW_MODE_OPTIONS.map((option) => {
-                        return (
-                            <button
-                                type="button"
-                                key={option}
-                                className={`studio-view-header__mode-option ${viewMode === option ? 'is-active' : ''}`}
-                                onClick={() => handleSelectViewMode(option)}
-                                aria-pressed={viewMode === option}
-                                title={`Switch to ${modeLabel(option)} view`}
-                            >
-                                <ModeIcon viewMode={option} />
-                                <span>{modeLabel(option)}</span>
-                            </button>
-                        )
-                    })}
-                </div>
+                {workspaceMode === 'run' ? (
+                    <div className="studio-view-header__mode-switch" aria-label="Run view mode">
+                        {RUN_VIEW_MODE_OPTIONS.map((option) => {
+                            return (
+                                <button
+                                    type="button"
+                                    key={option}
+                                    className={`studio-view-header__mode-option ${viewMode === option ? 'is-active' : ''}`}
+                                    onClick={() => handleSelectViewMode(option)}
+                                    aria-pressed={viewMode === option}
+                                    title={`Switch to ${modeLabel(option)} view`}
+                                >
+                                    <ModeIcon viewMode={option} />
+                                    <span>{modeLabel(option)}</span>
+                                </button>
+                            )
+                        })}
+                    </div>
+                ) : (
+                    <span className="studio-view-header__mode-pill">Manage canvas</span>
+                )}
                 {viewMode === 'full' && fullViewPane ? (
                     <span className="studio-view-header__target-pill" title={paneLabel(fullViewPane, acts, performers)}>
                         {fullViewPane.type === 'act' ? <Workflow size={11} /> : <Users size={11} />}
@@ -315,7 +322,7 @@ export default function StudioViewHeader() {
                         </button>
                     </div>
                 ) : null}
-                {viewMode === 'canvas' ? (
+                {workspaceMode === 'manage' && viewMode === 'canvas' ? (
                     <>
                         <div className="studio-view-header__control-group" aria-label="Canvas controls">
                             <CanvasControls />
@@ -390,6 +397,6 @@ export default function StudioViewHeader() {
                     </div>
                 </div>
             ) : null}
-        </header>
+        </div>
     )
 }

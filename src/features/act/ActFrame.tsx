@@ -42,6 +42,7 @@ export default function ActFrame({ data, id }: NodeProps<Node<ActFrameData, 'act
         actThreads,
         focusSnapshot,
         viewMode,
+        workspaceMode,
         splitView,
         enterFocusMode,
         exitFocusMode,
@@ -59,6 +60,7 @@ export default function ActFrame({ data, id }: NodeProps<Node<ActFrameData, 'act
         actThreads: state.actThreads,
         focusSnapshot: state.focusSnapshot,
         viewMode: state.viewMode,
+        workspaceMode: state.workspaceMode,
         splitView: state.splitView,
         enterFocusMode: state.enterFocusMode,
         exitFocusMode: state.exitFocusMode,
@@ -73,11 +75,13 @@ export default function ActFrame({ data, id }: NodeProps<Node<ActFrameData, 'act
     )
 
     const isSelected = selectedActId === id
-    const isEditing = actEditorState?.actId === id
     const isFocused = viewMode === 'full' && isFocusTarget(focusSnapshot, id, 'act')
     const splitPane = splitView.panes.find((pane) => pane.type === 'act' && pane.nodeId === id) || null
     const isSplitPane = isSplitViewTarget(viewMode, splitView, id, 'act')
     const isFullscreenSurface = isFocused || isSplitPane
+    const isManageMode = workspaceMode === 'manage' && !isFullscreenSurface
+    const isExplicitEditing = actEditorState?.actId === id
+    const isEditing = isManageMode || isExplicitEditing
     const width = data.width || act?.width || ACT_DEFAULT_WIDTH
     const height = resolveActExpandedHeight(act?.height)
     const threads = useMemo(() => actThreads[id] || EMPTY_THREADS, [actThreads, id])
@@ -100,20 +104,22 @@ export default function ActFrame({ data, id }: NodeProps<Node<ActFrameData, 'act
 
     const handleSelectAct = () => selectAct(id)
     const handleToggleEdit = () => {
-        if (isEditing) {
+        if (isManageMode) return
+        if (isExplicitEditing) {
             closeActEditor()
             return
         }
         openActEditor(id, 'act')
     }
     const handleToggleFocus = useCallback(() => {
+        if (workspaceMode === 'run' && isFocused) return
         if (isFocused) {
             exitFocusMode()
             return
         }
 
         enterFocusMode(id, 'act', getCanvasViewportSize())
-    }, [enterFocusMode, exitFocusMode, id, isFocused])
+    }, [enterFocusMode, exitFocusMode, id, isFocused, workspaceMode])
     const handleRemoveSplitPane = useCallback(() => {
         if (!splitPane) return
         removeSplitViewPane(splitPane.paneId, getCanvasViewportSize())
@@ -166,6 +172,8 @@ export default function ActFrame({ data, id }: NodeProps<Node<ActFrameData, 'act
                         focused={isFocused}
                         splitPane={isSplitPane}
                         editing={isEditing}
+                        hideFocusControl={isManageMode || (workspaceMode === 'run' && isFocused)}
+                        hideEditControl={isManageMode}
                         readiness={readiness}
                         onToggleFocus={handleToggleFocus}
                         onRemoveSplitPane={handleRemoveSplitPane}

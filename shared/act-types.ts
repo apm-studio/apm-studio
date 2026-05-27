@@ -1,20 +1,20 @@
 // Choreography Act — Shared Types (PRD-005)
-// 8PM Studio contract types are source of truth for the serialization schema.
+// APM Studio contract types are source of truth for the serialization schema.
 // Studio extends them with runtime-only fields (id, performerRef, mailbox, etc.)
 
 import type { SharedAssetRef } from './chat-contracts.js'
 import type {
     ActRelationV1,
     ActParticipantSubscriptionsV1,
-} from './roster-types.js'
+} from './apm-asset-types.js'
 
-// ── Re-export 8PM Studio contract types as Studio aliases ─
+// ── Re-export APM Studio contract types as Studio aliases ─
 
-/** 8PM Studio contract re-export: subscriptions schema. */
+/** APM Studio contract re-export: subscriptions schema. */
 export type ParticipantSubscriptions = ActParticipantSubscriptionsV1
 
 // Re-export the V1 types for direct use
-export type { ActRelationV1, ActParticipantSubscriptionsV1 } from './roster-types.js'
+export type { ActRelationV1, ActParticipantSubscriptionsV1 } from './apm-asset-types.js'
 
 // ── Mailbox Messages ────────────────────────────────────
 
@@ -97,8 +97,8 @@ export interface WakeCondition {
     status: 'waiting' | 'triggered' | 'expired'
 }
 
-// ── Act Relation (extends 8PM Studio contract with Studio id)
-// 8PM Studio ActRelationV1 = { between, direction, name, description }
+// ── Act Relation (extends APM Studio contract with Studio id)
+// APM Studio ActRelationV1 = { between, direction, name, description }
 // Studio adds `id` for internal tracking on the canvas.
 
 export interface ActRelation extends ActRelationV1 {
@@ -106,7 +106,7 @@ export interface ActRelation extends ActRelationV1 {
 }
 
 // ── Act Participant Binding ─────────────────────────────
-// 8PM Studio ActParticipantV1 uses `performer: string` (asset URN).
+// APM Studio ActParticipantV1 uses `performer: string` (asset URN).
 // Studio uses `performerRef: SharedAssetRef` (resolved ref).
 // These are semantically different, so Studio keeps its own type.
 

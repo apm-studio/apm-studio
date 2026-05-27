@@ -52,6 +52,7 @@ type PerformerEditPanelProps = {
     onClose: () => void
     onNameChange: (value: string) => void
     onDescriptionChange: (value: string) => void
+    onAgentBodyChange: (value: string) => void
     onTalRefChange: (ref: AssetRef | null) => void
     onModelChange: (model: ModelConfig | null) => void
     onModelVariantChange: (variant: string | null) => void
@@ -75,6 +76,7 @@ export default function PerformerEditPanel({
     onClose,
     onNameChange,
     onDescriptionChange,
+    onAgentBodyChange,
     onTalRefChange,
     onModelChange,
     onModelVariantChange,
@@ -162,6 +164,16 @@ export default function PerformerEditPanel({
                                 value={performer?.meta?.authoring?.description || ''}
                                 onChange={(event) => onDescriptionChange(event.target.value)}
                                 placeholder="Describe this agent"
+                            />
+                        </label>
+                        <label className="adv-field">
+                            <span className="adv-field__label">Agent Body</span>
+                            <textarea
+                                className="text-input adv-field__textarea nodrag nowheel"
+                                value={performer?.inlineInstruction || ''}
+                                onChange={(event) => onAgentBodyChange(event.target.value)}
+                                placeholder="Write the target-agnostic body for this agent."
+                                rows={5}
                             />
                         </label>
                     </div>

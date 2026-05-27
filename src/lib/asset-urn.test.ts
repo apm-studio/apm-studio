@@ -15,7 +15,7 @@ describe('asset urn parsing', () => {
         expect(assetUrnPath('performer/@acme/agent-presets/reviewer')).toBe('agent-presets/reviewer')
     })
 
-    it('rejects legacy 3-segment urns', () => {
+    it('rejects noncanonical 3-segment urns', () => {
         expect(parseStudioAssetUrn('performer/@acme/reviewer')).toBeNull()
         expect(assetUrnAuthor('performer/@acme/reviewer')).toBeNull()
         expect(assetUrnPath('performer/@acme/reviewer')).toBeNull()

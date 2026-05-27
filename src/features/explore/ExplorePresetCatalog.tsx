@@ -1,312 +1,429 @@
-import { useEffect, useMemo, useState } from 'react'
-import type { ReactNode } from 'react'
+import { useMemo, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import {
     Bot,
-    CheckCircle,
-    Compass,
-    ExternalLink,
-    Github,
+    CheckCircle2,
+    FolderOpen,
+    Globe2,
     Loader2,
+    Package,
     PackagePlus,
     Search,
     Server,
-    Sparkles,
     Zap,
 } from 'lucide-react'
 import { api } from '../../api'
-import { queryKeys } from '../../hooks/queries'
+import { useAppHeader } from '../../components/AppHeaderContext'
+import { queryKeys, useApmAssetStatus } from '../../hooks/queries'
 import { showToast } from '../../lib/toast'
 import { useStudioStore } from '../../store'
-import type { RegistryPreset } from '../../../shared/registry-contracts'
+import type {
+    ApmGitHubImportFormat,
+    ApmGitHubImportPackage,
+    ApmGitHubImportRequest,
+    ApmGitHubImportPreviewResponse,
+} from '../../../shared/apm-contracts'
+import '../../components/panels/AssetLibrary.css'
 import './ExplorePresetCatalog.css'
 
-type PresetKind = 'agent' | 'skill' | 'mcp'
+type ImportScope = 'stage' | 'global'
+type ResultKindFilter = ApmGitHubImportPackage['kind'] | 'all'
 
-type CuratedPreset = {
-    id: string
-    kind: PresetKind
-    name: string
-    summary: string
-    source: string
-    repo: string
-    href: string
-    tags: string[]
-    targets: string[]
-    importable?: boolean
-}
-
-const PRESET_KINDS: Array<{ kind: PresetKind; label: string; icon: ReactNode }> = [
-    { kind: 'agent', label: 'Agents', icon: <Bot size={12} /> },
-    { kind: 'skill', label: 'Skills', icon: <Zap size={12} /> },
-    { kind: 'mcp', label: 'MCP', icon: <Server size={12} /> },
+const IMPORT_FORMATS: Array<{ value: ApmGitHubImportFormat; label: string }> = [
+    { value: 'auto', label: 'Auto' },
+    { value: 'apm', label: 'APM' },
+    { value: 'skill-md', label: 'SKILL.md' },
+    { value: 'claude-md', label: 'Claude md' },
+    { value: 'codex-toml', label: 'Codex TOML' },
+    { value: 'instruction-md', label: 'Instructions' },
+    { value: 'mcp-config', label: 'MCP config' },
 ]
 
-const CURATED_PRESETS: CuratedPreset[] = [
-    {
-        id: 'voltagent-claude-code-subagents',
-        kind: 'agent',
-        name: 'Claude Code Subagents',
-        summary: 'Curated role agents for coding, review, security, docs, and product workflows.',
-        source: 'VoltAgent',
-        repo: 'VoltAgent/awesome-claude-code-subagents',
-        href: 'https://github.com/VoltAgent/awesome-claude-code-subagents',
-        tags: ['subagents', 'coding', 'review'],
-        targets: ['Claude', 'Codex', 'OpenCode'],
-    },
-    {
-        id: 'voltagent-agent-skills',
-        kind: 'skill',
-        name: 'Agent Skills Index',
-        summary: 'A broad source catalog for reusable coding assistant skills and task playbooks.',
-        source: 'VoltAgent',
-        repo: 'VoltAgent/awesome-agent-skills',
-        href: 'https://github.com/VoltAgent/awesome-agent-skills',
-        tags: ['skills', 'automation', 'github'],
-        targets: ['Codex', 'Claude', 'Cursor'],
-        importable: true,
-    },
-    {
-        id: 'open-design-skills',
-        kind: 'skill',
-        name: 'Open Design Skills',
-        summary: 'Design-focused skills, templates, and DESIGN.md systems for interface generation.',
-        source: 'nexu-io',
-        repo: 'nexu-io/open-design',
-        href: 'https://github.com/nexu-io/open-design',
-        tags: ['design', 'templates', 'ui'],
-        targets: ['Codex', 'Claude', 'OpenCode'],
-    },
-    {
-        id: 'modelcontextprotocol-servers',
-        kind: 'mcp',
-        name: 'Official MCP Servers',
-        summary: 'Reference MCP server implementations and examples from the Model Context Protocol project.',
-        source: 'Model Context Protocol',
-        repo: 'modelcontextprotocol/servers',
-        href: 'https://github.com/modelcontextprotocol/servers',
-        tags: ['mcp', 'tools', 'servers'],
-        targets: ['OpenCode', 'Codex', 'Claude'],
-    },
-    {
-        id: 'awesome-mcp-servers',
-        kind: 'mcp',
-        name: 'Awesome MCP Servers',
-        summary: 'Community-maintained index of MCP servers across cloud, databases, browsers, and devtools.',
-        source: 'punkpeye',
-        repo: 'punkpeye/awesome-mcp-servers',
-        href: 'https://github.com/punkpeye/awesome-mcp-servers',
-        tags: ['mcp', 'catalog', 'community'],
-        targets: ['OpenCode', 'Codex', 'Claude'],
-    },
+const RESULT_KIND_FILTERS: Array<{ value: ResultKindFilter; label: string }> = [
+    { value: 'all', label: 'All' },
+    { value: 'package', label: 'Packages' },
+    { value: 'agent', label: 'Agents' },
+    { value: 'skill', label: 'Skills' },
+    { value: 'instruction', label: 'Instructions' },
+    { value: 'mcp', label: 'MCP' },
 ]
 
-function kindCount(kind: PresetKind) {
-    return CURATED_PRESETS.filter((preset) => preset.kind === kind).length
+const CURATED_GITHUB_REPOS: Array<{ name: string; repo: string }> = [
+    { name: 'Awesome Copilot', repo: 'github/awesome-copilot' },
+    { name: 'Addy Agent Skills', repo: 'addyosmani/agent-skills' },
+    { name: 'Vercel Skills', repo: 'vercel-labs/skills' },
+    { name: 'Vercel Agent Skills', repo: 'vercel-labs/agent-skills' },
+    { name: 'Microsoft Skills', repo: 'microsoft/skills' },
+    { name: 'Claude Subagents', repo: 'VoltAgent/awesome-claude-code-subagents' },
+    { name: 'Microsoft APM', repo: 'microsoft/apm' },
+    { name: 'Agent Skills Index', repo: 'VoltAgent/awesome-agent-skills' },
+]
+
+function candidateIcon(kind: ApmGitHubImportPackage['kind']) {
+    if (kind === 'agent') return <Bot size={13} className="asset-icon performer" />
+    if (kind === 'skill') return <Zap size={13} className="asset-icon dance" />
+    if (kind === 'mcp') return <Server size={13} className="asset-icon mcp" />
+    if (kind === 'instruction') return <Search size={13} className="asset-icon tal" />
+    return <Package size={13} className="asset-icon performer" />
 }
 
-function openExternal(href: string) {
-    window.open(href, '_blank', 'noopener,noreferrer')
+function workspaceLabel(workingDir: string) {
+    if (!workingDir) return 'No workspace selected'
+    const parts = workingDir.split('/').filter(Boolean)
+    return parts.at(-1) || workingDir
+}
+
+function scopeLabel(scope: ImportScope) {
+    return scope === 'global' ? 'Global' : 'Workspace'
+}
+
+function candidateInstallKey(scope: ImportScope, candidateId: string) {
+    return `${scope}:${candidateId}`
 }
 
 export default function ExplorePresetCatalog() {
-    const [activeKind, setActiveKind] = useState<PresetKind>('agent')
-    const [query, setQuery] = useState('')
-    const [registryPresets, setRegistryPresets] = useState<RegistryPreset[]>([])
-    const [registryLoading, setRegistryLoading] = useState(false)
-    const [registryError, setRegistryError] = useState<string | null>(null)
-    const [importingId, setImportingId] = useState<string | null>(null)
+    const [manualSource, setManualSource] = useState('')
+    const [manualFormat, setManualFormat] = useState<ApmGitHubImportFormat>('auto')
+    const [manualPreviewResponse, setManualPreviewResponse] = useState<ApmGitHubImportPreviewResponse | null>(null)
+    const [manualPreviewRequest, setManualPreviewRequest] = useState<ApmGitHubImportRequest | null>(null)
+    const [manualSelectedCandidateIds, setManualSelectedCandidateIds] = useState<Set<string>>(new Set())
+    const [manualPreviewLoading, setManualPreviewLoading] = useState(false)
+    const [manualPreviewError, setManualPreviewError] = useState<string | null>(null)
+    const [manualImporting, setManualImporting] = useState(false)
+    const [installScope, setInstallScope] = useState<ImportScope>('stage')
+    const [resultQuery, setResultQuery] = useState('')
+    const [resultKind, setResultKind] = useState<ResultKindFilter>('all')
+    const [candidateInstallingId, setCandidateInstallingId] = useState<string | null>(null)
+    const [installedCandidateKeys, setInstalledCandidateKeys] = useState<Set<string>>(new Set())
     const queryClient = useQueryClient()
     const workingDir = useStudioStore((state) => state.workingDir)
     const setWorkspaceMode = useStudioStore((state) => state.setWorkspaceMode)
+    const { data: apmAssetStatus } = useApmAssetStatus()
 
-    useEffect(() => {
-        let mounted = true
-        setRegistryLoading(true)
-        setRegistryError(null)
-        api.explore.presets()
-            .then((response) => {
-                if (!mounted) return
-                setRegistryPresets(response.presets.filter((preset) => preset.status === 'active').slice(0, 4))
-            })
-            .catch((error) => {
-                if (!mounted) return
-                setRegistryError(error instanceof Error ? error.message : 'Unable to load registry presets.')
-            })
-            .finally(() => {
-                if (mounted) {
-                    setRegistryLoading(false)
-                }
-            })
+    const selectedParsedCount = manualSelectedCandidateIds.size
+    const workspacePath = workingDir
+    const installTargetPath = installScope === 'global'
+        ? apmAssetStatus?.globalApmAssetDir || 'Global APM Studio home'
+        : workspacePath || 'No workspace selected'
+    const headerConfig = useMemo(() => ({
+        title: 'Search APM packages',
+        subtitle: workspaceLabel(workingDir),
+    }), [workingDir])
+    useAppHeader(headerConfig)
 
-        return () => {
-            mounted = false
-        }
-    }, [workingDir])
+    const workspaceInstallDisabled = installScope === 'stage' && !workspacePath
+    const shouldShowResults = Boolean(manualPreviewLoading || manualPreviewError || manualPreviewResponse)
+    const resultCandidates = manualPreviewResponse?.candidates || []
+    const normalizedResultQuery = resultQuery.trim().toLowerCase()
+    const filteredCandidates = resultCandidates.filter((candidate) => {
+        if (resultKind !== 'all' && candidate.kind !== resultKind) return false
+        if (!normalizedResultQuery) return true
+        return [
+            candidate.name,
+            candidate.description,
+            candidate.kind,
+            candidate.format,
+            candidate.sourcePath,
+            candidate.packageId,
+            ...candidate.targets,
+        ].some((value) => value.toLowerCase().includes(normalizedResultQuery))
+    })
 
-    const filteredPresets = useMemo(() => {
-        const normalizedQuery = query.trim().toLowerCase()
-        return CURATED_PRESETS.filter((preset) => {
-            if (preset.kind !== activeKind) return false
-            if (!normalizedQuery) return true
-            return [
-                preset.name,
-                preset.summary,
-                preset.repo,
-                preset.source,
-                ...preset.tags,
-                ...preset.targets,
-            ].some((value) => value.toLowerCase().includes(normalizedQuery))
-        })
-    }, [activeKind, query])
-
-    const handleImportSkill = async (preset: CuratedPreset) => {
-        if (!preset.importable || importingId) return
-        if (!workingDir) {
-            showToast('Select a workspace before importing a preset.', 'error', {
-                title: 'No workspace selected',
-                dedupeKey: 'explore:preset:no-workspace',
-            })
+    const parseManualImportSource = async (sourceOverride?: string, formatOverride?: ApmGitHubImportFormat) => {
+        const source = (sourceOverride ?? manualSource).trim()
+        if (!source) {
+            setManualPreviewError('Enter a GitHub repository or URL first.')
             return
         }
-        setImportingId(preset.id)
+        if (sourceOverride !== undefined) {
+            setManualSource(source)
+        }
+        const format = formatOverride || manualFormat
+        if (formatOverride) {
+            setManualFormat(formatOverride)
+        }
+        const request: ApmGitHubImportRequest = {
+            source,
+            format,
+            limit: 24,
+        }
+        setManualPreviewLoading(true)
+        setManualPreviewError(null)
+        setManualPreviewResponse(null)
+        setManualPreviewRequest(request)
+        setResultQuery('')
+        setResultKind('all')
+        setInstalledCandidateKeys(new Set())
         try {
-            const result = await api.roster.addFromGitHub(preset.repo, 'stage')
-            await Promise.all([
-                queryClient.invalidateQueries({ queryKey: queryKeys.assets(workingDir) }),
-                queryClient.invalidateQueries({ queryKey: queryKeys.assetInventory(workingDir) }),
-                queryClient.invalidateQueries({ queryKey: queryKeys.rosterStatus(workingDir) }),
-            ])
-            showToast(`Imported ${result.installed.length} skill(s) from ${preset.repo}.`, 'success', {
-                title: 'Preset imported',
-                actionLabel: 'Go to Design',
-                onAction: () => setWorkspaceMode('canvas'),
-            })
-        } catch (error) {
-            showToast(error instanceof Error ? error.message : 'Unable to import preset.', 'error', {
-                title: 'Import failed',
-                dedupeKey: `explore:preset:${preset.id}`,
-            })
+            const response = await api.apm.previewGitHub(request)
+            setManualPreviewResponse(response)
+            setManualSelectedCandidateIds(new Set(response.candidates.map((candidate) => candidate.id)))
+        } catch (caught) {
+            setManualPreviewError(caught instanceof Error ? caught.message : 'Unable to parse GitHub source.')
+            setManualSelectedCandidateIds(new Set())
         } finally {
-            setImportingId(null)
+            setManualPreviewLoading(false)
         }
     }
 
+    const handleManualImport = async (candidateIdsOverride?: string[]) => {
+        if (!manualPreviewRequest || manualImporting || candidateInstallingId) return
+        if (workspaceInstallDisabled) {
+            showToast('Select a workspace before importing an asset.', 'error', {
+                title: 'No workspace selected',
+                dedupeKey: 'explore:github:no-workspace',
+            })
+            return
+        }
+        const candidateIds = candidateIdsOverride || [...manualSelectedCandidateIds]
+        if (candidateIds.length === 0) {
+            setManualPreviewError('Select at least one detected asset.')
+            return
+        }
+        if (candidateIdsOverride?.length === 1) {
+            setCandidateInstallingId(candidateIdsOverride[0])
+        } else {
+            setManualImporting(true)
+        }
+        setManualPreviewError(null)
+        try {
+            const result = await api.apm.importGitHub({
+                ...manualPreviewRequest,
+                candidateIds,
+                scope: installScope,
+            })
+            if (workingDir) {
+                await Promise.all([
+                    queryClient.invalidateQueries({ queryKey: ['apm-packages', workingDir] }),
+                    queryClient.invalidateQueries({ queryKey: [...queryKeys.agents, workingDir] }),
+                ])
+            }
+            setInstalledCandidateKeys((current) => {
+                const next = new Set(current)
+                for (const candidateId of candidateIds) {
+                    next.add(candidateInstallKey(installScope, candidateId))
+                }
+                return next
+            })
+            showToast(`Imported ${result.packages.length} APM package${result.packages.length === 1 ? '' : 's'} to ${scopeLabel(installScope)}.`, 'success', {
+                title: 'APM import complete',
+                ...(installScope === 'stage' ? {
+                    actionLabel: 'Go to Export',
+                    onAction: () => setWorkspaceMode('export'),
+                } : {}),
+            })
+        } catch (caught) {
+            showToast(caught instanceof Error ? caught.message : 'Unable to import selected assets.', 'error', {
+                title: 'Import failed',
+                dedupeKey: `explore:github:${manualPreviewRequest.source}`,
+            })
+        } finally {
+            setManualImporting(false)
+            setCandidateInstallingId(null)
+        }
+    }
+
+    const toggleManualCandidate = (candidateId: string) => {
+        setManualSelectedCandidateIds((current) => {
+            const next = new Set(current)
+            if (next.has(candidateId)) {
+                next.delete(candidateId)
+            } else {
+                next.add(candidateId)
+            }
+            return next
+        })
+    }
+
     return (
-        <main className="explore-page">
-            <header className="explore-page__header">
-                <div className="explore-page__title-block">
-                    <span className="section-title">Explore</span>
-                    <h1>Preset catalog</h1>
+        <main className={`explore-page explore-page--simple ${shouldShowResults ? 'has-results' : ''}`}>
+            <section className="explore-search-hero" aria-label="GitHub source search">
+                <div className="explore-search-hero__title">
+                    <span className="section-title">Import</span>
+                    <h1>Search APM packages</h1>
+                    <p title={workingDir || undefined}>{workspaceLabel(workingDir)}</p>
                 </div>
-                <label className="explore-page__search">
-                    <Search size={13} />
+
+                <form
+                    className="explore-search-form"
+                    onSubmit={(event) => {
+                        event.preventDefault()
+                        void parseManualImportSource()
+                    }}
+                >
+                    <Search size={17} />
                     <input
                         className="input"
-                        value={query}
-                        onChange={(event) => setQuery(event.target.value)}
-                        placeholder="Search presets, repos, tags"
+                        value={manualSource}
+                        onChange={(event) => setManualSource(event.target.value)}
+                        placeholder="Search GitHub source or paste owner/repo"
                     />
-                </label>
-            </header>
+                    <select
+                        className="select"
+                        value={manualFormat}
+                        onChange={(event) => setManualFormat(event.target.value as ApmGitHubImportFormat)}
+                        aria-label="GitHub import format"
+                    >
+                        {IMPORT_FORMATS.map((format) => (
+                            <option key={format.value} value={format.value}>{format.label}</option>
+                        ))}
+                    </select>
+                    <button className="btn btn--primary" type="submit" disabled={manualPreviewLoading || !manualSource.trim()}>
+                        {manualPreviewLoading ? <Loader2 size={13} className="spin" /> : <Search size={13} />}
+                        Search
+                    </button>
+                </form>
 
-            <section className="explore-page__registry-strip" aria-label="8PM registry presets">
-                <div className="explore-page__registry-copy">
-                    <Sparkles size={14} />
-                    <div>
-                        <h2>8PM Registry presets</h2>
-                        <p>{registryLoading ? 'Loading registry presets...' : registryError ? 'Local curated sources are available below.' : `${registryPresets.length} registry preset${registryPresets.length === 1 ? '' : 's'} ready`}</p>
-                    </div>
-                </div>
-                <div className="explore-page__registry-list">
-                    {registryPresets.map((preset) => (
+                <div className="explore-curated-repos" aria-label="Curated GitHub repositories">
+                    <span>Curated</span>
+                    {CURATED_GITHUB_REPOS.map((source) => (
                         <button
-                            key={preset.id}
+                            key={source.repo}
                             type="button"
-                            className="explore-registry-pill"
-                            onClick={() => setQuery(preset.slug || preset.title)}
-                            title={preset.summary}
+                            onClick={() => void parseManualImportSource(source.repo, 'auto')}
+                            title={source.repo}
                         >
-                            {preset.title}
+                            {source.name}
                         </button>
                     ))}
-                    {!registryLoading && registryPresets.length === 0 ? (
-                        <span className="explore-page__registry-empty">{registryError || 'No registry presets returned.'}</span>
-                    ) : null}
                 </div>
             </section>
 
-            <div className="explore-page__body">
-                <aside className="explore-page__kind-rail" aria-label="Preset kind">
-                    {PRESET_KINDS.map((item) => (
-                        <button
-                            key={item.kind}
-                            type="button"
-                            className={`explore-kind-row ${activeKind === item.kind ? 'is-active' : ''}`}
-                            onClick={() => setActiveKind(item.kind)}
-                        >
-                            <span className="explore-kind-row__icon">{item.icon}</span>
-                            <span>{item.label}</span>
-                            <strong>{kindCount(item.kind)}</strong>
-                        </button>
-                    ))}
-                </aside>
-
-                <section className="explore-page__catalog" aria-label={`${activeKind} presets`}>
-                    {filteredPresets.map((preset) => (
-                        <article key={preset.id} className="surface-card explore-preset-card">
-                            <div className="explore-preset-card__main">
-                                <div className="explore-preset-card__source">
-                                    <Github size={13} />
-                                    <span>{preset.repo}</span>
-                                </div>
-                                <h2>{preset.name}</h2>
-                                <p>{preset.summary}</p>
-                                <div className="explore-preset-card__tags">
-                                    {preset.tags.map((tag) => (
-                                        <span key={tag} className="badge badge--subtle">{tag}</span>
-                                    ))}
-                                </div>
+            {shouldShowResults ? (
+                <section className="explore-page__parsed-panel" aria-label="Parsed GitHub assets">
+                    <header className="explore-results-top">
+                        <div className="explore-results-top__summary">
+                            <div>
+                                <h2>Results</h2>
+                                <p>
+                                    {manualPreviewLoading
+                                        ? 'Parsing repository...'
+                                        : manualPreviewResponse
+                                            ? `${manualPreviewResponse.source.repo} · ${filteredCandidates.length}/${resultCandidates.length} shown`
+                                            : 'No parsed results yet.'}
+                                </p>
                             </div>
-                            <div className="explore-preset-card__meta">
-                                <div className="explore-preset-card__targets">
-                                    {preset.targets.map((target) => (
-                                        <span key={target}>{target}</span>
-                                    ))}
-                                </div>
-                                <div className="explore-preset-card__actions">
-                                    {preset.importable ? (
-                                        <button
-                                            type="button"
-                                            className="btn btn--primary"
-                                            onClick={() => void handleImportSkill(preset)}
-                                            disabled={!!importingId}
-                                        >
-                                            {importingId === preset.id ? <Loader2 size={12} className="spin" /> : <PackagePlus size={12} />}
-                                            Import
-                                        </button>
-                                    ) : (
-                                        <span className="explore-preset-card__readiness">
-                                            <CheckCircle size={12} />
-                                            Source
-                                        </span>
-                                    )}
-                                    <button type="button" className="btn" onClick={() => openExternal(preset.href)}>
-                                        <ExternalLink size={12} />
-                                        Open
-                                    </button>
-                                </div>
-                            </div>
-                        </article>
-                    ))}
-                    {filteredPresets.length === 0 ? (
-                        <div className="explore-page__empty">
-                            <Compass size={18} />
-                            <span>No presets match this filter.</span>
+                            <button
+                                type="button"
+                                className="btn btn--primary"
+                                onClick={() => void handleManualImport()}
+                                disabled={!manualPreviewResponse || selectedParsedCount === 0 || manualImporting || !!candidateInstallingId || workspaceInstallDisabled}
+                            >
+                                {manualImporting ? <Loader2 size={13} className="spin" /> : <PackagePlus size={13} />}
+                                Install Selected
+                            </button>
                         </div>
+
+                        <div className="explore-results-controls">
+                            <label className="explore-result-search" aria-label="Search results">
+                                <Search size={13} />
+                                <input
+                                    className="input"
+                                    value={resultQuery}
+                                    onChange={(event) => setResultQuery(event.target.value)}
+                                    placeholder="Search results"
+                                    disabled={!manualPreviewResponse}
+                                />
+                            </label>
+                            <select
+                                className="select explore-result-kind"
+                                value={resultKind}
+                                onChange={(event) => setResultKind(event.target.value as ResultKindFilter)}
+                                disabled={!manualPreviewResponse}
+                                aria-label="Filter result kind"
+                            >
+                                {RESULT_KIND_FILTERS.map((filter) => (
+                                    <option key={filter.value} value={filter.value}>{filter.label}</option>
+                                ))}
+                            </select>
+                            <div className="explore-install-scope" aria-label="Install target">
+                                <button
+                                    type="button"
+                                    className={`tab ${installScope === 'stage' ? 'active' : ''}`}
+                                    onClick={() => setInstallScope('stage')}
+                                >
+                                    <FolderOpen size={12} />
+                                    Workspace
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`tab ${installScope === 'global' ? 'active' : ''}`}
+                                    onClick={() => setInstallScope('global')}
+                                >
+                                    <Globe2 size={12} />
+                                    Global
+                                </button>
+                            </div>
+                        </div>
+                        <p className="explore-install-target" title={installTargetPath}>{scopeLabel(installScope)}: {installTargetPath}</p>
+                    </header>
+
+                    <div className="explore-results-scroll">
+                        {manualPreviewError ? (
+                            <div className="alert alert--danger explore-parsed-alert">{manualPreviewError}</div>
+                        ) : null}
+                        {manualPreviewResponse?.warnings.length ? (
+                            <div className="alert alert--muted explore-parsed-alert">{manualPreviewResponse.warnings[0]}</div>
+                        ) : null}
+
+                        {manualPreviewLoading ? (
+                            <div className="explore-parsed-empty">
+                                <Loader2 size={16} className="spin" />
+                                <span>Parsing repository...</span>
+                            </div>
+                        ) : manualPreviewResponse ? (
+                            <>
+                            <div className="explore-parsed-grid">
+                                {filteredCandidates.map((candidate) => {
+                                    const selected = manualSelectedCandidateIds.has(candidate.id)
+                                    const installing = candidateInstallingId === candidate.id
+                                    const installed = installedCandidateKeys.has(candidateInstallKey(installScope, candidate.id))
+                                    return (
+                                        <article key={candidate.id} className={`asset-card explore-parsed-asset ${selected ? 'is-selected' : ''}`}>
+                                            <label className="explore-parsed-asset__select" aria-label={`Select ${candidate.name}`}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selected}
+                                                    onChange={() => toggleManualCandidate(candidate.id)}
+                                                />
+                                            </label>
+                                            <div className="explore-parsed-asset__body">
+                                                <div className="asset-card__header">
+                                                    {candidateIcon(candidate.kind)}
+                                                    <span className="asset-card__name">{candidate.name}</span>
+                                                </div>
+                                                <div className="asset-card__author" title={candidate.sourcePath}>
+                                                    {candidate.kind} / {candidate.sourcePath}
+                                                </div>
+                                                <div className="asset-card__desc">
+                                                    {candidate.description || 'No description provided.'}
+                                                </div>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                className={`btn btn--sm ${installed ? '' : 'btn--primary'}`}
+                                                onClick={() => void handleManualImport([candidate.id])}
+                                                disabled={installed || installing || manualImporting || workspaceInstallDisabled}
+                                                title={`Install ${candidate.name} to ${scopeLabel(installScope)}`}
+                                            >
+                                                {installed ? <CheckCircle2 size={12} /> : installing ? <Loader2 size={12} className="spin" /> : <PackagePlus size={12} />}
+                                                {installed ? 'Installed' : 'Install'}
+                                            </button>
+                                        </article>
+                                    )
+                                })}
+                                {filteredCandidates.length === 0 ? (
+                                    <div className="explore-parsed-empty">
+                                        <Search size={16} />
+                                        <span>No results match this search or filter.</span>
+                                    </div>
+                                ) : null}
+                            </div>
+                        </>
                     ) : null}
+                    </div>
                 </section>
-            </div>
+            ) : null}
         </main>
     )
 }

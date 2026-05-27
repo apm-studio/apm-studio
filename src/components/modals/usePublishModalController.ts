@@ -8,7 +8,7 @@ import {
     buildPerformerAssetPayload,
 } from '../../lib/performers'
 import { queryKeys, useAssetKind } from '../../hooks/queries'
-import { useRosterLogin } from '../../hooks/useRosterLogin'
+import { useApmLogin } from '../../hooks/useApmLogin'
 import {
     buildMarkdownAssetPayload,
     buildPublishFormSeed,
@@ -36,7 +36,7 @@ export function usePublishModalController(open: boolean) {
     const replacePerformerDanceRef = useStudioStore((state) => state.replacePerformerDanceRef)
 
     const queryClient = useQueryClient()
-    const { authUser, startLogin, isAuthenticating } = useRosterLogin()
+    const { authUser, startLogin, isAuthenticating } = useApmLogin()
     const { data: installedTals = [] } = useAssetKind('tal', open)
 
     const [step, setStep] = useState<'picker' | 'form'>('picker')
@@ -196,7 +196,7 @@ export function usePublishModalController(open: boolean) {
                     description,
                     tags,
                 })
-                const result = await api.roster.saveLocalAsset('performer', slug, payload, authUser?.username || undefined, stage)
+                const result = await api.apmAssets.saveLocalAsset('performer', slug, payload, authUser?.username || undefined, stage)
                 await invalidateKind('performer')
                 setStatus({
                     tone: 'success',
@@ -208,7 +208,7 @@ export function usePublishModalController(open: boolean) {
             if (target.kind === 'act' && selectedAct) {
                 syncActAuthoringMeta(selectedAct.id, tags)
                 const payload = buildActAssetPayload(selectedAct, { description, tags })
-                const result = await api.roster.saveLocalAsset('act', slug, payload, authUser?.username || undefined, stage)
+                const result = await api.apmAssets.saveLocalAsset('act', slug, payload, authUser?.username || undefined, stage)
                 await invalidateKind('act')
                 setStatus({
                     tone: 'success',
@@ -219,7 +219,7 @@ export function usePublishModalController(open: boolean) {
 
             if (target.kind === 'tal' && markdownEditor && draft) {
                 const payload = buildMarkdownAssetPayload(markdownEditor, draft, slug, description, tags)
-                const result = await api.roster.saveLocalAsset(markdownEditor.kind, slug, payload, authUser?.username || undefined, stage)
+                const result = await api.apmAssets.saveLocalAsset(markdownEditor.kind, slug, payload, authUser?.username || undefined, stage)
                 syncMarkdownDraftLocalState(result.urn, slug, payload)
                 await invalidateKind(markdownEditor.kind)
                 setStatus({

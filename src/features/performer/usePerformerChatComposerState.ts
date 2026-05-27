@@ -9,7 +9,7 @@ import { showToast } from '../../lib/toast'
 import type { AssetCard, DraftAsset, PerformerNode } from '../../types'
 import { buildDanceSearchSections, formatChatAttachments } from './agent-frame-utils'
 import type { DanceSearchItem, TurnDanceSelection } from './agent-frame-utils'
-import { getDanceSlashMatch } from './performer-chat-slash'
+import { getSkillSlashMatch } from './performer-chat-slash'
 
 type Args = {
     performerId: string
@@ -74,7 +74,7 @@ export function usePerformerChatComposerState({
     } = useFileMentions(composerInputRef)
 
     const danceSlashMatch = useMemo(
-        () => getDanceSlashMatch(input, activeCommand),
+        () => getSkillSlashMatch(input, activeCommand),
         [activeCommand, input],
     )
 

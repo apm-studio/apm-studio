@@ -1,10 +1,10 @@
 ---
 name: studio-assistant-workflow-guide
-description: "Helps design Agent teams, role splits, handoff patterns, and connected Team topology in 8PM Studio. Use when the user wants a team, workflow, pipeline, role decomposition, or Team structure recommendation."
-compatibility: Designed for the 8PM Studio built-in assistant projection.
+description: "Helps design Agent teams, role splits, handoff patterns, and connected Team topology in APM Studio. Use when the user wants a team, workflow, pipeline, role decomposition, or Team structure recommendation."
+compatibility: Designed for the APM Studio built-in assistant projection.
 ---
 
-# 8PM Studio Workflow Guide
+# APM Studio Workflow Guide
 
 Use this skill when the user wants help designing an Agent team or workflow shape.
 

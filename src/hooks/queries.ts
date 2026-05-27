@@ -9,10 +9,8 @@ import type { AssetCard, McpServer, ModelConfig, RuntimeToolResolution } from '.
 import { useStudioStore } from '../store'
 import type { RuntimeModelCatalogEntry } from '../../shared/model-variants'
 import type { GitHubDanceSyncStatus } from '../../shared/asset-contracts'
-import type { InstalledDanceLocator } from '../../shared/roster-contracts'
-import type { ApmPackageSummary } from '../../shared/apm-contracts'
-import type { RegistryListing, RegistryListingKind } from '../../shared/registry-contracts'
-import { registryListingToLibraryAsset } from '../components/panels/asset-library-utils'
+import type { ApmAssetStatusResponse, InstalledDanceLocator } from '../../shared/apm-asset-contracts'
+import type { ApmPackageSummary, ApmToolingStatus } from '../../shared/apm-contracts'
 
 type InstallableAssetKind = 'tal' | 'dance' | 'performer' | 'act'
 
@@ -26,10 +24,10 @@ export const queryKeys = {
     mcpServers: ['mcp-servers'] as const,
     runtimeTools: (workingDir: string, modelKey: string, serverKey: string) => ['runtime-tools', workingDir, modelKey, serverKey] as const,
     serverHealth: ['server-health'] as const,
-    rosterStatus: (workingDir: string) => ['roster-status', workingDir] as const,
-    rosterAuthUser: ['roster-auth-user'] as const,
-    registrySearch: (workingDir: string, q: string) => ['registry-search', workingDir, q] as const,
-    apmPackages: (workingDir: string) => ['apm-packages', workingDir] as const,
+    apmAssetStatus: (workingDir: string) => ['apm-status', workingDir] as const,
+    apmAuthUser: ['apm-auth-user'] as const,
+    apmPackages: (workingDir: string, scope?: 'stage' | 'global') => ['apm-packages', workingDir, scope || 'stage'] as const,
+    apmTooling: ['apm-tooling'] as const,
     danceUpdateChecks: (workingDir: string, assetsKey: string, includeRepoDrift: boolean) =>
         ['dance-update-checks', workingDir, assetsKey, includeRepoDrift ? 'drift' : 'light'] as const,
     discordStatus: ['discord-status'] as const,
@@ -138,65 +136,45 @@ export function useServerHealth() {
     })
 }
 
-// ── 8PM Studio Status ────────────────────────────────
-export function useRosterStatus() {
+// ── APM Studio Status ────────────────────────────────
+export function useApmAssetStatus() {
     const workingDir = useStudioStore((s) => s.workingDir)
-    return useQuery<{ initialized: boolean; rosterDir: string; projectDir: string }>({
-        queryKey: queryKeys.rosterStatus(workingDir),
-        queryFn: () => api.roster.status(),
+    return useQuery<ApmAssetStatusResponse>({
+        queryKey: queryKeys.apmAssetStatus(workingDir),
+        queryFn: () => api.apmAssets.status(),
         staleTime: 60_000,
     })
 }
 
-export function useRosterAuthUser() {
+export function useApmAuthUser() {
     return useQuery<{ authenticated: boolean; username: string | null }>({
-        queryKey: queryKeys.rosterAuthUser,
-        queryFn: () => api.roster.authUser(),
+        queryKey: queryKeys.apmAuthUser,
+        queryFn: () => api.apmAssets.authUser(),
         staleTime: 60_000,
         retry: false,
         placeholderData: keepPreviousData,
     })
 }
 
-export function useApmPackages(enabled = true) {
+export function useApmPackages(enabled = true, scope: 'stage' | 'global' = 'stage') {
     const workingDir = useStudioStore((s) => s.workingDir)
     return useQuery<ApmPackageSummary[]>({
-        queryKey: queryKeys.apmPackages(workingDir),
-        queryFn: async () => (await api.apm.packages()).packages,
+        queryKey: queryKeys.apmPackages(workingDir, scope),
+        queryFn: async () => (await api.apm.packages(scope)).packages,
         enabled,
         staleTime: 30_000,
         gcTime: 5 * 60_000,
     })
 }
 
-function registryKindForAssetKind(kind: 'all' | 'tal' | 'dance' | 'performer' | 'act'): RegistryListingKind | undefined {
-    if (kind === 'tal') return 'instruction'
-    if (kind === 'dance') return 'skill'
-    if (kind === 'performer') return 'agent'
-    if (kind === 'act') return 'team'
-    return undefined
-}
-
-// ── Registry Search ─────────────────────────────────────
-export function useRegistrySearch(
-    query: string,
-    kind: 'all' | 'tal' | 'dance' | 'performer' | 'act' = 'all',
-    enabled = false,
-) {
-    const workingDir = useStudioStore((s) => s.workingDir)
-    return useQuery({
-        queryKey: queryKeys.registrySearch(workingDir, `${kind}:${query}`),
-        queryFn: async () => {
-            const response = await api.explore.catalog({
-                q: query,
-                kind: registryKindForAssetKind(kind),
-                limit: 20,
-            })
-            return response.listings.map((listing: RegistryListing) => registryListingToLibraryAsset(listing))
-        },
-        enabled: enabled && query.trim().length > 0,
-        staleTime: 60_000,
-        gcTime: 5 * 60_000,
+export function useApmTooling(enabled = true) {
+    return useQuery<ApmToolingStatus>({
+        queryKey: queryKeys.apmTooling,
+        queryFn: async () => (await api.apm.tooling()).tooling,
+        enabled,
+        staleTime: 5 * 60_000,
+        gcTime: 10 * 60_000,
+        retry: false,
     })
 }
 
@@ -214,7 +192,7 @@ export function useDanceUpdateChecks(
     return useQuery<Array<InstalledDanceLocator & { sync: GitHubDanceSyncStatus }>>({
         queryKey: queryKeys.danceUpdateChecks(workingDir, assetsKey, includeRepoDrift),
         queryFn: async () => {
-            const response = await api.roster.checkDanceUpdates({ assets, includeRepoDrift })
+            const response = await api.apmAssets.checkDanceUpdates({ assets, includeRepoDrift })
             return response.results
         },
         enabled: enabled && assets.length > 0,
@@ -231,11 +209,11 @@ export function useInstallAsset() {
     const workingDir = useStudioStore((s) => s.workingDir)
     return useMutation({
         mutationFn: ({ urn, localName, scope }: { urn: string; localName?: string; scope?: 'global' | 'stage' }) =>
-            api.roster.install(urn, localName, undefined, scope),
+            api.apmAssets.install(urn, localName, undefined, scope),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.assets(workingDir) })
             queryClient.invalidateQueries({ queryKey: queryKeys.assetInventory(workingDir) })
-            queryClient.invalidateQueries({ queryKey: queryKeys.rosterStatus(workingDir) })
+            queryClient.invalidateQueries({ queryKey: queryKeys.apmAssetStatus(workingDir) })
         },
     })
 }
@@ -244,11 +222,11 @@ export function useAddDance() {
     const queryClient = useQueryClient()
     const workingDir = useStudioStore((s) => s.workingDir)
     return useMutation({
-        mutationFn: ({ source, scope }: { source: string; scope?: 'global' | 'stage' }) => api.roster.addFromGitHub(source, scope),
+        mutationFn: ({ source, scope }: { source: string; scope?: 'global' | 'stage' }) => api.apmAssets.addFromGitHub(source, scope),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.assets(workingDir) })
             queryClient.invalidateQueries({ queryKey: queryKeys.assetInventory(workingDir) })
-            queryClient.invalidateQueries({ queryKey: queryKeys.rosterStatus(workingDir) })
+            queryClient.invalidateQueries({ queryKey: queryKeys.apmAssetStatus(workingDir) })
         },
     })
 }
@@ -257,7 +235,7 @@ export function useApplyDanceUpdates() {
     const queryClient = useQueryClient()
     const workingDir = useStudioStore((s) => s.workingDir)
     return useMutation({
-        mutationFn: (assets: InstalledDanceLocator[]) => api.roster.applyDanceUpdates({ assets }),
+        mutationFn: (assets: InstalledDanceLocator[]) => api.apmAssets.applyDanceUpdates({ assets }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.assets(workingDir) })
             queryClient.invalidateQueries({ queryKey: queryKeys.assetInventory(workingDir) })
@@ -270,7 +248,7 @@ export function useReimportDanceSource() {
     const queryClient = useQueryClient()
     const workingDir = useStudioStore((s) => s.workingDir)
     return useMutation({
-        mutationFn: (asset: InstalledDanceLocator) => api.roster.reimportDanceSource(asset),
+        mutationFn: (asset: InstalledDanceLocator) => api.apmAssets.reimportDanceSource(asset),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.assets(workingDir) })
             queryClient.invalidateQueries({ queryKey: queryKeys.assetInventory(workingDir) })

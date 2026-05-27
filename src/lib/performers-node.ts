@@ -75,9 +75,13 @@ export function createPerformerNodeFromAsset(input: {
         model?: ModelConfig | string | null
         modelVariant?: string | null
         modelPlaceholder?: ModelConfig | null
+        inlineInstruction?: string | null
+        agentId?: string | null
+        planMode?: boolean
         mcpServerNames?: string[]
         mcpBindingMap?: Record<string, string>
         mcpConfig?: Record<string, unknown> | null
+        description?: string
     }
     x: number
     y: number
@@ -96,7 +100,9 @@ export function createPerformerNodeFromAsset(input: {
         model: normalized.model,
         modelPlaceholder: normalized.modelPlaceholder,
         modelVariant: normalized.modelVariant,
-        agentId: null,
+        agentId: normalized.agentId,
+        inlineInstruction: normalized.inlineInstruction,
+        planMode: normalized.planMode,
         mcpServerNames: normalized.mcpServerNames,
         mcpBindingMap: normalized.mcpBindingMap,
         declaredMcpConfig: normalized.declaredMcpConfig,

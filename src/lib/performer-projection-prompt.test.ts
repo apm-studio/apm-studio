@@ -11,7 +11,7 @@ vi.mock('../../server/services/draft-service.js', () => ({
     readDraftTextContent: vi.fn().mockResolvedValue(null),
 }))
 
-vi.mock('../../server/lib/roster-source.js', () => ({
+vi.mock('../../server/lib/apm-asset-source.js', () => ({
     getAssetPayload: vi.fn().mockResolvedValue(null),
 }))
 

@@ -11,7 +11,6 @@ describe('performer projection startup sync', () => {
             skippedCount: 0,
             failedCount: 0,
             changedCount: 0,
-            codexChangedCount: 0,
             prunedWorkspaceCount: 0,
         })
     })
@@ -26,7 +25,6 @@ describe('performer projection startup sync', () => {
             skippedCount: 0,
             failedCount: 0,
             changedCount: 0,
-            codexChangedCount: 0,
             prunedWorkspaceCount: 0,
         })
     })

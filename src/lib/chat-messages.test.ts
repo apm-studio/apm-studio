@@ -259,27 +259,23 @@ describe('mapSessionMessagesToChatMessages', () => {
         })
     })
 
-    it('reads legacy top-level provider and variant metadata shapes', () => {
+    it('ignores top-level provider and variant fields outside the model metadata shape', () => {
         const rawMessage = {
-            id: 'msg-user-legacy',
+            id: 'msg-user-top-level-metadata',
             role: 'user',
             providerID: 'anthropic',
             modelID: 'claude-sonnet-4',
             variant: 'reasoning-high',
             info: {
-                id: 'msg-user-legacy',
+                id: 'msg-user-top-level-metadata',
                 role: 'user',
                 time: { created: 3000 },
             },
-            text: 'Legacy metadata',
+            text: 'Top-level metadata',
         }
 
         const mapped = mapSessionMessagesToChatMessages([rawMessage as never])[0]
 
-        expect(mapped.metadata).toMatchObject({
-            provider: 'anthropic',
-            modelId: 'claude-sonnet-4',
-            variant: 'reasoning-high',
-        })
+        expect(mapped.metadata).toBeUndefined()
     })
 })

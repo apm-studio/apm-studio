@@ -14,15 +14,15 @@
     transition: background 0.2s;
 }
 
-.act-frame__readiness-roster--ok {
+.act-frame__readiness-apm--ok {
     background: #34d399;
 }
 
-.act-frame__readiness-roster--warning {
+.act-frame__readiness-apm--warning {
     background: #fbbf24;
 }
 
-.act-frame__readiness-roster--error {
+.act-frame__readiness-apm--error {
     background: #f87171;
 }
 

@@ -26,7 +26,7 @@ export function markdownEditorModeConfig(kind: MarkdownEditorKind): MarkdownEdit
     if (kind === 'dance') {
         return {
             title: 'Skill Editor',
-            helpText: '8PM Studio edits the SKILL.md file for this skill. If you need scripts/, references/, assets/, or agents/openai.yaml, save the draft first, open the skill folder, and edit those files there. Keep the folder name unchanged so the draft stays linked.',
+            helpText: 'APM Studio edits the SKILL.md file for this skill. If you need scripts/, references/, assets/, or agents/openai.yaml, save the draft first, open the skill folder, and edit those files there. Keep the folder name unchanged so the draft stays linked.',
             placeholder: 'Write the SKILL.md for this skill. Need scripts/, references/, assets/, or agents/openai.yaml? Save the draft first, then open the skill folder and edit those files directly.',
             showOpenButton: true,
             showExportButton: true,
@@ -35,7 +35,7 @@ export function markdownEditorModeConfig(kind: MarkdownEditorKind): MarkdownEdit
 
     return {
         title: 'Instruction Editor',
-        helpText: 'These instructions stay local to the editor until you save them. After the first save, 8PM Studio keeps them as a draft and applies later edits to that same draft.',
+        helpText: 'These instructions stay local to the editor until you save them. After the first save, APM Studio keeps them as a draft and applies later edits to that same draft.',
         placeholder: 'Write the agent instructions, workflows, and system guidance in Markdown.',
         showOpenButton: false,
         showExportButton: false,

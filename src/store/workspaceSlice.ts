@@ -26,6 +26,7 @@ import {
 import {
     setPerformerTal as setPerformerTalImpl,
     setPerformerTalRef as setPerformerTalRefImpl,
+    setPerformerAgentBody as setPerformerAgentBodyImpl,
     addPerformerDance as addPerformerDanceImpl,
     addPerformerDanceRef as addPerformerDanceRefImpl,
     replacePerformerDanceRef as replacePerformerDanceRefImpl,
@@ -135,7 +136,7 @@ function buildClosedWorkspaceState(): Partial<StudioState> {
         selectedPerformerId: null,
         selectedPerformerSessionId: null,
         selectedMarkdownEditorId: null,
-        workspaceMode: 'canvas',
+        workspaceMode: 'manage',
         selectedActId: null,
         actEditorState: null,
         activeThreadId: null,
@@ -184,7 +185,7 @@ export const createWorkspaceSlice: StateCreator<
     selectedPerformerId: null,
     selectedPerformerSessionId: null,
     selectedMarkdownEditorId: null,
-    workspaceMode: 'canvas',
+    workspaceMode: 'manage',
     ...buildCanvasViewResetState(),
     canvasRevealTarget: null,
     inspectorFocus: null,
@@ -192,7 +193,7 @@ export const createWorkspaceSlice: StateCreator<
     workspaceDirty: false,
     projectionDirty: createEmptyProjectionDirtyState(),
     runtimeReloadPending: false,
-    theme: (localStorage.getItem('roster-theme') as 'light' | 'dark') || 'light',
+    theme: (localStorage.getItem('apm-theme') as 'light' | 'dark') || 'light',
     workingDir: '',
     isTerminalOpen: false,
     isTrackingOpen: false,
@@ -207,7 +208,7 @@ export const createWorkspaceSlice: StateCreator<
         ? { isTrackingOpen: true, isAssistantOpen: false }
         : { isTrackingOpen: false }),
     setWorkspaceMode: (mode) => set(() => {
-        if (mode === 'agent-sync' || mode === 'explore') {
+        if (mode === 'import' || mode === 'export') {
             return {
                 workspaceMode: mode,
                 isTrackingOpen: false,
@@ -221,8 +222,8 @@ export const createWorkspaceSlice: StateCreator<
             return {
                 workspaceMode: mode,
                 isTrackingOpen: false,
-                isAssistantOpen: true,
-                isTerminalOpen: true,
+                isAssistantOpen: false,
+                isTerminalOpen: false,
                 isAssetLibraryOpen: false,
             }
         }
@@ -233,7 +234,7 @@ export const createWorkspaceSlice: StateCreator<
 
     toggleTheme: () => set((s) => {
         const newTheme = s.theme === 'light' ? 'dark' : 'light'
-        localStorage.setItem('roster-theme', newTheme)
+        localStorage.setItem('apm-theme', newTheme)
         api.studio.updateConfig({ theme: newTheme }).catch(err => console.warn('[studio] theme sync failed', err))
         return { theme: newTheme }
     }),
@@ -350,6 +351,9 @@ export const createWorkspaceSlice: StateCreator<
                         model: normalized.model,
                         modelPlaceholder: normalized.modelPlaceholder,
                         modelVariant: normalized.modelVariant,
+                        inlineInstruction: normalized.inlineInstruction,
+                        agentId: normalized.agentId,
+                        planMode: normalized.planMode,
                         mcpServerNames: normalized.mcpServerNames,
                         mcpBindingMap: normalized.mcpBindingMap,
                         declaredMcpConfig: normalized.declaredMcpConfig,
@@ -645,6 +649,8 @@ export const createWorkspaceSlice: StateCreator<
     setPerformerTal: (performerId, tal) => setPerformerTalImpl(set, get, performerId, tal),
 
     setPerformerTalRef: (performerId, talRef) => setPerformerTalRefImpl(set, get, performerId, talRef),
+
+    setPerformerAgentBody: (performerId, agentBody) => setPerformerAgentBodyImpl(set, get, performerId, agentBody),
 
     addPerformerDance: (performerId, dance) => addPerformerDanceImpl(set, get, performerId, dance),
 

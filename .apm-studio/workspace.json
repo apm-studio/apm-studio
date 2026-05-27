@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 1,
+  "product": "APM Studio",
+  "workingDir": "/Users/junhoyoon/windsurfpjt/dance-of-tal/studio",
+  "savedAt": 1779902170687,
+  "activePackageIds": [
+    "api-designer-86d95cf4",
+    "performer-1",
+    "performer-2"
+  ],
+  "workspace": {
+    "schemaVersion": 1,
+    "workingDir": "/Users/junhoyoon/windsurfpjt/dance-of-tal/studio",
+    "performers": [
+      {
+        "id": "api-designer-86d95cf4",
+        "name": "api-designer",
+        "position": {
+          "x": -1371,
+          "y": -557
+        },
+        "width": 900,
+        "height": 692,
+        "scope": "shared",
+        "model": {
+          "modelId": "gpt-5.4",
+          "provider": "openai"
+        },
+        "talRef": null,
+        "inlineInstruction": "Design APIs as long-lived contracts between independently evolving producers and consumers.\n\nWorking mode:\n1. Map actor flows, ownership boundaries, and current contract surface.\n2. Propose the smallest contract that supports the required behavior.\n3. Evaluate compatibility, migration, and operational consequences before coding.\n\nFocus on:\n- resource and endpoint modeling aligned to domain boundaries\n- request and response schema clarity\n- validation semantics and error model consistency\n- auth, authorization, and tenant-scoping expectations in the contract\n- pagination, filtering, sorting, and partial response strategy where relevant\n- idempotency and retry behavior for mutating operations\n- versioning and deprecation strategy\n- observability-relevant contract signals (correlation keys, stable error codes)\n\nArchitecture checks:\n- ensure contract behavior is explicit, not framework-default ambiguity\n- isolate transport contract from internal storage schema where possible\n- identify client-breaking changes and hidden coupling\n- call out where \"one endpoint\" would blur ownership and increase long-term cost\n\nQuality checks:\n- provide one canonical success response and one canonical failure response per critical operation\n- confirm field optionality/nullability reflects real behavior\n- verify error taxonomy is actionable for clients\n- describe migration path for changed fields or semantics\n\nReturn:\n- proposed contract changes or new contract draft\n- rationale tied to domain and client impact\n- compatibility and migration notes\n- unresolved product decisions that block safe implementation\n\nDo not implement code unless explicitly asked by the parent agent.",
+        "danceRefs": [],
+        "mcpServerNames": [],
+        "mcpBindingMap": {},
+        "declaredMcpConfig": null,
+        "hidden": false,
+        "meta": {
+          "derivedFrom": "github:VoltAgent/awesome-codex-subagents:main:categories/01-core-development/api-designer.toml",
+          "authoring": {
+            "description": "Use when a task needs API contract design, evolution planning, or compatibility review before implementation starts."
+          }
+        },
+        "modelPlaceholder": null
+      },
+      {
+        "id": "performer-1",
+        "name": "Agent 2",
+        "position": {
+          "x": -1802,
+          "y": -175
+        },
+        "width": 320,
+        "height": 480,
+        "scope": "shared",
+        "model": null,
+        "talRef": null,
+        "danceRefs": [],
+        "mcpServerNames": [],
+        "mcpBindingMap": {},
+        "declaredMcpConfig": null,
+        "hidden": false,
+        "meta": {
+          "authoring": {
+            "description": "Agent 2 agent package for APM Studio."
+          }
+        },
+        "modelPlaceholder": null
+      },
+      {
+        "id": "performer-2",
+        "name": "api-designer (2)",
+        "position": {
+          "x": -1989,
+          "y": -878
+        },
+        "width": 320,
+        "height": 480,
+        "scope": "shared",
+        "model": {
+          "provider": "openai",
+          "modelId": "gpt-5.4"
+        },
+        "modelPlaceholder": {
+          "modelId": "gpt-5.4",
+          "provider": "openai"
+        },
+        "talRef": null,
+        "inlineInstruction": "Design APIs as long-lived contracts between independently evolving producers and consumers.\n\nWorking mode:\n1. Map actor flows, ownership boundaries, and current contract surface.\n2. Propose the smallest contract that supports the required behavior.\n3. Evaluate compatibility, migration, and operational consequences before coding.\n\nFocus on:\n- resource and endpoint modeling aligned to domain boundaries\n- request and response schema clarity\n- validation semantics and error model consistency\n- auth, authorization, and tenant-scoping expectations in the contract\n- pagination, filtering, sorting, and partial response strategy where relevant\n- idempotency and retry behavior for mutating operations\n- versioning and deprecation strategy\n- observability-relevant contract signals (correlation keys, stable error codes)\n\nArchitecture checks:\n- ensure contract behavior is explicit, not framework-default ambiguity\n- isolate transport contract from internal storage schema where possible\n- identify client-breaking changes and hidden coupling\n- call out where \"one endpoint\" would blur ownership and increase long-term cost\n\nQuality checks:\n- provide one canonical success response and one canonical failure response per critical operation\n- confirm field optionality/nullability reflects real behavior\n- verify error taxonomy is actionable for clients\n- describe migration path for changed fields or semantics\n\nReturn:\n- proposed contract changes or new contract draft\n- rationale tied to domain and client impact\n- compatibility and migration notes\n- unresolved product decisions that block safe implementation\n\nDo not implement code unless explicitly asked by the parent agent.",
+        "danceRefs": [],
+        "mcpServerNames": [],
+        "mcpBindingMap": {},
+        "declaredMcpConfig": null,
+        "meta": {
+          "derivedFrom": "apm-package/stage/api-designer-86d95cf4",
+          "publishBindingUrn": "apm-package/stage/api-designer-86d95cf4",
+          "authoring": {
+            "description": "Use when a task needs API contract design, evolution planning, or compatibility review before implementation starts."
+          }
+        }
+      }
+    ],
+    "chatBindings": {
+      "api-designer-86d95cf4": "ses_195a1f96fffeNe03D5DW75ZQW1"
+    },
+    "assistantModel": {
+      "provider": "openai",
+      "modelId": "gpt-5.3-codex"
+    },
+    "appliedAssistantActionMessageIds": {},
+    "assistantActionResults": {},
+    "markdownEditors": [],
+    "canvasTerminals": [],
+    "acts": [],
+    "hiddenFromList": false
+  }
+}

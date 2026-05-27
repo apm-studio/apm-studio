@@ -1,10 +1,10 @@
 ---
 name: studio-assistant-studio-guide
-description: "Explains 8PM Studio navigation, UI vocabulary, Packages behavior, Stage vs thread terminology, and visible control names. Use for product-help questions. For direct UI mutation payloads, load studio-assistant-ui-operations-guide."
-compatibility: Designed for the 8PM Studio built-in assistant projection.
+description: "Explains APM Studio navigation, UI vocabulary, Packages behavior, Stage vs thread terminology, and visible control names. Use for product-help questions. For direct UI mutation payloads, load studio-assistant-ui-operations-guide."
+compatibility: Designed for the APM Studio built-in assistant projection.
 ---
 
-# 8PM Studio UI Guide
+# APM Studio UI Guide
 
 Use this skill for navigation, feature-discovery, and product-usage questions.
 
@@ -33,7 +33,7 @@ Use this skill for navigation, feature-discovery, and product-usage questions.
 - Top toolbar: workspace controls, terminal menu, tracking, save selected package, theme, settings, assistant.
 - Left sidebar: Workspace Explorer plus Packages drawer.
 - Center canvas: Agents, Teams, markdown editors, terminals.
-- Right panel: 8PM Assistant or Workspace Tracking.
+- Right panel: APM Assistant or Workspace Tracking.
 
 ## Common Navigation
 - Assistant: toolbar `Assistant`.

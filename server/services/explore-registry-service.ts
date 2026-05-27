@@ -16,7 +16,7 @@ import type {
 import { writeApmPackage } from './apm-package-service.js'
 import { manifestPath, packageDir, toPosixPath } from './apm-package/paths.js'
 
-const DEFAULT_REGISTRY_URL = 'https://registry.8pm.studio'
+const DEFAULT_REGISTRY_URL = 'https://registry.apm.studio'
 
 type CatalogQuery = {
     q?: string
@@ -36,7 +36,7 @@ type CodexTomlAgent = {
 }
 
 function registryBaseUrl() {
-    return (process.env.EIGHTPM_STUDIO_REGISTRY_URL || DEFAULT_REGISTRY_URL).replace(/\/+$/, '')
+    return (process.env.APM_STUDIO_REGISTRY_URL || DEFAULT_REGISTRY_URL).replace(/\/+$/, '')
 }
 
 function registryUrl(pathname: string, params?: Record<string, string | number | undefined>) {
@@ -52,7 +52,7 @@ function registryUrl(pathname: string, params?: Record<string, string | number |
 async function fetchJson<T>(url: URL): Promise<T> {
     const response = await fetch(url)
     if (!response.ok) {
-        throw new Error(`8PM Registry request failed with HTTP ${response.status}.`)
+        throw new Error(`APM Registry request failed with HTTP ${response.status}.`)
     }
     return await response.json() as T
 }
@@ -173,6 +173,8 @@ function buildCodexTomlManifest(listing: RegistryListing, rawSource: string): Ap
     return {
         name: slugify(agentName),
         version: '0.1.0',
+        type: 'hybrid',
+        includes: 'auto',
         description: parsed.description || listing.summary,
         license: listing.license,
         agents: [{
@@ -190,29 +192,26 @@ function buildCodexTomlManifest(listing: RegistryListing, rawSource: string): Ap
                 path: listing.source.path,
             },
         }],
-        instructions: [{
-            source: 'inline',
-            content: instruction,
-        }],
+        instructions: [],
         skills: [],
         dependencies: {
             apm: [],
             mcp: [],
         },
-        'x-8pm': {
+        'x-apm': {
             schemaVersion: 1,
             packageId,
             kind: 'agent',
             agent: {
-                performerId: packageId,
-                performerName: agentName,
+                agentNodeId: packageId,
+                agentName,
                 model,
                 modelVariant: parsed.model_reasoning_effort
                     ? `reasoning-${parsed.model_reasoning_effort}`
                     : null,
-                inlineInstruction: instruction,
-                talRef: null,
-                danceRefs: [],
+                agentBody: instruction,
+                instructionRef: null,
+                skillRefs: [],
                 mcpServerNames: [],
                 agentId: null,
                 planMode: false,
@@ -256,7 +255,7 @@ export async function importExploreListing(
 
     const rawSource = await fetchGithubSource(listing.source)
     const manifest = buildCodexTomlManifest(listing, rawSource)
-    const packageId = manifest['x-8pm']?.packageId || packageIdForListing(listing)
+    const packageId = manifest['x-apm']?.packageId || packageIdForListing(listing)
     const written = await writeApmPackage(workingDir, packageId, manifest)
 
     return {

@@ -21,8 +21,8 @@ afterEach(async () => {
 
 describe('copyGitHubDanceSkill', () => {
     it('copies repo-local symlinked folders into the installed Skill', async () => {
-        const repoRoot = await makeTempDir('roster-gh-source-')
-        const workingDir = await makeTempDir('roster-gh-target-')
+        const repoRoot = await makeTempDir('apm-gh-source-')
+        const workingDir = await makeTempDir('apm-gh-target-')
         const sharedAssetsDir = path.join(repoRoot, 'assets')
         const skillDir = path.join(repoRoot, 'skills', 'privacy-eu')
 
@@ -46,9 +46,9 @@ describe('copyGitHubDanceSkill', () => {
     })
 
     it('rejects symlinks that escape the cloned repository', async () => {
-        const repoRoot = await makeTempDir('roster-gh-source-')
-        const workingDir = await makeTempDir('roster-gh-target-')
-        const externalDir = await makeTempDir('roster-gh-external-')
+        const repoRoot = await makeTempDir('apm-gh-source-')
+        const workingDir = await makeTempDir('apm-gh-target-')
+        const externalDir = await makeTempDir('apm-gh-external-')
         const skillDir = path.join(repoRoot, 'skills', 'privacy-eu')
 
         await fs.mkdir(skillDir, { recursive: true })

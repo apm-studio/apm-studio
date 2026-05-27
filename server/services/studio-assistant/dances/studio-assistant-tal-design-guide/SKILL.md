@@ -1,10 +1,10 @@
 ---
 name: studio-assistant-tal-design-guide
-description: Helps the 8PM Studio Assistant design strong Instruction content for agents. Use when deciding what belongs in Instruction, how concise it should be, how to express mental model, or how to propose a role-appropriate Instruction before creating an Agent.
-compatibility: Designed for the 8PM Studio built-in assistant projection.
+description: Helps the APM Studio Assistant design strong Instruction content for agents. Use when deciding what belongs in Instruction, how concise it should be, how to express mental model, or how to propose a role-appropriate Instruction before creating an Agent.
+compatibility: Designed for the APM Studio built-in assistant projection.
 ---
 
-# 8PM Studio Instruction Design Guide
+# APM Studio Instruction Design Guide
 
 Use this skill when the task is not just "make an Instruction draft exist", but "design a good Instruction for this agent".
 

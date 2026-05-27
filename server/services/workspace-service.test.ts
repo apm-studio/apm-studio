@@ -18,7 +18,7 @@ describe('saveWorkspaceSnapshot', () => {
     let studioDir: string
 
     beforeEach(async () => {
-        studioDir = await fs.mkdtemp(path.join(os.tmpdir(), '8pm-studio-workspace-service-'))
+        studioDir = await fs.mkdtemp(path.join(os.tmpdir(), 'apm-studio-workspace-service-'))
         process.env.STUDIO_DIR = studioDir
         pruneStalePerformerProjectionsMock.mockReset().mockResolvedValue(false)
         ensureAssistantAgentMock.mockReset().mockResolvedValue('studio-assistant')
@@ -59,9 +59,84 @@ describe('saveWorkspaceSnapshot', () => {
         })
 
         await expect(listWorkspacePerformersForDir(workingDir)).resolves.toEqual([
-            { id: 'performer-1', name: 'Performer 1', model: { provider: 'openai', modelId: 'gpt-5' } },
-            { id: 'performer-2', name: 'Performer 2', model: null },
+            expect.objectContaining({ id: 'performer-1', name: 'Performer 1', model: { provider: 'openai', modelId: 'gpt-5' } }),
+            expect.objectContaining({ id: 'performer-2', name: 'Performer 2', model: null }),
         ])
+    })
+
+    it('returns saved workspaces with APM manifests as the package source of truth', async () => {
+        const { getSavedWorkspace, saveWorkspaceSnapshot } = await import('./workspace-service.js')
+        const { readApmPackage, writeApmPackage } = await import('./apm-package-service.js')
+        const workingDir = path.join(studioDir, 'project')
+
+        const saved = await saveWorkspaceSnapshot({
+            workingDir,
+            performers: [{
+                id: 'performer-1',
+                name: 'Workspace Copy',
+                model: null,
+                inlineInstruction: 'Stale workspace instruction.',
+            }],
+            acts: [],
+        })
+
+        expect(saved.ok).toBe(true)
+        if (!saved.ok) {
+            return
+        }
+
+        const pkg = await readApmPackage(workingDir, 'performer-1')
+        expect(pkg).not.toBeNull()
+        if (!pkg) return
+
+        const agent = pkg.manifest['x-apm']?.agent
+        expect(agent).toBeTruthy()
+        if (!agent) return
+
+        await writeApmPackage(workingDir, 'performer-1', {
+            ...pkg.manifest,
+            'x-apm': {
+                ...pkg.manifest['x-apm'],
+                schemaVersion: 1,
+                packageId: 'performer-1',
+                kind: 'agent',
+                agent: {
+                    ...agent,
+                    performerName: 'Manifest Agent',
+                    inlineInstruction: 'Manifest instruction wins.',
+                },
+            },
+        })
+
+        const loaded = await getSavedWorkspace(saved.id)
+        expect(loaded.ok).toBe(true)
+        if (!loaded.ok) {
+            return
+        }
+
+        expect(loaded.workspace.performers?.[0]).toEqual(expect.objectContaining({
+            id: 'performer-1',
+            name: 'Manifest Agent',
+            inlineInstruction: 'Manifest instruction wins.',
+        }))
+    })
+
+    it('fails workspace save when APM package state cannot be written', async () => {
+        const { saveWorkspaceSnapshot } = await import('./workspace-service.js')
+        const workingDir = path.join(studioDir, 'project-file')
+        await fs.writeFile(workingDir, '')
+
+        const result = await saveWorkspaceSnapshot({
+            workingDir,
+            performers: [{ id: 'performer-1', name: 'Performer 1', model: null }],
+            acts: [],
+        })
+
+        expect(result).toEqual({
+            ok: false,
+            status: 500,
+            error: 'Failed to write APM package state',
+        })
     })
 
     it('preserves hiddenFromList when saving an already-hidden workspace without that field', async () => {

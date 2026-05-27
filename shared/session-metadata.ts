@@ -1,5 +1,5 @@
-const SESSION_TITLE_PREFIX = '8PM Studio:'
-const SESSION_METADATA_PATTERN = /^8PM Studio:\s*(.*?)\s*\[studio:([^:\]]+):(.*)\]\s*$/
+const SESSION_TITLE_PREFIX = 'APM Studio:'
+const SESSION_METADATA_PATTERN = /^APM Studio:\s*(.*?)\s*\[studio:([^:\]]+):(.*)\]\s*$/
 const MAX_PROVISIONAL_THREAD_TITLE_LENGTH = 80
 
 export function buildStudioSessionTitle(performerId: string, performerName: string, configHash: string): string {
