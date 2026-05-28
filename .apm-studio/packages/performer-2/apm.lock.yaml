@@ -3,8 +3,8 @@ dependencies: []
 lockfile_version: "1"
 mcp_servers: []
 packages:
-  - manifest_hash: sha256:66842ecde810e2b09dcb79e5cbbcb455bae0d281df2b7b3308e22d3ef4b285af
-    name: api-designer-2
+  - manifest_hash: sha256:ebc6c393e868701f1873020bf3c89dc708d52212a1a0869091dabbefdc109304
+    name: agent-2-2
     package_id: performer-2
     source: apm-studio
     version: 0.1.0

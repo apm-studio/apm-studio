@@ -21,7 +21,7 @@ apmSync.get('/api/apm/tooling', async (c) => {
 
 apmSync.get('/api/apm/targets', async (c) => {
     try {
-        return c.json(await getApmSyncTargets())
+        return c.json(await getApmSyncTargets(requestWorkingDir(c)))
     } catch (error) {
         return jsonError(c, errorMessage(error, 'Unable to inspect APM targets.'), 500)
     }

@@ -1,0 +1,10 @@
+apm_version: apm-studio-native-v1
+dependencies: []
+lockfile_version: "1"
+mcp_servers: []
+packages:
+  - manifest_hash: sha256:e02fb179578bf2bdaf8237a975836a71e57532546918882f358fc40c591ac8fd
+    name: financial-report
+    package_id: financial-report-695a9809
+    source: apm-studio
+    version: 0.1.0

@@ -67,12 +67,6 @@ function candidateIcon(kind: ApmGitHubImportPackage['kind']) {
     return <Package size={13} className="asset-icon performer" />
 }
 
-function workspaceLabel(workingDir: string) {
-    if (!workingDir) return 'No workspace selected'
-    const parts = workingDir.split('/').filter(Boolean)
-    return parts.at(-1) || workingDir
-}
-
 function scopeLabel(scope: ImportScope) {
     return scope === 'global' ? 'Global' : 'Workspace'
 }
@@ -106,9 +100,8 @@ export default function ExplorePresetCatalog() {
         ? apmAssetStatus?.globalApmAssetDir || 'Global APM Studio home'
         : workspacePath || 'No workspace selected'
     const headerConfig = useMemo(() => ({
-        title: 'Search APM packages',
-        subtitle: workspaceLabel(workingDir),
-    }), [workingDir])
+        title: 'Search',
+    }), [])
     useAppHeader(headerConfig)
 
     const workspaceInstallDisabled = installScope === 'stage' && !workspacePath
@@ -239,9 +232,7 @@ export default function ExplorePresetCatalog() {
         <main className={`explore-page explore-page--simple ${shouldShowResults ? 'has-results' : ''}`}>
             <section className="explore-search-hero" aria-label="GitHub source search">
                 <div className="explore-search-hero__title">
-                    <span className="section-title">Import</span>
-                    <h1>Search APM packages</h1>
-                    <p title={workingDir || undefined}>{workspaceLabel(workingDir)}</p>
+                    <h1>Search</h1>
                 </div>
 
                 <form

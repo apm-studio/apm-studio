@@ -240,7 +240,6 @@ export function buildApmManifestForAgent(performer: WorkspacePerformerSnapshot):
             id: performer.id,
             name: performer.name,
             ...(description ? { description } : {}),
-            model: performer.model || null,
             ...(agentBody ? {
                 instruction: { source: 'inline', content: agentBody },
             } : {}),

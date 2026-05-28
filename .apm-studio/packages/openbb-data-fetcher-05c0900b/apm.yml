@@ -1,0 +1,33 @@
+dependencies:
+  apm: []
+  mcp: []
+description: Fetch financial, market, economic, fundamental, news, options, crypto, ETF, index, and
+  macro data through the OpenBB Python interface instead of the OpenBB MCP server. Use when an agent
+  needs current or historical data from OpenBB-supported providers, needs to replace OpenBB MCP
+  calls with direct Python/OpenBB usage, or must return source-tagged, reproducible datasets with
+  clear query parameters, provider details, and data-quality notes.
+includes: auto
+marketplace:
+  source:
+    format: skill-md
+    path: skills/data-access/openbb-data-fetcher/SKILL.md
+    ref: main
+    repo: monarchjuno/vibe-investing
+    type: github
+name: openbb-data-fetcher
+skills:
+  - path: .apm/skills/openbb-data-fetcher/SKILL.md
+target:
+  - codex
+  - gemini
+  - claude
+  - opencode
+  - cursor
+  - windsurf
+  - copilot
+type: skill
+version: 0.1.0
+x-apm:
+  kind: skill
+  packageId: openbb-data-fetcher-05c0900b
+  schemaVersion: 1

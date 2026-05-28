@@ -2,11 +2,13 @@
   "schemaVersion": 1,
   "product": "APM Studio",
   "workingDir": "/Users/junhoyoon/windsurfpjt/dance-of-tal/studio",
-  "savedAt": 1779902170687,
+  "savedAt": 1779978881430,
   "activePackageIds": [
     "api-designer-86d95cf4",
     "performer-1",
-    "performer-2"
+    "performer-2",
+    "performer-3",
+    "performer-4"
   ],
   "workspace": {
     "schemaVersion": 1,
@@ -16,8 +18,8 @@
         "id": "api-designer-86d95cf4",
         "name": "api-designer",
         "position": {
-          "x": -1371,
-          "y": -557
+          "x": -1854,
+          "y": -1305
         },
         "width": 900,
         "height": 692,
@@ -45,8 +47,8 @@
         "id": "performer-1",
         "name": "Agent 2",
         "position": {
-          "x": -1802,
-          "y": -175
+          "x": -2260,
+          "y": -1316
         },
         "width": 320,
         "height": 480,
@@ -67,17 +69,42 @@
       },
       {
         "id": "performer-2",
+        "name": "Agent 2 (2)",
+        "position": {
+          "x": -2245,
+          "y": -1865
+        },
+        "width": 320,
+        "height": 480,
+        "scope": "shared",
+        "model": null,
+        "talRef": null,
+        "danceRefs": [],
+        "mcpServerNames": [],
+        "mcpBindingMap": {},
+        "declaredMcpConfig": null,
+        "hidden": false,
+        "meta": {
+          "derivedFrom": "apm-package/stage/performer-1",
+          "authoring": {
+            "description": "Agent 2 agent package for APM Studio."
+          }
+        },
+        "modelPlaceholder": null
+      },
+      {
+        "id": "performer-3",
         "name": "api-designer (2)",
         "position": {
-          "x": -1989,
-          "y": -878
+          "x": -1796,
+          "y": -1868
         },
         "width": 320,
         "height": 480,
         "scope": "shared",
         "model": {
-          "provider": "openai",
-          "modelId": "gpt-5.4"
+          "modelId": "gpt-5.4",
+          "provider": "openai"
         },
         "modelPlaceholder": {
           "modelId": "gpt-5.4",
@@ -89,17 +116,43 @@
         "mcpServerNames": [],
         "mcpBindingMap": {},
         "declaredMcpConfig": null,
+        "hidden": false,
         "meta": {
           "derivedFrom": "apm-package/stage/api-designer-86d95cf4",
-          "publishBindingUrn": "apm-package/stage/api-designer-86d95cf4",
           "authoring": {
             "description": "Use when a task needs API contract design, evolution planning, or compatibility review before implementation starts."
           }
         }
+      },
+      {
+        "id": "performer-4",
+        "name": "Agent 2 (3)",
+        "position": {
+          "x": -1313,
+          "y": -1937
+        },
+        "width": 320,
+        "height": 480,
+        "scope": "shared",
+        "model": null,
+        "talRef": null,
+        "danceRefs": [],
+        "mcpServerNames": [],
+        "mcpBindingMap": {},
+        "declaredMcpConfig": null,
+        "hidden": false,
+        "meta": {
+          "derivedFrom": "apm-package/stage/performer-1",
+          "authoring": {
+            "description": "Agent 2 agent package for APM Studio."
+          }
+        },
+        "modelPlaceholder": null
       }
     ],
     "chatBindings": {
-      "api-designer-86d95cf4": "ses_195a1f96fffeNe03D5DW75ZQW1"
+      "api-designer-86d95cf4": "ses_195a1f96fffeNe03D5DW75ZQW1",
+      "studio-assistant--5mqx3y": "ses_1919739b2ffegqwmr5x1YCnKhe"
     },
     "assistantModel": {
       "provider": "openai",

@@ -71,9 +71,6 @@ agents:
 
         Do not implement code unless explicitly asked by the parent agent.
       source: inline
-    model: &a1
-      modelId: gpt-5.4
-      provider: openai
     name: api-designer
 dependencies:
   apm: []
@@ -164,7 +161,9 @@ x-apm:
       before implementation starts.
     instructionRef: null
     mcpServerNames: []
-    model: *a1
+    model:
+      modelId: gpt-5.4
+      provider: openai
     modelVariant: null
     planMode: false
     skillRefs: []

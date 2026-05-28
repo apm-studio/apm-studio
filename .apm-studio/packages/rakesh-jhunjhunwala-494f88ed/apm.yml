@@ -1,0 +1,32 @@
+dependencies:
+  apm: []
+  mcp: []
+description: Analyze an investment through Rakesh Jhunjhunwala's long-term growth-and-value lens.
+  Use when the analysis should focus on circle of competence, economic moat, management quality,
+  financial strength, margin of safety, return metrics such as ROE, and whether the business can
+  create long-term wealth rather than short-term trading excitement.
+includes: auto
+marketplace:
+  source:
+    format: skill-md
+    path: skills/investor-personas/rakesh-jhunjhunwala/SKILL.md
+    ref: main
+    repo: monarchjuno/vibe-investing
+    type: github
+name: rakesh-jhunjhunwala
+skills:
+  - path: .apm/skills/rakesh-jhunjhunwala/SKILL.md
+target:
+  - codex
+  - gemini
+  - claude
+  - opencode
+  - cursor
+  - windsurf
+  - copilot
+type: skill
+version: 0.1.0
+x-apm:
+  kind: skill
+  packageId: rakesh-jhunjhunwala-494f88ed
+  schemaVersion: 1

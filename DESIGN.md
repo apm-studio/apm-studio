@@ -132,9 +132,17 @@ Use active state sparingly and clearly:
 
 Do not invent a new nav visual treatment for each panel.
 
-Studio's primary workflow modes are Import, Manage, Run, and Export. Keep them grouped in the app header so users can understand whether they are bringing in sources, editing local packages, running agents/teams, or exporting assistant artifacts.
+Studio's primary workflow modes are Import, Manage, Run, and Inject. Keep them grouped in the app header so users can understand whether they are bringing in sources, editing local packages, running agents/teams, or injecting assistant artifacts.
 
 The app header is the single top-level workspace header. Canvas controls, Run view controls, and page-specific actions should appear as dynamic header content instead of adding a second page or canvas header directly below it.
+
+The app shell should stay stable across Import, Manage, Run, and Inject: keep the top header and left sidebar mounted, and swap only the main content area for the selected workflow. Do not build mode-specific sidebars inside feature pages when the global sidebar can provide the shared workspace/package context.
+
+Keep mode-to-shell decisions centralized in `src/components/app-shell-policy.ts`. Shell components should receive an explicit sidebar/surface mode prop instead of independently reading `workspaceMode` and re-deriving the same policy.
+
+The left sidebar content can still be mode-aware. Manage and Run may expose workspace assets plus the Packages drawer because users compose/edit with drag and drop there. Manage should show editable agents and teams without saved thread/session rows; Run is where thread/session history and run-time creation controls belong. Import and Inject should keep the sidebar quieter, showing only workspace context unless a specific workflow needs more.
+
+Inject should use a three-column rhythm: the shared workspace sidebar, an APM Studio source column, and a Targets column. Targets should read the selected environment's definition files and show matched, new, and target-only items next to the Studio source so users choose the sync action from the comparison itself instead of parsing repeated summary text.
 
 Import should behave like a compact source workbench: default to all package source groups, keep search prominent, and show GitHub-derived Agent, Skill, and MCP assets as separate scan-friendly sections that reuse the Packages sidebar `asset-card` classes.
 

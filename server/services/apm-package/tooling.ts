@@ -46,6 +46,20 @@ const PROBES: Probe[] = [
     },
 ]
 
+function configuredProbe(): Probe | null {
+    const command = process.env.APM_STUDIO_APM_CLI?.trim()
+    if (!command) return null
+    const executable = command.split(/\s+/)[0]
+    if (!executable) return null
+    return {
+        id: 'configured',
+        label: 'Configured APM CLI',
+        command: executable,
+        args: ['--version'],
+        role: 'cli',
+    }
+}
+
 function normalizeVersion(output: string) {
     return output
         .split(/\r?\n/)
@@ -79,16 +93,24 @@ async function probeTool(probe: Probe): Promise<ApmToolingRunnerStatus> {
 }
 
 export async function getApmToolingStatus(): Promise<ApmToolingStatus> {
-    const runners = await Promise.all(PROBES.map(probeTool))
+    const configuredProbeValue = configuredProbe()
+    const probes = [
+        ...(configuredProbeValue ? [configuredProbeValue] : []),
+        ...PROBES,
+    ]
+    const runners = await Promise.all(probes.map(probeTool))
+    const configured = runners.find((runner) => runner.id === 'configured')
     const apm = runners.find((runner) => runner.id === 'apm')
     const uvx = runners.find((runner) => runner.id === 'uvx')
     const pipx = runners.find((runner) => runner.id === 'pipx')
 
-    const available = apm?.available === true || uvx?.available === true
-    const recommendedCommand = apm?.available
+    const available = configured?.available === true || apm?.available === true || uvx?.available === true
+    const recommendedCommand = configured?.available
+        ? process.env.APM_STUDIO_APM_CLI?.trim() || configured.command
+        : apm?.available
         ? 'apm'
         : uvx?.available
-            ? 'uvx --from apm-cli apm'
+            ? 'uvx --from git+https://github.com/microsoft/apm.git apm'
             : null
 
     return {
@@ -97,10 +119,10 @@ export async function getApmToolingStatus(): Promise<ApmToolingStatus> {
         version: apm?.version,
         runners,
         installHints: [
-            ...(uvx?.available ? ['Check the Microsoft APM CLI without adding a Python dependency to APM Studio: uvx --from apm-cli apm --version'] : []),
+            ...(uvx?.available ? ['Run Microsoft APM from GitHub without bundling Python into Studio: uvx --from git+https://github.com/microsoft/apm.git apm --version'] : []),
             ...(pipx?.available ? ['Install the CLI outside Studio: pipx install apm-cli'] : []),
-            'Studio can still generate APM package sources without the Python CLI installed.',
+            'Studio can still fall back for supported agent and skill projections when the CLI path is unavailable.',
         ],
-        deploymentNote: 'APM Studio does not bundle microsoft/apm or require Python at npm install time; target export can use an external apm command or uvx runner.',
+        deploymentNote: 'APM Studio does not bundle microsoft/apm or require Python at npm install time; export prefers the external APM CLI and falls back to Studio projections where supported.',
     }
 }

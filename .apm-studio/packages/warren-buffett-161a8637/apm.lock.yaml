@@ -1,0 +1,10 @@
+apm_version: apm-studio-native-v1
+dependencies: []
+lockfile_version: "1"
+mcp_servers: []
+packages:
+  - manifest_hash: sha256:934c017b90b058f86d7f080d66abf6624a25fcc24881802796178ff4fdd14be8
+    name: warren-buffett
+    package_id: warren-buffett-161a8637
+    source: apm-studio
+    version: 0.1.0

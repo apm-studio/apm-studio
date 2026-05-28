@@ -1,0 +1,35 @@
+dependencies:
+  apm: []
+  mcp: []
+description: Analyze traditional market context for an investment case by identifying the current
+  regime, cycle position, market expectations, liquidity and macro transmission, positioning and
+  crowd psychology, risk asymmetry, and reflexive feedback loops between price, narrative,
+  financing, and fundamentals. Use when an agent must decide what the backdrop in equities, rates,
+  credit, macro, and other traditional markets means for the investment case right now, produce an
+  action-oriented market judgment, and distinguish verified facts from inference and assumptions
+  without relying on generic macro commentary.
+includes: auto
+marketplace:
+  source:
+    format: skill-md
+    path: skills/market-analysis/traditional-market-analysis/SKILL.md
+    ref: main
+    repo: monarchjuno/vibe-investing
+    type: github
+name: traditional-market-analysis
+skills:
+  - path: .apm/skills/traditional-market-analysis/SKILL.md
+target:
+  - codex
+  - gemini
+  - claude
+  - opencode
+  - cursor
+  - windsurf
+  - copilot
+type: skill
+version: 0.1.0
+x-apm:
+  kind: skill
+  packageId: traditional-market-analysis-1d91ad8a
+  schemaVersion: 1

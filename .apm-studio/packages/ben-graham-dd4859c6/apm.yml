@@ -1,0 +1,32 @@
+dependencies:
+  apm: []
+  mcp: []
+description: Analyze an investment through Benjamin Graham's conservative value-investing lens. Use
+  when the analysis should focus on margin of safety, balance-sheet strength, earnings stability,
+  Graham-style valuation measures such as Graham Number or net-net logic, and avoidance of
+  speculation or aggressive growth assumptions.
+includes: auto
+marketplace:
+  source:
+    format: skill-md
+    path: skills/investor-personas/ben-graham/SKILL.md
+    ref: main
+    repo: monarchjuno/vibe-investing
+    type: github
+name: ben-graham
+skills:
+  - path: .apm/skills/ben-graham/SKILL.md
+target:
+  - codex
+  - gemini
+  - claude
+  - opencode
+  - cursor
+  - windsurf
+  - copilot
+type: skill
+version: 0.1.0
+x-apm:
+  kind: skill
+  packageId: ben-graham-dd4859c6
+  schemaVersion: 1

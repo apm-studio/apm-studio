@@ -33,9 +33,120 @@ import WorkspaceExplorerWorkspacesSection from './WorkspaceExplorerWorkspacesSec
 import WorkspaceExplorerThreadsSection from './WorkspaceExplorerThreadsSection';
 
 
-export default function WorkspaceExplorer() {
+type WorkspaceExplorerProps = {
+    workspaceOnly?: boolean
+    showThreads?: boolean
+}
+
+function useWorkspaceExplorerWorkspaces() {
+    const {
+        workspaceId,
+        workingDir,
+        workspaceList,
+        newWorkspace,
+        closeWorkspace,
+        loadWorkspace,
+        listWorkspaces,
+        deleteWorkspace,
+    } = useStudioStore(useShallow((state) => ({
+        workspaceId: state.workspaceId,
+        workingDir: state.workingDir,
+        workspaceList: state.workspaceList,
+        newWorkspace: state.newWorkspace,
+        closeWorkspace: state.closeWorkspace,
+        loadWorkspace: state.loadWorkspace,
+        listWorkspaces: state.listWorkspaces,
+        deleteWorkspace: state.deleteWorkspace,
+    })));
+
+    const openWorkspacePath = useCallback(async (targetPath: string) => {
+        try {
+            await api.studio.openPath(targetPath);
+        } catch (error) {
+            console.error('Failed to open workspace path', error);
+            showToast('Studio could not open that workspace path.', 'error', {
+                title: 'Open failed',
+                dedupeKey: `workspace:open:${targetPath}`,
+            });
+        }
+    }, []);
+
+    useEffect(() => {
+        listWorkspaces();
+    }, [listWorkspaces, workingDir]);
+
+    const workspaceRows = useMemo(() => workspaceList.map((entry) => (
+        <LayerRow
+            key={entry.id}
+            icon={<Folder size={12} className={entry.id === workspaceId ? 'icon-active' : 'icon-muted'} />}
+            label={workspaceLabel(entry.workingDir)}
+            meta={workspaceShortPath(entry.workingDir)}
+            active={entry.id === workspaceId}
+            onClick={() => loadWorkspace(entry.id)}
+            actions={
+                <DropdownMenu
+                    align="right"
+                    trigger={(
+                        <button className="icon-btn" title="Workspace actions">
+                            <MoreHorizontal size={10} />
+                        </button>
+                    )}
+                    items={[
+                        {
+                            label: 'Open',
+                            onClick: () => {
+                                void openWorkspacePath(entry.workingDir);
+                            },
+                        },
+                        'separator',
+                        {
+                            label: 'Close workspace',
+                            onClick: () => closeWorkspace(entry.id),
+                        },
+                        'separator',
+                        {
+                            label: 'Delete workspace',
+                            onClick: () => deleteWorkspace(entry.id),
+                            variant: 'danger',
+                        },
+                    ]}
+                />
+            }
+        />
+    )), [closeWorkspace, deleteWorkspace, loadWorkspace, openWorkspacePath, workspaceId, workspaceList]);
+
+    return {
+        workspaceId,
+        workingDir,
+        workspaceRows,
+        newWorkspace,
+    };
+}
+
+export default function WorkspaceExplorer({ workspaceOnly = false, showThreads = true }: WorkspaceExplorerProps) {
+    return workspaceOnly ? <WorkspaceOnlyExplorer /> : <WorkspaceExplorerFull showThreads={showThreads} />;
+}
+
+function WorkspaceOnlyExplorer() {
+    const { workingDir, workspaceRows, newWorkspace } = useWorkspaceExplorerWorkspaces();
+
+    return (
+        <div className="explorer explorer--stacked explorer--workspace-only">
+            <WorkspaceExplorerWorkspacesSection
+                workspacesHeight={208}
+                workspaceRows={workspaceRows}
+                workingDir={workingDir}
+                onOpenWorkspace={newWorkspace}
+                fill
+            />
+        </div>
+    );
+}
+
+function WorkspaceExplorerFull({ showThreads }: { showThreads: boolean }) {
     const [workspacesHeight, setWorkspacesHeight] = useState(208);
     const dividerDragging = useRef(false);
+    const { workspaceId, workingDir, workspaceRows, newWorkspace } = useWorkspaceExplorerWorkspaces();
 
     const suppressNextClick = useCallback(() => {
         const handleClickCapture = (event: MouseEvent) => {
@@ -78,9 +189,6 @@ export default function WorkspaceExplorer() {
         document.body.style.userSelect = 'none';
     }, [suppressNextClick, workspacesHeight]);
     const {
-        workspaceId,
-        workingDir,
-        workspaceList,
         performers,
         sessions,
         seEntities,
@@ -89,12 +197,7 @@ export default function WorkspaceExplorer() {
         editingTarget,
         selectedPerformerId,
         selectedPerformerSessionId,
-        newWorkspace,
-        closeWorkspace,
-        loadWorkspace,
-        listWorkspaces,
         listSessions,
-        deleteWorkspace,
         addPerformer,
         selectPerformer,
         selectPerformerSession,
@@ -107,9 +210,6 @@ export default function WorkspaceExplorer() {
         savePerformerAsDraft,
         saveActAsDraft,
     } = useStudioStore(useShallow((state) => ({
-        workspaceId: state.workspaceId,
-        workingDir: state.workingDir,
-        workspaceList: state.workspaceList,
         performers: state.performers,
         sessions: state.sessions,
         seEntities: state.seEntities,
@@ -118,12 +218,7 @@ export default function WorkspaceExplorer() {
         editingTarget: state.editingTarget,
         selectedPerformerId: state.selectedPerformerId,
         selectedPerformerSessionId: state.selectedPerformerSessionId,
-        newWorkspace: state.newWorkspace,
-        closeWorkspace: state.closeWorkspace,
-        loadWorkspace: state.loadWorkspace,
-        listWorkspaces: state.listWorkspaces,
         listSessions: state.listSessions,
-        deleteWorkspace: state.deleteWorkspace,
         addPerformer: state.addPerformer,
         selectPerformer: state.selectPerformer,
         selectPerformerSession: state.selectPerformerSession,
@@ -157,22 +252,10 @@ export default function WorkspaceExplorer() {
     const [pendingDelete, setPendingDelete] = useState<string | null>(null);
     const [renamingSession, setRenamingSession] = useState<ExplorerRenamingSession>(null);
 
-    const openWorkspacePath = useCallback(async (targetPath: string) => {
-        try {
-            await api.studio.openPath(targetPath);
-        } catch (error) {
-            console.error('Failed to open workspace path', error);
-            showToast('Studio could not open that workspace path.', 'error', {
-                title: 'Open failed',
-                dedupeKey: `workspace:open:${targetPath}`,
-            });
-        }
-    }, []);
-
     useEffect(() => {
-        listWorkspaces();
+        if (!showThreads) return;
         listSessions();
-    }, [listSessions, listWorkspaces, workingDir]);
+    }, [listSessions, showThreads, workingDir]);
 
     const sharedPerformers = useMemo(
         () => performers.filter((performer) => performer.scope === 'shared'),
@@ -180,6 +263,8 @@ export default function WorkspaceExplorer() {
     );
 
     const performerSessionRows = useMemo(() => {
+        if (!showThreads) return [];
+
         const sessionActivityById = Object.fromEntries(
             sessions.map((session) => {
                 const entity = seEntities[session.id];
@@ -202,7 +287,7 @@ export default function WorkspaceExplorer() {
             performers,
             chatKeyToSession,
         );
-    }, [chatKeyToSession, performers, seEntities, seMessages, sessions]);
+    }, [chatKeyToSession, performers, seEntities, seMessages, sessions, showThreads]);
 
     const performerSessionsById = useMemo(() => {
         return groupPerformerSessionsById(performerSessionRows);
@@ -223,48 +308,6 @@ export default function WorkspaceExplorer() {
         ...act,
         hidden: resolveNodeBaselineHidden(focusSnapshot, act.id, 'act', !!act.hidden),
     })), [acts, focusSnapshot]);
-
-    const workspaceRows = workspaceList.map((entry) => {
-        return (
-            <LayerRow
-                key={entry.id}
-                icon={<Folder size={12} className={entry.id === workspaceId ? 'icon-active' : 'icon-muted'} />}
-                label={workspaceLabel(entry.workingDir)}
-                meta={workspaceShortPath(entry.workingDir)}
-                active={entry.id === workspaceId}
-                onClick={() => loadWorkspace(entry.id)}
-                actions={
-                    <DropdownMenu
-                        align="right"
-                        trigger={(
-                            <button className="icon-btn" title="Workspace actions">
-                                <MoreHorizontal size={10} />
-                            </button>
-                        )}
-                        items={[
-                            {
-                                label: 'Open',
-                                onClick: () => {
-                                    void openWorkspacePath(entry.workingDir);
-                                },
-                            },
-                            'separator',
-                            {
-                                label: 'Close workspace',
-                                onClick: () => closeWorkspace(entry.id),
-                            },
-                            'separator',
-                            {
-                                label: 'Delete workspace',
-                                onClick: () => deleteWorkspace(entry.id),
-                                variant: 'danger',
-                            },
-                        ]}
-                    />
-                }
-            />
-        );
-    });
 
     const toggleExpanded = (key: string) => {
         setExpandedRows((current) => ({
@@ -504,6 +547,7 @@ export default function WorkspaceExplorer() {
             <WorkspaceExplorerThreadsSection
                 workspaceId={workspaceId}
                 acts={visibleActs}
+                showThreads={showThreads}
                 threadRows={threadRows}
                 expandedRows={expandedRows}
                 pendingDelete={pendingDelete}

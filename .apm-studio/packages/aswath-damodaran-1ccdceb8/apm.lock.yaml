@@ -1,0 +1,10 @@
+apm_version: apm-studio-native-v1
+dependencies: []
+lockfile_version: "1"
+mcp_servers: []
+packages:
+  - manifest_hash: sha256:dc229a02669a2f2e6a4b4aedd8e0b8fd02c861dfd526d587ecdab3a3b98ce88c
+    name: aswath-damodaran
+    package_id: aswath-damodaran-1ccdceb8
+    source: apm-studio
+    version: 0.1.0

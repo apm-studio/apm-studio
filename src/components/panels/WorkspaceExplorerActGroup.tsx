@@ -20,6 +20,7 @@ import { useStudioStore } from '../../store'
 
 type Props = {
     act: WorkspaceExplorerAct
+    showThreads: boolean
     selectedActId: string | null
     activeThreadId: string | null
     threads: WorkspaceExplorerActThread[]
@@ -40,6 +41,7 @@ type Props = {
 
 export default function WorkspaceExplorerActGroup({
     act,
+    showThreads,
     selectedActId,
     activeThreadId,
     threads,
@@ -111,23 +113,25 @@ export default function WorkspaceExplorerActGroup({
                     }
                 }}
             >
-                <span
-                    className={`thread-card__chevron ${expanded ? 'is-open' : ''}`}
-                    onPointerDown={(event) => event.stopPropagation()}
-                    onClick={(event) => {
-                        event.stopPropagation()
-                        onToggleExpanded(actKey)
-                    }}
-                >
-                    <ChevronRight size={12} />
-                </span>
+                {showThreads ? (
+                    <span
+                        className={`thread-card__chevron ${expanded ? 'is-open' : ''}`}
+                        onPointerDown={(event) => event.stopPropagation()}
+                        onClick={(event) => {
+                            event.stopPropagation()
+                            onToggleExpanded(actKey)
+                        }}
+                    >
+                        <ChevronRight size={12} />
+                    </span>
+                ) : null}
                 <span className="thread-card__icon">
                     <Workflow size={13} />
                 </span>
                 <span className="thread-card__body">
                     <span className="thread-card__name">{act.name}</span>
                     <span className="thread-card__meta">
-                        {participantCount}p · {act.relations.length}r · {threads.length}t
+                        {participantCount}p · {act.relations.length}r{showThreads ? ` · ${threads.length}t` : ''}
                     </span>
                 </span>
                 {/* Actions keep the same order as the Agent group. */}
@@ -166,14 +170,16 @@ export default function WorkspaceExplorerActGroup({
                             >
                                 {act.hidden ? <EyeOff size={11} /> : <Eye size={11} />}
                             </button>
-                            <button
-                                className="icon-btn"
-                                onClick={() => void onCreateThread(act.id)}
-                                title={createThreadTitle}
-                                disabled={!readiness.runnable}
-                            >
-                                <Plus size={11} />
-                            </button>
+                            {showThreads ? (
+                                <button
+                                    className="icon-btn"
+                                    onClick={() => void onCreateThread(act.id)}
+                                    title={createThreadTitle}
+                                    disabled={!readiness.runnable}
+                                >
+                                    <Plus size={11} />
+                                </button>
+                            ) : null}
                             <button
                                 className="icon-btn"
                                 onClick={() => onOpenActEditor(act.id)}
@@ -205,7 +211,7 @@ export default function WorkspaceExplorerActGroup({
                     )}
                 </span>
             </div>
-            {expanded ? (
+            {showThreads && expanded ? (
                 <div className="thread-children">
                     {threads.length > 0 ? (
                         <>

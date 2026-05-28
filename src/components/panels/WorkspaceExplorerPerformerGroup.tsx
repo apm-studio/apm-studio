@@ -25,6 +25,7 @@ import type { PerformerEditorFocus, WorkspaceExplorerEditingTarget } from './wor
 
 type Props = {
     row: ThreadRow
+    showThreads: boolean
     expanded: boolean
     pendingDelete: string | null
     renamingSession: ExplorerRenamingSession
@@ -49,6 +50,7 @@ type Props = {
 
 export default function WorkspaceExplorerPerformerGroup({
     row,
+    showThreads,
     expanded,
     pendingDelete,
     renamingSession,
@@ -147,16 +149,18 @@ export default function WorkspaceExplorerPerformerGroup({
                     }
                 }}
             >
-                <span
-                    className={`thread-card__chevron ${expanded ? 'is-open' : ''}`}
-                    onPointerDown={(event) => event.stopPropagation()}
-                    onClick={(event) => {
-                        event.stopPropagation()
-                        onToggleExpanded()
-                    }}
-                >
-                    <ChevronRight size={12} />
-                </span>
+                {showThreads ? (
+                    <span
+                        className={`thread-card__chevron ${expanded ? 'is-open' : ''}`}
+                        onPointerDown={(event) => event.stopPropagation()}
+                        onClick={(event) => {
+                            event.stopPropagation()
+                            onToggleExpanded()
+                        }}
+                    >
+                        <ChevronRight size={12} />
+                    </span>
+                ) : null}
                 <span className="thread-card__icon">
                     <MessageSquare size={13} />
                 </span>
@@ -198,13 +202,15 @@ export default function WorkspaceExplorerPerformerGroup({
                             >
                                 {row.hidden ? <EyeOff size={11} /> : <Eye size={11} />}
                             </button>
-                            <button
-                                className="icon-btn"
-                                onClick={() => onStartNewSession(row.id)}
-                                title="New session"
-                            >
-                                <Plus size={11} />
-                            </button>
+                            {showThreads ? (
+                                <button
+                                    className="icon-btn"
+                                    onClick={() => onStartNewSession(row.id)}
+                                    title="New session"
+                                >
+                                    <Plus size={11} />
+                                </button>
+                            ) : null}
                             <button
                                 className={`icon-btn ${(editingTarget?.type === 'performer' && editingTarget.id === row.id) ? 'icon-btn--active' : ''}`}
                                 onClick={() => {
@@ -239,7 +245,7 @@ export default function WorkspaceExplorerPerformerGroup({
                     )}
                 </span>
             </div>
-            {expanded ? (
+            {showThreads && expanded ? (
                 <div className="thread-children">
                     {row.children.length > 0 ? (
                         <>

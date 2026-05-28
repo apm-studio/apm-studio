@@ -1,0 +1,32 @@
+dependencies:
+  apm: []
+  mcp: []
+description: Analyze an investment through Michael Burry's hard-number contrarian lens. Use when the
+  analysis should focus on deep value, downside protection, balance-sheet skepticism, free-cash-flow
+  and EV-based valuation, market overreaction, and the presence of concrete catalysts such as
+  insider buying, asset sales, buybacks, or forced unwinds.
+includes: auto
+marketplace:
+  source:
+    format: skill-md
+    path: skills/investor-personas/michael-burry/SKILL.md
+    ref: main
+    repo: monarchjuno/vibe-investing
+    type: github
+name: michael-burry
+skills:
+  - path: .apm/skills/michael-burry/SKILL.md
+target:
+  - codex
+  - gemini
+  - claude
+  - opencode
+  - cursor
+  - windsurf
+  - copilot
+type: skill
+version: 0.1.0
+x-apm:
+  kind: skill
+  packageId: michael-burry-43cd41cc
+  schemaVersion: 1

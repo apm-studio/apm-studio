@@ -1,7 +1,6 @@
 ---
 description: Use when a task needs API contract design, evolution planning, or compatibility review
   before implementation starts.
-model: gpt-5.4
 name: api-designer-2
 ---
 

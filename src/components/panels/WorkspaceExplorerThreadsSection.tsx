@@ -11,6 +11,7 @@ import WorkspaceExplorerPerformerGroup from './WorkspaceExplorerPerformerGroup'
 type Props = {
     workspaceId: string | null
     acts: WorkspaceExplorerAct[]
+    showThreads: boolean
     threadRows: ThreadRow[]
     expandedRows: Record<string, boolean>
     pendingDelete: string | null
@@ -55,6 +56,7 @@ type Props = {
 export default function WorkspaceExplorerThreadsSection({
     workspaceId,
     acts,
+    showThreads,
     threadRows,
     expandedRows,
     pendingDelete,
@@ -181,11 +183,12 @@ export default function WorkspaceExplorerThreadsSection({
                         <div className="explorer__section-list">
                             {threadRows.map((row) => {
                                 const rowKey = `performer-${row.id}`
-                                const isExpanded = expandedRows[rowKey] ?? row.children.length > 0
+                                const isExpanded = showThreads && (expandedRows[rowKey] ?? row.children.length > 0)
                                 return (
                                     <WorkspaceExplorerPerformerGroup
                                         key={rowKey}
                                         row={row}
+                                        showThreads={showThreads}
                                         expanded={isExpanded}
                                         pendingDelete={pendingDelete}
                                         renamingSession={renamingSession}
@@ -238,17 +241,18 @@ export default function WorkspaceExplorerThreadsSection({
                         <div className="explorer__section-list">
                             {acts.map((act) => {
                                 const actKey = `act-${act.id}`
-                                const threads = [...(actThreads[act.id] || [])].sort(
+                                const threads = showThreads ? [...(actThreads[act.id] || [])].sort(
                                     (left, right) => (
                                         resolveActThreadActivityAt(right, sessionActivityById)
                                         - resolveActThreadActivityAt(left, sessionActivityById)
                                     ) || ((right.createdAt || 0) - (left.createdAt || 0)),
-                                )
-                                const isExpanded = expandedRows[actKey] ?? threads.length > 0
+                                ) : []
+                                const isExpanded = showThreads && (expandedRows[actKey] ?? threads.length > 0)
                                 return (
                                     <WorkspaceExplorerActGroup
                                         key={actKey}
                                         act={act}
+                                        showThreads={showThreads}
                                         selectedActId={selectedActId}
                                         activeThreadId={activeThreadId}
                                         threads={threads}

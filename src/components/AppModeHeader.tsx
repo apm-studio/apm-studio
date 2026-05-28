@@ -1,4 +1,4 @@
-import { Download, PackagePlus, Play, Wrench } from 'lucide-react'
+import { PackagePlus, Play, Upload, Wrench } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useStudioStore } from '../store'
 import type { WorkspaceMode } from '../store/types'
@@ -35,9 +35,9 @@ const APP_MODE_OPTIONS: AppModeOption[] = [
     },
     {
         mode: 'export',
-        label: 'Export',
-        icon: <Download size={13} />,
-        title: 'Export local packages into external assistant targets',
+        label: 'Inject',
+        icon: <Upload size={13} />,
+        title: 'Export local package units into external assistant targets',
     },
 ]
 

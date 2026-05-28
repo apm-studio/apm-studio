@@ -50,7 +50,7 @@ Rules:
 `lazy_projection`
 
 - Agent create, update, delete
-- Agent Instruction, Skill, model, variant, MCP, binding, and delivery mode changes
+- Agent Instruction, Skill, model, variant, MCP, binding, and delivery mode changes. Model changes affect Studio Run projection only; external assistant injection must omit model selection.
 - Instruction and Skill draft content changes
 - installed GitHub Skill update or GitHub Skill re-import
 - runtime-affecting uninstall or draft delete
@@ -117,15 +117,16 @@ Every execution path should follow this order.
 - files may exist in a `projection pending adoption` state until a later dispose
 - workspace saves must not sync generated external-agent files such as Codex, Claude, or Gemini assistant exports
 - server startup must not prewarm generated external-agent files such as Codex, Claude, or Gemini assistant exports
-- workspace Agent projection materializes only Studio/OpenCode runtime artifacts; external assistant targets such as Codex, Claude, or Gemini are exported manually through APM target sync
+- workspace Agent projection materializes only Studio/OpenCode runtime artifacts; external assistant targets such as Codex, Claude, or Gemini are injected manually through APM target sync
 - external assistant files are generated from local APM package roots and should be treated as target projection output, not hand-authored source
-- external assistant files are managed by `Export`, not by normal Studio save, startup, chat projection, or Team projection
-- `GET /api/apm/targets` must be a dry-run target/tooling status calculation and must not write assistant files
-- `POST /api/apm/sync` is the manual path that may run `apm install <package-root> --target <target>` for one or more targets selected from Codex, Gemini, Claude, OpenCode, Cursor, Windsurf, and Copilot
-- target export writes do not require OpenCode `dispose`
-- The Studio UI exposes this manual external-assistant export as the top-level `Export` mode; that mode remains a manual export boundary and does not make external assistant export part of normal workspace save or runtime preparation
-- The Export screen lives under `src/features/export`; it should not be reintroduced through workspace/canvas feature barrels because external assistant export is not a workspace editing surface.
+- external assistant files are managed by `Inject`, not by normal Studio save, startup, chat projection, or Team projection
+- `GET /api/apm/targets` must be a dry-run target/tooling status calculation and must not write assistant files. Target summaries include supported export units, sync strategy, output hints, Studio-managed current items, and read-only target definition files so the Inject UI can compare APM Studio with the selected target.
+- `POST /api/apm/sync` is the manual path that exports the selected unit (`agent-packages`, `agents`, `instructions`, `skills`, or `mcp`) to one or more targets selected from Codex, Claude, OpenCode, Cursor, Windsurf, Copilot, Gemini, and Agent Skills. It receives only Studio packages marked for push by the Inject comparison UI. It prefers the external Microsoft APM CLI through a configured command, local `apm`, or `uvx --from git+https://github.com/microsoft/apm.git apm`; Studio-native TypeScript projection is a fallback for supported agent and skill units.
+- target injection writes do not require OpenCode `dispose`
+- The Studio UI exposes this manual external-assistant injection as the top-level `Inject` mode; that mode remains a manual injection boundary and does not make external assistant files part of normal workspace save or runtime preparation. The screen should keep the flow simple: workspace context, Studio source selection, then target-by-target sync preview.
+- The Inject screen currently lives under `src/features/export`; it should not be reintroduced through workspace/canvas feature barrels because external assistant injection is not a workspace editing surface.
 - APM target inspection and manual sync HTTP routes live in `server/routes/apm-sync.ts`; package CRUD and import routes should stay in their own APM route modules.
+- Target-specific Studio fallback projection lives in `server/services/agent-projection/`. Codex agent packages project as custom subagents; model selection remains Studio Run-only.
 
 ## Team Rules
 

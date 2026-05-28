@@ -1,0 +1,10 @@
+apm_version: apm-studio-native-v1
+dependencies: []
+lockfile_version: "1"
+mcp_servers: []
+packages:
+  - manifest_hash: sha256:a7aec5ad3b99a4c335276f19867390534008ab8c2b14236485e8970d8bdda6af
+    name: traditional-market-analysis
+    package_id: traditional-market-analysis-1d91ad8a
+    source: apm-studio
+    version: 0.1.0

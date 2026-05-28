@@ -29,7 +29,7 @@ import {
     readLocalWorkspaceDocument,
     writeLocalWorkspaceDocument,
 } from './workspace.js'
-import { parseYamlRecord, readText, yamlString } from './yaml-io.js'
+import { isRecord, parseYamlRecord, readText, yamlString } from './yaml-io.js'
 
 function extractMcpServerNames(manifest: ApmPackageManifest) {
     return Array.isArray(manifest.dependencies?.mcp)
@@ -37,6 +37,32 @@ function extractMcpServerNames(manifest: ApmPackageManifest) {
             .map((entry) => typeof entry === 'string' ? entry : entry.name)
             .filter((entry): entry is string => typeof entry === 'string' && !!entry.trim())
         : []
+}
+
+function manifestArrayLength(value: unknown) {
+    return Array.isArray(value) ? value.length : 0
+}
+
+function hasModel(value: unknown) {
+    return isRecord(value)
+        && typeof value.modelId === 'string'
+        && value.modelId.trim().length > 0
+}
+
+function agentComponentsFromManifest(manifest: ApmPackageManifest): ApmPackageSummary['agentComponents'] | undefined {
+    const agent = manifest['x-apm']?.agent
+    if (!agent && inferManifestKind(manifest) !== 'agent') {
+        return undefined
+    }
+
+    return {
+        instructions: agent?.instructionRef || agent?.talRef
+            ? 1
+            : manifestArrayLength(manifest.instructions),
+        skills: (agent?.skillRefs || agent?.danceRefs)?.length || manifestArrayLength(manifest.skills),
+        mcp: (agent?.mcpServerNames || extractMcpServerNames(manifest)).length,
+        model: hasModel(agent?.model),
+    }
 }
 
 function parseMarkdownFrontmatter(raw: string) {
@@ -114,6 +140,7 @@ async function packageSummaryFromManifest(
         description: typeof manifest.description === 'string' ? manifest.description : undefined,
         kind: extension?.kind || 'unknown',
         agentName: extension?.agent?.agentName || extension?.agent?.performerName,
+        agentComponents: agentComponentsFromManifest(manifest),
         derivedFrom: extension?.agent?.derivedFrom || null,
         manifestPath: toPosixPath(path.relative(workingDir, readableManifestPath)),
         lockPath: toPosixPath(path.relative(workingDir, readableLockPath)),

@@ -1,0 +1,10 @@
+apm_version: apm-studio-native-v1
+dependencies: []
+lockfile_version: "1"
+mcp_servers: []
+packages:
+  - manifest_hash: sha256:60cbdfba52a55091200becb10613b3c92f0a5576e9121fe4b3773cc5db6c25e5
+    name: quant-research
+    package_id: quant-research-bf171558
+    source: apm-studio
+    version: 0.1.0

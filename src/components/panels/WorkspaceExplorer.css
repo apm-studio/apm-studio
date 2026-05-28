@@ -36,6 +36,10 @@
     flex: 0 0 190px;
 }
 
+.explorer-section--fill {
+    flex: 1 1 auto;
+}
+
 .explorer-section--threads {
     flex: 1 1 auto;
     display: flex;

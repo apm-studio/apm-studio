@@ -16,13 +16,11 @@ import {
   readStartupAssetTarget,
 } from './lib/startup-asset-target';
 import { resolveStartupWorkspaceTarget } from './lib/startup-workspace';
-import AppModeHeader from './components/AppModeHeader';
+import AppShell from './components/AppShell';
 import { AppHeaderContext } from './components/AppHeaderContext';
 import type { AppHeaderConfig } from './components/AppHeaderContext';
+import { getAppShellPolicy } from './components/app-shell-policy';
 
-const LeftSidebar = lazy(() =>
-  import('./features/workspace').then((module) => ({ default: module.LeftSidebar })),
-);
 const ToastViewport = lazy(() =>
   import('./features/workspace').then((module) => ({ default: module.ToastViewport })),
 );
@@ -58,7 +56,7 @@ export default function App() {
   const workspaceMode = useStudioStore(s => s.workspaceMode);
   const viewMode = useStudioStore(s => s.viewMode);
   const isAnyFullscreenActive = viewMode !== 'canvas';
-  const showWorkspaceSurface = workspaceMode === 'manage' || workspaceMode === 'run';
+  const shellPolicy = getAppShellPolicy(workspaceMode);
 
   const isInitialMount = useRef(true);
 
@@ -163,9 +161,32 @@ export default function App() {
   const handleDragStart = createDragStartHandler(setActiveDrag);
   const handleDragEnd = createDragEndHandler(clearActiveDrag, showDropWarning);
 
+  const mainSurface = shellPolicy.surfaceMode === 'export' ? (
+    <Suspense fallback={null}>
+      <ExportPage />
+    </Suspense>
+  ) : shellPolicy.surfaceMode === 'import' ? (
+    <Suspense fallback={null}>
+      <ExplorePresetCatalog />
+    </Suspense>
+  ) : (
+    <>
+      <CanvasArea />
+      {!isAnyFullscreenActive && (
+        <Suspense fallback={null}>
+          {isTrackingOpen ? (
+            <WorkspaceTrackingPanel />
+          ) : isAssistantOpen ? (
+            <AssistantChat />
+          ) : null}
+        </Suspense>
+      )}
+    </>
+  );
+
   return (
     <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div className={`studio-app theme-${theme}`} style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+      <div className={`studio-app theme-${theme}`}>
 
         {dropWarning ? (
           <div className="app-warning-banner" role="status" aria-live="polite">
@@ -180,33 +201,14 @@ export default function App() {
         ) : null}
         <AppHeaderContext.Provider value={setPageHeader}>
           <ReactFlowProvider>
-            <AppModeHeader pageHeader={pageHeader} />
-            {workspaceMode === 'export' ? (
-              <Suspense fallback={null}>
-                <ExportPage />
-              </Suspense>
-            ) : workspaceMode === 'import' ? (
-              <Suspense fallback={null}>
-                <ExplorePresetCatalog />
-              </Suspense>
-            ) : (
-              <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-                <Suspense fallback={null}>
-                  <LeftSidebar />
-                </Suspense>
-                <CanvasArea />
-                {!isAnyFullscreenActive && (
-                  <Suspense fallback={null}>
-                    {isTrackingOpen ? (
-                      <WorkspaceTrackingPanel />
-                    ) : isAssistantOpen ? (
-                      <AssistantChat />
-                    ) : null}
-                  </Suspense>
-                )}
-              </div>
-            )}
-            {showWorkspaceSurface && !isAnyFullscreenActive && (
+            <AppShell
+              pageHeader={pageHeader}
+              sidebarMode={shellPolicy.sidebarMode}
+              sidebarShowsThreads={shellPolicy.sidebarShowsThreads}
+            >
+              {mainSurface}
+            </AppShell>
+            {shellPolicy.showsWorkspaceTerminal && !isAnyFullscreenActive && (
               <Suspense fallback={null}>
                 <TerminalPanel
                   isOpen={isTerminalOpen}

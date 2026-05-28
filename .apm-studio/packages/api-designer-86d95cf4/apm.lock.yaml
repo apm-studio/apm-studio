@@ -3,7 +3,7 @@ dependencies: []
 lockfile_version: "1"
 mcp_servers: []
 packages:
-  - manifest_hash: sha256:b89dfacf712ca713f8b0b59b73e3dade05e594c76cb72ca65ad1410f9a846398
+  - manifest_hash: sha256:0be984880b169f90ad0db41ad608208fb99cb7a2ede3bb453c53c9d49558a963
     name: api-designer
     package_id: api-designer-86d95cf4
     source: apm-studio

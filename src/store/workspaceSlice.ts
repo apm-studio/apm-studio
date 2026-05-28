@@ -121,7 +121,7 @@ function scheduleDraftPersist(draftId: string, fn: () => void, delay = 1500) {
     }, delay))
 }
 
-function buildClosedWorkspaceState(): Partial<StudioState> {
+function buildClosedWorkspaceState(workspaceMode: StudioState['workspaceMode']): Partial<StudioState> {
     return {
         workspaceId: null,
         workingDir: '',
@@ -136,7 +136,7 @@ function buildClosedWorkspaceState(): Partial<StudioState> {
         selectedPerformerId: null,
         selectedPerformerSessionId: null,
         selectedMarkdownEditorId: null,
-        workspaceMode: 'manage',
+        workspaceMode,
         selectedActId: null,
         actEditorState: null,
         activeThreadId: null,
@@ -573,7 +573,7 @@ export const createWorkspaceSlice: StateCreator<
         if (get().workspaceId === workspaceId) {
             get().cleanupRealtimeEvents()
             setApiWorkingDirContext(null)
-            set(buildClosedWorkspaceState())
+            set(buildClosedWorkspaceState(get().workspaceMode))
             api.studio.updateConfig({ lastWorkspaceId: undefined }).catch(err => console.warn('[studio] clear lastWorkspaceId failed', err))
         }
         get().listWorkspaces()

@@ -95,7 +95,7 @@ describe('workspace operations', () => {
         vi.restoreAllMocks()
     })
 
-    it('clears canvas terminals when opening a brand-new workspace', async () => {
+    it('clears canvas terminals without changing workflow mode when opening a brand-new workspace', async () => {
         const harness = createHarness()
 
         vi.spyOn(api.studio, 'pickDirectory').mockResolvedValue({ path: '/tmp/new-workspace' })
@@ -107,7 +107,7 @@ describe('workspace operations', () => {
         expect(harness.read().workingDir).toBe('/tmp/new-workspace')
         expect(harness.read().canvasTerminals).toEqual([])
         expect(harness.read().isTrackingOpen).toBe(false)
-        expect(harness.read().workspaceMode).toBe('manage')
+        expect(harness.read().workspaceMode).toBe('export')
         expect(harness.read().workspaceDirty).toBe(true)
     })
 
@@ -180,6 +180,6 @@ describe('workspace operations', () => {
         expect(harness.read().assistantModel).toEqual({ provider: 'openai', modelId: 'gpt-5.4' })
         expect(harness.read().appliedAssistantActionMessageIds).toEqual({ 'msg-2': true })
         expect(harness.read().assistantActionResults).toEqual({ 'msg-2': { applied: 2, failed: 0 } })
-        expect(harness.read().workspaceMode).toBe('manage')
+        expect(harness.read().workspaceMode).toBe('export')
     })
 })

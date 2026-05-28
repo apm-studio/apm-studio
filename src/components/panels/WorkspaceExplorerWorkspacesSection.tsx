@@ -7,6 +7,7 @@ type Props = {
     workspaceRows: ReactNode[]
     workingDir: string
     onOpenWorkspace: () => void
+    fill?: boolean
 }
 
 export default function WorkspaceExplorerWorkspacesSection({
@@ -14,9 +15,13 @@ export default function WorkspaceExplorerWorkspacesSection({
     workspaceRows,
     workingDir,
     onOpenWorkspace,
+    fill = false,
 }: Props) {
     return (
-        <section className="explorer-section explorer-section--stages explorer-section--workspaces" style={{ flex: `0 0 ${workspacesHeight}px` }}>
+        <section
+            className={`explorer-section explorer-section--stages explorer-section--workspaces ${fill ? 'explorer-section--fill' : ''}`}
+            style={{ flex: fill ? '1 1 auto' : `0 0 ${workspacesHeight}px` }}
+        >
             <div className="explorer__subheader">
                 <span className="explorer__title">Workspaces</span>
                 <button className="icon-btn" onClick={onOpenWorkspace} title="Open workspace directory">

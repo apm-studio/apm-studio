@@ -1,0 +1,10 @@
+apm_version: apm-studio-native-v1
+dependencies: []
+lockfile_version: "1"
+mcp_servers: []
+packages:
+  - manifest_hash: sha256:48bd95ad976cb3025f2110b7072bad134a04d31bcfc0829fb176888f21f7b8ac
+    name: rakesh-jhunjhunwala
+    package_id: rakesh-jhunjhunwala-494f88ed
+    source: apm-studio
+    version: 0.1.0

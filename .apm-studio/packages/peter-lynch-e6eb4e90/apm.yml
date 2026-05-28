@@ -1,0 +1,32 @@
+dependencies:
+  apm: []
+  mcp: []
+description: Analyze an investment through Peter Lynch's practical growth-at-a-reasonable-price
+  lens. Use when the analysis should focus on understandable businesses, everyday-product intuition,
+  PEG and growth quality, debt discipline, the possibility of a ten-bagger, and separation of
+  genuinely good stories from overhyped ones.
+includes: auto
+marketplace:
+  source:
+    format: skill-md
+    path: skills/investor-personas/peter-lynch/SKILL.md
+    ref: main
+    repo: monarchjuno/vibe-investing
+    type: github
+name: peter-lynch
+skills:
+  - path: .apm/skills/peter-lynch/SKILL.md
+target:
+  - codex
+  - gemini
+  - claude
+  - opencode
+  - cursor
+  - windsurf
+  - copilot
+type: skill
+version: 0.1.0
+x-apm:
+  kind: skill
+  packageId: peter-lynch-e6eb4e90
+  schemaVersion: 1

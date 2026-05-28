@@ -1,0 +1,10 @@
+apm_version: apm-studio-native-v1
+dependencies: []
+lockfile_version: "1"
+mcp_servers: []
+packages:
+  - manifest_hash: sha256:e91d31d5a143890271d971d08b59bef326582759fd5fb7ea1faa793fed861945
+    name: bill-ackman
+    package_id: bill-ackman-5939fa31
+    source: apm-studio
+    version: 0.1.0

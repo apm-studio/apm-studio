@@ -23,6 +23,8 @@ Think about the codebase in this order:
 
 If you need the OpenCode source, use `/Users/junhoyoon/tmp/opencode-source/opencode`.
 
+If you need the upstream Microsoft APM reference source for Studio development, use `/Users/junhoyoon/tmp/apm`.
+
 The sibling directory `/Users/junhoyoon/windsurfpjt/dance-of-tal/apm-registry` is the Cloudflare Worker registry project. Treat it as a separate project from this Studio repo.
 
 ## Top-Level Structure

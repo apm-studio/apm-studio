@@ -1,6 +1,6 @@
 # APM Studio
 
-**Package agents, instructions, and skills once, then apply them to Codex, Claude, Gemini, OpenCode, and local assistant workflows.**
+**Package agents, instructions, MCP, skills, and Studio-run models once, then inject them into Codex, Claude, OpenCode, and local assistant workflows.**
 
 [![npm version](https://img.shields.io/npm/v/apm-studio?style=flat-square)](https://www.npmjs.com/package/apm-studio)
 ![Node.js >=20.19.0](https://img.shields.io/badge/Node.js-%3E%3D20.19.0-3c873a?style=flat-square)
@@ -10,7 +10,7 @@
 
 ![APM Studio canvas](.github/screenshot.png)
 
-APM Studio is a local workspace for importing, managing, running, and exporting reusable coding-agent packages. It gives you a visual canvas for composing instructions, skills, model settings, tools, and multi-agent workflows, then projects that package into the assistant runtime you choose.
+APM Studio is a local workspace for importing, managing, running, and injecting reusable coding-agent packages. It gives you a visual canvas for composing instructions, skills, MCP requirements, Studio Run model settings, and multi-agent workflows, then projects agent packages into the assistant runtime you choose.
 
 The core idea is simple: build an APM-style agent package, keep it versionable and inspectable, and export it into the coding assistants you already use.
 
@@ -40,12 +40,12 @@ AI coding assistants are powerful, but their reusable behavior often ends up sca
 
 | Capability | What it gives you |
 | --- | --- |
-| Agent packages | Compose instructions, skills, model settings, and tools as reusable packages. |
+| Agent packages | Compose instructions, skills, MCP requirements, and Studio-run model settings as reusable packages. |
 | Visual editing | Arrange agents and team workflows on a local canvas. |
-| Export | Manually apply packages to external coding assistants through Microsoft APM targets such as Codex, Gemini, Claude, OpenCode, Cursor, Windsurf, and Copilot. |
+| Inject | Export Studio agent packages and APM primitives to external coding assistants through a CLI-first target pipeline with Studio fallback where supported. |
 | Runtime chat | Test standalone agents and multi-agent workflows through the local runtime. |
 | APM-first state | Keep canonical package state in `.apm-studio/packages/<packageId>/apm.yml` plus the package `.apm/` source tree while generated runtime artifacts stay disposable. |
-| Import, Manage, Run, Export | Import source-reference presets, manage packages locally, run agents/teams in Studio, then export them to assistant apps through `apm install --target`. |
+| Import, Manage, Run, Inject | Import source-reference presets, manage packages locally, run agents/teams in Studio, then export selected package units to assistant apps. |
 | GitHub-backed registry | Preview and import community repos as APM packages without copying package content into the registry. |
 
 ## Concepts
@@ -54,14 +54,14 @@ AI coding assistants are powerful, but their reusable behavior often ends up sca
 | --- | --- |
 | Instruction | The always-on instruction layer for an agent. |
 | Skill | A reusable capability bundle, usually backed by `SKILL.md`. |
-| Agent Package | A runnable agent built from instruction, skills, model settings, and tools. |
+| Agent Package | A runnable agent built from instruction, MCP, skills, and a Studio-only model setting. |
 | Team Workflow | A multi-agent workflow with participants, relationships, and collaboration rules. |
-| Export | A management mode for applying packages to external assistant apps. |
+| Inject | A management mode for exporting agent packages, agents, instructions, skills, and MCP configuration to external assistant apps. |
 
 ```text
-Instruction + Skills + model + tools = Agent Package
+Instruction + MCP + Skills + Studio Run model = Agent Package
 Agent Packages + rules = Team Workflow
-GitHub repo -> APM Studio -> apm install --target -> assistant app
+GitHub repo -> APM Studio -> APM CLI-first target projection -> assistant app
 ```
 
 The community registry lives in the sibling `apm-registry` Worker project. It stores GitHub source references, import recipes, target compatibility, trust metadata, and presets; package content remains in source repositories and local APM manifests.

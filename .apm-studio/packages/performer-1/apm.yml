@@ -1,7 +1,6 @@
 agents:
   - description: Agent 2 agent package for APM Studio.
     id: performer-1
-    model: null
     name: Agent 2
 dependencies:
   apm: []

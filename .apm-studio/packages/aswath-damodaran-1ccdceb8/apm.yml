@@ -1,0 +1,33 @@
+dependencies:
+  apm: []
+  mcp: []
+description: Analyze a company, sector situation, or valuation question through Aswath Damodaran's
+  lens. Use when the analysis should start with the business story, connect that story to revenue
+  growth, margins, reinvestment, and risk, then judge valuation through disciplined intrinsic-value
+  work, expectation testing, and explicit uncertainty rather than slogan-level cheap or expensive
+  language.
+includes: auto
+marketplace:
+  source:
+    format: skill-md
+    path: skills/investor-personas/aswath-damodaran/SKILL.md
+    ref: main
+    repo: monarchjuno/vibe-investing
+    type: github
+name: aswath-damodaran
+skills:
+  - path: .apm/skills/aswath-damodaran/SKILL.md
+target:
+  - codex
+  - gemini
+  - claude
+  - opencode
+  - cursor
+  - windsurf
+  - copilot
+type: skill
+version: 0.1.0
+x-apm:
+  kind: skill
+  packageId: aswath-damodaran-1ccdceb8
+  schemaVersion: 1

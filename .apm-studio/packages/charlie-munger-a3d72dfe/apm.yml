@@ -1,0 +1,32 @@
+dependencies:
+  apm: []
+  mcp: []
+description: Analyze an investment through Charlie Munger's quality-first lens. Use when the
+  analysis should emphasize durable business quality, incentives, management character, capital
+  allocation, multidisciplinary thinking, avoidance of complexity or fragility, and willingness to
+  pay a fair price for an exceptional business rather than a bargain price for a weak one.
+includes: auto
+marketplace:
+  source:
+    format: skill-md
+    path: skills/investor-personas/charlie-munger/SKILL.md
+    ref: main
+    repo: monarchjuno/vibe-investing
+    type: github
+name: charlie-munger
+skills:
+  - path: .apm/skills/charlie-munger/SKILL.md
+target:
+  - codex
+  - gemini
+  - claude
+  - opencode
+  - cursor
+  - windsurf
+  - copilot
+type: skill
+version: 0.1.0
+x-apm:
+  kind: skill
+  packageId: charlie-munger-a3d72dfe
+  schemaVersion: 1

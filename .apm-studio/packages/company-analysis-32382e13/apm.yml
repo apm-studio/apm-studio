@@ -1,0 +1,35 @@
+dependencies:
+  apm: []
+  mcp: []
+description: Automatically analyze a company or company-related finance situation from a short user
+  prompt such as a company name, "analyze [company]," M&A, LBO, IPO, debt, credit, or risk requests.
+  Use when an agent must infer the correct valuation and finance framework without asking follow-up
+  questions, begin from market-implied expectations instead of immediate fair value, run Reverse DCF
+  before Forward DCF for listed companies, perform web-verified data gathering and deal-radar
+  checks, defend against hallucinations with explicit data tags and uncertainty statements, and
+  produce a plain-text output with no markdown and no row-column tables.
+includes: auto
+marketplace:
+  source:
+    format: skill-md
+    path: skills/fundamental-analysis/company-analysis/SKILL.md
+    ref: main
+    repo: monarchjuno/vibe-investing
+    type: github
+name: company-analysis
+skills:
+  - path: .apm/skills/company-analysis/SKILL.md
+target:
+  - codex
+  - gemini
+  - claude
+  - opencode
+  - cursor
+  - windsurf
+  - copilot
+type: skill
+version: 0.1.0
+x-apm:
+  kind: skill
+  packageId: company-analysis-32382e13
+  schemaVersion: 1

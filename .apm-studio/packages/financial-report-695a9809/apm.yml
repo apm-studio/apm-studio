@@ -1,0 +1,35 @@
+dependencies:
+  apm: []
+  mcp: []
+description: Package investing analysis into a publishable financial-report style with institutional
+  section flow, thesis framing, valuation context, catalysts, risks, tables, and financial charts.
+  Use when an agent needs to turn existing research into a broker-style or professional finance
+  report for equities, crypto, credit, commodities, portfolios, or macro topics, including
+  chart-heavy outputs such as indicator charts, OHLCV charts, line charts, bar charts, pie charts,
+  and comparison visuals, while keeping the result structured enough for an external docx, pdf,
+  markdown, or spreadsheet skill to render final files.
+includes: auto
+marketplace:
+  source:
+    format: skill-md
+    path: skills/output-formats/financial-report/SKILL.md
+    ref: main
+    repo: monarchjuno/vibe-investing
+    type: github
+name: financial-report
+skills:
+  - path: .apm/skills/financial-report/SKILL.md
+target:
+  - codex
+  - gemini
+  - claude
+  - opencode
+  - cursor
+  - windsurf
+  - copilot
+type: skill
+version: 0.1.0
+x-apm:
+  kind: skill
+  packageId: financial-report-695a9809
+  schemaVersion: 1

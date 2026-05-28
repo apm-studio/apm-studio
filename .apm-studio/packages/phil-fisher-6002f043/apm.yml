@@ -1,0 +1,32 @@
+dependencies:
+  apm: []
+  mcp: []
+description: Analyze an investment through Phil Fisher's scuttlebutt-driven growth lens. Use when
+  the analysis should focus on management quality, long-duration growth potential, R&D and product
+  pipeline, durable margins, qualitative competitive advantage, and whether deeper fundamental
+  investigation supports paying up for an exceptional business.
+includes: auto
+marketplace:
+  source:
+    format: skill-md
+    path: skills/investor-personas/phil-fisher/SKILL.md
+    ref: main
+    repo: monarchjuno/vibe-investing
+    type: github
+name: phil-fisher
+skills:
+  - path: .apm/skills/phil-fisher/SKILL.md
+target:
+  - codex
+  - gemini
+  - claude
+  - opencode
+  - cursor
+  - windsurf
+  - copilot
+type: skill
+version: 0.1.0
+x-apm:
+  kind: skill
+  packageId: phil-fisher-6002f043
+  schemaVersion: 1

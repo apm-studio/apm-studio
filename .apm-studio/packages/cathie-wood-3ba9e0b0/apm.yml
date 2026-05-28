@@ -1,0 +1,32 @@
+dependencies:
+  apm: []
+  mcp: []
+description: Analyze an investment through Cathie Wood's disruptive-innovation lens. Use when the
+  analysis should focus on breakthrough technology, large total addressable markets, multi-year
+  growth optionality, platform scalability, and management willingness to invest in R&D even when
+  near-term volatility or valuation looks uncomfortable.
+includes: auto
+marketplace:
+  source:
+    format: skill-md
+    path: skills/investor-personas/cathie-wood/SKILL.md
+    ref: main
+    repo: monarchjuno/vibe-investing
+    type: github
+name: cathie-wood
+skills:
+  - path: .apm/skills/cathie-wood/SKILL.md
+target:
+  - codex
+  - gemini
+  - claude
+  - opencode
+  - cursor
+  - windsurf
+  - copilot
+type: skill
+version: 0.1.0
+x-apm:
+  kind: skill
+  packageId: cathie-wood-3ba9e0b0
+  schemaVersion: 1

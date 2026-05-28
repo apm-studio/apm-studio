@@ -1,6 +1,7 @@
 import { Suspense, lazy, useState, useCallback, useEffect, useRef } from 'react';
 import { ChevronRight, LayoutGrid } from 'lucide-react';
 import { useStudioStore } from '../../store';
+import type { AppSidebarMode } from '../app-shell-policy';
 import WorkspaceExplorer from './WorkspaceExplorer';
 import './LeftSidebar.css';
 
@@ -8,7 +9,12 @@ const AssetLibrary = lazy(() =>
     import('../../features/assets').then((module) => ({ default: module.AssetLibrary })),
 );
 
-export default function LeftSidebar() {
+type LeftSidebarProps = {
+    mode?: AppSidebarMode
+    showThreads?: boolean
+}
+
+export default function LeftSidebar({ mode = 'workspace-assets', showThreads = true }: LeftSidebarProps) {
     const isAssetLibraryOpen = useStudioStore((s) => s.isAssetLibraryOpen);
     const setAssetLibraryOpen = useStudioStore((s) => s.setAssetLibraryOpen);
     const focusSnapshot = useStudioStore((s) => s.focusSnapshot);
@@ -69,21 +75,23 @@ export default function LeftSidebar() {
     const onDrawerResize = useResize(setDrawerWidth, 240, 480);
 
     const isFocusActive = !!focusSnapshot;
-    const isAssetDrawerOpen = !isFocusActive && isAssetLibraryOpen;
+    const workspaceOnly = mode === 'workspace-only';
+    const canUseAssetLibrary = !isFocusActive && mode === 'workspace-assets';
+    const isAssetDrawerOpen = canUseAssetLibrary && isAssetLibraryOpen;
 
     useEffect(() => {
-        if (isFocusActive && isAssetLibraryOpen) {
+        if (!canUseAssetLibrary && isAssetLibraryOpen) {
             setAssetLibraryOpen(false);
         }
-    }, [isFocusActive, isAssetLibraryOpen, setAssetLibraryOpen]);
+    }, [canUseAssetLibrary, isAssetLibraryOpen, setAssetLibraryOpen]);
 
     return (
         <div className={`sidebar-container ${isAssetDrawerOpen ? 'sidebar-container--drawer-open' : ''}`}>
             <div className="sidebar" style={{ width: sidebarWidth }}>
                 <div className="sidebar-main-top" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                    <WorkspaceExplorer />
+                    <WorkspaceExplorer workspaceOnly={workspaceOnly} showThreads={showThreads} />
                 </div>
-                {!isFocusActive && (
+                {canUseAssetLibrary && (
                     <div className="sidebar-main-bottom sidebar-main-bottom--asset-drawer">
                         <button
                             className={`asset-library-btn ${isAssetDrawerOpen ? 'active' : ''}`}

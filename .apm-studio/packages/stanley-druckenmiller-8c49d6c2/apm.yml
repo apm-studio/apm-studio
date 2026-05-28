@@ -1,0 +1,32 @@
+dependencies:
+  apm: []
+  mcp: []
+description: Analyze an investment through Stanley Druckenmiller's asymmetric-opportunity lens. Use
+  when the analysis should focus on growth, momentum, sentiment, macro or narrative inflection,
+  catalyst paths, downside control, and whether the opportunity offers enough upside asymmetry to
+  justify acting with conviction while remaining willing to cut the thesis if conditions change.
+includes: auto
+marketplace:
+  source:
+    format: skill-md
+    path: skills/investor-personas/stanley-druckenmiller/SKILL.md
+    ref: main
+    repo: monarchjuno/vibe-investing
+    type: github
+name: stanley-druckenmiller
+skills:
+  - path: .apm/skills/stanley-druckenmiller/SKILL.md
+target:
+  - codex
+  - gemini
+  - claude
+  - opencode
+  - cursor
+  - windsurf
+  - copilot
+type: skill
+version: 0.1.0
+x-apm:
+  kind: skill
+  packageId: stanley-druckenmiller-8c49d6c2
+  schemaVersion: 1

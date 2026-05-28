@@ -113,7 +113,7 @@ export interface MicrosoftApmPackageSourceSummary {
 }
 
 export interface ApmToolingRunnerStatus {
-    id: 'apm' | 'uvx' | 'pipx' | 'python3'
+    id: 'configured' | 'apm' | 'uvx' | 'pipx' | 'python3'
     label: string
     available: boolean
     version?: string
@@ -137,6 +137,12 @@ export interface ApmPackageSummary {
     description?: string
     kind: ApmManifestExtension['kind'] | 'unknown'
     agentName?: string
+    agentComponents?: {
+        instructions: number
+        skills: number
+        mcp: number
+        model: boolean
+    }
     derivedFrom?: string | null
     manifestPath?: string
     lockPath?: string
@@ -307,14 +313,55 @@ export interface ApmPackageExportResponse {
     microsoftApm?: MicrosoftApmPackageSourceSummary
 }
 
-export type ApmSyncTargetId = 'codex' | 'gemini' | 'claude' | 'opencode' | 'cursor' | 'windsurf' | 'copilot'
+export type ApmExportUnit = 'agent-packages' | 'agents' | 'instructions' | 'skills' | 'mcp'
+
+export type ApmSyncTargetId =
+    | 'codex'
+    | 'gemini'
+    | 'claude'
+    | 'opencode'
+    | 'cursor'
+    | 'windsurf'
+    | 'copilot'
+    | 'agent-skills'
+
+export type ApmSyncStrategy = 'cli-first' | 'studio-fallback' | 'unsupported'
+
+export type ApmSyncTargetDefinitionKind = 'agent' | 'instruction' | 'skill' | 'mcp' | 'config' | 'unknown'
+
+export interface ApmSyncTargetItemSummary {
+    packageId: string
+    target: ApmSyncTargetId
+    exportUnit: ApmExportUnit
+    artifactCount: number
+    artifacts: string[]
+    updatedAt: string
+}
+
+export interface ApmSyncTargetDefinitionSummary {
+    id: string
+    target: ApmSyncTargetId
+    name: string
+    kind: ApmSyncTargetDefinitionKind
+    path: string
+    exportUnit?: ApmExportUnit
+    managed: boolean
+    managedPackageId?: string
+    managedExportUnit?: ApmExportUnit
+    updatedAt?: string
+}
 
 export interface ApmSyncTargetSummary {
     id: ApmSyncTargetId
     label: string
     description: string
+    outputHint: string
     commandPreview: string
     available: boolean
+    supportedExportUnits: ApmExportUnit[]
+    strategy: ApmSyncStrategy
+    currentItems: ApmSyncTargetItemSummary[]
+    definitions: ApmSyncTargetDefinitionSummary[]
     disabledReason?: string
 }
 
@@ -326,6 +373,7 @@ export interface ApmSyncTargetsResponse {
 export interface ApmSyncRunRequest {
     target?: ApmSyncTargetId
     targets?: ApmSyncTargetId[]
+    exportUnit?: ApmExportUnit
     packageIds?: string[]
     frozen?: boolean
 }
@@ -334,8 +382,13 @@ export interface ApmSyncPackageResult {
     packageId: string
     name: string
     target: ApmSyncTargetId
+    exportUnit?: ApmExportUnit
     command: string
     status: 'synced' | 'failed' | 'skipped'
+    projectedAs?: string
+    artifacts?: string[]
+    warnings?: string[]
+    modelOmitted?: boolean
     stdout?: string
     stderr?: string
     error?: string
@@ -345,6 +398,7 @@ export interface ApmSyncRunResponse {
     ok: true
     target?: ApmSyncTargetId
     targets: ApmSyncTargetId[]
+    exportUnit: ApmExportUnit
     startedAt: number
     finishedAt: number
     results: ApmSyncPackageResult[]

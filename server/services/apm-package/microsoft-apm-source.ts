@@ -4,7 +4,6 @@ import type {
     ApmPackageManifest,
     MicrosoftApmPackageSourceSummary,
 } from '../../../shared/apm-contracts.js'
-import type { ModelSelection } from '../../../shared/model-types.js'
 import type { SharedAssetRef } from '../../../shared/chat-contracts.js'
 import { getAssetPayload, readAsset, danceAssetDir } from '../../lib/apm-asset-source.js'
 import { readDraft, readDraftTextContent } from '../draft-service.js'
@@ -42,15 +41,6 @@ function uniqueSegment(value: string, used: Set<string>) {
     }
     used.add(candidate)
     return candidate
-}
-
-function modelName(model: ModelSelection | null | undefined) {
-    if (!model) return null
-    const modelId = model.modelId.trim()
-    if (!modelId) return null
-    return modelId.startsWith(`${model.provider}/`)
-        ? modelId.slice(model.provider.length + 1)
-        : modelId
 }
 
 function frontmatter(fields: Record<string, unknown>) {
@@ -361,7 +351,6 @@ export async function syncMicrosoftApmSourceTree(
         path.join(agentDir, `${agentSlug}.agent.md`),
         `${frontmatter({
             description,
-            model: modelName(agent.model),
             name: agentSlug,
         })}\n\n${body.trimEnd()}\n`,
     )
