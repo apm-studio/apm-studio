@@ -1,14 +1,15 @@
+import type { ChatMessage } from './chat-message-types'
 /**
  * Normalized entity tables with CRUD operations for session data.
  * All state is keyed by sessionId. A bidirectional chatKey ↔ sessionId
- * index allows the 3 UI surfaces (Performer / Act / Assistant) to
+ * index allows the 3 UI surfaces (Agent / Team / Assistant) to
  * derive their data without maintaining separate stores.
  */
 import type { StateCreator } from 'zustand'
 import type { StudioState } from '../types'
 import type { SessionSlice, SessionEntity, SessionStatus } from './types'
-import type { ChatMessage } from '../../types'
-import type { PermissionRequest, QuestionRequest, Todo } from '@opencode-ai/sdk/v2'
+
+import type { ChatPermissionRequest, ChatQuestionRequest, ChatTodo } from '../../../shared/chat-contracts'
 
 export const IDLE_STATUS: SessionStatus = { type: 'idle' }
 
@@ -125,7 +126,7 @@ export const createSessionSlice: StateCreator<
 
     // ── Dock state ──
 
-    setSessionPermission: (sessionId: string, permission: PermissionRequest) => set((state) => ({
+    setSessionPermission: (sessionId: string, permission: ChatPermissionRequest) => set((state) => ({
         sePermissions: { ...state.sePermissions, [sessionId]: permission },
     })),
 
@@ -133,7 +134,7 @@ export const createSessionSlice: StateCreator<
         sePermissions: withoutKey(state.sePermissions, sessionId),
     })),
 
-    setSessionQuestion: (sessionId: string, question: QuestionRequest) => set((state) => ({
+    setSessionQuestion: (sessionId: string, question: ChatQuestionRequest) => set((state) => ({
         seQuestions: { ...state.seQuestions, [sessionId]: question },
     })),
 
@@ -141,7 +142,7 @@ export const createSessionSlice: StateCreator<
         seQuestions: withoutKey(state.seQuestions, sessionId),
     })),
 
-    setSessionTodos: (sessionId: string, todos: Todo[]) => set((state) => ({
+    setSessionTodos: (sessionId: string, todos: ChatTodo[]) => set((state) => ({
         seTodos: { ...state.seTodos, [sessionId]: todos },
     })),
 

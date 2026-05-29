@@ -20,7 +20,6 @@ export type ProviderCard = ProviderSummary & {
 export type ProviderAuthOption = {
     method: ProviderAuthMethod
     methodIndex: number
-    source: 'provider' | 'compat'
 }
 
 export type ProviderListFilter = 'popular' | 'connected' | 'all'
@@ -98,24 +97,11 @@ export function buildProviderAuthOptions(provider: ProviderCard): ProviderAuthOp
     const authMethods = provider.authMethods.map((method, methodIndex) => ({
         method,
         methodIndex,
-        source: 'provider' as const,
     }))
     const apiMethods = authMethods.filter(({ method }) => method.type === 'api')
     const oauthMethods = authMethods.filter(({ method }) => method.type === 'oauth')
 
-    if (provider.env.length === 0 || apiMethods.length > 0) {
-        return [...apiMethods, ...oauthMethods]
-    }
-
-    // Compatibility fallback while some OpenCode providers still expose only env-backed API auth.
-    return [
-        {
-            method: { type: 'api', label: 'API Key' },
-            methodIndex: -1,
-            source: 'compat',
-        },
-        ...oauthMethods,
-    ]
+    return [...apiMethods, ...oauthMethods]
 }
 
 export function shouldShowProviderConnectModal(

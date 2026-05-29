@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { FileCode, Github, X } from 'lucide-react'
-import { api } from '../../api'
+import { opencodeApi } from '../../api-clients/opencode'
 import { useStudioStore } from '../../store'
-import type { FileStatus } from '../../types'
+import type { FileStatusSummary, OpenCodeFileReadResponse } from '../../../shared/opencode-contracts'
 import '../assistant/AssistantChat.css'
 import './WorkspaceTrackingPanel.css'
 
@@ -12,19 +12,15 @@ type FilePreview = {
     error?: string
 }
 
-function readFilePreviewContent(value: unknown) {
-    if (!value || typeof value !== 'object') {
-        return ''
-    }
-    const record = value as Record<string, unknown>
-    return typeof record.content === 'string' ? record.content : ''
+function readFilePreviewContent(value: OpenCodeFileReadResponse) {
+    return typeof value.content === 'string' ? value.content : ''
 }
 
 export function WorkspaceTrackingPanel() {
     const isTrackingOpen = useStudioStore((state) => state.isTrackingOpen)
     const setTrackingOpen = useStudioStore((state) => state.setTrackingOpen)
     const workingDir = useStudioStore((state) => state.workingDir)
-    const [files, setFiles] = useState<FileStatus[]>([])
+    const [files, setFiles] = useState<FileStatusSummary[]>([])
     const [selectedPath, setSelectedPath] = useState<string | null>(null)
     const [preview, setPreview] = useState<FilePreview | null>(null)
     const [previewLoading, setPreviewLoading] = useState(false)
@@ -33,7 +29,7 @@ export function WorkspaceTrackingPanel() {
 
     const fetchFiles = useCallback(async () => {
         try {
-            const res = await api.file.status()
+            const res = await opencodeApi.file.status()
             setFiles(res || [])
         } catch {
             setFiles([])
@@ -83,7 +79,7 @@ export function WorkspaceTrackingPanel() {
         let cancelled = false
         const previewRefresh = window.setTimeout(() => {
             setPreviewLoading(true)
-            api.file.read(selectedPath)
+            opencodeApi.file.read(selectedPath)
                 .then((result) => {
                     if (cancelled) return
                     setPreview({

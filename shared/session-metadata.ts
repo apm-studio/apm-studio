@@ -2,13 +2,13 @@ const SESSION_TITLE_PREFIX = 'APM Studio:'
 const SESSION_METADATA_PATTERN = /^APM Studio:\s*(.*?)\s*\[studio:([^:\]]+):(.*)\]\s*$/
 const MAX_PROVISIONAL_THREAD_TITLE_LENGTH = 80
 
-export function buildStudioSessionTitle(performerId: string, performerName: string, configHash: string): string {
-    return `${SESSION_TITLE_PREFIX} ${performerName} [studio:${performerId}:${configHash}]`
+export function buildStudioSessionTitle(agentId: string, agentName: string, configHash: string): string {
+    return `${SESSION_TITLE_PREFIX} ${agentName} [studio:${agentId}:${configHash}]`
 }
 
 export function parseStudioSessionTitle(title: string | undefined | null): {
     label: string
-    performerId: string
+    agentId: string
     configHash: string
 } | null {
     if (!title || !title.startsWith(SESSION_TITLE_PREFIX)) {
@@ -22,7 +22,7 @@ export function parseStudioSessionTitle(title: string | undefined | null): {
 
     return {
         label: match[1].trim(),
-        performerId: match[2],
+        agentId: match[2],
         configHash: match[3],
     }
 }

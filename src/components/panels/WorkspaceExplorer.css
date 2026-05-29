@@ -32,7 +32,7 @@
     background: color-mix(in srgb, var(--accent) 25%, transparent);
 }
 
-.explorer-section--stages {
+.explorer-section--workspaces {
     flex: 0 0 190px;
 }
 
@@ -47,7 +47,7 @@
     overflow: hidden;
 }
 
-/* ── Pane — each half of the Performers / Acts split ── */
+/* ── Pane — each half of the Agents / Teams split ── */
 .explorer__pane {
     display: flex;
     flex-direction: column;
@@ -62,7 +62,7 @@
     padding: 0 6px 4px;
 }
 
-/* ── Section Groups (Performers / Acts within Threads) ── */
+/* ── Section Groups (Agents / Teams within Threads) ── */
 .explorer__section-group {
     display: flex;
     flex-direction: column;

@@ -5,7 +5,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { Search, X } from 'lucide-react'
-import { api } from '../../api'
+import { opencodeApi } from '../../api-clients/opencode'
 import { buildRuntimeModelProviderGroups } from '../../lib/runtime-models'
 import type { RuntimeModelVariant } from '../../../shared/model-variants'
 
@@ -38,7 +38,7 @@ export default function SettingsModels() {
         async function load() {
             setLoading(true)
             try {
-                const list = await api.models.list()
+                const list = await opencodeApi.models.list()
                 if (cancelled) return
                 const entries: ModelEntry[] = (list || []).map((m) => ({
                     id: m.id,

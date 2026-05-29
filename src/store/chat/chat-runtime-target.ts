@@ -1,54 +1,59 @@
 import type {
     AssistantParticipantSubscriptions,
-    AssistantStageActParticipantSummary,
-    AssistantStageActRelationSummary,
-    AssistantStageActSummary,
-    AssistantStageContext,
-} from '../../../shared/assistant-actions'
+    AssistantWorkspaceTeamParticipantSummary,
+    AssistantWorkspaceTeamRelationSummary,
+    AssistantWorkspaceTeamSummary,
+    AssistantWorkspaceContext,
+    } from '../../../shared/assistant-actions'
+import type { SharedPrimitiveRef } from '../../../shared/chat-contracts'
+import type { TeamRelation } from '../../../shared/team-types'
+import type { WorkspaceTeamParticipantBinding,
+    WorkspaceTeamSnapshot,
+} from '../../../shared/workspace-contracts'
 import { describeChatTarget } from '../../../shared/chat-targets'
-import { describeActParticipantRef, resolvePerformerFromActBinding } from '../../lib/act-participants'
-import { resolvePerformerRuntimeConfig } from '../../lib/performers'
-import type { ActRelation, AssetRef, WorkspaceAct, WorkspaceActParticipantBinding } from '../../types'
-import { isAssistantChatKey } from '../assistantSlice'
+import { describeTeamParticipantRef,
+    resolveAgentFromTeamBinding } from '../../lib/team-participants'
+import { resolveAgentRuntimeConfig } from '../../lib/agents'
+import { isAssistantChatKey } from '../assistant/slice'
 import type { ChatGet } from './chat-internals'
 
 export type ChatRuntimeConfig = {
-    talRef: AssetRef | null
-    inlineInstruction?: string | null
-    danceRefs: AssetRef[]
+    instructionRef: SharedPrimitiveRef | null
+    agentBody?: string | null
+    skillRefs: SharedPrimitiveRef[]
     model: { provider: string; modelId: string } | null
     modelVariant: string | null
-    agentId: string
+    runtimeAgentId: string
     mcpServerNames: string[]
     planMode: boolean
 }
 
 export type ResolvedChatRuntimeTarget = {
     chatKey: string
-    kind: 'assistant' | 'performer' | 'act-participant'
+    kind: 'assistant' | 'agent' | 'team-participant'
     name: string
     runtimeConfig: ChatRuntimeConfig
-    assistantContext: AssistantStageContext | null
+    assistantContext: AssistantWorkspaceContext | null
     executionScope: {
-        performerId: string | null
-        actId: string | null
+        agentId: string | null
+        teamId: string | null
     }
     requestTarget: {
-        performerId: string
-        performerName: string
-        actId?: string
-        actThreadId?: string
+        agentId: string
+        agentName: string
+        teamId?: string
+        teamThreadId?: string
     }
     notice?: string
 }
 
 export const EMPTY_RUNTIME_CONFIG: ChatRuntimeConfig = {
-    talRef: null,
-    inlineInstruction: null,
-    danceRefs: [],
+    instructionRef: null,
+    agentBody: null,
+    skillRefs: [],
     model: null,
     modelVariant: null,
-    agentId: 'build',
+    runtimeAgentId: 'build',
     mcpServerNames: [],
     planMode: false,
 }
@@ -56,11 +61,11 @@ export const EMPTY_RUNTIME_CONFIG: ChatRuntimeConfig = {
 function resolveParticipantSummary(
     get: ChatGet,
     participantKey: string,
-    binding: WorkspaceActParticipantBinding,
-): AssistantStageActParticipantSummary {
-    const performers = get().performers
-    const performer = resolvePerformerFromActBinding(performers, binding)
-    const description = performer?.meta?.authoring?.description?.trim()
+    binding: WorkspaceTeamParticipantBinding,
+): AssistantWorkspaceTeamParticipantSummary {
+    const agents = get().agents
+    const agent = resolveAgentFromTeamBinding(agents, binding)
+    const description = agent?.meta?.authoring?.description?.trim()
 
     const subscriptions: AssistantParticipantSubscriptions | undefined = binding.subscriptions
         ? {
@@ -73,21 +78,21 @@ function resolveParticipantSummary(
 
     return {
         key: participantKey,
-        performerName: performer?.name || binding?.displayName || (binding?.performerRef?.kind === 'registry'
-            ? binding.performerRef.urn
-            : binding?.performerRef?.draftId || participantKey),
-        performerId: performer?.id || null,
+        agentName: agent?.name || binding?.displayName || (binding?.agentRef?.kind === 'registry'
+            ? binding.agentRef.urn
+            : binding?.agentRef?.draftId || participantKey),
+        agentId: agent?.id || null,
         displayName: binding.displayName,
         ...(description ? { description } : {}),
         ...(subscriptions ? { subscriptions } : {}),
     }
 }
 
-function resolveActSummary(get: ChatGet, act: WorkspaceAct): AssistantStageActSummary {
-    const participants = Object.entries(act.participants || {}).map(([key, binding]) =>
+function resolveTeamSummary(get: ChatGet, team: WorkspaceTeamSnapshot): AssistantWorkspaceTeamSummary {
+    const participants = Object.entries(team.participants || {}).map(([key, binding]) =>
         resolveParticipantSummary(get, key, binding),
     )
-    const relations: AssistantStageActRelationSummary[] = (act.relations || []).map((relation: ActRelation) => ({
+    const relations: AssistantWorkspaceTeamRelationSummary[] = (team.relations || []).map((relation: TeamRelation) => ({
         id: relation.id,
         name: relation.name,
         description: relation.description,
@@ -96,24 +101,24 @@ function resolveActSummary(get: ChatGet, act: WorkspaceAct): AssistantStageActSu
     }))
 
     return {
-        id: act.id,
-        name: act.name,
-        description: act.description,
-        position: act.position,
-        size: { width: act.width, height: act.height },
-        hidden: !!act.hidden,
-        actRules: act.actRules,
-        safety: act.safety,
+        id: team.id,
+        name: team.name,
+        description: team.description,
+        position: team.position,
+        size: { width: team.width, height: team.height },
+        hidden: !!team.hidden,
+        teamRules: team.teamRules,
+        safety: team.safety,
         participants,
         relations,
     }
 }
 
-export function isAssistantPerformerId(chatKey: string): boolean {
+export function isAssistantAgentId(chatKey: string): boolean {
     return isAssistantChatKey(chatKey)
 }
 
-export function buildAssistantStageContext(get: ChatGet): AssistantStageContext | null {
+export function buildAssistantWorkspaceContext(get: ChatGet): AssistantWorkspaceContext | null {
     const state = get()
     if (!state.workingDir) {
         return null
@@ -122,51 +127,51 @@ export function buildAssistantStageContext(get: ChatGet): AssistantStageContext 
     return {
         workingDir: state.workingDir,
         view: {
-            selectedPerformerId: state.selectedPerformerId ?? null,
-            selectedActId: state.selectedActId ?? null,
+            selectedAgentId: state.selectedAgentId ?? null,
+            selectedTeamId: state.selectedTeamId ?? null,
             selectedMarkdownEditorId: state.selectedMarkdownEditorId ?? null,
-            activeChatPerformerId: state.activeChatPerformerId ?? null,
+            activeChatAgentId: state.activeChatAgentId ?? null,
             viewMode: state.viewMode || 'canvas',
             panels: {
-                assetLibrary: !!state.isAssetLibraryOpen,
+                packages: !!state.isPackageLibraryOpen,
                 workspaceTracking: !!state.isTrackingOpen,
                 terminal: !!state.isTerminalOpen,
                 assistant: !!state.isAssistantOpen,
             },
         },
-        performers: state.performers.map((performer) => {
-            const description = performer.meta?.authoring?.description?.trim()
+        agents: state.agents.map((agent) => {
+            const description = agent.meta?.authoring?.description?.trim()
             return {
-                id: performer.id,
-                name: performer.name,
+                id: agent.id,
+                name: agent.name,
                 ...(description ? { description } : {}),
-                position: performer.position,
+                position: agent.position,
                 size: {
-                    width: performer.width ?? 400,
-                    height: performer.height ?? 500,
+                    width: agent.width ?? 400,
+                    height: agent.height ?? 500,
                 },
-                hidden: !!performer.hidden,
-                model: performer.model
+                hidden: !!agent.hidden,
+                model: agent.model
                     ? {
-                        provider: performer.model.provider,
-                        modelId: performer.model.modelId,
+                        provider: agent.model.provider,
+                        modelId: agent.model.modelId,
                     }
                     : null,
-                modelVariant: performer.modelVariant || null,
-                talUrn: performer.talRef?.kind === 'registry' ? performer.talRef.urn : null,
-                talDraftId: performer.talRef?.kind === 'draft' ? performer.talRef.draftId : null,
-                danceUrns: performer.danceRefs
+                modelVariant: agent.modelVariant || null,
+                instructionUrn: agent.instructionRef?.kind === 'registry' ? agent.instructionRef.urn : null,
+                instructionDraftId: agent.instructionRef?.kind === 'draft' ? agent.instructionRef.draftId : null,
+                skillUrns: agent.skillRefs
                     .filter((ref) => ref.kind === 'registry')
                     .map((ref) => ref.urn),
-                danceDraftIds: performer.danceRefs
+                skillDraftIds: agent.skillRefs
                     .filter((ref) => ref.kind === 'draft')
                     .map((ref) => ref.draftId),
             }
         }),
-        acts: state.acts.map((act) => resolveActSummary(get, act)),
+        teams: state.teams.map((team) => resolveTeamSummary(get, team)),
         drafts: Object.values(state.drafts)
-            .filter((draft): draft is typeof draft & { kind: 'tal' | 'dance' } =>
-                draft.kind === 'tal' || draft.kind === 'dance',
+            .filter((draft): draft is typeof draft & { kind: 'instruction' | 'skill' } =>
+                draft.kind === 'instruction' || draft.kind === 'skill',
             )
             .map((draft) => ({
                 id: draft.id,
@@ -211,106 +216,106 @@ export function resolveChatRuntimeTarget(get: ChatGet, chatKey: string): Resolve
                     }
                     : null,
             },
-            assistantContext: buildAssistantStageContext(get),
+            assistantContext: buildAssistantWorkspaceContext(get),
             executionScope: {
-                performerId: null,
-                actId: null,
+                agentId: null,
+                teamId: null,
             },
             requestTarget: {
-                performerId: chatKey,
-                performerName: 'APM Assistant',
+                agentId: chatKey,
+                agentName: 'APM Assistant',
             },
         }
     }
 
-    if (descriptor.kind === 'act-participant') {
-        const act = state.acts.find((entry) => entry.id === descriptor.actId) || null
-        const binding = act?.participants[descriptor.participantKey]
+    if (descriptor.kind === 'team-participant') {
+        const team = state.teams.find((entry) => entry.id === descriptor.teamId) || null
+        const binding = team?.participants[descriptor.participantKey]
         const participantName = binding?.displayName || descriptor.participantKey
-        const performer = resolvePerformerFromActBinding(state.performers, binding)
+        const agent = resolveAgentFromTeamBinding(state.agents, binding)
 
         if (!binding) {
             return {
                 chatKey,
-                kind: 'act-participant',
+                kind: 'team-participant',
                 name: participantName,
                 runtimeConfig: EMPTY_RUNTIME_CONFIG,
                 assistantContext: null,
                 executionScope: {
-                    performerId: null,
-                    actId: descriptor.actId,
+                    agentId: null,
+                    teamId: descriptor.teamId,
                 },
                 requestTarget: {
-                    performerId: chatKey,
-                    performerName: participantName,
-                    actId: descriptor.actId,
-                    actThreadId: descriptor.threadId,
+                    agentId: chatKey,
+                    agentName: participantName,
+                    teamId: descriptor.teamId,
+                    teamThreadId: descriptor.threadId,
                 },
                 notice: `Team participant "${participantName}" is no longer available in this Team.`,
             }
         }
 
-        if (!performer) {
+        if (!agent) {
             return {
                 chatKey,
-                kind: 'act-participant',
+                kind: 'team-participant',
                 name: participantName,
                 runtimeConfig: EMPTY_RUNTIME_CONFIG,
                 assistantContext: null,
                 executionScope: {
-                    performerId: null,
-                    actId: descriptor.actId,
+                    agentId: null,
+                    teamId: descriptor.teamId,
                 },
                 requestTarget: {
-                    performerId: chatKey,
-                    performerName: participantName,
-                    actId: descriptor.actId,
-                    actThreadId: descriptor.threadId,
+                    agentId: chatKey,
+                    agentName: participantName,
+                    teamId: descriptor.teamId,
+                    teamThreadId: descriptor.threadId,
                 },
                 notice:
-                    `Cannot resolve performer for participant "${participantName}" ` +
-                    `(ref: ${describeActParticipantRef(binding, descriptor.participantKey)}). ` +
+                    `Cannot resolve agent for participant "${participantName}" ` +
+                    `(ref: ${describeTeamParticipantRef(binding, descriptor.participantKey)}). ` +
                     'No matching local agent found. Try re-importing the Team or creating an agent manually.',
             }
         }
 
         return {
             chatKey,
-            kind: 'act-participant',
-            name: performer.name || participantName,
-            runtimeConfig: resolvePerformerRuntimeConfig(performer),
+            kind: 'team-participant',
+            name: agent.name || participantName,
+            runtimeConfig: resolveAgentRuntimeConfig(agent),
             assistantContext: null,
             executionScope: {
-                performerId: performer.id,
-                actId: descriptor.actId,
+                agentId: agent.id,
+                teamId: descriptor.teamId,
             },
             requestTarget: {
-                performerId: chatKey,
-                performerName: performer.name || participantName,
-                actId: descriptor.actId,
-                actThreadId: descriptor.threadId,
+                agentId: chatKey,
+                agentName: agent.name || participantName,
+                teamId: descriptor.teamId,
+                teamThreadId: descriptor.threadId,
             },
         }
     }
 
-    const performer = state.performers.find((item) => item.id === descriptor.performerId) || null
-    if (!performer) {
+    const agent = state.agents.find((item) => item.id === descriptor.agentId) || null
+    if (!agent) {
         return null
     }
 
     return {
         chatKey,
-        kind: 'performer',
-        name: performer.name || 'Untitled Agent',
-        runtimeConfig: resolvePerformerRuntimeConfig(performer),
+        kind: 'agent',
+        name: agent.name || 'Untitled Agent',
+        runtimeConfig: resolveAgentRuntimeConfig(agent),
         assistantContext: null,
         executionScope: {
-            performerId: performer.id,
-            actId: null,
+            agentId: agent.id,
+            teamId: null,
         },
         requestTarget: {
-            performerId: performer.id,
-            performerName: performer.name || 'Untitled Agent',
+            agentId: agent.id,
+            agentName: agent.name || 'Untitled Agent',
         },
     }
 }

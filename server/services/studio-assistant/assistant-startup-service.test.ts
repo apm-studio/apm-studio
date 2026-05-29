@@ -8,7 +8,7 @@ vi.mock('../../lib/config.js', () => ({
     getActiveProjectDir: getActiveProjectDirMock,
 }))
 
-vi.mock('../workspace-service.js', () => ({
+vi.mock('../workspace/service.js', () => ({
     listSavedWorkspaces: listSavedWorkspacesMock,
 }))
 

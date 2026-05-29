@@ -1,104 +1,105 @@
+import type { ChatMessage } from '../../store/session/chat-message-types'
 import { useCallback, useRef, useState } from 'react'
 import { MessageSquare, Workflow } from 'lucide-react'
 import type { ExplorerRenamingSession, ThreadRow } from './workspace-explorer-utils'
-import { resolveActThreadActivityAt, resolveSessionActivityAt } from './workspace-explorer-utils'
-import type { PerformerEditorFocus, WorkspaceExplorerAct, WorkspaceExplorerActThread, WorkspaceExplorerEditingTarget } from './workspace-explorer-types'
-import type { ChatMessage } from '../../types'
-import type { SessionEntity } from '../../store/session'
-import WorkspaceExplorerActGroup from './WorkspaceExplorerActGroup'
-import WorkspaceExplorerPerformerGroup from './WorkspaceExplorerPerformerGroup'
+import { resolveTeamThreadActivityAt, resolveSessionActivityAt } from './workspace-explorer-utils'
+import type { AgentEditorFocus, WorkspaceExplorerTeam, WorkspaceExplorerTeamThread, WorkspaceExplorerEditingTarget } from './workspace-explorer-types'
 
-type Props = {
+import type { SessionEntity } from '../../store/session'
+import WorkspaceExplorerTeamGroup from './WorkspaceExplorerTeamGroup'
+import WorkspaceExplorerAgentGroup from './WorkspaceExplorerAgentGroup'
+
+export type WorkspaceExplorerThreadsSectionProps = {
     workspaceId: string | null
-    acts: WorkspaceExplorerAct[]
+    teams: WorkspaceExplorerTeam[]
     showThreads: boolean
     threadRows: ThreadRow[]
     expandedRows: Record<string, boolean>
     pendingDelete: string | null
     renamingSession: ExplorerRenamingSession
     editingTarget: WorkspaceExplorerEditingTarget
-    selectedActId: string | null
+    selectedTeamId: string | null
     activeThreadId: string | null
-    actThreads: Record<string, WorkspaceExplorerActThread[]>
+    teamThreads: Record<string, WorkspaceExplorerTeamThread[]>
     sessions: Array<{ id: string; title?: string; sidebarTitle?: string; createdAt?: number; updatedAt?: number }>
     seEntities: Record<string, SessionEntity>
     seMessages: Record<string, ChatMessage[]>
     onToggleExpanded: (key: string) => void
     onSetPendingDelete: (key: string | null) => void
-    onBeginRenamePerformerSession: (session: { id: string; title?: string; sidebarTitle?: string }) => void
+    onBeginRenameAgentSession: (session: { id: string; title?: string; sidebarTitle?: string }) => void
     onCommitRenameSession: () => void | Promise<void>
     onCancelRenameSession: () => void
     onSetRenamingValue: (value: string) => void
-    performerSessionLabel: (session: { id: string; title?: string; sidebarTitle?: string }) => string
-    onOpenPerformer: (performerId: string) => void
-    onOpenPerformerSession: (performerId: string, session: { id: string; title?: string; sidebarTitle?: string }) => void | Promise<void>
+    agentSessionLabel: (session: { id: string; title?: string; sidebarTitle?: string }) => string
+    onOpenAgent: (agentId: string) => void
+    onOpenAgentSession: (agentId: string, session: { id: string; title?: string; sidebarTitle?: string }) => void | Promise<void>
     onDeleteSession: (id: string) => void
-    onAddPerformer: () => void
-    onAddAct: () => void
-    onTogglePerformerVisibility: (id: string) => void
-    onOpenPerformerEditor: (id: string, focus: PerformerEditorFocus) => void
-    onSetActiveChatPerformer: (id: string | null) => void
-    onRemovePerformer: (id: string) => void
-    onSavePerformerAsDraft: (id: string) => void
-    onOpenAct: (id: string) => void
+    onAddAgent: () => void
+    onAddTeam: () => void
+    onToggleAgentVisibility: (id: string) => void
+    onOpenAgentEditor: (id: string, focus: AgentEditorFocus) => void
+    onSetActiveChatAgent: (id: string | null) => void
+    onRemoveAgent: (id: string) => void
+    onSaveAgentAsDraft: (id: string) => void
+    onOpenTeam: (id: string) => void
     onCreateThread: (id: string) => void | Promise<void>
 
-    onSaveActAsDraft: (id: string) => void
-    onToggleActVisibility: (id: string) => void
-    onRemoveAct: (id: string) => void
-    onSelectThread: (actId: string, threadId: string) => void
-    onDeleteThread: (actId: string, threadId: string) => void
-    onRenameThread: (actId: string, threadId: string, name: string) => void
-    onStartNewSession: (performerId: string) => void
-    onOpenActEditor: (actId: string) => void
+    onSaveTeamAsDraft: (id: string) => void
+    onToggleTeamVisibility: (id: string) => void
+    onRemoveTeam: (id: string) => void
+    onSelectThread: (teamId: string, threadId: string) => void
+    onDeleteThread: (teamId: string, threadId: string) => void
+    onRenameThread: (teamId: string, threadId: string, name: string) => void
+    onStartNewSession: (agentId: string) => void
+    onOpenTeamEditor: (teamId: string) => void
 }
 
 export default function WorkspaceExplorerThreadsSection({
     workspaceId,
-    acts,
+    teams,
     showThreads,
     threadRows,
     expandedRows,
     pendingDelete,
     renamingSession,
     editingTarget,
-    selectedActId,
+    selectedTeamId,
     activeThreadId,
-    actThreads,
+    teamThreads,
     sessions,
     seEntities,
     seMessages,
     onToggleExpanded,
     onSetPendingDelete,
-    onBeginRenamePerformerSession,
+    onBeginRenameAgentSession,
     onCommitRenameSession,
     onCancelRenameSession,
     onSetRenamingValue,
-    performerSessionLabel,
-    onOpenPerformer,
-    onOpenPerformerSession,
+    agentSessionLabel,
+    onOpenAgent,
+    onOpenAgentSession,
     onDeleteSession,
-    onAddPerformer,
-    onAddAct,
-    onTogglePerformerVisibility,
-    onOpenPerformerEditor,
-    onSetActiveChatPerformer,
-    onRemovePerformer,
-    onSavePerformerAsDraft,
-    onOpenAct,
+    onAddAgent,
+    onAddTeam,
+    onToggleAgentVisibility,
+    onOpenAgentEditor,
+    onSetActiveChatAgent,
+    onRemoveAgent,
+    onSaveAgentAsDraft,
+    onOpenTeam,
     onCreateThread,
 
-    onSaveActAsDraft,
-    onToggleActVisibility,
-    onRemoveAct,
+    onSaveTeamAsDraft,
+    onToggleTeamVisibility,
+    onRemoveTeam,
     onSelectThread,
     onDeleteThread,
     onRenameThread,
     onStartNewSession,
-    onOpenActEditor,
-}: Props) {
-    const hasPerformers = threadRows.length > 0
-    const hasActs = acts.length > 0
+    onOpenTeamEditor,
+}: WorkspaceExplorerThreadsSectionProps) {
+    const hasAgents = threadRows.length > 0
+    const hasTeams = teams.length > 0
     const sessionActivityById = Object.fromEntries(
         sessions.map((session) => {
             const entity = seEntities[session.id]
@@ -114,7 +115,7 @@ export default function WorkspaceExplorerThreadsSection({
     )
 
     // ── Resizable divider between Agents and Teams ──
-    const [performersFlex, setPerformersFlex] = useState(1)
+    const [agentsFlex, setAgentsFlex] = useState(1)
     const containerRef = useRef<HTMLDivElement>(null)
     const dividerDragging = useRef(false)
 
@@ -141,14 +142,14 @@ export default function WorkspaceExplorerThreadsSection({
         const startY = e.clientY
         const containerRect = container.getBoundingClientRect()
         const totalHeight = containerRect.height
-        const startFlex = performersFlex
+        const startFlex = agentsFlex
 
         const onMove = (ev: MouseEvent) => {
             if (!dividerDragging.current) return
             const delta = ev.clientY - startY
             const ratio = delta / totalHeight
             // Flex range: 0.15 to 0.85 (each side gets at least 15% of the space)
-            setPerformersFlex(Math.min(5, Math.max(0.2, startFlex + ratio * 2)))
+            setAgentsFlex(Math.min(5, Math.max(0.2, startFlex + ratio * 2)))
         }
         const onUp = (event: MouseEvent) => {
             event.preventDefault()
@@ -164,28 +165,28 @@ export default function WorkspaceExplorerThreadsSection({
         document.addEventListener('mouseup', onUp)
         document.body.style.cursor = 'row-resize'
         document.body.style.userSelect = 'none'
-    }, [performersFlex, suppressNextClick])
+    }, [agentsFlex, suppressNextClick])
 
     return (
         <section className="explorer-section explorer-section--threads" ref={containerRef}>
             {/* ── Agents Pane ── */}
-            <div className="explorer__pane" style={{ flex: performersFlex }}>
+            <div className="explorer__pane" style={{ flex: agentsFlex }}>
                 <div className="explorer__subheader explorer__subheader--inline">
                     <span className="explorer__title">Agents</span>
                     <div className="explorer__actions">
-                        <button className="icon-btn" onClick={onAddPerformer} title="Add agent" disabled={!workspaceId}>
+                        <button className="icon-btn" onClick={onAddAgent} title="Add agent" disabled={!workspaceId}>
                             <MessageSquare size={12} />
                         </button>
                     </div>
                 </div>
                 <div className="explorer__pane-scroll scroll-area">
-                    {hasPerformers ? (
+                    {hasAgents ? (
                         <div className="explorer__section-list">
                             {threadRows.map((row) => {
-                                const rowKey = `performer-${row.id}`
+                                const rowKey = `agent-${row.id}`
                                 const isExpanded = showThreads && (expandedRows[rowKey] ?? row.children.length > 0)
                                 return (
-                                    <WorkspaceExplorerPerformerGroup
+                                    <WorkspaceExplorerAgentGroup
                                         key={rowKey}
                                         row={row}
                                         showThreads={showThreads}
@@ -195,19 +196,19 @@ export default function WorkspaceExplorerThreadsSection({
                                         editingTarget={editingTarget}
                                         onToggleExpanded={() => onToggleExpanded(rowKey)}
                                         onSetPendingDelete={onSetPendingDelete}
-                                        onBeginRenamePerformerSession={onBeginRenamePerformerSession}
+                                        onBeginRenameAgentSession={onBeginRenameAgentSession}
                                         onCommitRenameSession={onCommitRenameSession}
                                         onCancelRenameSession={onCancelRenameSession}
                                         onSetRenamingValue={onSetRenamingValue}
-                                        performerSessionLabel={performerSessionLabel}
-                                        onOpenPerformer={onOpenPerformer}
-                                        onOpenPerformerSession={onOpenPerformerSession}
+                                        agentSessionLabel={agentSessionLabel}
+                                        onOpenAgent={onOpenAgent}
+                                        onOpenAgentSession={onOpenAgentSession}
                                         onDeleteSession={onDeleteSession}
-                                        onTogglePerformerVisibility={onTogglePerformerVisibility}
-                                        onOpenPerformerEditor={onOpenPerformerEditor}
-                                        onSetActiveChatPerformer={onSetActiveChatPerformer}
-                                        onRemovePerformer={onRemovePerformer}
-                                        onSavePerformerAsDraft={onSavePerformerAsDraft}
+                                        onToggleAgentVisibility={onToggleAgentVisibility}
+                                        onOpenAgentEditor={onOpenAgentEditor}
+                                        onSetActiveChatAgent={onSetActiveChatAgent}
+                                        onRemoveAgent={onRemoveAgent}
+                                        onSaveAgentAsDraft={onSaveAgentAsDraft}
                                         onStartNewSession={onStartNewSession}
                                     />
                                 )
@@ -228,47 +229,47 @@ export default function WorkspaceExplorerThreadsSection({
             <div className="explorer__pane" style={{ flex: 1 }}>
                 <div className="explorer__subheader explorer__subheader--inline">
                     <span className="explorer__title">
-                        Teams <span className="explorer__title-note">(Experimental)</span>
+                        Teams
                     </span>
                     <div className="explorer__actions">
-                        <button className="icon-btn" onClick={onAddAct} title="Add Team" disabled={!workspaceId}>
+                        <button className="icon-btn" onClick={onAddTeam} title="Add Team" disabled={!workspaceId}>
                             <Workflow size={12} />
                         </button>
                     </div>
                 </div>
                 <div className="explorer__pane-scroll scroll-area">
-                    {hasActs ? (
+                    {hasTeams ? (
                         <div className="explorer__section-list">
-                            {acts.map((act) => {
-                                const actKey = `act-${act.id}`
-                                const threads = showThreads ? [...(actThreads[act.id] || [])].sort(
+                            {teams.map((team) => {
+                                const teamKey = `team-${team.id}`
+                                const threads = showThreads ? [...(teamThreads[team.id] || [])].sort(
                                     (left, right) => (
-                                        resolveActThreadActivityAt(right, sessionActivityById)
-                                        - resolveActThreadActivityAt(left, sessionActivityById)
+                                        resolveTeamThreadActivityAt(right, sessionActivityById)
+                                        - resolveTeamThreadActivityAt(left, sessionActivityById)
                                     ) || ((right.createdAt || 0) - (left.createdAt || 0)),
                                 ) : []
-                                const isExpanded = showThreads && (expandedRows[actKey] ?? threads.length > 0)
+                                const isExpanded = showThreads && (expandedRows[teamKey] ?? threads.length > 0)
                                 return (
-                                    <WorkspaceExplorerActGroup
-                                        key={actKey}
-                                        act={act}
+                                    <WorkspaceExplorerTeamGroup
+                                        key={teamKey}
+                                        team={team}
                                         showThreads={showThreads}
-                                        selectedActId={selectedActId}
+                                        selectedTeamId={selectedTeamId}
                                         activeThreadId={activeThreadId}
                                         threads={threads}
                                         expanded={isExpanded}
                                         pendingDelete={pendingDelete}
                                         onToggleExpanded={onToggleExpanded}
-                                        onOpenAct={onOpenAct}
+                                        onOpenTeam={onOpenTeam}
                                         onCreateThread={onCreateThread}
                                         onSetPendingDelete={onSetPendingDelete}
-                                        onSaveActAsDraft={onSaveActAsDraft}
-                                        onToggleActVisibility={onToggleActVisibility}
-                                        onRemoveAct={onRemoveAct}
+                                        onSaveTeamAsDraft={onSaveTeamAsDraft}
+                                        onToggleTeamVisibility={onToggleTeamVisibility}
+                                        onRemoveTeam={onRemoveTeam}
                                         onSelectThread={onSelectThread}
                                         onDeleteThread={onDeleteThread}
                                         onRenameThread={onRenameThread}
-                                        onOpenActEditor={onOpenActEditor}
+                                        onOpenTeamEditor={onOpenTeamEditor}
                                     />
                                 )
                             })}

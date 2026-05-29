@@ -1,17 +1,13 @@
 import { StudioApiError } from './lib/api-errors'
 import type { StudioApiErrorPayload } from './lib/api-errors'
+import {
+    isApiErrorStatus,
+    isStudioApiErrorAction,
+    isStudioApiErrorCode,
+} from '../shared/api-contracts'
 
 const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '')
 let workingDirContext: string | null = null
-
-export type WorkspaceFileEntry =
-    | string
-    | {
-        name: string
-        path: string
-        absolute: string
-        type: string
-    }
 
 export function resolveWorkingDirContext() {
     return workingDirContext
@@ -29,41 +25,50 @@ export function setApiWorkingDirContext(workingDir: string | null) {
     workingDirContext = workingDir?.trim() ? workingDir.trim() : null
 }
 
-function isAbsoluteWorkspacePath(path: string) {
-    return path.startsWith('/')
-        || path.startsWith('\\')
-        || /^[a-zA-Z]:[\\/]/.test(path)
-        || path.startsWith('file://')
-}
-
-function trimTrailingPathSeparators(path: string) {
-    return path.replace(/[\\/]+$/, '')
-}
-
-function trimLeadingRelativePathPrefix(path: string) {
-    return path.replace(/^\.?[\\/]+/, '')
-}
-
-function workspaceSeparator(workingDir: string) {
-    return workingDir.includes('\\') && !workingDir.includes('/') ? '\\' : '/'
-}
-
-function basename(path: string) {
-    return path.split(/[/\\]/).pop() || path
-}
-
-export function absolutizeWorkspacePath(path: string, workingDir: string | null) {
-    if (!path) {
-        return path
-    }
-    if (isAbsoluteWorkspacePath(path) || !workingDir) {
-        return path
-    }
-    return `${trimTrailingPathSeparators(workingDir)}${workspaceSeparator(workingDir)}${trimLeadingRelativePathPrefix(path)}`
-}
-
 function withApiBase(url: string) {
     return `${API_BASE}${withWorkingDirQuery(url, resolveWorkingDirContext())}`
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return !!value && typeof value === 'object' && !Array.isArray(value)
+}
+
+function nonEmptyString(value: unknown): string | undefined {
+    return typeof value === 'string' && value.trim() ? value : undefined
+}
+
+function normalizeApiErrorPayload(value: unknown, fallback: string): StudioApiErrorPayload {
+    if (!isRecord(value)) {
+        return { error: fallback }
+    }
+
+    const payload: StudioApiErrorPayload = {
+        error: nonEmptyString(value.error) || fallback,
+    }
+    const detail = nonEmptyString(value.detail)
+    if (detail) payload.detail = detail
+    if (isStudioApiErrorCode(value.code)) payload.code = value.code
+    if (isStudioApiErrorAction(value.action)) payload.action = value.action
+    if (typeof value.retryable === 'boolean') payload.retryable = value.retryable
+    if (isApiErrorStatus(value.status)) payload.status = value.status
+    const providerId = nonEmptyString(value.providerId)
+    if (providerId) payload.providerId = providerId
+    const modelId = nonEmptyString(value.modelId)
+    if (modelId) payload.modelId = modelId
+    return payload
+}
+
+function parseApiErrorPayload(raw: string, statusText: string): StudioApiErrorPayload {
+    const fallback = raw || statusText || 'Request failed.'
+    if (!raw) {
+        return { error: fallback }
+    }
+
+    try {
+        return normalizeApiErrorPayload(JSON.parse(raw), fallback)
+    } catch {
+        return { error: fallback }
+    }
 }
 
 export async function fetchApiResponse(url: string, init?: RequestInit): Promise<Response> {
@@ -76,22 +81,7 @@ export async function fetchApiResponse(url: string, init?: RequestInit): Promise
     })
     if (!res.ok) {
         const raw = await res.text().catch(() => '')
-        let payload: StudioApiErrorPayload & Record<string, unknown> = { error: raw || res.statusText }
-        if (raw) {
-            try {
-                const parsed = JSON.parse(raw)
-                payload = parsed && typeof parsed === 'object'
-                    ? {
-                        ...(parsed as Record<string, unknown>),
-                        error: typeof (parsed as { error?: unknown }).error === 'string'
-                            ? (parsed as { error: string }).error
-                            : raw || res.statusText,
-                    }
-                    : { error: raw }
-            } catch {
-                payload = { error: raw }
-            }
-        }
+        const payload = parseApiErrorPayload(raw, res.statusText)
         throw new StudioApiError(payload, res.status)
     }
     return res
@@ -132,21 +122,4 @@ export function deleteJSON<T>(url: string, body?: unknown) {
 
 export function createApiEventSource(url: string) {
     return new EventSource(withApiBase(url))
-}
-
-export function normalizeWorkspaceFileEntry(entry: WorkspaceFileEntry) {
-    if (typeof entry === 'string') {
-        return {
-            name: basename(entry),
-            path: entry,
-            absolute: absolutizeWorkspacePath(entry, resolveWorkingDirContext()),
-            type: 'file',
-        }
-    }
-    return {
-        name: entry.name,
-        path: entry.path,
-        absolute: absolutizeWorkspacePath(entry.absolute || entry.path, resolveWorkingDirContext()),
-        type: entry.type,
-    }
 }

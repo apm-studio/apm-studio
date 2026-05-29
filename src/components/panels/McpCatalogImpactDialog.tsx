@@ -16,7 +16,7 @@ export default function McpCatalogImpactDialog({
     onCancel,
 }: Props) {
     const changeCount = impact.renames.length + impact.deletes.length
-    const performerCount = impact.affectedPerformerIds.length
+    const agentCount = impact.affectedAgentIds.length
 
     return createPortal(
         <div className="modal-overlay" onClick={onCancel}>
@@ -31,7 +31,7 @@ export default function McpCatalogImpactDialog({
 
                 <div className="mcp-impact-dialog__body">
                     <div className="mcp-impact-dialog__summary">
-                        Saving this MCP catalog change will update {performerCount} agent{performerCount === 1 ? '' : 's'}.
+                        Saving this MCP catalog change will update {agentCount} agent{agentCount === 1 ? '' : 's'}.
                     </div>
 
                     {impact.renames.length > 0 ? (
@@ -74,7 +74,7 @@ export default function McpCatalogImpactDialog({
                             Affected agents
                         </div>
                         <ul className="mcp-impact-dialog__list">
-                            {impact.affectedPerformerNames.map((name) => (
+                            {impact.affectedAgentNames.map((name) => (
                                 <li key={name} className="mcp-impact-dialog__item">
                                     <span>{name}</span>
                                 </li>
@@ -83,7 +83,7 @@ export default function McpCatalogImpactDialog({
                     </div>
 
                     <div className="mcp-impact-dialog__note">
-                        Studio will rewrite performer MCP selections and bindings to match this saved catalog.
+                        Studio will rewrite agent MCP selections and bindings to match this saved catalog.
                     </div>
                 </div>
 

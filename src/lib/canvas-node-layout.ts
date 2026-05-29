@@ -1,18 +1,18 @@
-import type { PerformerNode, WorkspaceAct } from '../types'
+import type { WorkspaceAgentNode, WorkspaceTeamSnapshot } from '../../shared/workspace-contracts'
 import {
-    ACT_DEFAULT_EXPANDED_HEIGHT,
-    ACT_DEFAULT_WIDTH,
-} from './act-layout'
+    TEAM_DEFAULT_EXPANDED_HEIGHT,
+    TEAM_DEFAULT_WIDTH,
+} from './team-layout'
 import {
-    PERFORMER_DEFAULT_HEIGHT,
-    PERFORMER_DEFAULT_WIDTH,
-} from './performers-node'
+    AGENT_DEFAULT_HEIGHT,
+    AGENT_DEFAULT_WIDTH,
+} from './agents-node'
 
 const DEFAULT_RECT_PADDING = 32
 const DEFAULT_FALLBACK_MARGIN = 60
 const DEFAULT_CLUSTER_GAP_X = 48
 const DEFAULT_CLUSTER_GAP_Y = 40
-const DEFAULT_ACT_CLUSTER_GAP = 56
+const DEFAULT_TEAM_CLUSTER_GAP = 56
 const MAX_SEARCH_RADIUS = 12
 
 export interface CanvasRect {
@@ -74,28 +74,28 @@ function buildCandidateOffsets(radius: number) {
 }
 
 export function collectVisibleCanvasNodeRects(
-    performers: PerformerNode[],
-    acts: WorkspaceAct[],
+    agents: WorkspaceAgentNode[],
+    teams: WorkspaceTeamSnapshot[],
 ): CanvasRect[] {
-    const performerRects = performers
-        .filter((performer) => performer.hidden !== true)
-        .map((performer) => ({
-            x: performer.position.x,
-            y: performer.position.y,
-            width: performer.width || PERFORMER_DEFAULT_WIDTH,
-            height: performer.height || PERFORMER_DEFAULT_HEIGHT,
+    const agentRects = agents
+        .filter((agent) => agent.hidden !== true)
+        .map((agent) => ({
+            x: agent.position.x,
+            y: agent.position.y,
+            width: agent.width || AGENT_DEFAULT_WIDTH,
+            height: agent.height || AGENT_DEFAULT_HEIGHT,
         }))
 
-    const actRects = acts
-        .filter((act) => act.hidden !== true)
-        .map((act) => ({
-            x: act.position.x,
-            y: act.position.y,
-            width: act.width || ACT_DEFAULT_WIDTH,
-            height: act.height || ACT_DEFAULT_EXPANDED_HEIGHT,
+    const teamRects = teams
+        .filter((team) => team.hidden !== true)
+        .map((team) => ({
+            x: team.position.x,
+            y: team.position.y,
+            width: team.width || TEAM_DEFAULT_WIDTH,
+            height: team.height || TEAM_DEFAULT_EXPANDED_HEIGHT,
         }))
 
-    return [...performerRects, ...actRects]
+    return [...agentRects, ...teamRects]
 }
 
 export function resolveCanvasNodeSpawnPosition(input: {
@@ -129,32 +129,32 @@ export function resolveCanvasNodeSpawnPosition(input: {
     return { x: base.x, y: base.y }
 }
 
-export function resolveActCreationClusterLayout(input: {
+export function resolveTeamCreationClusterLayout(input: {
     canvasCenter: { x: number; y: number } | null
     occupiedRects: CanvasRect[]
-    performerIds: string[]
-    performerWidth?: number
-    performerHeight?: number
-    actWidth?: number
-    actHeight?: number
+    agentIds: string[]
+    agentWidth?: number
+    agentHeight?: number
+    teamWidth?: number
+    teamHeight?: number
 }) {
-    const performerWidth = input.performerWidth || PERFORMER_DEFAULT_WIDTH
-    const performerHeight = input.performerHeight || PERFORMER_DEFAULT_HEIGHT
-    const actWidth = input.actWidth || ACT_DEFAULT_WIDTH
-    const actHeight = input.actHeight || ACT_DEFAULT_EXPANDED_HEIGHT
-    const performerCount = input.performerIds.length
+    const agentWidth = input.agentWidth || AGENT_DEFAULT_WIDTH
+    const agentHeight = input.agentHeight || AGENT_DEFAULT_HEIGHT
+    const teamWidth = input.teamWidth || TEAM_DEFAULT_WIDTH
+    const teamHeight = input.teamHeight || TEAM_DEFAULT_EXPANDED_HEIGHT
+    const agentCount = input.agentIds.length
 
-    const columns = performerCount <= 1 ? performerCount : Math.min(3, Math.ceil(Math.sqrt(performerCount)))
-    const rows = performerCount === 0 ? 0 : Math.ceil(performerCount / columns)
-    const performerGridWidth = performerCount === 0
+    const columns = agentCount <= 1 ? agentCount : Math.min(3, Math.ceil(Math.sqrt(agentCount)))
+    const rows = agentCount === 0 ? 0 : Math.ceil(agentCount / columns)
+    const agentGridWidth = agentCount === 0
         ? 0
-        : (columns * performerWidth) + ((columns - 1) * DEFAULT_CLUSTER_GAP_X)
-    const performerGridHeight = performerCount === 0
+        : (columns * agentWidth) + ((columns - 1) * DEFAULT_CLUSTER_GAP_X)
+    const agentGridHeight = agentCount === 0
         ? 0
-        : (rows * performerHeight) + ((rows - 1) * DEFAULT_CLUSTER_GAP_Y)
-    const actGap = performerCount > 0 ? DEFAULT_ACT_CLUSTER_GAP : 0
-    const clusterWidth = Math.max(actWidth, performerGridWidth)
-    const clusterHeight = performerGridHeight + actGap + actHeight
+        : (rows * agentHeight) + ((rows - 1) * DEFAULT_CLUSTER_GAP_Y)
+    const teamGap = agentCount > 0 ? DEFAULT_TEAM_CLUSTER_GAP : 0
+    const clusterWidth = Math.max(teamWidth, agentGridWidth)
+    const clusterHeight = agentGridHeight + teamGap + teamHeight
     const clusterOrigin = resolveCanvasNodeSpawnPosition({
         canvasCenter: input.canvasCenter,
         occupiedRects: input.occupiedRects,
@@ -162,27 +162,27 @@ export function resolveActCreationClusterLayout(input: {
         height: clusterHeight,
     })
 
-    const performerPositions = new Map<string, { x: number; y: number }>()
+    const agentPositions = new Map<string, { x: number; y: number }>()
     for (let row = 0; row < rows; row += 1) {
         const rowStartIndex = row * columns
-        const rowIds = input.performerIds.slice(rowStartIndex, rowStartIndex + columns)
-        const rowWidth = (rowIds.length * performerWidth) + ((rowIds.length - 1) * DEFAULT_CLUSTER_GAP_X)
+        const rowIds = input.agentIds.slice(rowStartIndex, rowStartIndex + columns)
+        const rowWidth = (rowIds.length * agentWidth) + ((rowIds.length - 1) * DEFAULT_CLUSTER_GAP_X)
         const rowX = clusterOrigin.x + Math.round((clusterWidth - rowWidth) / 2)
-        const rowY = clusterOrigin.y + (row * (performerHeight + DEFAULT_CLUSTER_GAP_Y))
+        const rowY = clusterOrigin.y + (row * (agentHeight + DEFAULT_CLUSTER_GAP_Y))
 
-        rowIds.forEach((performerId, index) => {
-            performerPositions.set(performerId, {
-                x: rowX + (index * (performerWidth + DEFAULT_CLUSTER_GAP_X)),
+        rowIds.forEach((agentId, index) => {
+            agentPositions.set(agentId, {
+                x: rowX + (index * (agentWidth + DEFAULT_CLUSTER_GAP_X)),
                 y: rowY,
             })
         })
     }
 
     return {
-        actPosition: {
-            x: clusterOrigin.x + Math.round((clusterWidth - actWidth) / 2),
-            y: clusterOrigin.y + performerGridHeight + actGap,
+        teamPosition: {
+            x: clusterOrigin.x + Math.round((clusterWidth - teamWidth) / 2),
+            y: clusterOrigin.y + agentGridHeight + teamGap,
         },
-        performerPositions,
+        agentPositions,
     }
 }

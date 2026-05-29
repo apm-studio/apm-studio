@@ -1,21 +1,21 @@
-import type { SharedAssetRef } from '../../../shared/chat-contracts.js'
+import type { SharedPrimitiveRef } from '../../../shared/chat-contracts.js'
 import {
     mergeProjectionDirtyPatches,
     type ProjectionDirtyPatch,
 } from '../../../shared/projection-dirty.js'
 import type { ModelSelection } from '../../../shared/model-types.js'
 import {
-    listWorkspacePerformersForDir,
-    type WorkspacePerformerSnapshot,
-} from '../workspace-service.js'
-import type { PerformerProjectionInput } from './performer-projection-types.js'
+    listWorkspaceAgentsForDir,
+} from '../workspace/service.js'
+import type { WorkspaceAgentSnapshot } from '../../../shared/workspace-contracts.js'
+import type { AgentProjectionInput } from './agent-projection-types.js'
 
 type ProjectionTargetInput = {
-    performerId: string
-    performerName: string
-    talRef: SharedAssetRef | null
-    inlineInstruction?: string | null
-    danceRefs: SharedAssetRef[]
+    agentId: string
+    agentName: string
+    instructionRef: SharedPrimitiveRef | null
+    agentBody?: string | null
+    skillRefs: SharedPrimitiveRef[]
     model: ModelSelection
     modelVariant?: string | null
     mcpServerNames: string[]
@@ -24,26 +24,26 @@ type ProjectionTargetInput = {
 
 export type ProjectionExecutionPlan = {
     consumedPatch: ProjectionDirtyPatch
-    inputs: PerformerProjectionInput[]
+    inputs: AgentProjectionInput[]
 }
 
-function performerToProjectionInput(
-    performer: WorkspacePerformerSnapshot,
+function agentToProjectionInput(
+    agent: WorkspaceAgentSnapshot,
     workingDir: string,
-): PerformerProjectionInput | null {
-    if (!performer.model) {
+): AgentProjectionInput | null {
+    if (!agent.model) {
         return null
     }
 
     return {
-        performerId: performer.id,
-        performerName: performer.name,
-        talRef: performer.talRef || null,
-        inlineInstruction: performer.inlineInstruction || null,
-        danceRefs: performer.danceRefs || [],
-        model: performer.model,
-        modelVariant: performer.modelVariant || null,
-        mcpServerNames: performer.mcpServerNames || [],
+        agentId: agent.id,
+        agentName: agent.name,
+        instructionRef: agent.instructionRef || null,
+        agentBody: agent.agentBody || null,
+        skillRefs: agent.skillRefs || [],
+        model: agent.model,
+        modelVariant: agent.modelVariant || null,
+        mcpServerNames: agent.mcpServerNames || [],
         workingDir,
         scope: 'workspace',
     }
@@ -51,7 +51,7 @@ function performerToProjectionInput(
 
 function shouldExpandToWorkspace(patch: ProjectionDirtyPatch) {
     return patch.workspaceWide === true
-        || (patch.actIds?.length || 0) > 0
+        || (patch.teamIds?.length || 0) > 0
         || (patch.draftIds?.length || 0) > 0
 }
 
@@ -62,33 +62,33 @@ export async function buildProjectionExecutionPlan(input: {
     requestedPatch?: ProjectionDirtyPatch | null
 }): Promise<ProjectionExecutionPlan> {
     const consumedPatch = mergeProjectionDirtyPatches(input.targetPatch, input.requestedPatch)
-    const inputs = new Map<string, PerformerProjectionInput>([
-        [input.target.performerId, { ...input.target }],
+    const inputs = new Map<string, AgentProjectionInput>([
+        [input.target.agentId, { ...input.target }],
     ])
 
-    const requestedPerformerIds = new Set(consumedPatch.performerIds || [])
-    if (requestedPerformerIds.size === 0 && !shouldExpandToWorkspace(consumedPatch)) {
+    const requestedAgentIds = new Set(consumedPatch.agentIds || [])
+    if (requestedAgentIds.size === 0 && !shouldExpandToWorkspace(consumedPatch)) {
         return {
             consumedPatch,
             inputs: Array.from(inputs.values()),
         }
     }
 
-    const workspacePerformers = await listWorkspacePerformersForDir(input.workingDir)
-    const includeAllWorkspacePerformers = shouldExpandToWorkspace(consumedPatch)
+    const workspaceAgents = await listWorkspaceAgentsForDir(input.workingDir)
+    const includeAllWorkspaceAgents = shouldExpandToWorkspace(consumedPatch)
 
-    for (const performer of workspacePerformers) {
-        if (!includeAllWorkspacePerformers && !requestedPerformerIds.has(performer.id)) {
+    for (const agent of workspaceAgents) {
+        if (!includeAllWorkspaceAgents && !requestedAgentIds.has(agent.id)) {
             continue
         }
-        if (inputs.has(performer.id)) {
+        if (inputs.has(agent.id)) {
             continue
         }
-        const projectionInput = performerToProjectionInput(performer, input.workingDir)
+        const projectionInput = agentToProjectionInput(agent, input.workingDir)
         if (!projectionInput) {
             continue
         }
-        inputs.set(performer.id, projectionInput)
+        inputs.set(agent.id, projectionInput)
     }
 
     return {

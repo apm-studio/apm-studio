@@ -1,7 +1,7 @@
 import { describeChatTarget } from '../../../shared/chat-targets'
-import { api } from '../../api'
+import { chatApi } from '../../api-clients/chat'
 import { formatStudioApiErrorMessage } from '../../lib/api-errors'
-import { hasModelConfig } from '../../lib/performers'
+import { hasModelConfig } from '../../lib/agents'
 import { showToast } from '../../lib/toast'
 import {
     getChatSessionId,
@@ -24,7 +24,7 @@ import {
     reconcileSessionRuntimeActor,
     releaseSessionRuntimeActor,
 } from '../session/session-runtime-manager'
-import { preparePendingRuntimeExecution } from '../runtime-execution'
+import { preparePendingRuntimeExecution } from '../runtime/execution'
 
 export function createChatSessionManagement(set: ChatSet, get: ChatGet) {
     const runSessionMutation = async <T>(
@@ -49,14 +49,14 @@ export function createChatSessionManagement(set: ChatSet, get: ChatGet) {
         chatKey: string,
         options?: {
             resetMessages?: Array<{ id: string; role: 'user' | 'assistant' | 'system'; content: string; timestamp: number }>
-            actId?: string
-            performerName?: string
+            teamId?: string
+            agentName?: string
             preserveDraftMessages?: boolean
         },
     ): Promise<{ sessionId: string | null; runtimeConfig: ChatRuntimeConfig }> => {
         const target = resolveChatRuntimeTarget(get, chatKey)
         const runtimeConfig = target?.runtimeConfig || EMPTY_RUNTIME_CONFIG
-        const name = options?.performerName || target?.name || 'Untitled Agent'
+        const name = options?.agentName || target?.name || 'Untitled Agent'
 
         if (!target || target.notice || !hasModelConfig(runtimeConfig.model)) {
             return {
@@ -66,8 +66,8 @@ export function createChatSessionManagement(set: ChatSet, get: ChatGet) {
         }
 
         const prepared = await preparePendingRuntimeExecution(get, {
-            performerId: target.executionScope.performerId,
-            actId: target.executionScope.actId,
+            agentId: target.executionScope.agentId,
+            teamId: target.executionScope.teamId,
             runtimeConfig,
         })
         if (prepared.blocked) {
@@ -100,7 +100,7 @@ export function createChatSessionManagement(set: ChatSet, get: ChatGet) {
         releaseSessionRuntimeActor(set, get, { chatKey })
         detachChatSession(set, get, chatKey, { notice })
         set((state) => ({
-            selectedPerformerSessionId: state.selectedPerformerId === chatKey ? null : state.selectedPerformerSessionId,
+            selectedAgentSessionId: state.selectedAgentId === chatKey ? null : state.selectedAgentSessionId,
         }))
     }
 
@@ -109,7 +109,7 @@ export function createChatSessionManagement(set: ChatSet, get: ChatGet) {
         clearSession: (chatKey: string) => {
             clearChatSessionView(get, chatKey)
             set((state) => ({
-                selectedPerformerSessionId: state.selectedPerformerId === chatKey ? null : state.selectedPerformerSessionId,
+                selectedAgentSessionId: state.selectedAgentId === chatKey ? null : state.selectedAgentSessionId,
             }))
         },
 
@@ -121,7 +121,7 @@ export function createChatSessionManagement(set: ChatSet, get: ChatGet) {
             }
             try {
                 await createFreshSession(chatKey, { resetMessages: [] })
-                set({ selectedPerformerSessionId: null })
+                set({ selectedAgentSessionId: null })
             } catch (error) {
                 console.error('Failed to start new session', error)
                 appendSystemNotice(get, chatKey, formatStudioApiErrorMessage(error))
@@ -132,7 +132,7 @@ export function createChatSessionManagement(set: ChatSet, get: ChatGet) {
             const sessionId = getChatSessionId(get, chatKey)
             if (sessionId) {
                 try {
-                    await api.chat.abort(sessionId)
+                    await chatApi.abort(sessionId)
                     await syncChatMessages(set, get, chatKey, sessionId)
                     get().setSessionStatus(sessionId, { type: 'idle' })
                     reconcileSessionRuntimeActor(set, get, chatKey, sessionId)
@@ -164,7 +164,7 @@ export function createChatSessionManagement(set: ChatSet, get: ChatGet) {
 
             try {
                 await runSessionMutation(sessionId, async () => {
-                    const result = await api.chat.revert(sessionId, lastUser.id)
+                    const result = await chatApi.revert(sessionId, lastUser.id)
                     const revert = readSessionRevert(result)
                     if (revert) {
                         get().setSessionRevert(sessionId, revert)
@@ -203,7 +203,7 @@ export function createChatSessionManagement(set: ChatSet, get: ChatGet) {
 
             try {
                 await runSessionMutation(sessionId, async () => {
-                    const result = await api.chat.revert(sessionId, messageId)
+                    const result = await chatApi.revert(sessionId, messageId)
                     const revert = readSessionRevert(result)
                     if (revert) {
                         get().setSessionRevert(sessionId, revert)
@@ -230,14 +230,14 @@ export function createChatSessionManagement(set: ChatSet, get: ChatGet) {
             try {
                 await runSessionMutation(sessionId, async () => {
                     if (state.seStatuses[sessionId]?.type && state.seStatuses[sessionId].type !== 'idle') {
-                        await api.chat.abort(sessionId).catch(() => {})
+                        await chatApi.abort(sessionId).catch(() => {})
                     }
 
                     if (!nextUserMessage) {
-                        await api.chat.unrevert(sessionId)
+                        await chatApi.unrevert(sessionId)
                         get().clearSessionRevert(sessionId)
                     } else {
-                        const result = await api.chat.revert(sessionId, nextUserMessage.id)
+                        const result = await chatApi.revert(sessionId, nextUserMessage.id)
                         const nextRevert = readSessionRevert(result)
                         if (nextRevert) {
                             get().setSessionRevert(sessionId, nextRevert)
@@ -258,7 +258,7 @@ export function createChatSessionManagement(set: ChatSet, get: ChatGet) {
             const sessionId = state.chatKeyToSession[chatKey]
             if (!sessionId) return []
             try {
-                return await api.chat.diff(sessionId)
+                return await chatApi.diff(sessionId)
             } catch (error) {
                 console.error('Failed to get diff', error)
                 appendSystemNotice(get, chatKey, formatStudioApiErrorMessage(error))
@@ -268,7 +268,7 @@ export function createChatSessionManagement(set: ChatSet, get: ChatGet) {
 
         listSessions: async () => {
             try {
-                const list = await api.chat.list()
+                const list = await chatApi.list()
                 set({ sessions: list || [] })
             } catch {
                 set({ sessions: [] })
@@ -277,7 +277,7 @@ export function createChatSessionManagement(set: ChatSet, get: ChatGet) {
 
         deleteSession: async (sessionId: string) => {
             try {
-                await api.chat.deleteSession(sessionId)
+                await chatApi.deleteSession(sessionId)
                 const affectedChatKeys: string[] = []
                 for (const [chatKey, sid] of Object.entries(get().chatKeyToSession)) {
                     if (sid === sessionId) {
@@ -285,7 +285,7 @@ export function createChatSessionManagement(set: ChatSet, get: ChatGet) {
                     }
                 }
                 set((state) => ({
-                    selectedPerformerSessionId: state.selectedPerformerSessionId === sessionId ? null : state.selectedPerformerSessionId,
+                    selectedAgentSessionId: state.selectedAgentSessionId === sessionId ? null : state.selectedAgentSessionId,
                 }))
                 get().listSessions()
                 for (const chatKey of affectedChatKeys) {
@@ -303,20 +303,17 @@ export function createChatSessionManagement(set: ChatSet, get: ChatGet) {
             }
         },
 
-        detachPerformerSession: detachChatSessionInternal,
+        detachAgentSession: detachChatSessionInternal,
     }
 }
 
-function readSessionRevert(result: unknown): { messageId: string; partId?: string } | null {
-    if (!result || typeof result !== 'object') {
-        return null
-    }
-    const revert = (result as { revert?: { messageID?: string; partID?: string } | null }).revert
-    if (!revert?.messageID) {
+function readSessionRevert(result: { revert?: { messageId: string; partId?: string } | null }): { messageId: string; partId?: string } | null {
+    const revert = result.revert
+    if (!revert?.messageId) {
         return null
     }
     return {
-        messageId: revert.messageID,
-        ...(revert.partID ? { partId: revert.partID } : {}),
+        messageId: revert.messageId,
+        ...(revert.partId ? { partId: revert.partId } : {}),
     }
 }

@@ -1,9 +1,6 @@
-export type WorkspacePackageSnapshot = {
-    workingDir?: string
-    performers?: unknown[]
-    acts?: unknown[]
-    [key: string]: unknown
-}
+import type { WorkspaceSnapshot } from '../../../shared/workspace-contracts.js'
+
+export type WorkspacePackageSnapshot = WorkspaceSnapshot
 
 export type ApmWorkspaceDocument = {
     schemaVersion: 1

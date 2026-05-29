@@ -19,7 +19,7 @@ export default function WorkspaceExplorerWorkspacesSection({
 }: Props) {
     return (
         <section
-            className={`explorer-section explorer-section--stages explorer-section--workspaces ${fill ? 'explorer-section--fill' : ''}`}
+            className={`explorer-section explorer-section--workspaces ${fill ? 'explorer-section--fill' : ''}`}
             style={{ flex: fill ? '1 1 auto' : `0 0 ${workspacesHeight}px` }}
         >
             <div className="explorer__subheader">

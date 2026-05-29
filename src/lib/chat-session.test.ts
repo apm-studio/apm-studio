@@ -77,13 +77,12 @@ describe('waitForSessionToSettle', () => {
     it('derives an implicit idle state from a completed assistant snapshot', () => {
         const derived = deriveImplicitIdleSessionState([
             {
-                info: {
-                    role: 'assistant',
-                    time: { completed: 456 },
-                },
+                role: 'assistant',
+                completedAt: 456,
                 parts: [
                     {
                         type: 'tool',
+                        callId: 'call-running',
                         state: {
                             status: 'running',
                         },
@@ -99,13 +98,11 @@ describe('waitForSessionToSettle', () => {
     it('extracts non-retryable assistant session errors', () => {
         const error = extractNonRetryableSessionError([
             {
-                info: {
-                    role: 'assistant',
-                    error: {
-                        data: {
-                            isRetryable: false,
-                            message: 'Insufficient balance.',
-                        },
+                role: 'assistant',
+                error: {
+                    data: {
+                        isRetryable: false,
+                        message: 'Insufficient balance.',
                     },
                 },
             },
@@ -117,13 +114,11 @@ describe('waitForSessionToSettle', () => {
     it('ignores retryable assistant session errors', () => {
         const error = extractNonRetryableSessionError([
             {
-                info: {
-                    role: 'assistant',
-                    error: {
-                        data: {
-                            isRetryable: true,
-                            message: 'Temporary provider issue.',
-                        },
+                role: 'assistant',
+                error: {
+                    data: {
+                        isRetryable: true,
+                        message: 'Temporary provider issue.',
                     },
                 },
             },

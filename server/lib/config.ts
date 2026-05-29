@@ -10,6 +10,7 @@ import {
     STUDIO_RELEASE_APP_PORT,
     STUDIO_RELEASE_OPENCODE_PORT,
 } from '../../shared/default-ports.js'
+import type { StudioConfig } from '../../shared/studio-contracts.js'
 
 const MIN_PORT = 1
 const MAX_PORT = 65535
@@ -37,10 +38,6 @@ function resolveDefaultProjectDir() {
         return path.resolve(process.env.APM_STUDIO_PROJECT_DIR)
     }
 
-    if (process.env.PROJECT_DIR) {
-        return path.resolve(process.env.PROJECT_DIR)
-    }
-
     if (resolveProductionMode()) {
         return path.resolve(process.cwd())
     }
@@ -60,10 +57,6 @@ function resolveProductionMode() {
 function resolveStudioDir() {
     if (process.env.APM_STUDIO_HOME) {
         return process.env.APM_STUDIO_HOME
-    }
-
-    if (process.env.STUDIO_DIR) {
-        return process.env.STUDIO_DIR
     }
 
     return path.join(os.homedir(), '.apm-studio')
@@ -98,18 +91,13 @@ export function setActiveProjectDir(dir: string): void {
 }
 
 // ── Studio Config ───────────────────────────────────────
-export interface StudioConfig {
-    theme?: 'light' | 'dark'
-    lastWorkspaceId?: string
-}
-
 export async function readStudioConfig(): Promise<StudioConfig> {
     try {
         const raw = await fs.readFile(STUDIO_CONFIG_PATH, 'utf-8')
-        const parsed = JSON.parse(raw) as { theme?: 'light' | 'dark'; lastWorkspaceId?: string; lastStage?: string }
+        const parsed = JSON.parse(raw) as { theme?: 'light' | 'dark'; lastWorkspaceId?: string }
         return {
             theme: parsed.theme,
-            lastWorkspaceId: parsed.lastWorkspaceId ?? parsed.lastStage,
+            lastWorkspaceId: parsed.lastWorkspaceId,
         }
     } catch {
         return {}
@@ -133,8 +121,8 @@ export function workspaceDir(workspaceId: string): string {
     return path.join(STUDIO_DIR, 'workspaces', workspaceId)
 }
 
-export function workspaceActRuntimeDir(workspaceId: string, actId: string, threadId: string): string {
-    return path.join(STUDIO_DIR, 'workspaces', workspaceId, 'act-runtime', actId, threadId)
+export function workspaceTeamRuntimeDir(workspaceId: string, teamId: string, threadId: string): string {
+    return path.join(STUDIO_DIR, 'workspaces', workspaceId, 'team-runtime', teamId, threadId)
 }
 
 export function workspaceIdForDir(workingDir: string): string {

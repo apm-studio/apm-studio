@@ -1,5 +1,6 @@
-import { api } from '../../api'
-import type { ChatMessage } from '../../types'
+import type { ChatMessage } from './chat-message-types'
+import { chatApi } from '../../api-clients/chat'
+
 import type { StudioState } from '../types'
 import { logChatDebug, summarizeMessagesForChatDebug } from '../../lib/chat-debug'
 import {
@@ -29,11 +30,11 @@ async function createRemoteSession(
     target: ChatTargetDescriptor,
     title?: string,
 ) {
-    const createResult = await api.chat.createSession(
+    const createResult = await chatApi.createSession(
         target.chatKey,
         title || target.chatKey,
         '',
-        target.kind === 'act-participant' ? target.actId : undefined,
+        target.kind === 'team-participant' ? target.teamId : undefined,
     )
 
     return {
@@ -42,15 +43,15 @@ async function createRemoteSession(
     }
 }
 
-function syncActThreadBinding(set: SetState, descriptor: ChatTargetDescriptor, sessionId: string | null) {
-    if (descriptor.kind !== 'act-participant') {
+function syncTeamThreadBinding(set: SetState, descriptor: ChatTargetDescriptor, sessionId: string | null) {
+    if (descriptor.kind !== 'team-participant') {
         return
     }
 
     set((state) => ({
-        actThreads: {
-            ...state.actThreads,
-            [descriptor.actId]: (state.actThreads[descriptor.actId] || []).map((thread) =>
+        teamThreads: {
+            ...state.teamThreads,
+            [descriptor.teamId]: (state.teamThreads[descriptor.teamId] || []).map((thread) =>
                 thread.id !== descriptor.threadId
                     ? thread
                     : {
@@ -85,7 +86,7 @@ export function registerSessionBinding(
     if (options?.clearDrafts !== false) {
         get().clearChatDraftMessages(chatKey)
     }
-    syncActThreadBinding(set, describeChatTarget(chatKey), sessionId)
+    syncTeamThreadBinding(set, describeChatTarget(chatKey), sessionId)
 }
 
 export function detachChatSession(
@@ -121,7 +122,7 @@ export function detachChatSession(
         get().unregisterBinding(chatKey)
         get().clearSessionRevert(sessionId)
     }
-    syncActThreadBinding(set, describeChatTarget(chatKey), null)
+    syncTeamThreadBinding(set, describeChatTarget(chatKey), null)
 }
 
 export async function syncSessionSnapshot(
@@ -130,7 +131,7 @@ export async function syncSessionSnapshot(
     chatKey: string,
     sessionId: string,
 ) {
-    const response = await api.chat.messages(sessionId)
+    const response = await chatApi.messages(sessionId)
     const mapped = mapSessionMessagesToChatMessages(response.messages)
     const currentMessages = get().seMessages[sessionId] || []
     const isSessionInFlight = isSessionTransportActive({

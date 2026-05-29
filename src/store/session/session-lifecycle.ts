@@ -1,7 +1,9 @@
-import { buildActParticipantChatKey, parseActParticipantChatKey } from '../../../shared/chat-targets'
-import { api } from '../../api'
+import type { WorkspaceAgentNode } from '../../../shared/workspace-contracts'
+import { buildTeamParticipantChatKey, parseTeamParticipantChatKey } from '../../../shared/chat-targets'
+import type { SharedPrimitiveRef } from '../../../shared/chat-contracts'
+import { chatApi } from '../../api-clients/chat'
+import { isStudioApiNotFoundError } from '../../lib/api-errors'
 import { showToast } from '../../lib/toast'
-import type { AssetRef, PerformerNode } from '../../types'
 import type { StudioState } from '../types'
 import { clearChatSessionView } from './session-commands'
 import { releaseSessionRuntimeActor } from './session-runtime-manager'
@@ -39,10 +41,10 @@ function targetFromSession(
     return targetFromChatKey(state, chatKey) || (sessionId ? { chatKey, sessionId } : null)
 }
 
-function performerActRef(performer: Pick<PerformerNode, 'id' | 'meta'>): AssetRef {
-    const derivedFrom = performer.meta?.derivedFrom?.trim()
+function agentTeamRef(agent: Pick<WorkspaceAgentNode, 'id' | 'meta'>): SharedPrimitiveRef {
+    const derivedFrom = agent.meta?.derivedFrom?.trim()
     if (!derivedFrom) {
-        return { kind: 'draft', draftId: performer.id }
+        return { kind: 'draft', draftId: agent.id }
     }
     if (derivedFrom.startsWith('draft:')) {
         return { kind: 'draft', draftId: derivedFrom.slice('draft:'.length) }
@@ -50,22 +52,22 @@ function performerActRef(performer: Pick<PerformerNode, 'id' | 'meta'>): AssetRe
     return { kind: 'registry', urn: derivedFrom }
 }
 
-function sameAssetRef(left: AssetRef, right: AssetRef) {
+function samePrimitiveRef(left: SharedPrimitiveRef, right: SharedPrimitiveRef) {
     return (left.kind === 'draft' && right.kind === 'draft' && left.draftId === right.draftId)
         || (left.kind === 'registry' && right.kind === 'registry' && left.urn === right.urn)
 }
 
-export function collectActSessionTargets(
-    state: Pick<StudioState, 'actThreads' | 'chatKeyToSession'>,
-    actId: string,
+export function collectTeamSessionTargets(
+    state: Pick<StudioState, 'teamThreads' | 'chatKeyToSession'>,
+    teamId: string,
 ): SessionCleanupTarget[] {
     const targets = Object.entries(state.chatKeyToSession)
-        .filter(([chatKey]) => parseActParticipantChatKey(chatKey)?.actId === actId)
+        .filter(([chatKey]) => parseTeamParticipantChatKey(chatKey)?.teamId === teamId)
         .map(([chatKey, sessionId]) => ({ chatKey, sessionId }))
 
-    for (const thread of state.actThreads[actId] || []) {
+    for (const thread of state.teamThreads[teamId] || []) {
         for (const [participantKey, sessionId] of Object.entries(thread.participantSessions || {})) {
-            const chatKey = buildActParticipantChatKey(actId, thread.id, participantKey)
+            const chatKey = buildTeamParticipantChatKey(teamId, thread.id, participantKey)
             const target = targetFromSession(state, chatKey, sessionId)
             if (target) {
                 targets.push(target)
@@ -76,22 +78,22 @@ export function collectActSessionTargets(
     return uniqueTargets(targets)
 }
 
-export function collectActThreadSessionTargets(
-    state: Pick<StudioState, 'actThreads' | 'chatKeyToSession'>,
-    actId: string,
+export function collectTeamThreadSessionTargets(
+    state: Pick<StudioState, 'teamThreads' | 'chatKeyToSession'>,
+    teamId: string,
     threadId: string,
 ): SessionCleanupTarget[] {
     const targets = Object.entries(state.chatKeyToSession)
         .filter(([chatKey]) => {
-            const parsed = parseActParticipantChatKey(chatKey)
-            return parsed?.actId === actId && parsed.threadId === threadId
+            const parsed = parseTeamParticipantChatKey(chatKey)
+            return parsed?.teamId === teamId && parsed.threadId === threadId
         })
         .map(([chatKey, sessionId]) => ({ chatKey, sessionId }))
 
-    const thread = (state.actThreads[actId] || []).find((entry) => entry.id === threadId)
+    const thread = (state.teamThreads[teamId] || []).find((entry) => entry.id === threadId)
     if (thread) {
         for (const [participantKey, sessionId] of Object.entries(thread.participantSessions || {})) {
-            const chatKey = buildActParticipantChatKey(actId, threadId, participantKey)
+            const chatKey = buildTeamParticipantChatKey(teamId, threadId, participantKey)
             const target = targetFromSession(state, chatKey, sessionId)
             if (target) {
                 targets.push(target)
@@ -102,30 +104,30 @@ export function collectActThreadSessionTargets(
     return uniqueTargets(targets)
 }
 
-export function collectPerformerSessionTargets(
-    state: Pick<StudioState, 'acts' | 'actThreads' | 'chatKeyToSession'>,
-    performer: Pick<PerformerNode, 'id' | 'meta'>,
+export function collectAgentSessionTargets(
+    state: Pick<StudioState, 'teams' | 'teamThreads' | 'chatKeyToSession'>,
+    agent: Pick<WorkspaceAgentNode, 'id' | 'meta'>,
 ): SessionCleanupTarget[] {
     const targets: SessionCleanupTarget[] = []
-    const direct = targetFromChatKey(state, performer.id)
+    const direct = targetFromChatKey(state, agent.id)
     if (direct) {
         targets.push(direct)
     }
 
-    const ref = performerActRef(performer)
-    for (const act of state.acts) {
-        const participantKeys = Object.entries(act.participants || {})
-            .filter(([, binding]) => sameAssetRef(binding.performerRef, ref))
+    const ref = agentTeamRef(agent)
+    for (const team of state.teams) {
+        const participantKeys = Object.entries(team.participants || {})
+            .filter(([, binding]) => samePrimitiveRef(binding.agentRef, ref))
             .map(([participantKey]) => participantKey)
         if (participantKeys.length === 0) {
             continue
         }
         const participantKeySet = new Set(participantKeys)
-        for (const thread of state.actThreads[act.id] || []) {
+        for (const thread of state.teamThreads[team.id] || []) {
             for (const participantKey of participantKeySet) {
                 const target = targetFromSession(
                     state,
-                    buildActParticipantChatKey(act.id, thread.id, participantKey),
+                    buildTeamParticipantChatKey(team.id, thread.id, participantKey),
                     thread.participantSessions?.[participantKey],
                 )
                 if (target) {
@@ -134,8 +136,8 @@ export function collectPerformerSessionTargets(
             }
         }
         for (const [chatKey, sessionId] of Object.entries(state.chatKeyToSession)) {
-            const parsed = parseActParticipantChatKey(chatKey)
-            if (parsed?.actId === act.id && participantKeySet.has(parsed.participantKey)) {
+            const parsed = parseTeamParticipantChatKey(chatKey)
+            if (parsed?.teamId === team.id && participantKeySet.has(parsed.participantKey)) {
                 targets.push({ chatKey, sessionId })
             }
         }
@@ -161,9 +163,9 @@ export function detachSessionTargets(
     }
 
     set((state) => ({
-        selectedPerformerSessionId: state.selectedPerformerSessionId && sessionIds.has(state.selectedPerformerSessionId)
+        selectedAgentSessionId: state.selectedAgentSessionId && sessionIds.has(state.selectedAgentSessionId)
             ? null
-            : state.selectedPerformerSessionId,
+            : state.selectedAgentSessionId,
         sessions: state.sessions.filter((session) => !sessionIds.has(session.id)),
     }))
 }
@@ -182,9 +184,9 @@ export function deleteSessionTargetsRemotely(
 
     void Promise.all(sessionIds.map(async (sessionId) => {
         try {
-            await api.chat.deleteSession(sessionId)
+            await chatApi.deleteSession(sessionId)
         } catch (error) {
-            if (typeof (error as { status?: unknown })?.status === 'number' && (error as { status: number }).status === 404) {
+            if (isStudioApiNotFoundError(error)) {
                 return
             }
             console.error('Failed to delete session during lifecycle cleanup', { sessionId, error })

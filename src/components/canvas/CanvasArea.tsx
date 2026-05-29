@@ -6,7 +6,7 @@ import { useDroppable } from '@dnd-kit/core';
 import { useShallow } from 'zustand/react/shallow';
 import '@xyflow/react/dist/style.css';
 import { useStudioStore } from '../../store';
-import { resolvePerformerRuntimeConfig } from '../../lib/performers';
+import { resolveAgentRuntimeConfig } from '../../lib/agents';
 import { usePreventBrowserZoom } from '../../hooks/usePreventBrowserZoom';
 import CanvasDropOverlay from './CanvasDropOverlay';
 import { getCanvasDropLabel } from './canvas-drop-label';
@@ -15,18 +15,18 @@ import { useCanvasTransformTarget } from './useCanvasTransformTarget';
 import { useCanvasFocusFit } from './useCanvasFocusFit';
 import { useCanvasPresentation } from './useCanvasPresentation';
 import { resolveFocusNodeId, syncFocusViewport } from '../../lib/focus-utils';
-import { buildSyncFullscreenViewportState } from '../../store/workspace-focus-actions';
+import { buildSyncFullscreenViewportState } from '../../store/workspace/focus-mode-state';
 import { isSplitViewNodeDrag } from '../../lib/dnd-handlers';
 import OffsetBezierEdge from './OffsetBezierEdge';
 import SplitViewDropOverlay from './SplitViewDropOverlay';
 import SplitViewResizeOverlay from './SplitViewResizeOverlay';
 
 const AgentFrame = lazy(() =>
-    import('../../features/performer').then((module) => ({ default: module.AgentFrame })),
+    import('../../features/agent').then((module) => ({ default: module.AgentFrame })),
 );
-const MarkdownEditorFrame = lazy(() => import('../../features/assets/MarkdownEditorFrame'));
+const MarkdownEditorFrame = lazy(() => import('../../features/packages/MarkdownEditorFrame'));
 const CanvasTerminalFrame = lazy(() => import('../../features/workspace/CanvasTerminalFrame'));
-const ActFrame = lazy(() => import('../../features/act/ActFrame'));
+const TeamFrame = lazy(() => import('../../features/team/TeamFrame'));
 
 const withCanvasNodeSuspense = <TProps extends object>(Component: ComponentType<TProps>) => (props: TProps) => (
     <Suspense fallback={null}>
@@ -35,10 +35,10 @@ const withCanvasNodeSuspense = <TProps extends object>(Component: ComponentType<
 );
 
 const nodeTypes = {
-    performer: withCanvasNodeSuspense(AgentFrame),
+    agent: withCanvasNodeSuspense(AgentFrame),
     markdownEditor: withCanvasNodeSuspense(MarkdownEditorFrame),
     canvasTerminal: withCanvasNodeSuspense(CanvasTerminalFrame),
-    act: withCanvasNodeSuspense(ActFrame),
+    team: withCanvasNodeSuspense(TeamFrame),
 } satisfies NodeTypes;
 
 const edgeTypes = {
@@ -47,7 +47,7 @@ const edgeTypes = {
 
 export default function CanvasArea() {
     const {
-        performers,
+        agents,
         markdownEditors,
         canvasTerminals,
         drafts,
@@ -58,33 +58,33 @@ export default function CanvasArea() {
         canvasRevealTarget,
         selectedMarkdownEditorId,
         editingTarget,
-        updatePerformerPosition,
-        updatePerformerSize,
+        updateAgentPosition,
+        updateAgentSize,
         updateMarkdownEditorPosition,
         updateMarkdownEditorSize,
         updateCanvasTerminalPosition,
         updateCanvasTerminalSize,
         updateCanvasTerminalSession,
         removeCanvasTerminal,
-        selectedPerformerId,
+        selectedAgentId,
         selectMarkdownEditor,
-        selectPerformer,
-        setActiveChatPerformer,
+        selectAgent,
+        setActiveChatAgent,
         closeEditor,
-        closeActEditor,
-        openActEditor,
+        closeTeamEditor,
+        openTeamEditor,
         setCanvasCenter,
-        acts,
-        actEditorState,
-        selectedActId,
-        selectAct,
-        openActRelationEditor,
-        updateActPosition,
-        updateActSize,
-        attachPerformerToAct,
+        teams,
+        teamEditorState,
+        selectedTeamId,
+        selectTeam,
+        openTeamRelationEditor,
+        updateTeamPosition,
+        updateTeamSize,
+        attachAgentToTeam,
         addRelation,
     } = useStudioStore(useShallow((state) => ({
-        performers: state.performers,
+        agents: state.agents,
         markdownEditors: state.markdownEditors,
         canvasTerminals: state.canvasTerminals,
         drafts: state.drafts,
@@ -95,34 +95,34 @@ export default function CanvasArea() {
         canvasRevealTarget: state.canvasRevealTarget,
         selectedMarkdownEditorId: state.selectedMarkdownEditorId,
         editingTarget: state.editingTarget,
-        updatePerformerPosition: state.updatePerformerPosition,
-        updatePerformerSize: state.updatePerformerSize,
+        updateAgentPosition: state.updateAgentPosition,
+        updateAgentSize: state.updateAgentSize,
         updateMarkdownEditorPosition: state.updateMarkdownEditorPosition,
         updateMarkdownEditorSize: state.updateMarkdownEditorSize,
         updateCanvasTerminalPosition: state.updateCanvasTerminalPosition,
         updateCanvasTerminalSize: state.updateCanvasTerminalSize,
         updateCanvasTerminalSession: state.updateCanvasTerminalSession,
         removeCanvasTerminal: state.removeCanvasTerminal,
-        selectedPerformerId: state.selectedPerformerId,
+        selectedAgentId: state.selectedAgentId,
         selectMarkdownEditor: state.selectMarkdownEditor,
-        selectPerformer: state.selectPerformer,
-        setActiveChatPerformer: state.setActiveChatPerformer,
+        selectAgent: state.selectAgent,
+        setActiveChatAgent: state.setActiveChatAgent,
         closeEditor: state.closeEditor,
-        closeActEditor: state.closeActEditor,
-        openActEditor: state.openActEditor,
+        closeTeamEditor: state.closeTeamEditor,
+        openTeamEditor: state.openTeamEditor,
         setCanvasCenter: state.setCanvasCenter,
-        acts: state.acts,
-        actEditorState: state.actEditorState,
-        selectedActId: state.selectedActId,
-        selectAct: state.selectAct,
-        openActRelationEditor: state.openActRelationEditor,
-        updateActPosition: state.updateActPosition,
-        updateActSize: state.updateActSize,
-        attachPerformerToAct: state.attachPerformerToAct,
+        teams: state.teams,
+        teamEditorState: state.teamEditorState,
+        selectedTeamId: state.selectedTeamId,
+        selectTeam: state.selectTeam,
+        openTeamRelationEditor: state.openTeamRelationEditor,
+        updateTeamPosition: state.updateTeamPosition,
+        updateTeamSize: state.updateTeamSize,
+        attachAgentToTeam: state.attachAgentToTeam,
         addRelation: state.addRelation,
     })));
     const isFullscreenActive = viewMode !== 'canvas';
-    const focusedPerformerId = viewMode === 'full' && focusSnapshot?.type === 'performer' ? focusSnapshot.nodeId : null;
+    const focusedAgentId = viewMode === 'full' && focusSnapshot?.type === 'agent' ? focusSnapshot.nodeId : null;
     const showFullEmptyState = viewMode === 'full' && !focusSnapshot;
     const showSplitEmptyState = viewMode === 'split' && splitView.panes.length === 0;
     const splitLayoutKey = useMemo(() => JSON.stringify({
@@ -160,14 +160,14 @@ export default function CanvasArea() {
         activateTransformTarget,
         deactivateTransformTarget,
     } = useCanvasTransformTarget({
-        acts,
-        performers,
+        teams,
+        agents,
         markdownEditors,
         canvasTerminals,
     })
 
-    const performerMcpSummary = useCallback((performer: typeof performers[number]) => {
-        const count = resolvePerformerRuntimeConfig(performer).mcpServerNames.length
+    const agentMcpSummary = useCallback((agent: typeof agents[number]) => {
+        const count = resolveAgentRuntimeConfig(agent).mcpServerNames.length
         return count ? `${count} server${count === 1 ? '' : 's'}` : null
     }, [])
     const {
@@ -175,21 +175,21 @@ export default function CanvasArea() {
         onNodesChange,
         edges: relationEdges,
     } = useCanvasPresentation({
-        acts,
-        performers,
+        teams,
+        agents,
         markdownEditors,
         canvasTerminals,
         drafts,
         workingDir,
-        editingActId: actEditorState?.actId || null,
-        selectedActId,
-        selectedPerformerId,
+        editingTeamId: teamEditorState?.teamId || null,
+        selectedTeamId,
+        selectedAgentId,
         selectedMarkdownEditorId,
-        focusedPerformerId,
+        focusedAgentId,
         viewMode,
         editingTarget,
         transformTarget,
-        performerMcpSummary,
+        agentMcpSummary,
         onActivateTransform: activateTransformTarget,
         onDeactivateTransform: deactivateTransformTarget,
         onCloseTerminal: removeCanvasTerminal,
@@ -267,32 +267,32 @@ export default function CanvasArea() {
         syncCanvasCenter,
     } = useCanvasFlowHandlers({
         nodes,
-        editingActId: actEditorState?.actId || null,
+        editingTeamId: teamEditorState?.teamId || null,
         editingTarget,
         reactFlowInstance,
         canvasAreaRef: flowShellRef,
         transformTarget,
         clearTransformTarget,
         closeEditor,
-        closeActEditor,
-        openActEditor,
-        openActRelationEditor,
+        closeTeamEditor,
+        openTeamEditor,
+        openTeamRelationEditor,
         setCanvasCenter,
         selectMarkdownEditor,
-        selectPerformer,
-        setActiveChatPerformer,
-        selectAct,
-        attachPerformerToAct,
+        selectAgent,
+        setActiveChatAgent,
+        selectTeam,
+        attachAgentToTeam,
         addRelation,
         onNodesChange,
         updateMarkdownEditorPosition,
         updateCanvasTerminalPosition,
-        updateActPosition,
-        updatePerformerPosition,
-        updateActSize,
+        updateTeamPosition,
+        updateAgentPosition,
+        updateTeamSize,
         updateMarkdownEditorSize,
         updateCanvasTerminalSize,
-        updatePerformerSize,
+        updateAgentSize,
     })
 
     useEffect(() => {
@@ -371,8 +371,8 @@ export default function CanvasArea() {
                     viewMode={viewMode}
                     splitView={splitView}
                     viewportSize={flowViewportSize}
-                    acts={acts}
-                    performers={performers}
+                    teams={teams}
+                    agents={agents}
                 />
                 <SplitViewResizeOverlay
                     viewMode={viewMode}

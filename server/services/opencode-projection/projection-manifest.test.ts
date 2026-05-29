@@ -6,8 +6,8 @@ import { toProjectionPath, updateGitExclude } from './projection-manifest.js'
 
 describe('projection path normalization', () => {
     it('uses forward slashes for OpenCode agent and manifest paths', () => {
-        expect(toProjectionPath('apm-studio\\workspace\\hash\\performer--build')).toBe('apm-studio/workspace/hash/performer--build')
-        expect(toProjectionPath('.opencode\\agents\\apm-studio\\workspace\\hash\\performer--build.md')).toBe('.opencode/agents/apm-studio/workspace/hash/performer--build.md')
+        expect(toProjectionPath('apm-studio\\workspace\\hash\\agent--build')).toBe('apm-studio/workspace/hash/agent--build')
+        expect(toProjectionPath('.opencode\\agents\\apm-studio\\workspace\\hash\\agent--build.md')).toBe('.opencode/agents/apm-studio/workspace/hash/agent--build.md')
     })
 
     it('keeps generated OpenCode excludes under the Studio marker', async () => {

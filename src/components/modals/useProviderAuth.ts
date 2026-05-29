@@ -7,7 +7,7 @@
  */
 
 import { useState } from 'react'
-import { api } from '../../api'
+import { opencodeApi } from '../../api-clients/opencode'
 import { useStudioStore } from '../../store'
 import type {
     ProviderCard,
@@ -108,7 +108,7 @@ export function useProviderAuth(options: UseProviderAuthOptions) {
 
     async function waitForBrowserOauth(providerId: string, methodIndex: number) {
         try {
-            await api.provider.oauthCallback(providerId, methodIndex)
+            await opencodeApi.provider.oauthCallback(providerId, methodIndex)
             useStudioStore.getState().recordStudioChange({ kind: 'runtime_config' })
             const provider = providers.find((entry) => entry.id === providerId)
             await handleAuthSuccess(providerId, provider?.name || providerId)
@@ -122,20 +122,20 @@ export function useProviderAuth(options: UseProviderAuthOptions) {
         }
     }
 
-    function openApiKeyFlow(provider: ProviderCard, methodIndex = -1, method?: ProviderAuthMethod) {
+    function openApiKeyFlow(provider: ProviderCard, methodIndex: number, method: ProviderAuthMethod) {
         setOauthFlows((current) => ({
             ...current,
             [provider.id]: {
                 authType: 'api',
                 methodIndex,
-                label: method?.label || 'API Key',
+                label: method.label,
                 mode: 'api',
                 instructions: buildApiInstructions(provider, method),
                 code: '',
                 submitting: false,
                 error: undefined,
-                prompts: method?.prompts || [],
-                promptValues: createPromptValueDraft(method?.prompts),
+                prompts: method.prompts || [],
+                promptValues: createPromptValueDraft(method.prompts),
             },
         }))
     }
@@ -194,7 +194,7 @@ export function useProviderAuth(options: UseProviderAuthOptions) {
                 prompts: method.prompts || [],
                 promptValues: nextPromptValues,
             }
-            const authorization = await api.provider.oauthAuthorize(
+            const authorization = await opencodeApi.provider.oauthAuthorize(
                 provider.id,
                 methodIndex,
                 buildVisibleProviderPromptInputs(promptFlow.prompts, promptFlow.promptValues),
@@ -291,7 +291,7 @@ export function useProviderAuth(options: UseProviderAuthOptions) {
         }))
 
         try {
-            await api.provider.oauthCallback(providerId, flow.methodIndex, flow.code.trim())
+            await opencodeApi.provider.oauthCallback(providerId, flow.methodIndex, flow.code.trim())
             useStudioStore.getState().recordStudioChange({ kind: 'runtime_config' })
             const provider = providers.find((entry) => entry.id === providerId)
             await handleAuthSuccess(providerId, provider?.name || providerId)
@@ -328,7 +328,7 @@ export function useProviderAuth(options: UseProviderAuthOptions) {
         }))
 
         try {
-            await api.provider.setAuth(providerId, payload)
+            await opencodeApi.provider.setAuth(providerId, payload)
             useStudioStore.getState().recordStudioChange({ kind: 'runtime_config' })
             const provider = providers.find((entry) => entry.id === providerId)
             await handleAuthSuccess(providerId, provider?.name || providerId)
@@ -350,7 +350,7 @@ export function useProviderAuth(options: UseProviderAuthOptions) {
         setError(null)
         setStatusMessage(null)
         try {
-            const projectRes = await api.config.getProject().catch(
+            const projectRes = await opencodeApi.config.getProject().catch(
                 (): ProjectConfigResponseLike => ({ config: {} }),
             ) as ProjectConfigResponseLike
             const projectProvider = projectRes.config?.provider?.[providerId]
@@ -361,14 +361,14 @@ export function useProviderAuth(options: UseProviderAuthOptions) {
                 && Object.keys(projectProvider.models).length > 0,
             )
 
-            await api.provider.clearAuth(providerId)
+            await opencodeApi.provider.clearAuth(providerId)
             useStudioStore.getState().recordStudioChange({ kind: 'runtime_config' })
             if (isConfigCustom) {
                 const current = Array.isArray(projectRes.config?.disabled_providers)
                     ? projectRes.config.disabled_providers
                     : []
                 if (!current.includes(providerId)) {
-                    await api.config.updateProject({
+                    await opencodeApi.config.updateProject({
                         disabled_providers: [...current, providerId],
                     }).catch(() => {})
                     useStudioStore.getState().recordStudioChange({ kind: 'runtime_config' })

@@ -1,14 +1,15 @@
+import type { ChatMessage } from './chat-message-types'
 import { useMemo } from 'react'
 import { useStudioStore } from '..'
 import {
     deriveChatSessionState,
     IDLE_STATUS,
 } from './chat-session-state'
-import type { ChatMessage } from '../../types'
-import type { Todo } from '@opencode-ai/sdk/v2'
+
+import type { ChatTodo } from '../../../shared/chat-contracts'
 
 const EMPTY_MESSAGES: ChatMessage[] = []
-const EMPTY_TODOS: Todo[] = []
+const EMPTY_TODOS: ChatTodo[] = []
 
 export function useChatSession(chatKey: string | null) {
     const sessionId = useStudioStore((state) => (

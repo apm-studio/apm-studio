@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, type RefObject } from 'react'
-import { api } from '../api'
+import { workspaceFilesApi } from '../api-clients/workspace-files'
 
 export interface FileMention {
     name: string
@@ -59,7 +59,7 @@ export function useFileMentions(externalInputRef?: RefObject<HTMLTextAreaElement
         let active = true
         async function fetchFiles() {
             try {
-                const res = await api.workspace.findFiles(mentionQuery || '')
+                const res = await workspaceFilesApi.findFiles(mentionQuery || '')
                 if (active) {
                     setMentionResults(res.filter(f => f.type === 'file'))
                     setMentionIndex(0)

@@ -1,20 +1,19 @@
 import { useCallback, useEffect, useState } from 'react'
 import type {
-    CanvasTerminalNode,
-    MarkdownEditorNode,
-    PerformerNode,
-    WorkspaceAct,
-} from '../../types'
-
-type CanvasNodeKind = 'performer' | 'markdownEditor' | 'canvasTerminal' | 'act'
+    WorkspaceCanvasTerminalNode,
+    WorkspaceMarkdownEditorNode,
+    WorkspaceAgentNode,
+    WorkspaceTeamSnapshot,
+} from '../../../shared/workspace-contracts'
+type CanvasNodeKind = 'agent' | 'markdownEditor' | 'canvasTerminal' | 'team'
 
 export function useCanvasTransformTarget(args: {
-    acts: WorkspaceAct[]
-    performers: PerformerNode[]
-    markdownEditors: MarkdownEditorNode[]
-    canvasTerminals: CanvasTerminalNode[]
+    teams: WorkspaceTeamSnapshot[]
+    agents: WorkspaceAgentNode[]
+    markdownEditors: WorkspaceMarkdownEditorNode[]
+    canvasTerminals: WorkspaceCanvasTerminalNode[]
 }) {
-    const { acts, performers, markdownEditors, canvasTerminals } = args
+    const { teams, agents, markdownEditors, canvasTerminals } = args
     const [transformTarget, setTransformTarget] = useState<{ id: string; type: CanvasNodeKind } | null>(null)
 
     const clearTransformTarget = useCallback(() => {
@@ -39,8 +38,8 @@ export function useCanvasTransformTarget(args: {
         }
 
         const exists = (
-            (transformTarget.type === 'act' && acts.some((item) => item.id === transformTarget.id))
-            || (transformTarget.type === 'performer' && performers.some((item) => item.id === transformTarget.id))
+            (transformTarget.type === 'team' && teams.some((item) => item.id === transformTarget.id))
+            || (transformTarget.type === 'agent' && agents.some((item) => item.id === transformTarget.id))
             || (transformTarget.type === 'markdownEditor' && markdownEditors.some((item) => item.id === transformTarget.id))
             || (transformTarget.type === 'canvasTerminal' && canvasTerminals.some((item) => item.id === transformTarget.id))
         )
@@ -49,7 +48,7 @@ export function useCanvasTransformTarget(args: {
             // eslint-disable-next-line react-hooks/set-state-in-effect
             setTransformTarget(null)
         }
-    }, [acts, performers, markdownEditors, canvasTerminals, transformTarget])
+    }, [teams, agents, markdownEditors, canvasTerminals, transformTarget])
 
     return {
         transformTarget,

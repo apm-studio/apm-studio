@@ -1,12 +1,9 @@
 import { Suspense, lazy, useState, useEffect } from 'react';
-import { api } from '../../api';
-import { showToast } from '../../lib/toast';
-import { GitBranch, CheckCircle, AlertCircle, Settings, Moon, Sun, Hexagon, Terminal as TerminalIcon, Github, ChevronDown, Save, LogIn, UserRound, MessageCircle } from 'lucide-react';
+import { discordApi } from '../../api-clients/discord';
+import { opencodeApi } from '../../api-clients/opencode';
+import { GitBranch, CheckCircle, AlertCircle, Settings, Moon, Sun, Terminal as TerminalIcon, Github, ChevronDown, MessageCircle } from 'lucide-react';
 import { useStudioStore } from '../../store';
-import { useServerHealth, useApmAssetStatus } from '../../hooks/queries';
-import { useApmLogin } from '../../hooks/useApmLogin';
-import { useQueryClient } from '@tanstack/react-query';
-import { queryKeys } from '../../hooks/queries';
+import { useServerHealth } from '../../hooks/queries/opencode';
 import { DropdownMenu } from '../shared/DropdownMenu';
 
 import './WorkspaceToolbar.css';
@@ -14,14 +11,10 @@ import './WorkspaceToolbar.css';
 const SettingsModal = lazy(() =>
     import('../../features/providers').then((module) => ({ default: module.SettingsModal })),
 );
-const PublishModal = lazy(() =>
-    import('../modals/PublishModal').then((module) => ({ default: module.default })),
-);
 
 export default function WorkspaceToolbar() {
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [settingsInitialTab, setSettingsInitialTab] = useState<'general' | 'providers' | 'models' | 'discord'>('general');
-    const [publishOpen, setPublishOpen] = useState(false);
 
     const theme = useStudioStore(s => s.theme);
     const toggleTheme = useStudioStore(s => s.toggleTheme);
@@ -35,12 +28,8 @@ export default function WorkspaceToolbar() {
     const addCanvasTerminal = useStudioStore(s => s.addCanvasTerminal);
 
     const { data: serverHealthy } = useServerHealth();
-    const { data: apmAssetStatus } = useApmAssetStatus();
-    const { authUser, startLogin, logout, isAuthenticating, isLoggingOut } = useApmLogin();
-    const queryClient = useQueryClient();
 
     const serverConnected = !!serverHealthy;
-    const apmInitialized = apmAssetStatus?.initialized ?? false;
     const [gitBranch, setGitBranch] = useState<string | null>(null);
     const [discordOnline, setDiscordOnline] = useState(false);
     const effectiveDiscordOnline = serverConnected && discordOnline;
@@ -49,7 +38,7 @@ export default function WorkspaceToolbar() {
     useEffect(() => {
         const fetchVcs = () => {
             if (serverConnected) {
-                api.vcs.get()
+                opencodeApi.vcs.get()
                     .then((data: { branch?: string | null }) => setGitBranch(data.branch || null))
                     .catch(() => setGitBranch(null));
             } else {
@@ -66,7 +55,7 @@ export default function WorkspaceToolbar() {
             return;
         }
         const fetchDiscord = () => {
-            api.discord.status()
+            discordApi.status()
                 .then((status) => setDiscordOnline(status.online && !!status.config.guildId && status.missingPermissions.length === 0))
                 .catch(() => setDiscordOnline(false));
         };
@@ -80,80 +69,13 @@ export default function WorkspaceToolbar() {
         setSettingsOpen(true);
     };
 
-    const handleApmInit = async () => {
-        if (apmInitialized) return;
-        try {
-            await api.apmAssets.init();
-            queryClient.invalidateQueries({ queryKey: queryKeys.apmAssetStatus(workingDir) });
-        } catch (err) {
-            console.error('Failed to init APM Studio workspace:', err);
-            showToast('Failed to initialize the APM Studio workspace for this project.', 'error', {
-                title: 'Workspace init failed',
-                dedupeKey: `apm:init:${workingDir || 'unknown'}`,
-                actionLabel: 'Retry',
-                onAction: () => {
-                    void handleApmInit()
-                },
-            });
-        }
-    };
-
     return (
         <>
             <div className="toolbar">
-                <button
-                    type="button"
-                    className={`toolbar__item apm-status ${apmInitialized ? 'apm-ok' : 'apm-missing'}`}
-                    onClick={handleApmInit}
-                    aria-label={apmInitialized ? 'APM Studio workspace initialized' : 'Initialize APM Studio workspace'}
-                    title={apmInitialized
-                        ? 'APM Studio initialized for this workspace'
-                        : 'APM Studio not initialized - click to init'
-                    }
-                >
-                    <Hexagon size={12} />
-                    <span>APM</span>
-                </button>
-
                 {gitBranch && (
                     <span className="toolbar__item" title={`Branch: ${gitBranch}`}>
                         <GitBranch size={12} className="icon-muted" /> {gitBranch}
                     </span>
-                )}
-
-                {authUser?.authenticated ? (
-                    <DropdownMenu
-                        align="right"
-                        trigger={
-                            <button
-                                type="button"
-                                className="toolbar__item apm-auth-status apm-auth-status--ok"
-                                aria-label={`APM Studio account @${authUser.username}`}
-                                title={`Signed in as @${authUser.username}`}
-                            >
-                                <UserRound size={12} />
-                                <span>@{authUser.username}</span>
-                                <ChevronDown size={10} />
-                            </button>
-                        }
-                        items={[
-                            { label: isLoggingOut ? 'Signing out…' : 'Log out', onClick: () => void logout(), disabled: isLoggingOut },
-                        ]}
-                    />
-                ) : (
-                    <button
-                        type="button"
-                        className="toolbar__item apm-auth-status apm-auth-status--warn"
-                        onClick={() => void startLogin(true)}
-                        aria-label={isAuthenticating ? 'APM Studio sign in pending' : 'Sign in to APM Studio'}
-                        title={isAuthenticating
-                            ? 'Waiting for APM Studio login to complete in the browser'
-                            : 'Review the APM Studio Terms of Service and sign in'
-                        }
-                    >
-                        <LogIn size={12} />
-                        <span>{isAuthenticating ? 'Signing in…' : 'Sign in'}</span>
-                    </button>
                 )}
 
                 <span
@@ -197,16 +119,6 @@ export default function WorkspaceToolbar() {
                 <button
                     type="button"
                     className="icon-btn"
-                    onClick={() => setPublishOpen(true)}
-                    title="Save selected package locally"
-                    aria-label="Save selected package locally"
-                >
-                    <Save size={12} />
-                </button>
-
-                <button
-                    type="button"
-                    className="icon-btn"
                     onClick={() => openSettings('discord')}
                     title={effectiveDiscordOnline ? 'Discord connected' : 'Discord settings'}
                     aria-label={effectiveDiscordOnline ? 'Discord connected' : 'Discord settings'}
@@ -232,11 +144,6 @@ export default function WorkspaceToolbar() {
                     Assistant
                 </button>
             </div>
-            {publishOpen ? (
-                <Suspense fallback={null}>
-                    <PublishModal open={publishOpen} onClose={() => setPublishOpen(false)} />
-                </Suspense>
-            ) : null}
             {settingsOpen ? (
                 <Suspense fallback={null}>
                     <SettingsModal open={settingsOpen} initialTab={settingsInitialTab} onClose={() => setSettingsOpen(false)} />

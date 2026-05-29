@@ -65,14 +65,14 @@ describe('apm-studio CLI', () => {
         expect(result.stdout).not.toContain('--openai-oauth')
         expect(result.stdout).not.toContain('--agent')
         expect(result.stdout).not.toContain('--team')
-        expect(result.stdout).not.toContain('--performer')
-        expect(result.stdout).not.toContain('--act')
+        expect(result.stdout).not.toContain('--agent')
+        expect(result.stdout).not.toContain('--team')
     })
 
-    it.each(['--openai-oauth', '--agent', '--team', '--performer', '--act'])('rejects removed option %s', async (option) => {
+    it.each(['--openai-oauth', '--agent', '--team', '--agent', '--team'])('rejects removed option %s', async (option) => {
         const args = option === '--openai-oauth'
             ? [option]
-            : [option, 'performer/@acme/workflows/reviewer']
+            : [option, 'agent/@acme/workflows/reviewer']
         const result = await runCli(args)
 
         expect(result.code).toBe(1)

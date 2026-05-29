@@ -16,7 +16,7 @@ describe('server config mode and port resolution', () => {
     it('defaults to dev mode with the dev API port and parent project fallback', async () => {
         vi.stubEnv('APM_STUDIO_PRODUCTION', '')
         vi.stubEnv('PORT', '')
-        vi.stubEnv('PROJECT_DIR', '')
+        vi.stubEnv('APM_STUDIO_PROJECT_DIR', '')
         vi.stubEnv('OPENCODE_PORT', '')
 
         const config = await import('./config.js')
@@ -30,7 +30,7 @@ describe('server config mode and port resolution', () => {
     it('defaults production mode to the published CLI port set', async () => {
         vi.stubEnv('APM_STUDIO_PRODUCTION', '1')
         vi.stubEnv('PORT', '')
-        vi.stubEnv('PROJECT_DIR', '')
+        vi.stubEnv('APM_STUDIO_PROJECT_DIR', '')
         vi.stubEnv('OPENCODE_PORT', '')
 
         const config = await import('./config.js')
@@ -43,7 +43,7 @@ describe('server config mode and port resolution', () => {
 
     it('uses production mode only for an explicit production flag', async () => {
         vi.stubEnv('APM_STUDIO_PRODUCTION', '1')
-        vi.stubEnv('PROJECT_DIR', '/tmp/apm-studio-project')
+        vi.stubEnv('APM_STUDIO_PROJECT_DIR', '/tmp/apm-studio-project')
         vi.stubEnv('PORT', '43170')
         vi.stubEnv('OPENCODE_PORT', '43171')
 
@@ -58,7 +58,7 @@ describe('server config mode and port resolution', () => {
     it('lets the APM production flag explicitly disable production mode', async () => {
         vi.stubEnv('APM_STUDIO_PRODUCTION', '0')
         vi.stubEnv('PORT', '')
-        vi.stubEnv('PROJECT_DIR', '')
+        vi.stubEnv('APM_STUDIO_PROJECT_DIR', '')
         vi.stubEnv('OPENCODE_PORT', '')
 
         const config = await import('./config.js')

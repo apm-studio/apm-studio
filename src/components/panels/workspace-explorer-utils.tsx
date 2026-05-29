@@ -1,3 +1,4 @@
+import type { WorkspaceAgentNode } from '../../../shared/workspace-contracts'
 /* eslint-disable react-refresh/only-export-components */
 /**
  * workspace-explorer-utils.ts – Pure helpers, types, and sub-components
@@ -9,14 +10,13 @@
 
 import type { ReactNode } from 'react'
 import { Check, Pencil, Trash2, X } from 'lucide-react'
-import type { PerformerNode } from '../../types'
 import { parseStudioSessionTitle } from '../../../shared/session-metadata'
-import type { FocusSnapshot } from '../../store/types'
+import type { FocusSnapshot } from '../../store/workspace/types'
 import { resolveNodeBaselineHidden } from '../../lib/focus-utils'
 
 // ── Types ───────────────────────────────────────────────
 
-export type PerformerSessionRecord = {
+export type AgentSessionRecord = {
     id: string
     title?: string
     sidebarTitle?: string
@@ -25,32 +25,32 @@ export type PerformerSessionRecord = {
     parentId?: string | null
 }
 
-export type PerformerSessionRow = {
-    session: PerformerSessionRecord
-    performerId: string
+export type AgentSessionRow = {
+    session: AgentSessionRecord
+    agentId: string
     active: boolean
 }
 
-export type PerformerSessionTreeRow = PerformerSessionRow & {
-    children: PerformerSessionTreeRow[]
+export type AgentSessionTreeRow = AgentSessionRow & {
+    children: AgentSessionTreeRow[]
     depth: number
 }
 
 export type ExplorerRenamingSession = null | {
     key: string
-    kind: 'performer'
+    kind: 'agent'
     sessionId: string
     value: string
 }
 
 export type ThreadRow = {
     id: string
-    kind: 'performer'
+    kind: 'agent'
     label: string
     meta: string
     hidden: boolean
     active: boolean
-    children: PerformerSessionTreeRow[]
+    children: AgentSessionTreeRow[]
 }
 
 // ── Pure helpers ────────────────────────────────────────
@@ -68,26 +68,26 @@ export function workspaceShortPath(workingDir: string) {
     return segments.length > 2 ? `...${separator}${segments.slice(-2).join(separator)}` : workingDir
 }
 
-export function buildPerformerSessionRows(
-    sessions: PerformerSessionRecord[],
-    performers: PerformerNode[],
+export function buildAgentSessionRows(
+    sessions: AgentSessionRecord[],
+    agents: WorkspaceAgentNode[],
     chatKeyToSession: Record<string, string>,
-): PerformerSessionRow[] {
+): AgentSessionRow[] {
     const rows = sessions
         .map((session) => {
             const metadata = parseStudioSessionTitle(session.title)
-            const performerId = metadata?.performerId || null
-            const performer = performerId ? performers.find((item) => item.id === performerId) || null : null
-            if (!performer) {
+            const agentId = metadata?.agentId || null
+            const agent = agentId ? agents.find((item) => item.id === agentId) || null : null
+            if (!agent) {
                 return null
             }
             return {
                 session,
-                performerId,
-                active: chatKeyToSession[performer.id] === session.id,
+                agentId,
+                active: chatKeyToSession[agent.id] === session.id,
             }
         })
-        .filter((entry): entry is PerformerSessionRow => !!entry && typeof entry.performerId === 'string')
+        .filter((entry): entry is AgentSessionRow => !!entry && typeof entry.agentId === 'string')
 
     const seen = new Set<string>()
     return rows.filter((entry) => {
@@ -99,7 +99,7 @@ export function buildPerformerSessionRows(
     })
 }
 
-function compareSessionRows(left: PerformerSessionRow, right: PerformerSessionRow) {
+function compareSessionRows(left: AgentSessionRow, right: AgentSessionRow) {
     const activityDelta = resolveSessionActivityAt(right.session) - resolveSessionActivityAt(left.session)
     if (activityDelta !== 0) {
         return activityDelta
@@ -107,8 +107,8 @@ function compareSessionRows(left: PerformerSessionRow, right: PerformerSessionRo
     return (right.session.createdAt || 0) - (left.session.createdAt || 0)
 }
 
-function buildPerformerSessionTree(entries: PerformerSessionRow[]): PerformerSessionTreeRow[] {
-    const nodeById = new Map<string, PerformerSessionTreeRow>()
+function buildAgentSessionTree(entries: AgentSessionRow[]): AgentSessionTreeRow[] {
+    const nodeById = new Map<string, AgentSessionTreeRow>()
     entries.forEach((entry) => {
         nodeById.set(entry.session.id, {
             ...entry,
@@ -117,18 +117,18 @@ function buildPerformerSessionTree(entries: PerformerSessionRow[]): PerformerSes
         })
     })
 
-    const roots: PerformerSessionTreeRow[] = []
+    const roots: AgentSessionTreeRow[] = []
     nodeById.forEach((node) => {
         const parentId = node.session.parentId || null
         const parent = parentId ? nodeById.get(parentId) || null : null
-        if (parent && parent.performerId === node.performerId) {
+        if (parent && parent.agentId === node.agentId) {
             parent.children.push(node)
             return
         }
         roots.push(node)
     })
 
-    const sortTree = (nodes: PerformerSessionTreeRow[], depth = 0): PerformerSessionTreeRow[] => (
+    const sortTree = (nodes: AgentSessionTreeRow[], depth = 0): AgentSessionTreeRow[] => (
         [...nodes]
             .sort(compareSessionRows)
             .map((node) => ({
@@ -141,22 +141,22 @@ function buildPerformerSessionTree(entries: PerformerSessionRow[]): PerformerSes
     return sortTree(roots)
 }
 
-export function groupPerformerSessionsById(performerSessionRows: PerformerSessionRow[]) {
-    const groupedRows = new Map<string, PerformerSessionRow[]>()
-    performerSessionRows.forEach((entry) => {
-        const current = groupedRows.get(entry.performerId) || []
+export function groupAgentSessionsById(agentSessionRows: AgentSessionRow[]) {
+    const groupedRows = new Map<string, AgentSessionRow[]>()
+    agentSessionRows.forEach((entry) => {
+        const current = groupedRows.get(entry.agentId) || []
         current.push(entry)
-        groupedRows.set(entry.performerId, current)
+        groupedRows.set(entry.agentId, current)
     })
-    const map = new Map<string, PerformerSessionTreeRow[]>()
-    groupedRows.forEach((entries, performerId) => {
-        map.set(performerId, buildPerformerSessionTree(entries))
+    const map = new Map<string, AgentSessionTreeRow[]>()
+    groupedRows.forEach((entries, agentId) => {
+        map.set(agentId, buildAgentSessionTree(entries))
     })
     return map
 }
 
 export function resolveSessionActivityAt(
-    session: Pick<PerformerSessionRecord, 'createdAt' | 'updatedAt'>,
+    session: Pick<AgentSessionRecord, 'createdAt' | 'updatedAt'>,
     latestMessageTimestamp?: number | null,
 ) {
     return Math.max(
@@ -166,7 +166,7 @@ export function resolveSessionActivityAt(
     )
 }
 
-export function resolveActThreadActivityAt(
+export function resolveTeamThreadActivityAt(
     thread: { createdAt?: number; participantSessions?: Record<string, string> },
     sessionActivityById: Record<string, number>,
 ) {
@@ -178,21 +178,21 @@ export function resolveActThreadActivityAt(
 }
 
 export function buildThreadRows(args: {
-    sharedPerformers: PerformerNode[]
-    editingTarget: { type: 'performer'; id: string } | null
-    performerSessionsById: Map<string, PerformerSessionTreeRow[]>
+    sharedAgents: WorkspaceAgentNode[]
+    editingTarget: { type: 'agent'; id: string } | null
+    agentSessionsById: Map<string, AgentSessionTreeRow[]>
     focusSnapshot: FocusSnapshot | null
-    selectedPerformerId: string | null
-    selectedPerformerSessionId: string | null
+    selectedAgentId: string | null
+    selectedAgentSessionId: string | null
 }): ThreadRow[] {
-    return args.sharedPerformers.map((performer) => ({
-        id: performer.id,
-        kind: 'performer',
-        label: performer.name,
-        meta: performer.model?.modelId || 'No model selected',
-        hidden: resolveNodeBaselineHidden(args.focusSnapshot, performer.id, 'performer', !!performer.hidden),
-        active: (args.selectedPerformerId === performer.id) || (args.editingTarget?.type === 'performer' && args.editingTarget.id === performer.id),
-        children: args.performerSessionsById.get(performer.id) || [],
+    return args.sharedAgents.map((agent) => ({
+        id: agent.id,
+        kind: 'agent',
+        label: agent.name,
+        meta: agent.model?.modelId || 'No model selected',
+        hidden: resolveNodeBaselineHidden(args.focusSnapshot, agent.id, 'agent', !!agent.hidden),
+        active: (args.selectedAgentId === agent.id) || (args.editingTarget?.type === 'agent' && args.editingTarget.id === agent.id),
+        children: args.agentSessionsById.get(agent.id) || [],
     }))
 }
 

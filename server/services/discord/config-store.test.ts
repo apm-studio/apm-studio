@@ -7,7 +7,7 @@ let tempDir = ''
 
 async function importStore() {
     vi.resetModules()
-    process.env.STUDIO_DIR = tempDir
+    process.env.APM_STUDIO_HOME = tempDir
     return import('./config-store.js')
 }
 
@@ -17,7 +17,7 @@ beforeEach(async () => {
 
 afterEach(async () => {
     await fs.rm(tempDir, { recursive: true, force: true })
-    delete process.env.STUDIO_DIR
+    delete process.env.APM_STUDIO_HOME
 })
 
 describe('discord config store', () => {
@@ -51,7 +51,7 @@ describe('discord config store', () => {
     it('writes config and mappings with private file permissions', async () => {
         const store = await importStore()
         await store.writeDiscordConfig({ enabled: true, token: 'secret-token' })
-        await store.writeDiscordMappings({ version: 1, workspaces: {}, channels: {} })
+        await store.writeDiscordMappings({ version: 2, workspaces: {}, channels: {} })
 
         const configStat = await fs.stat(path.join(tempDir, 'discord-config.json'))
         const mappingStat = await fs.stat(path.join(tempDir, 'discord-mappings.json'))
@@ -60,15 +60,15 @@ describe('discord config store', () => {
         expect(mappingStat.mode & 0o777).toBe(0o600)
     })
 
-    it('reads v1 mappings with v2 active-workspace fields defaulted safely', async () => {
+    it('ignores non-current mapping documents', async () => {
         const store = await importStore()
         await fs.writeFile(path.join(tempDir, 'discord-mappings.json'), JSON.stringify({
             version: 1,
             workspaces: {
                 'workspace-1': {
                     workingDir: '/tmp/workspace-1',
-                    performerChannels: {},
-                    actThreadChannels: {},
+                    agentChannels: {},
+                    teamThreadChannels: {},
                     participantRoles: {},
                 },
             },
@@ -78,14 +78,12 @@ describe('discord config store', () => {
 
         const mappings = await store.readDiscordMappings()
 
-        expect(mappings.version).toBe(1)
-        expect(mappings.activeWorkspaceId).toBeUndefined()
-        expect(mappings.archiveCategoryId).toBeUndefined()
-        expect(mappings.performerCategoryId).toBeUndefined()
-        expect(mappings.actCategoryId).toBeUndefined()
-        expect(mappings.workspaces['workspace-1'].backfilledMessageIds).toEqual({})
-        expect('participantRoles' in mappings.workspaces['workspace-1']).toBe(false)
-        expect('roles' in mappings).toBe(false)
+        expect(mappings).toEqual({
+            version: 2,
+            workspaces: {},
+            channels: {},
+            pendingInteractions: {},
+        })
     })
 
     it('normalizes pending prompt metadata from mappings', async () => {

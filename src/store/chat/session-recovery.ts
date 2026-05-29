@@ -1,5 +1,6 @@
-import { api } from '../../api'
-import type { ChatMessage } from '../../types'
+import type { ChatMessage } from '../session/chat-message-types'
+import { chatApi } from '../../api-clients/chat'
+
 import { logChatDebug } from '../../lib/chat-debug'
 import type { StudioState } from '../types'
 import { createActor, fromCallback } from 'xstate'
@@ -203,7 +204,7 @@ function createSupervisionLogic(input: {
                     }
 
                     try {
-                        const statusResult = await api.chat.status(input.sessionId)
+                        const statusResult = await chatApi.status(input.sessionId)
                         const status = statusResult.status
 
                         if (status) {

@@ -151,11 +151,11 @@ export async function updateGitExclude(executionDir: string) {
 export function agentProjectionDir(
     executionDir: string,
     workspaceHash: string,
-    scope: 'workspace' | 'act' = 'workspace',
-    actId?: string,
+    scope: 'workspace' | 'team' = 'workspace',
+    teamId?: string,
 ) {
-    if (scope === 'act' && actId) {
-        return path.join(executionDir, '.opencode', 'agents', NAMESPACE, 'act', workspaceHash, actId)
+    if (scope === 'team' && teamId) {
+        return path.join(executionDir, '.opencode', 'agents', NAMESPACE, 'team', workspaceHash, teamId)
     }
     return path.join(executionDir, '.opencode', 'agents', NAMESPACE, 'workspace', workspaceHash)
 }
@@ -163,14 +163,14 @@ export function agentProjectionDir(
 export function localSkillProjectionDir(
     executionDir: string,
     workspaceHash: string,
-    performerId: string,
-    scope: 'workspace' | 'act' = 'workspace',
-    actId?: string,
+    agentId: string,
+    scope: 'workspace' | 'team' = 'workspace',
+    teamId?: string,
 ) {
-    if (scope === 'act' && actId) {
-        return path.join(executionDir, '.opencode', 'skills', NAMESPACE, 'act', workspaceHash, actId, performerId)
+    if (scope === 'team' && teamId) {
+        return path.join(executionDir, '.opencode', 'skills', NAMESPACE, 'team', workspaceHash, teamId, agentId)
     }
-    return path.join(executionDir, '.opencode', 'skills', NAMESPACE, 'workspace', workspaceHash, performerId)
+    return path.join(executionDir, '.opencode', 'skills', NAMESPACE, 'workspace', workspaceHash, agentId)
 }
 
 export function toRelativePath(executionDir: string, absPath: string) {
@@ -190,13 +190,13 @@ export type Posture = 'build' | 'plan'
 export function resolveAgentIdentity(input: {
     executionDir: string
     workspaceHash: string
-    performerId: string
+    agentId: string
     posture: Posture
-    scope: 'workspace' | 'act'
-    actId?: string
+    scope: 'workspace' | 'team'
+    teamId?: string
 }) {
-    const dir = agentProjectionDir(input.executionDir, input.workspaceHash, input.scope, input.actId)
-    const fileName = `${input.performerId}--${input.posture}.md`
+    const dir = agentProjectionDir(input.executionDir, input.workspaceHash, input.scope, input.teamId)
+    const fileName = `${input.agentId}--${input.posture}.md`
     const filePath = path.join(dir, fileName)
     const agentName = path.relative(
         path.join(input.executionDir, '.opencode', 'agents'),

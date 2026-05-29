@@ -2,7 +2,7 @@ import fs from 'fs/promises'
 import path from 'path'
 import { STUDIO_DIR } from './config.js'
 
-export type SessionOwnerKind = 'performer' | 'act'
+export type SessionOwnerKind = 'agent' | 'team'
 
 export type SessionExecutionContext = {
     sessionId: string
@@ -21,15 +21,15 @@ type RegistryPayload = {
 const SESSION_EXECUTION_PATH = path.join(STUDIO_DIR, 'session-execution.json')
 let sessionExecutionCache: RegistryPayload | null = null
 
-export function parseActSessionOwnerId(ownerId: string) {
-    const match = ownerId.match(/^act:([^:]+):thread:([^:]+):participant:(.+)$/)
+export function parseTeamSessionOwnerId(ownerId: string) {
+    const match = ownerId.match(/^team:([^:]+):thread:([^:]+):participant:(.+)$/)
     if (!match) {
         return null
     }
 
-    const [, actId, threadId, participantKey] = match
+    const [, teamId, threadId, participantKey] = match
     return {
-        actId,
+        teamId,
         threadId,
         participantKey,
     }

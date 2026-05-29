@@ -12,21 +12,21 @@ export default function CanvasControls() {
     const prevViewport = useRef<Viewport | null>(null)
 
     const {
-        selectedPerformerId,
-        selectedActId,
+        selectedAgentId,
+        selectedTeamId,
         focusSnapshot,
         viewMode,
         enterFocusMode,
         exitFocusMode,
-        exitActLayoutMode,
+        exitTeamLayoutMode,
     } = useStudioStore(useShallow((state) => ({
-        selectedPerformerId: state.selectedPerformerId,
-        selectedActId: state.selectedActId,
+        selectedAgentId: state.selectedAgentId,
+        selectedTeamId: state.selectedTeamId,
         focusSnapshot: state.focusSnapshot,
         viewMode: state.viewMode,
         enterFocusMode: state.enterFocusMode,
         exitFocusMode: state.exitFocusMode,
-        exitActLayoutMode: state.exitActLayoutMode,
+        exitTeamLayoutMode: state.exitTeamLayoutMode,
     })))
     const isCanvasMode = viewMode === 'canvas'
     const isFullscreenActive = viewMode !== 'canvas'
@@ -43,19 +43,19 @@ export default function CanvasControls() {
     }, [isFitted, fitView, getViewport, setViewport])
 
     const enterFocus = useCallback(() => {
-        const nodeId = selectedPerformerId || selectedActId
-        const nodeType = selectedPerformerId ? 'performer' as const : 'act' as const
+        const nodeId = selectedAgentId || selectedTeamId
+        const nodeType = selectedAgentId ? 'agent' as const : 'team' as const
         if (!nodeId) return
 
         enterFocusMode(nodeId, nodeType, getCanvasViewportSize())
-    }, [selectedPerformerId, selectedActId, enterFocusMode])
+    }, [selectedAgentId, selectedTeamId, enterFocusMode])
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
             if (event.key !== 'Escape') return
 
-            if (focusSnapshot?.type === 'act') {
-                exitActLayoutMode()
+            if (focusSnapshot?.type === 'team') {
+                exitTeamLayoutMode()
                 exitFocusMode()
                 return
             }
@@ -67,7 +67,7 @@ export default function CanvasControls() {
 
         window.addEventListener('keydown', handleKeyDown)
         return () => window.removeEventListener('keydown', handleKeyDown)
-    }, [isFullscreenActive, exitFocusMode, focusSnapshot, exitActLayoutMode])
+    }, [isFullscreenActive, exitFocusMode, focusSnapshot, exitTeamLayoutMode])
 
     return (
         <div className="canvas-controls">
@@ -91,7 +91,7 @@ export default function CanvasControls() {
             >
                 <ZoomOut size={14} />
             </button>
-            {isCanvasMode && (selectedPerformerId || selectedActId) && (
+            {isCanvasMode && (selectedAgentId || selectedTeamId) && (
                 <button
                     type="button"
                     className="canvas-controls__btn"

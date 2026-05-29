@@ -27,7 +27,7 @@ export function resolveApmCommand(): string[] {
 
 export function apmLoaderServerName(cwd: string): string {
     const hash = createHash('sha1').update(path.resolve(cwd)).digest('hex').slice(0, 10)
-    return `apm-studio-stage-${hash}`
+    return `apm-studio-runtime-${hash}`
 }
 
 function resolveCapabilityToolId(toolIds: string[]) {

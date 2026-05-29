@@ -1,11 +1,12 @@
-import type { PermissionRequest, QuestionRequest, Todo } from '@opencode-ai/sdk/v2'
+import type { ChatMessage } from './chat-message-types'
+import type { ChatPermissionRequest, ChatQuestionRequest, ChatTodo } from '../../../shared/chat-contracts'
 import { mergeSystemPrefixMessages } from '../../lib/chat-messages'
-import type { ChatMessage } from '../../types'
+
 import type { SessionStatus } from './types'
 import { resolveSessionActivity } from './session-activity'
 
 const EMPTY_MESSAGES: ChatMessage[] = []
-const EMPTY_TODOS: Todo[] = []
+const EMPTY_TODOS: ChatTodo[] = []
 export const IDLE_STATUS: SessionStatus = { type: 'idle' }
 
 export type ChatSessionState = {
@@ -18,9 +19,9 @@ export type ChatSessionState = {
     isMutating: boolean
     activityKind: ReturnType<typeof resolveSessionActivity>['kind']
     status: SessionStatus
-    permission: PermissionRequest | null
-    question: QuestionRequest | null
-    todos: Todo[]
+    permission: ChatPermissionRequest | null
+    question: ChatQuestionRequest | null
+    todos: ChatTodo[]
     revert: { messageId: string; partId?: string } | null
 }
 
@@ -49,9 +50,9 @@ type DeriveChatSessionStateInput = {
     rawLoading?: boolean
     rawStatus?: SessionStatus | null
     status?: SessionStatus
-    permission?: PermissionRequest | null
-    question?: QuestionRequest | null
-    todos?: Todo[]
+    permission?: ChatPermissionRequest | null
+    question?: ChatQuestionRequest | null
+    todos?: ChatTodo[]
     revert?: { messageId: string; partId?: string } | null
     isMutating?: boolean
 }

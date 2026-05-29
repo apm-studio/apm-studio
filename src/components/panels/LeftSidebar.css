@@ -30,7 +30,7 @@
     overflow-y: auto;
 }
 
-.sidebar-main-bottom--asset-drawer {
+.sidebar-main-bottom--package-drawer {
     max-height: none;
     overflow: visible;
     padding-bottom: 8px;
@@ -57,7 +57,7 @@
 }
 
 
-/* ── Asset Drawer ─────────────────────────────────────── */
+/* ── Package Drawer ───────────────────────────────────── */
 .sidebar-drawer {
     width: 0;
     overflow: hidden;
@@ -112,7 +112,7 @@
 }
 
 /* ── Packages Button (prominent, full-width) ─────── */
-.asset-library-btn {
+.package-library-btn {
     display: flex;
     align-items: center;
     gap: 6px;
@@ -130,29 +130,29 @@
     transition: all 0.15s ease;
 }
 
-.asset-library-btn:hover {
+.package-library-btn:hover {
     background: rgba(13, 153, 255, 0.08);
     border-color: var(--accent);
     color: var(--accent);
 }
 
-.asset-library-btn.active {
+.package-library-btn.active {
     background: rgba(13, 153, 255, 0.1);
     border-color: var(--accent);
     color: var(--accent);
 }
 
-.asset-library-btn span {
+.package-library-btn span {
     flex: 1;
     text-align: left;
 }
 
-.asset-library-arrow {
+.package-library-arrow {
     transition: transform 0.2s ease;
     opacity: 0.6;
 }
 
-.asset-library-arrow.rotated {
+.package-library-arrow.rotated {
     transform: rotate(180deg);
 }
 

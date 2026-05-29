@@ -1,5 +1,4 @@
-import type { ChatMessage } from '../../types'
-
+import type { ChatMessage } from '../../store/session/chat-message-types'
 export function hasVisibleUserMessageContent(message: Pick<ChatMessage, 'content' | 'attachments'>): boolean {
     if ((message.content || '').trim()) {
         return true

@@ -4,9 +4,8 @@ import path from 'node:path'
 import { promises as fs } from 'node:fs'
 
 const instanceDisposeMock = vi.fn().mockResolvedValue({})
-const listStudioAssetsMock = vi.fn()
-const searchExploreCatalogMock = vi.fn()
-const searchSkillsCatalogMock = vi.fn()
+const listApmPackagesMock = vi.fn()
+const searchImportCatalogMock = vi.fn()
 let studioDir = ''
 
 vi.mock('../../lib/opencode.js', () => ({
@@ -21,16 +20,12 @@ vi.mock('../../lib/config.js', () => ({
     },
 }))
 
-vi.mock('../asset-service.js', () => ({
-    listStudioAssets: listStudioAssetsMock,
+vi.mock('../apm-package/repository.js', () => ({
+    listApmPackages: listApmPackagesMock,
 }))
 
-vi.mock('../apm-asset-service.js', () => ({
-    searchSkillsCatalog: searchSkillsCatalogMock,
-}))
-
-vi.mock('../explore-registry-service.js', () => ({
-    searchExploreCatalog: searchExploreCatalogMock,
+vi.mock('../import/registry-service.js', () => ({
+    searchImportCatalog: searchImportCatalogMock,
 }))
 
 describe('ensureAssistantAgent', () => {
@@ -40,9 +35,8 @@ describe('ensureAssistantAgent', () => {
         executionDir = await fs.mkdtemp(path.join(os.tmpdir(), 'studio-assistant-projection-'))
         studioDir = path.join(executionDir, '.studio-home')
         instanceDisposeMock.mockClear()
-        listStudioAssetsMock.mockReset().mockResolvedValue([])
-        searchExploreCatalogMock.mockReset().mockResolvedValue({ listings: [] })
-        searchSkillsCatalogMock.mockReset().mockResolvedValue([])
+        listApmPackagesMock.mockReset().mockResolvedValue([])
+        searchImportCatalogMock.mockReset().mockResolvedValue({ listings: [] })
     })
 
     afterEach(async () => {
@@ -175,12 +169,12 @@ describe('ensureAssistantAgent', () => {
     })
 
     it('builds a compact action prompt that steers clear mutations into the Studio tool', async () => {
-        const { buildAssistantActionPrompt } = await import('./assistant-service.js')
+        const { buildAssistantActionPrompt } = await import('./assistant-context-prompt.js')
 
         const prompt = buildAssistantActionPrompt({
             workingDir: '/tmp/workspace',
-            performers: [],
-            acts: [],
+            agents: [],
+            teams: [],
             drafts: [],
             availableModels: [],
         }, 'create a review workflow')
@@ -191,98 +185,104 @@ describe('ensureAssistantAgent', () => {
         expect(prompt).toContain('Action decision:')
         expect(prompt).toContain('call `apply_studio_actions`; do not stop at describing what you would change')
         expect(prompt).toContain('studio-assistant-action-surface-guide')
-        expect(prompt).toContain('studio-assistant-performer-guide')
-        expect(prompt).toContain('studio-assistant-act-guide')
+        expect(prompt).toContain('studio-assistant-agent-guide')
+        expect(prompt).toContain('studio-assistant-team-guide')
         expect(prompt).toContain('studio-assistant-workflow-guide')
-        expect(prompt).toContain('studio-assistant-tal-design-guide')
+        expect(prompt).toContain('studio-assistant-instruction-design-guide')
         expect(prompt).toContain('studio-assistant-ui-operations-guide')
-        expect(prompt).toContain('Use `showPerformer`, `showAct`, `showDraft`, `setStudioPanel`, `setStudioNodeVisibility`, or `setStudioNodeFrame`')
+        expect(prompt).toContain('Use `showAgent`, `showTeam`, `showDraft`, `setStudioPanel`, `setStudioNodeVisibility`, or `setStudioNodeFrame`')
         expect(prompt).toContain('Never invent ids')
         expect(prompt).toContain('Use same-call refs only for objects created earlier')
         expect(prompt).toContain('Instruction and Skill actions are draft-only')
-        expect(prompt).toContain('Save Local is outside this tool surface')
+        expect(prompt).toContain('package import and target sync are outside this tool surface')
         expect(prompt).toContain('missing Instruction/Skill/model details alone should not block mutation')
         expect(prompt).toContain('Relation payloads use `source...` and `target...` fields only')
-        expect(prompt).toContain('`actRules` is always an array of strings')
+        expect(prompt).toContain('`teamRules` is always an array of strings')
     })
 
-    it('optimizes assistant stage context by intent while preserving UI geometry when needed', async () => {
-        const { buildAssistantActionPrompt } = await import('./assistant-service.js')
-        const performers = Array.from({ length: 22 }, (_, index) => ({
-            id: `performer-${index + 1}`,
-            name: index === 20 ? 'Writer' : `Performer ${index + 1}`,
-            description: `Long description for performer ${index + 1}. `.repeat(20),
+    it('optimizes assistant workspace context by intent while preserving UI geometry when needed', async () => {
+        const { buildAssistantActionPrompt } = await import('./assistant-context-prompt.js')
+        const agents = Array.from({ length: 22 }, (_, index) => ({
+            id: `agent-${index + 1}`,
+            name: index === 20 ? 'Writer' : `Agent ${index + 1}`,
+            description: `Long description for agent ${index + 1}. `.repeat(20),
             position: { x: index * 10, y: index * 20 },
             size: { width: 320, height: 480 },
             hidden: index === 20,
             model: null,
             modelVariant: null,
-            talUrn: null,
-            talDraftId: null,
-            danceUrns: [],
-            danceDraftIds: [],
+            instructionUrn: null,
+            instructionDraftId: null,
+            skillUrns: [],
+            skillDraftIds: [],
         }))
 
         const prompt = buildAssistantActionPrompt({
             workingDir: '/tmp/workspace',
             view: {
-                selectedPerformerId: null,
-                selectedActId: null,
+                selectedAgentId: null,
+                selectedTeamId: null,
                 selectedMarkdownEditorId: null,
-                activeChatPerformerId: null,
+                activeChatAgentId: null,
                 viewMode: 'canvas',
                 panels: {
-                    assetLibrary: false,
+                    packages: false,
                     workspaceTracking: false,
                     terminal: false,
                     assistant: true,
                 },
             },
-            performers,
-            acts: [],
+            agents: agents,
+            teams: [],
             drafts: [],
             availableModels: [],
         }, 'Writer 열어줘')
 
         const snapshot = JSON.parse(prompt.match(/```json\n([\s\S]*?)\n```/)?.[1] || '{}')
-        expect(snapshot.context.omitted.performers).toBe(4)
+        expect(snapshot.context.omitted.agents).toBe(4)
         expect(snapshot.context.intent.geometry).toBe(true)
-        expect(snapshot.performers).toHaveLength(18)
-        expect(snapshot.performers.some((performer: { name: string }) => performer.name === 'Writer')).toBe(true)
-        expect(snapshot.performers.find((performer: { name: string }) => performer.name === 'Writer')).toEqual(expect.objectContaining({
+        expect(snapshot.agents).toHaveLength(18)
+        expect(snapshot.agents.some((agent: { name: string }) => agent.name === 'Writer')).toBe(true)
+        expect(snapshot.agents.find((agent: { name: string }) => agent.name === 'Writer')).toEqual(expect.objectContaining({
             position: { x: 200, y: 400 },
             size: { width: 320, height: 480 },
             hidden: true,
         }))
     })
 
-    it('adds skill intent and security hints for find/apply requests', async () => {
-        searchSkillsCatalogMock.mockResolvedValue([
-            {
-                urn: 'dance/@vercel-labs/skills/find-skills',
-                kind: 'dance',
-                name: 'find-skills',
-                owner: 'vercel-labs/skills',
-                description: '731.2K installs · from vercel-labs/skills',
-                tags: ['skills.sh'],
-                installs: 731153,
-            },
-        ])
-
-        const { buildAssistantDiscoveryPrompt } = await import('./assistant-service.js')
+    it('adds package-oriented skill intent hints for find/apply requests', async () => {
+        const { buildAssistantDiscoveryPrompt } = await import('./assistant-discovery-prompt.js')
 
         const prompt = await buildAssistantDiscoveryPrompt(executionDir, 'find a skill and apply it to my researcher agent')
 
         expect(prompt).toContain('Skill Intent Hint:')
         expect(prompt).toContain('Load and use `find-skills`.')
         expect(prompt).toContain('warn the user briefly to review the source repo')
-        expect(prompt).toContain('skills.sh Skill matches:')
-        expect(prompt).toContain('find-skills (dance/@vercel-labs/skills/find-skills)')
-        expect(prompt).toContain('If you recommend or apply one of these, include a short security warning')
+        expect(prompt).toContain('Prefer local Studio package matches first, then Import matches.')
+        expect(prompt).not.toContain('skills.sh Skill matches:')
+    })
+
+    it('uses local APM packages for discovery hints', async () => {
+        listApmPackagesMock.mockResolvedValue([
+            {
+                packageId: 'release-notes',
+                name: 'Release Notes',
+                kind: 'skill',
+                description: 'Generate release notes from commits',
+                source: 'apm',
+                manifestPath: 'packages/release-notes/apm.yml',
+            },
+        ])
+        const { buildAssistantDiscoveryPrompt } = await import('./assistant-discovery-prompt.js')
+
+        const prompt = await buildAssistantDiscoveryPrompt(executionDir, 'find release notes skill')
+
+        expect(prompt).toContain('Local Package Skill matches:')
+        expect(prompt).toContain('Release Notes (release-notes) [packages/release-notes/apm.yml]')
     })
 
     it('steers create requests toward local Skill authoring instead of external search', async () => {
-        const { buildAssistantDiscoveryPrompt } = await import('./assistant-service.js')
+        const { buildAssistantDiscoveryPrompt } = await import('./assistant-discovery-prompt.js')
 
         const prompt = await buildAssistantDiscoveryPrompt(executionDir, 'create a new skill for release notes')
 
@@ -291,10 +291,10 @@ describe('ensureAssistantAgent', () => {
         expect(prompt).not.toContain('skills.sh Skill matches:')
     })
 
-    it('understands Korean skill authoring intent even when there is no asset query', async () => {
-        const { buildAssistantDiscoveryPrompt } = await import('./assistant-service.js')
+    it('understands Korean skill authoring intent even when there is no package query', async () => {
+        const { buildAssistantDiscoveryPrompt } = await import('./assistant-discovery-prompt.js')
 
-        const prompt = await buildAssistantDiscoveryPrompt(executionDir, '새 댄스 스킬 만들어줘')
+        const prompt = await buildAssistantDiscoveryPrompt(executionDir, '새 스킬 만들어줘')
 
         expect(prompt).toContain('The user likely wants to create or improve a local Skill.')
         expect(prompt).toContain('Load and use `studio-assistant-skill-creator-guide`.')

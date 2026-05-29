@@ -4,7 +4,7 @@
 
 Discord is an external Studio chat client.
 
-- it does not create, edit, save, or publish APM Studio assets
+- it does not create, edit, save, or package APM Studio primitives
 - it reuses Studio Agent and Team chat runtime services
 - Studio web owns configuration and sync controls
 
@@ -12,8 +12,27 @@ Discord is an external Studio chat client.
 
 - user-facing setup guide: `DISCORD_INTEGRATION.md`
 - settings UI: `src/components/modals/SettingsDiscord.tsx`
-- API routes: `server/routes/discord.ts`
+- shared HTTP/storage contracts: `shared/discord-contracts.ts`
+- shared workspace snapshot contracts: `shared/workspace-contracts.ts`
+- API routes: `server/routes/discord/index.ts`
 - bot lifecycle and Discord event handling: `server/services/discord/discord-service.ts`
+- Discord gateway event binding and ready wait helpers: `server/services/discord/discord-client-events.ts`
+- Team runtime event subscriptions for synced workspaces: `server/services/discord/discord-team-runtime-subscriptions.ts`
+- Discord interaction authorization and command/component routing: `server/services/discord/discord-interaction-service.ts`
+- `/workspace` slash command handlers: `server/services/discord/discord-workspace-commands.ts`
+- `/agent` slash command handlers: `server/services/discord/discord-agent-commands.ts`
+- `/team` slash command handlers: `server/services/discord/discord-team-commands.ts`
+- workspace/Agent/Team select menus and navigation buttons: `server/services/discord/discord-navigation-interactions.ts`
+- permission/question Discord component handling: `server/services/discord/discord-prompt-interactions.ts`
+- Discord channel message routing and Agent/Team input execution: `server/services/discord/discord-message-service.ts`
+- shared Discord session turn lock: `server/services/discord/discord-session-turn-tracker.ts`
+- Discord actor authorization gate: `server/services/discord/discord-access-gate.ts`
+- pending permission/question adapter state: `server/services/discord/discord-pending-interactions.ts`
+- outbound Discord message rendering/backfill: `server/services/discord/discord-output-presenter.ts`
+- channel/category reconciliation: `server/services/discord/discord-channel-manager.ts`
+- Agent/Team thread channel materialization: `server/services/discord/discord-thread-channel-manager.ts`
+- Team thread backfill, idle polling, and runtime-event sync watchers: `server/services/discord/discord-team-thread-sync-service.ts`
+- workspace-to-Discord reconciliation orchestration: `server/services/discord/discord-workspace-sync-service.ts`
 - config storage: `~/.apm-studio/discord-config.json`
 - channel/role mappings: `~/.apm-studio/discord-mappings.json`
 
@@ -23,6 +42,8 @@ Discord is configured from the Studio web Settings modal.
 
 - token is write-only from the client perspective
 - API responses must return only `hasToken`
+- route handlers, settings UI, service methods, and config storage helpers should import the current Discord contracts from `shared/discord-contracts.ts` instead of redefining status, config, sync, or mapping shapes locally
+- Discord runtime and sync code should read Agents and Teams through `shared/workspace-contracts.ts` rather than defining Discord-specific workspace snapshot types
 - one selected Discord server is supported in v1
 - config and mapping files are written under the APM Studio config directory with private file permissions
 - Studio enforces Discord actor authorization before handling control, command, or chat events
@@ -72,6 +93,13 @@ Discord slash commands are grouped by Studio scope:
 - `/team sync` backfills recent visible agent messages and is accepted only in mapped Team thread channels.
 
 Commands must still pass the selected-server and actor authorization checks before they can read mappings or call Studio runtime services.
+Discord interaction routing lives in `discord-interaction-service.ts`; the lifecycle service only wires Discord gateway events into it.
+Workspace, Agent, and Team select menus plus navigation buttons live in `discord-navigation-interactions.ts`; prompt permission/question buttons, selects, modals, and continuation replies live in `discord-prompt-interactions.ts`.
+Discord custom component ids use the current `apm:` prefix only; old product prefixes are not accepted.
+Team thread history sync and idle polling live in `discord-team-thread-sync-service.ts`; command handlers and channel materialization call that service instead of owning watcher state.
+Team runtime event subscriptions live in `discord-team-runtime-subscriptions.ts`; the lifecycle service should not own subscription maps or parse Team runtime event payloads directly.
+Discord message execution lives in `discord-message-service.ts`; it shares the same `discord-session-turn-tracker.ts` lock with Team thread sync so direct messages and sync watchers do not duplicate session ownership.
+Discord Studio runtime facade lives in `studio-runtime.ts`; backfill text shaping lives in `discord-session-messages.ts`, standalone Agent thread listing lives in `discord-standalone-threads.ts`, and pending/running/wait-for-reply state lives in `discord-session-state.ts`.
 
 ## Runtime Rules
 
@@ -81,7 +109,7 @@ Standalone Agent messages use:
 
 Team participant modal submissions use:
 
-`buildActParticipantChatKey(...)` -> `createStudioChatSession` -> `sendStudioChatMessage`
+`buildTeamParticipantChatKey(...)` -> `createStudioChatSession` -> `sendStudioChatMessage`
 
 When an Agent or Team thread channel is opened:
 
@@ -140,8 +168,27 @@ Key rules:
 ## Implementation Reference
 
 - settings UI: `src/components/modals/SettingsDiscord.tsx`
-- API routes: `server/routes/discord.ts`
+- API routes: `server/routes/discord/index.ts`
 - bot lifecycle and Discord event handling: `server/services/discord/discord-service.ts`
+- Discord interaction routing: `server/services/discord/discord-interaction-service.ts`
+- `/workspace` slash command handlers: `server/services/discord/discord-workspace-commands.ts`
+- `/agent` slash command handlers: `server/services/discord/discord-agent-commands.ts`
+- `/team` slash command handlers: `server/services/discord/discord-team-commands.ts`
+- workspace/Agent/Team navigation interactions: `server/services/discord/discord-navigation-interactions.ts`
+- permission/question prompt interactions: `server/services/discord/discord-prompt-interactions.ts`
+- Discord message execution: `server/services/discord/discord-message-service.ts`
+- Discord Studio runtime facade: `server/services/discord/studio-runtime.ts`
+- Discord session message/backfill shaping: `server/services/discord/discord-session-messages.ts`
+- Discord standalone Agent thread listing: `server/services/discord/discord-standalone-threads.ts`
+- Discord session pending/running wait state: `server/services/discord/discord-session-state.ts`
+- Discord session turn lock: `server/services/discord/discord-session-turn-tracker.ts`
+- Discord actor authorization gate: `server/services/discord/discord-access-gate.ts`
+- pending permission/question adapter state: `server/services/discord/discord-pending-interactions.ts`
+- outbound Discord message rendering/backfill: `server/services/discord/discord-output-presenter.ts`
+- channel/category reconciliation: `server/services/discord/discord-channel-manager.ts`
+- Agent/Team thread channel materialization: `server/services/discord/discord-thread-channel-manager.ts`
+- Team thread sync watcher service: `server/services/discord/discord-team-thread-sync-service.ts`
+- workspace-to-Discord reconciliation orchestration: `server/services/discord/discord-workspace-sync-service.ts`
 - config storage: `~/.apm-studio/discord-config.json`
 - channel/role mappings: `~/.apm-studio/discord-mappings.json`
 

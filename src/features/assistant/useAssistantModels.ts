@@ -5,10 +5,11 @@ import {
     pickPreferredAssistantModel,
     toAssistantAvailableModels,
 } from '../../lib/assistant-models'
+import type { AssistantAvailableModel, AssistantModelSelection } from '../../store/assistant/types'
 
 function findSelectedConnectedModel(
     models: RuntimeModelCatalogEntry[],
-    assistantModel: { provider: string; modelId: string } | null,
+    assistantModel: AssistantModelSelection | null,
 ) {
     if (!assistantModel) {
         return null
@@ -27,18 +28,9 @@ export function useAssistantModels({
     setAssistantAvailableModels,
 }: {
     models: RuntimeModelCatalogEntry[] | undefined
-    assistantModel: { provider: string; modelId: string } | null
-    setAssistantModel: (model: { provider: string; modelId: string } | null) => void
-    setAssistantAvailableModels: (models: Array<{
-        provider: string
-        providerName: string
-        modelId: string
-        name: string
-        variants?: Array<{
-            id: string
-            summary: string
-        }>
-    }>) => void
+    assistantModel: AssistantModelSelection | null
+    setAssistantModel: (model: AssistantModelSelection | null) => void
+    setAssistantAvailableModels: (models: AssistantAvailableModel[]) => void
 }) {
     const connectedModels = useMemo(
         () => (models ?? []).filter(isAssistantCompatibleModel),

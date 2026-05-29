@@ -5,7 +5,6 @@
  */
 import { createPortal } from 'react-dom'
 import { AlertTriangle, CornerDownLeft, X } from 'lucide-react'
-import '../modals/PublishModal.css'
 import './RevertConfirmModal.css'
 
 type RevertConfirmModalProps = {
@@ -26,9 +25,9 @@ export default function RevertConfirmModal({
         : messagePreview
 
     return createPortal(
-        <div className="publish-modal__backdrop" onClick={submitting ? undefined : onCancel}>
-            <div className="publish-modal revert-confirm-modal" onClick={(e) => e.stopPropagation()}>
-                <div className="publish-modal__header revert-confirm-modal__header">
+        <div className="revert-confirm-modal__backdrop" onClick={submitting ? undefined : onCancel}>
+            <div className="revert-confirm-modal" onClick={(e) => e.stopPropagation()}>
+                <div className="revert-confirm-modal__header">
                     <div className="revert-confirm-modal__title-wrap">
                         <CornerDownLeft size={16} />
                         <h3>Revert to this message?</h3>
@@ -38,7 +37,7 @@ export default function RevertConfirmModal({
                     </button>
                 </div>
 
-                <div className="publish-modal__body revert-confirm-modal__body">
+                <div className="revert-confirm-modal__body">
                     <div className="revert-confirm-modal__preview">
                         <span className="revert-confirm-modal__preview-label">Revert to:</span>
                         <span className="revert-confirm-modal__preview-text">{truncated}</span>
@@ -54,10 +53,10 @@ export default function RevertConfirmModal({
                     </div>
                 </div>
 
-                <div className="publish-modal__footer">
+                <div className="revert-confirm-modal__footer">
                     <button
                         type="button"
-                        className="publish-modal__action"
+                        className="revert-confirm-modal__action"
                         disabled={submitting}
                         onClick={onCancel}
                     >
@@ -65,7 +64,7 @@ export default function RevertConfirmModal({
                     </button>
                     <button
                         type="button"
-                        className="publish-modal__action publish-modal__action--destructive"
+                        className="revert-confirm-modal__action revert-confirm-modal__action--destructive"
                         disabled={submitting}
                         onClick={onConfirm}
                     >

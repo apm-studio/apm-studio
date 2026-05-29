@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { ChatSessionMessage } from '../../shared/chat-contracts.js'
 import {
     isSessionEffectivelyRunning,
     isSessionEffectivelySettled,
@@ -10,10 +11,8 @@ describe('chat session status helpers', () => {
         expect(resolveEffectiveSessionStatus({
             directStatus: { type: 'busy' },
             messages: [{
-                info: {
-                    role: 'assistant',
-                    time: { completed: 123 },
-                },
+                role: 'assistant',
+                completedAt: 123,
                 parts: [],
             }],
         })).toEqual({ type: 'busy' })
@@ -21,13 +20,14 @@ describe('chat session status helpers', () => {
 
     it('treats wait_until parked sessions as effectively settled', () => {
         const messages = [{
-            info: { role: 'assistant' },
+            role: 'assistant',
             parts: [{
                 type: 'tool',
                 tool: 'wait_until',
+                callId: 'call-wait',
                 state: { status: 'completed' },
             }],
-        }]
+        }] satisfies ChatSessionMessage[]
 
         expect(isSessionEffectivelySettled(messages)).toBe(true)
         expect(isSessionEffectivelyRunning({
@@ -43,7 +43,7 @@ describe('chat session status helpers', () => {
     it('derives implicit idle when OpenCode status is missing but the assistant already completed', () => {
         expect(resolveEffectiveSessionStatus({
             messages: [{
-                info: { role: 'assistant' },
+                role: 'assistant',
                 parts: [{
                     type: 'step-finish',
                 }],

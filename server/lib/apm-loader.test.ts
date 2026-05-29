@@ -14,11 +14,11 @@ describe('resolveApmCommand', () => {
         expect(resolveApmCommand()[0]).toMatch(/(apm-studio|cli\.js)$/)
     })
 
-    it('uses the APM Studio package command in production mode', async () => {
+    it('uses a packaged command path in production mode', async () => {
         vi.stubEnv('APM_STUDIO_PRODUCTION', '1')
 
         const { resolveApmCommand } = await import('./apm-loader.js')
 
-        expect(resolveApmCommand()[0]).not.toBe('dance-of-tal')
+        expect(resolveApmCommand()[0]).toMatch(/(apm-studio|cli\.js)$/)
     })
 })

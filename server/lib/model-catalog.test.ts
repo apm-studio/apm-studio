@@ -87,4 +87,105 @@ describe('model catalog auth filtering', () => {
         })
         expect(providerListMock).not.toHaveBeenCalled()
     })
+
+    it('normalizes provider summaries and runtime model entries at the OpenCode boundary', async () => {
+        readStoredProviderAuthTypeMock.mockResolvedValue(null)
+        providerListMock.mockResolvedValueOnce({
+            data: {
+                all: [
+                    {
+                        id: 'anthropic',
+                        name: 'Anthropic',
+                        source: 'builtin',
+                        env: ['ANTHROPIC_API_KEY', 123],
+                        models: {
+                            'claude-haiku-4.5': {
+                                name: 'Claude Haiku',
+                                limit: { context: 200000, output: 8192 },
+                                capabilities: {
+                                    toolCall: true,
+                                    reasoning: true,
+                                    input: ['text', 'image', 1],
+                                    output: ['text', false],
+                                },
+                                cost: { input: 0.0008 },
+                                variants: {
+                                    fast: { effort: 'low' },
+                                },
+                                ignored: 'drop-me',
+                            },
+                        },
+                    },
+                    { name: 'Missing id', models: {} },
+                ],
+                connected: ['anthropic', 42],
+                default: { anthropic: 'claude-haiku-4.5', ignored: 123 },
+            },
+        })
+        const { listProviderSummaries, listRuntimeModels } = await import('./model-catalog.js')
+
+        await expect(listProviderSummaries('/tmp/workspace')).resolves.toEqual([
+            {
+                id: 'anthropic',
+                name: 'Anthropic',
+                source: 'builtin',
+                env: ['ANTHROPIC_API_KEY'],
+                connected: true,
+                modelCount: 1,
+                defaultModel: 'claude-haiku-4.5',
+                hasPaidModels: true,
+            },
+        ])
+
+        await expect(listRuntimeModels('/tmp/workspace')).resolves.toEqual([
+            {
+                provider: 'anthropic',
+                providerName: 'Anthropic',
+                id: 'claude-haiku-4.5',
+                name: 'Claude Haiku',
+                connected: true,
+                context: 200000,
+                output: 8192,
+                toolCall: true,
+                reasoning: true,
+                attachment: false,
+                temperature: false,
+                modalities: {
+                    input: ['text', 'image'],
+                    output: ['text'],
+                },
+                variants: [
+                    {
+                        id: 'fast',
+                        options: { effort: 'low' },
+                        summary: 'effort=low',
+                    },
+                ],
+            },
+        ])
+    })
+
+    it('resolves title model candidates from normalized provider snapshots', async () => {
+        providerListMock.mockResolvedValueOnce({
+            data: {
+                all: [
+                    {
+                        id: 'amazon-bedrock',
+                        options: { region: 'eu-west-1' },
+                        models: {
+                            'us.anthropic.claude-haiku-4-5': {},
+                            'eu.anthropic.claude-haiku-4-5': {},
+                            'anthropic.claude-haiku-4-5': {},
+                        },
+                    },
+                ],
+                connected: ['amazon-bedrock'],
+                default: {},
+            },
+        })
+        const { resolvePreferredTitleModelId } = await import('./model-catalog.js')
+
+        await expect(resolvePreferredTitleModelId('/tmp/workspace', 'amazon-bedrock'))
+            .resolves.toBe('eu.anthropic.claude-haiku-4-5')
+    })
 })

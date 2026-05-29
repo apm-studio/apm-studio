@@ -2,7 +2,7 @@
  * Event Reducer — Unit Tests (Phase 7.2)
  */
 import { describe, it, expect, beforeEach } from 'vitest'
-import type { PermissionRequest, QuestionRequest, Todo } from '@opencode-ai/sdk/v2'
+import type { ChatTodo } from '../../../shared/chat-contracts'
 import type { StudioState } from '../types'
 import {
     reduceMessageUpdated,
@@ -34,7 +34,7 @@ function createMinimalState(overrides: Partial<StudioState> = {}): StudioState {
         chatKeyToSession: {},
         sessionToChatKey: {},
         sessionLoading: {},
-        activeChatPerformerId: null,
+        activeChatAgentId: null,
         sessions: [],
         ...overrides,
     } as StudioState
@@ -65,7 +65,7 @@ describe('Event Reducer', () => {
     let set: (p: Partial<StudioState> | ((s: StudioState) => Partial<StudioState>)) => void
 
     const SESSION_ID = 'session-1'
-    const CHAT_KEY = 'performer-1'
+    const CHAT_KEY = 'agent-1'
 
     beforeEach(() => {
         state = createMinimalState()
@@ -169,6 +169,7 @@ describe('Event Reducer', () => {
                 id: 'tool-1',
                 type: 'tool',
                 tool: 'wait_until',
+                callID: 'call-1',
                 state: { status: 'completed' },
             }, get, set)
             reduceMessagePartUpdated(SESSION_ID, 'msg-1', {
@@ -181,7 +182,7 @@ describe('Event Reducer', () => {
                 content: 'Hello\nWorld',
                 parts: [
                     { id: 'text-1', type: 'text', content: 'Hello' },
-                    { id: 'tool-1', type: 'tool' },
+                    { id: 'tool-1', type: 'tool', tool: { callId: 'call-1' } },
                     { id: 'text-2', type: 'text', content: 'World' },
                 ],
             })
@@ -506,8 +507,13 @@ describe('Event Reducer', () => {
             state.sessionLoading[SESSION_ID] = true
 
             reducePermissionAsked(SESSION_ID, {
-                id: 'perm-1', sessionID: SESSION_ID, method: 'test',
-            } as unknown as PermissionRequest, get, set)
+                id: 'perm-1',
+                sessionId: SESSION_ID,
+                permission: 'test',
+                patterns: [],
+                metadata: {},
+                always: [],
+            }, get, set)
 
             expect(state.sePermissions[SESSION_ID]).toBeDefined()
             expect(state.sessionLoading[SESSION_ID]).toBeUndefined()
@@ -516,7 +522,14 @@ describe('Event Reducer', () => {
 
     describe('reducePermissionReplied', () => {
         it('clears pending permission', () => {
-            state.sePermissions[SESSION_ID] = { id: 'perm-1', sessionID: SESSION_ID, metadata: {} } as PermissionRequest
+            state.sePermissions[SESSION_ID] = {
+                id: 'perm-1',
+                sessionId: SESSION_ID,
+                permission: 'test',
+                patterns: [],
+                metadata: {},
+                always: [],
+            }
 
             reducePermissionReplied(SESSION_ID, get, set)
 
@@ -529,8 +542,10 @@ describe('Event Reducer', () => {
             state.sessionLoading[SESSION_ID] = true
 
             reduceQuestionAsked(SESSION_ID, {
-                id: 'q-1', sessionID: SESSION_ID,
-            } as QuestionRequest, get, set)
+                id: 'q-1',
+                sessionId: SESSION_ID,
+                questions: [{ header: 'Question', question: 'Continue?', options: [] }],
+            }, get, set)
 
             expect(state.seQuestions[SESSION_ID]).toBeDefined()
             expect(state.sessionLoading[SESSION_ID]).toBeUndefined()
@@ -539,13 +554,13 @@ describe('Event Reducer', () => {
 
         describe('reduceTodoUpdated', () => {
             it('sets todos for sessionId', () => {
-            reduceTodoUpdated(SESSION_ID, [{ id: 'todo-1', content: 'Fix bug' }] as unknown as Todo[], get, set)
+            reduceTodoUpdated(SESSION_ID, [{ content: 'Fix bug', status: 'pending', priority: 'medium' }] satisfies ChatTodo[], get, set)
 
             expect(state.seTodos[SESSION_ID]).toHaveLength(1)
         })
 
         it('stores todos only by sessionId', () => {
-            reduceTodoUpdated(SESSION_ID, [{ id: 'todo-1', content: 'Fix bug' }] as unknown as Todo[], get, set)
+            reduceTodoUpdated(SESSION_ID, [{ content: 'Fix bug', status: 'pending', priority: 'medium' }] satisfies ChatTodo[], get, set)
 
             expect(state.seTodos[CHAT_KEY]).toBeUndefined()
         })

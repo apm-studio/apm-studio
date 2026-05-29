@@ -52,10 +52,10 @@
   --space-5: 12px;
   --space-6: 16px;
 
-  --tal-color: #f24822;
-  --tal-bg: rgba(242, 72, 34, 0.1);
-  --dance-color: #ffa629;
-  --dance-bg: rgba(255, 166, 41, 0.1);
+  --instruction-color: #f24822;
+  --instruction-bg: rgba(242, 72, 34, 0.1);
+  --skill-color: #ffa629;
+  --skill-bg: rgba(255, 166, 41, 0.1);
   --model-color: #9747ff;
   --model-bg: rgba(151, 71, 255, 0.1);
   --mcp-color: #14ae5c;
@@ -125,10 +125,10 @@
   --shadow-dropdown: 0 4px 12px rgba(0, 0, 0, 0.4);
   --shadow-panel: 1px 0 0 rgba(0, 0, 0, 0.5);
 
-  --tal-color: #f24822;
-  --tal-bg: rgba(242, 72, 34, 0.15);
-  --dance-color: #ffa629;
-  --dance-bg: rgba(255, 166, 41, 0.15);
+  --instruction-color: #f24822;
+  --instruction-bg: rgba(242, 72, 34, 0.15);
+  --skill-color: #ffa629;
+  --skill-bg: rgba(255, 166, 41, 0.15);
   --model-color: #9747ff;
   --model-bg: rgba(151, 71, 255, 0.15);
   --mcp-color: #14ae5c;

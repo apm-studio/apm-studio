@@ -1,11 +1,12 @@
+import type { ChatMessage } from '../../store/session/chat-message-types'
 import React from 'react'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
-import type { ChatMessage } from '../../types'
+
 
 let showReasoningSummaries = true
 
-vi.mock('../../store/settingsSlice', () => ({
+vi.mock('../../store/settings/slice', () => ({
     useUISettings: (selector: (state: { showReasoningSummaries: boolean }) => unknown = (state) => state) => selector({
         showReasoningSummaries,
     }),

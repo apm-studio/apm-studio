@@ -17,8 +17,8 @@ describe('parseFileMention', () => {
     })
 
     it('keeps spaces inside natural file search queries', () => {
-        expect(parseFileMention('read # performer chat', 'read # performer chat'.length)).toEqual({
-            query: 'performer chat',
+        expect(parseFileMention('read # agent chat', 'read # agent chat'.length)).toEqual({
+            query: 'agent chat',
             startIndex: 5,
         })
     })

@@ -5,19 +5,17 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import fs from 'fs'
 
-import healthRoutes from './routes/health.js'
-import assetRoutes from './routes/assets.js'
-import stageRoutes from './routes/workspaces.js'
-import chatRoutes from './routes/chat.js'
-import opencodeRoutes from './routes/opencode.js'
-import compileRoutes from './routes/compile.js'
-import apmAssetsRoutes from './routes/apm-assets.js'
-import draftRoutes from './routes/drafts.js'
-import actRuntimeRoutes from './routes/act-runtime.js'
-import discordRoutes from './routes/discord.js'
-import apmRoutes from './routes/apm.js'
-import exploreRoutes from './routes/explore.js'
-import createTerminalRoutes from './routes/terminal.js'
+import healthRoutes from './routes/health/index.js'
+import studioRoutes from './routes/studio/index.js'
+import workspaceRoutes from './routes/workspaces/index.js'
+import chatRoutes from './routes/chat/index.js'
+import opencodeRoutes from './routes/opencode/index.js'
+import compileRoutes from './routes/compile/index.js'
+import draftRoutes from './routes/drafts/index.js'
+import teamRuntimeRoutes from './routes/team-runtime/index.js'
+import discordRoutes from './routes/discord/index.js'
+import apmRoutes from './routes/apm/index.js'
+import createTerminalRoutes from './routes/terminal/index.js'
 import { getActiveProjectDir, IS_PRODUCTION } from './lib/config.js'
 import { requestLogger } from './lib/server-logger.js'
 
@@ -33,17 +31,15 @@ function resolveClientDir() {
 
 function mountApiRoutes(app: Hono) {
     app.route('/', healthRoutes)
-    app.route('/', assetRoutes)
-    app.route('/', stageRoutes)
+    app.route('/', studioRoutes)
+    app.route('/', workspaceRoutes)
     app.route('/', chatRoutes)
     app.route('/', opencodeRoutes)
     app.route('/', compileRoutes)
-    app.route('/', apmAssetsRoutes)
     app.route('/', draftRoutes)
-    app.route('/', actRuntimeRoutes)
+    app.route('/', teamRuntimeRoutes)
     app.route('/', discordRoutes)
     app.route('/', apmRoutes)
-    app.route('/', exploreRoutes)
     app.route('/', createTerminalRoutes(() => getActiveProjectDir()))
 }
 

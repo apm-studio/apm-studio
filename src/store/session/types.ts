@@ -1,8 +1,9 @@
+import type { ChatMessage } from './chat-message-types'
 /**
  * Normalized session data structures keyed by sessionId.
  */
-import type { ChatMessage } from '../../types'
-import type { PermissionRequest, QuestionRequest, Todo } from '@opencode-ai/sdk/v2'
+
+import type { ChatPermissionRequest, ChatQuestionRequest, ChatTodo } from '../../../shared/chat-contracts'
 
 // ── Session Status ──
 
@@ -37,14 +38,14 @@ export interface SessionEntityState {
     /** sessionId → SessionStatus (live streaming status) */
     seStatuses: Record<string, SessionStatus>
 
-    /** sessionId → pending PermissionRequest */
-    sePermissions: Record<string, PermissionRequest>
+    /** sessionId → pending permission request */
+    sePermissions: Record<string, ChatPermissionRequest>
 
-    /** sessionId → pending QuestionRequest */
-    seQuestions: Record<string, QuestionRequest>
+    /** sessionId → pending question request */
+    seQuestions: Record<string, ChatQuestionRequest>
 
-    /** sessionId → Todo[] */
-    seTodos: Record<string, Todo[]>
+    /** sessionId → todo list */
+    seTodos: Record<string, ChatTodo[]>
 
     /**
      * chatKey → local draft/placeholder messages shown when no bound session
@@ -62,9 +63,9 @@ export interface SessionEntityState {
      * Bidirectional index: chatKey ↔ sessionId.
      *
      * chatKey is:
-     *   - performerId for standalone performers
-     *   - `act:{actId}:thread:{threadId}:participant:{key}` for Act participants
-     *   - ASSISTANT_PERFORMER_ID for assistant
+     *   - agentId for standalone agents
+     *   - `team:{teamId}:thread:{threadId}:participant:{key}` for Team participants
+     *   - ASSISTANT_AGENT_ID for assistant
      */
     chatKeyToSession: Record<string, string>
     sessionToChatKey: Record<string, string>
@@ -98,11 +99,11 @@ export interface SessionEntityActions {
     setSessionMutationPending: (sessionId: string, pending: boolean) => void
 
     // Dock state
-    setSessionPermission: (sessionId: string, permission: PermissionRequest) => void
+    setSessionPermission: (sessionId: string, permission: ChatPermissionRequest) => void
     clearSessionPermission: (sessionId: string) => void
-    setSessionQuestion: (sessionId: string, question: QuestionRequest) => void
+    setSessionQuestion: (sessionId: string, question: ChatQuestionRequest) => void
     clearSessionQuestion: (sessionId: string) => void
-    setSessionTodos: (sessionId: string, todos: Todo[]) => void
+    setSessionTodos: (sessionId: string, todos: ChatTodo[]) => void
 
     // Local chatKey-scoped view state
     setChatDraftMessages: (chatKey: string, messages: ChatMessage[]) => void

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
     collectVisibleCanvasNodeRects,
-    resolveActCreationClusterLayout,
+    resolveTeamCreationClusterLayout,
     resolveCanvasNodeSpawnPosition,
 } from './canvas-node-layout'
 
@@ -19,22 +19,22 @@ function overlaps(
 }
 
 describe('resolveCanvasNodeSpawnPosition', () => {
-    it('avoids overlapping visible performer and act windows', () => {
+    it('avoids overlapping visible agent and team windows', () => {
         const occupiedRects = collectVisibleCanvasNodeRects(
             [{
-                id: 'performer-1',
+                id: 'agent-1',
                 name: 'Researcher',
                 position: { x: 840, y: 500 },
                 width: 320,
                 height: 400,
                 scope: 'shared',
                 model: null,
-                talRef: null,
-                danceRefs: [],
+                instructionRef: null,
+                skillRefs: [],
                 mcpServerNames: [],
             }],
             [{
-                id: 'act-1',
+                id: 'team-1',
                 name: 'Review Flow',
                 position: { x: 1200, y: 480 },
                 width: 640,
@@ -65,31 +65,31 @@ describe('resolveCanvasNodeSpawnPosition', () => {
     })
 })
 
-describe('resolveActCreationClusterLayout', () => {
-    it('places the act below a centered performer grid without overlap', () => {
-        const layout = resolveActCreationClusterLayout({
+describe('resolveTeamCreationClusterLayout', () => {
+    it('places the team below a centered agent grid without overlap', () => {
+        const layout = resolveTeamCreationClusterLayout({
             canvasCenter: { x: 1000, y: 700 },
             occupiedRects: [],
-            performerIds: ['performer-1', 'performer-2', 'performer-3'],
+            agentIds: ['agent-1', 'agent-2', 'agent-3'],
         })
 
-        const performers = Array.from(layout.performerPositions.values()).map((position) => ({
+        const agents = Array.from(layout.agentPositions.values()).map((position) => ({
             x: position.x,
             y: position.y,
             width: 320,
             height: 400,
         }))
-        const act = {
-            x: layout.actPosition.x,
-            y: layout.actPosition.y,
+        const team = {
+            x: layout.teamPosition.x,
+            y: layout.teamPosition.y,
             width: 640,
             height: 800,
         }
 
-        expect(performers).toHaveLength(3)
-        expect(performers.every((performer) => performer.y < act.y)).toBe(true)
-        expect(overlaps(performers[0], performers[1], 1)).toBe(false)
-        expect(overlaps(performers[1], performers[2], 1)).toBe(false)
-        expect(performers.every((performer) => overlaps(performer, act, 1) === false)).toBe(true)
+        expect(agents).toHaveLength(3)
+        expect(agents.every((agent) => agent.y < team.y)).toBe(true)
+        expect(overlaps(agents[0], agents[1], 1)).toBe(false)
+        expect(overlaps(agents[1], agents[2], 1)).toBe(false)
+        expect(agents.every((agent) => overlaps(agent, team, 1) === false)).toBe(true)
     })
 })

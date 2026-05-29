@@ -1,20 +1,20 @@
 import type { Edge, Node } from '@xyflow/react'
-import type { WorkspaceSlice } from '../../store/types'
+import type { WorkspaceSlice } from '../../store/workspace/types'
 
 type EditingTargetLike = WorkspaceSlice['editingTarget'] | undefined
 
 export type CanvasDragStopResult =
     | { kind: 'markdownEditor'; id: string; x: number; y: number }
     | { kind: 'canvasTerminal'; id: string; x: number; y: number }
-    | { kind: 'act'; id: string; x: number; y: number }
-    | { kind: 'performer'; id: string; x: number; y: number }
+    | { kind: 'team'; id: string; x: number; y: number }
+    | { kind: 'agent'; id: string; x: number; y: number }
 
 export type CanvasNodeClickResult =
     | { kind: 'ignore' }
     | { kind: 'markdownEditor'; id: string }
     | { kind: 'canvasTerminal' }
-    | { kind: 'act'; id: string }
-    | { kind: 'performer'; id: string; shouldCloseEditor: boolean }
+    | { kind: 'team'; id: string }
+    | { kind: 'agent'; id: string; shouldCloseEditor: boolean }
 
 function roundedPosition(node: Pick<Node, 'position'>) {
     return {
@@ -38,11 +38,11 @@ export function resolveCanvasDragStop(node: Pick<Node, 'id' | 'position' | 'type
         return { kind: 'canvasTerminal', id: node.id, ...position }
     }
 
-    if (node.type === 'act') {
-        return { kind: 'act', id: node.id, ...position }
+    if (node.type === 'team') {
+        return { kind: 'team', id: node.id, ...position }
     }
 
-    return { kind: 'performer', id: node.id, ...position }
+    return { kind: 'agent', id: node.id, ...position }
 }
 
 export function resolveCanvasNodeClick(
@@ -62,19 +62,19 @@ export function resolveCanvasNodeClick(
         return { kind: 'canvasTerminal' }
     }
 
-    if (node.type === 'act') {
-        return { kind: 'act', id: node.id }
+    if (node.type === 'team') {
+        return { kind: 'team', id: node.id }
     }
 
     return {
-        kind: 'performer',
+        kind: 'agent',
         id: node.id,
-        shouldCloseEditor: !!(editingTarget && !(editingTarget.type === 'performer' && editingTarget.id === node.id)),
+        shouldCloseEditor: !!(editingTarget && !(editingTarget.type === 'agent' && editingTarget.id === node.id)),
     }
 }
 
 export function resolveCanvasEdgeClick(edge: Pick<Edge, 'id'>) {
-    // Edges on main canvas represent Act relations — edge.id format: rel:{actId}:{relationId}
+    // Edges on main canvas represent Team relations — edge.id format: rel:{teamId}:{relationId}
     if (edge.id.startsWith('rel:')) {
         const parts = edge.id.split(':')
         return parts.length >= 3 ? parts.slice(2).join(':') : edge.id

@@ -3,13 +3,36 @@
    ═══════════════════════════════════════════ */
 
 .revert-confirm-modal {
+    width: min(440px, 100%);
     max-width: 440px;
+    max-height: calc(100vh - 120px);
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-main);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-dropdown);
+    overflow: hidden;
+}
+
+.revert-confirm-modal__backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1300;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 88px 24px 24px;
+    background: rgba(0, 0, 0, 0.24);
 }
 
 .revert-confirm-modal__header {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 12px;
+    padding: 16px 18px 12px;
+    border-bottom: 1px solid var(--border-main);
 }
 
 .revert-confirm-modal__title-wrap {
@@ -30,6 +53,7 @@
     flex-direction: column;
     gap: 12px;
     padding: 16px 20px;
+    overflow: auto;
 }
 
 .revert-confirm-modal__preview {
@@ -88,14 +112,40 @@
     line-height: 1.4;
 }
 
-/* Destructive action button */
-.publish-modal__action--destructive {
+.revert-confirm-modal__footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 12px 18px 16px;
+    border-top: 1px solid var(--border-main);
+}
+
+.revert-confirm-modal__action {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid var(--border-main);
+    background: var(--bg-card);
+    color: var(--text-main);
+    border-radius: 999px;
+    padding: 8px 12px;
+    font-size: var(--font-base);
+    cursor: pointer;
+}
+
+.revert-confirm-modal__action:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.revert-confirm-modal__action--destructive {
     background: rgba(239, 68, 68, 0.12) !important;
     border-color: rgba(239, 68, 68, 0.3) !important;
     color: #f87171 !important;
 }
 
-.publish-modal__action--destructive:hover {
+.revert-confirm-modal__action--destructive:hover {
     background: rgba(239, 68, 68, 0.2) !important;
     border-color: rgba(239, 68, 68, 0.4) !important;
 }

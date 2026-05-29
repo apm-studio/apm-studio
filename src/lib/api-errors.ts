@@ -1,33 +1,15 @@
-export type StudioApiErrorCode =
-    | 'validation'
-    | 'provider_auth'
-    | 'model_unavailable'
-    | 'context_overflow'
-    | 'structured_output'
-    | 'runtime_unavailable'
-    | 'sdk_contract'
-    | 'unknown'
+import type {
+    StudioApiErrorAction,
+    StudioApiErrorCode,
+    StudioApiErrorPayload,
+} from '../../shared/api-contracts'
 
-export type StudioApiErrorAction =
-    | 'fix_input'
-    | 'select_model'
-    | 'choose_model'
-    | 'reduce_context'
-    | 'reconnect_provider'
-    | 'restart_opencode'
-    | 'refresh_studio'
-    | 'retry'
-
-export type StudioApiErrorPayload = {
-    error: string
-    detail?: string
-    code?: StudioApiErrorCode
-    action?: StudioApiErrorAction
-    retryable?: boolean
-    status?: number
-    providerId?: string
-    modelId?: string
-}
+export type {
+    ApiErrorResponse,
+    StudioApiErrorAction,
+    StudioApiErrorCode,
+    StudioApiErrorPayload,
+} from '../../shared/api-contracts'
 
 export class StudioApiError extends Error {
     readonly code?: StudioApiErrorCode
@@ -61,6 +43,10 @@ export function coerceStudioApiError(error: unknown): StudioApiError {
     }
 
     return new StudioApiError({ error: String(error || 'Request failed.') }, 500)
+}
+
+export function isStudioApiNotFoundError(error: unknown): boolean {
+    return coerceStudioApiError(error).status === 404
 }
 
 export function formatStudioApiErrorMessage(error: unknown, prefix = true): string {

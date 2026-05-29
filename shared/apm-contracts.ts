@@ -1,5 +1,16 @@
-import type { SharedAssetRef } from './chat-contracts.js'
+import type { SharedPrimitiveRef } from './chat-contracts.js'
 import type { ModelSelection } from './model-types.js'
+
+export const APM_PACKAGE_SCOPES = ['workspace', 'user'] as const
+export type ApmPackageScope = typeof APM_PACKAGE_SCOPES[number]
+
+export function isApmPackageScope(value: unknown): value is ApmPackageScope {
+    return value === 'workspace' || value === 'user'
+}
+
+export function normalizeApmPackageScope(value: unknown): ApmPackageScope {
+    return value === 'user' ? 'user' : 'workspace'
+}
 
 export type ApmDependency =
     | string
@@ -18,22 +29,12 @@ export interface ApmAgentExtension {
     model: ModelSelection
     modelVariant?: string | null
     agentBody?: string | null
-    instructionRef?: SharedAssetRef | null
-    skillRefs: SharedAssetRef[]
+    instructionRef?: SharedPrimitiveRef | null
+    skillRefs: SharedPrimitiveRef[]
     mcpServerNames: string[]
-    agentId?: string | null
+    runtimeAgentId?: string | null
     planMode?: boolean
     derivedFrom?: string | null
-    /** @deprecated read-only legacy field; use agentNodeId. */
-    performerId?: string
-    /** @deprecated read-only legacy field; use agentName. */
-    performerName?: string
-    /** @deprecated read-only legacy field; use agentBody. */
-    inlineInstruction?: string | null
-    /** @deprecated read-only legacy field; use instructionRef. */
-    talRef?: SharedAssetRef | null
-    /** @deprecated read-only legacy field; use skillRefs. */
-    danceRefs?: SharedAssetRef[]
 }
 
 export interface ApmManifestExtension {
@@ -182,10 +183,17 @@ export interface ApmPackageWriteResponse extends ApmPackageReadResponse {
     ok: true
 }
 
+export type ApmPackageImportResponse = ApmPackageWriteResponse
+
 export interface ApmPackageImportRequest {
     packageId?: string
     manifestYaml?: string
     manifest?: ApmPackageManifest
+    scope?: ApmPackageScope
+}
+
+export interface ApmValidationRequest {
+    manifest?: unknown
 }
 
 export type ApmGitHubImportFormat =
@@ -203,7 +211,7 @@ export interface ApmGitHubImportRequest {
     format?: ApmGitHubImportFormat
     limit?: number
     candidateIds?: string[]
-    scope?: 'stage' | 'global'
+    scope?: ApmPackageScope
 }
 
 export interface ApmGitHubImportPackage {
@@ -217,7 +225,7 @@ export interface ApmGitHubImportPackage {
 
 export interface ApmGitHubImportResponse {
     ok: true
-    scope: 'stage' | 'global'
+    scope: ApmPackageScope
     targetWorkingDir: string
     source: {
         repo: string
@@ -265,7 +273,7 @@ export type ApmGitHubSourceCatalogId =
     | 'awesome-agent-skills'
     | 'awesome-claude-code-subagents'
 
-export type ApmGitHubSourceAssetKind = 'agent' | 'skill' | 'mcp' | 'package'
+export type ApmGitHubSourceItemKind = 'agent' | 'skill' | 'mcp' | 'package'
 
 export interface ApmGitHubSourceCatalogRequest {
     sources?: ApmGitHubSourceCatalogId[]
@@ -281,9 +289,9 @@ export interface ApmGitHubSourceCatalogSource {
     stars?: number
 }
 
-export interface ApmGitHubSourceAsset {
+export interface ApmGitHubSourceItem {
     id: string
-    kind: ApmGitHubSourceAssetKind
+    kind: ApmGitHubSourceItemKind
     name: string
     description: string
     sourceName: string
@@ -300,106 +308,8 @@ export interface ApmGitHubSourceAsset {
 export interface ApmGitHubSourceCatalogResponse {
     ok: true
     sources: ApmGitHubSourceCatalogSource[]
-    assets: ApmGitHubSourceAsset[]
+    primitives: ApmGitHubSourceItem[]
     warnings: string[]
 }
 
-export interface ApmPackageExportResponse {
-    packageId: string
-    manifestYaml: string
-    lockYaml: string
-    manifestPath: string
-    lockPath: string
-    microsoftApm?: MicrosoftApmPackageSourceSummary
-}
-
-export type ApmExportUnit = 'agent-packages' | 'agents' | 'instructions' | 'skills' | 'mcp'
-
-export type ApmSyncTargetId =
-    | 'codex'
-    | 'gemini'
-    | 'claude'
-    | 'opencode'
-    | 'cursor'
-    | 'windsurf'
-    | 'copilot'
-    | 'agent-skills'
-
-export type ApmSyncStrategy = 'cli-first' | 'studio-fallback' | 'unsupported'
-
-export type ApmSyncTargetDefinitionKind = 'agent' | 'instruction' | 'skill' | 'mcp' | 'config' | 'unknown'
-
-export interface ApmSyncTargetItemSummary {
-    packageId: string
-    target: ApmSyncTargetId
-    exportUnit: ApmExportUnit
-    artifactCount: number
-    artifacts: string[]
-    updatedAt: string
-}
-
-export interface ApmSyncTargetDefinitionSummary {
-    id: string
-    target: ApmSyncTargetId
-    name: string
-    kind: ApmSyncTargetDefinitionKind
-    path: string
-    exportUnit?: ApmExportUnit
-    managed: boolean
-    managedPackageId?: string
-    managedExportUnit?: ApmExportUnit
-    updatedAt?: string
-}
-
-export interface ApmSyncTargetSummary {
-    id: ApmSyncTargetId
-    label: string
-    description: string
-    outputHint: string
-    commandPreview: string
-    available: boolean
-    supportedExportUnits: ApmExportUnit[]
-    strategy: ApmSyncStrategy
-    currentItems: ApmSyncTargetItemSummary[]
-    definitions: ApmSyncTargetDefinitionSummary[]
-    disabledReason?: string
-}
-
-export interface ApmSyncTargetsResponse {
-    tooling: ApmToolingStatus
-    targets: ApmSyncTargetSummary[]
-}
-
-export interface ApmSyncRunRequest {
-    target?: ApmSyncTargetId
-    targets?: ApmSyncTargetId[]
-    exportUnit?: ApmExportUnit
-    packageIds?: string[]
-    frozen?: boolean
-}
-
-export interface ApmSyncPackageResult {
-    packageId: string
-    name: string
-    target: ApmSyncTargetId
-    exportUnit?: ApmExportUnit
-    command: string
-    status: 'synced' | 'failed' | 'skipped'
-    projectedAs?: string
-    artifacts?: string[]
-    warnings?: string[]
-    modelOmitted?: boolean
-    stdout?: string
-    stderr?: string
-    error?: string
-}
-
-export interface ApmSyncRunResponse {
-    ok: true
-    target?: ApmSyncTargetId
-    targets: ApmSyncTargetId[]
-    exportUnit: ApmExportUnit
-    startedAt: number
-    finishedAt: number
-    results: ApmSyncPackageResult[]
-}
+export * from './apm-sync-contracts.js'

@@ -1,42 +1,43 @@
+import type { DraftPrimitive } from '../../lib/primitive-types'
 import { useCallback, useEffect, useMemo } from 'react'
 import { useNodesState } from '@xyflow/react'
-import type { Node } from '@xyflow/react'
-import type { WorkspaceSlice } from '../../store/types'
-import type { WorkspaceViewMode } from '../../store/types'
 import type {
-    CanvasTerminalNode,
-    DraftAsset,
-    MarkdownEditorNode,
-    PerformerNode,
-    WorkspaceAct,
-} from '../../types'
+    Node } from '@xyflow/react'
+import type { WorkspaceSlice, WorkspaceViewMode } from '../../store/workspace/types'
+
+import type {
+    WorkspaceCanvasTerminalNode,
+    WorkspaceMarkdownEditorNode,
+    WorkspaceAgentNode,
+    WorkspaceTeamSnapshot,
+} from '../../../shared/workspace-contracts'
 import { composeCanvasEdges } from './canvas-edge-composer'
 import { composeCanvasNodes } from './canvas-node-composer'
 import {
-    buildActCanvasNodes,
+    buildTeamCanvasNodes,
     buildCanvasTerminalWindowNodes,
     buildMarkdownEditorCanvasNodes,
-    buildPerformerCanvasNodes,
+    buildAgentCanvasNodes,
 } from './canvas-window-node-builders'
 
-type CanvasNodeKind = 'performer' | 'markdownEditor' | 'canvasTerminal' | 'act'
+type CanvasNodeKind = 'agent' | 'markdownEditor' | 'canvasTerminal' | 'team'
 
 type UseCanvasPresentationArgs = {
-    acts: WorkspaceAct[]
-    performers: PerformerNode[]
-    markdownEditors: MarkdownEditorNode[]
-    canvasTerminals: CanvasTerminalNode[]
-    drafts: Record<string, DraftAsset>
+    teams: WorkspaceTeamSnapshot[]
+    agents: WorkspaceAgentNode[]
+    markdownEditors: WorkspaceMarkdownEditorNode[]
+    canvasTerminals: WorkspaceCanvasTerminalNode[]
+    drafts: Record<string, DraftPrimitive>
     workingDir: string
-    editingActId: string | null
-    selectedActId: string | null
-    selectedPerformerId: string | null
+    editingTeamId: string | null
+    selectedTeamId: string | null
+    selectedAgentId: string | null
     selectedMarkdownEditorId: string | null
-    focusedPerformerId: string | null
+    focusedAgentId: string | null
     viewMode: WorkspaceViewMode
     editingTarget: WorkspaceSlice['editingTarget']
     transformTarget: { id: string; type: CanvasNodeKind } | null
-    performerMcpSummary: (performer: PerformerNode) => string | null
+    agentMcpSummary: (agent: WorkspaceAgentNode) => string | null
     onActivateTransform: (type: CanvasNodeKind, id: string) => void
     onDeactivateTransform: (type: CanvasNodeKind, id: string) => void
     onCloseTerminal: (id: string) => void
@@ -46,21 +47,21 @@ type UseCanvasPresentationArgs = {
 
 export function useCanvasPresentation(args: UseCanvasPresentationArgs) {
     const {
-        acts,
-        performers,
+        teams,
+        agents,
         markdownEditors,
         canvasTerminals,
         drafts,
         workingDir,
-        editingActId,
-        selectedActId,
-        selectedPerformerId,
+        editingTeamId,
+        selectedTeamId,
+        selectedAgentId,
         selectedMarkdownEditorId,
-        focusedPerformerId,
+        focusedAgentId,
         viewMode,
         editingTarget,
         transformTarget,
-        performerMcpSummary,
+        agentMcpSummary,
         onActivateTransform,
         onDeactivateTransform,
         onCloseTerminal,
@@ -70,28 +71,28 @@ export function useCanvasPresentation(args: UseCanvasPresentationArgs) {
 
     const [nodes, setNodes, onNodesChange] = useNodesState<Node>([])
 
-    const buildPerformerNodes = useCallback(() => buildPerformerCanvasNodes({
-        acts,
-        editingActId,
-        performers,
-        selectedPerformerId,
-        focusedPerformerId,
+    const buildAgentNodes = useCallback(() => buildAgentCanvasNodes({
+        teams,
+        editingTeamId,
+        agents,
+        selectedAgentId,
+        focusedAgentId,
         editingTarget,
         transformTarget,
         drafts,
-        performerMcpSummary,
+        agentMcpSummary,
         onActivateTransform,
         onDeactivateTransform,
     }), [
-        acts,
-        editingActId,
-        performers,
-        selectedPerformerId,
-        focusedPerformerId,
+        teams,
+        editingTeamId,
+        agents,
+        selectedAgentId,
+        focusedAgentId,
         editingTarget,
         transformTarget,
         drafts,
-        performerMcpSummary,
+        agentMcpSummary,
         onActivateTransform,
         onDeactivateTransform,
     ])
@@ -130,17 +131,17 @@ export function useCanvasPresentation(args: UseCanvasPresentationArgs) {
         onSessionChange,
     ])
 
-    const buildActNodes = useCallback(() => buildActCanvasNodes({
-        acts,
-        editingActId,
-        selectedActId,
+    const buildTeamNodes = useCallback(() => buildTeamCanvasNodes({
+        teams,
+        editingTeamId,
+        selectedTeamId,
         transformTarget,
         onActivateTransform,
         onDeactivateTransform,
     }), [
-        acts,
-        editingActId,
-        selectedActId,
+        teams,
+        editingTeamId,
+        selectedTeamId,
         transformTarget,
         onActivateTransform,
         onDeactivateTransform,
@@ -149,23 +150,23 @@ export function useCanvasPresentation(args: UseCanvasPresentationArgs) {
     useEffect(() => {
         const isCanvasMode = viewMode === 'canvas'
         setNodes(composeCanvasNodes({
-            performerNodes: buildPerformerNodes(),
+            agentNodes: buildAgentNodes(),
             markdownEditorNodes: isCanvasMode ? buildMarkdownEditorNodes() : [],
             canvasTerminalNodes: isCanvasMode ? buildCanvasTerminalNodes() : [],
-            actNodes: buildActNodes(),
+            teamNodes: buildTeamNodes(),
         }))
     }, [
-        buildPerformerNodes,
+        buildAgentNodes,
         buildMarkdownEditorNodes,
         buildCanvasTerminalNodes,
-        buildActNodes,
+        buildTeamNodes,
         viewMode,
         setNodes,
     ])
 
     const edges = useMemo(
-        () => viewMode === 'canvas' ? composeCanvasEdges(acts, editingActId, performers) : [],
-        [acts, editingActId, performers, viewMode],
+        () => viewMode === 'canvas' ? composeCanvasEdges(teams, editingTeamId, agents) : [],
+        [teams, editingTeamId, agents, viewMode],
     )
 
     return {

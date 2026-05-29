@@ -1,5 +1,5 @@
 import { getActiveProjectDir } from '../../lib/config.js'
-import { listSavedWorkspaces } from '../workspace-service.js'
+import { listSavedWorkspaces } from '../workspace/service.js'
 import { ensureAssistantAgent } from './assistant-service.js'
 
 function uniqueNonEmptyDirs(directories: Array<string | null | undefined>) {

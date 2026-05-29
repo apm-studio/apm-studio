@@ -1,10 +1,13 @@
+import type {
+    WorkspaceAgentNode,
+    WorkspaceTeamParticipantBinding,
+} from '../../../shared/workspace-contracts'
 import { useCallback } from 'react'
 import type { Connection, Node, NodeChange, ReactFlowInstance } from '@xyflow/react'
-import type { WorkspaceSlice } from '../../store/types'
-import type { WorkspaceActParticipantBinding, PerformerNode } from '../../types'
+import type { WorkspaceSlice } from '../../store/workspace/types'
 import { useStudioStore } from '../../store'
-import { resolveCanvasCenterPosition } from '../../store/workspace-helpers'
-import { routeActConnection } from './act-connect-router'
+import { resolveCanvasCenterPosition } from '../../store/workspace/helpers'
+import { routeTeamConnection } from './team-connect-router'
 import {
     resolveCanvasDragStop,
     resolveCanvasEdgeClick,
@@ -13,75 +16,75 @@ import {
 import { resolveCanvasResizeChange } from './canvas-resize-router'
 
 type EditingTargetLike = WorkspaceSlice['editingTarget']
-type CanvasNodeKind = 'performer' | 'markdownEditor' | 'canvasTerminal' | 'act'
+type CanvasNodeKind = 'agent' | 'markdownEditor' | 'canvasTerminal' | 'team'
 
 type UseCanvasFlowHandlersArgs = {
     nodes: Node[]
-    editingActId: string | null
+    editingTeamId: string | null
     editingTarget: EditingTargetLike
     reactFlowInstance: ReactFlowInstance<Node> | null
     canvasAreaRef: React.RefObject<HTMLDivElement | null>
     transformTarget: { id: string; type: CanvasNodeKind } | null
     clearTransformTarget: () => void
     closeEditor: () => void
-    closeActEditor: () => void
-    openActEditor: (actId: string, mode?: 'act' | 'participant' | 'relation', options?: { participantKey?: string | null; relationId?: string | null }) => void
-    openActRelationEditor: (actId: string, relationId: string) => void
+    closeTeamEditor: () => void
+    openTeamEditor: (teamId: string, mode?: 'team' | 'participant' | 'relation', options?: { participantKey?: string | null; relationId?: string | null }) => void
+    openTeamRelationEditor: (teamId: string, relationId: string) => void
     setCanvasCenter: (x: number, y: number) => void
     selectMarkdownEditor: (id: string | null) => void
-    selectPerformer: (id: string | null) => void
-    setActiveChatPerformer: (id: string | null) => void
-    selectAct: (id: string | null) => void
-    attachPerformerToAct: (actId: string, performerId: string) => string | null
-    addRelation: (actId: string, between: [string, string], direction: 'both' | 'one-way') => string | null
+    selectAgent: (id: string | null) => void
+    setActiveChatAgent: (id: string | null) => void
+    selectTeam: (id: string | null) => void
+    attachAgentToTeam: (teamId: string, agentId: string) => string | null
+    addRelation: (teamId: string, between: [string, string], direction: 'both' | 'one-way') => string | null
     onNodesChange: (changes: NodeChange<Node>[]) => void
     updateMarkdownEditorPosition: (id: string, x: number, y: number) => void
     updateCanvasTerminalPosition: (id: string, x: number, y: number) => void
-    updateActPosition: (id: string, x: number, y: number) => void
-    updatePerformerPosition: (id: string, x: number, y: number) => void
-    updateActSize: (id: string, width: number, height: number) => void
+    updateTeamPosition: (id: string, x: number, y: number) => void
+    updateAgentPosition: (id: string, x: number, y: number) => void
+    updateTeamSize: (id: string, width: number, height: number) => void
     updateMarkdownEditorSize: (id: string, width: number, height: number) => void
     updateCanvasTerminalSize: (id: string, width: number, height: number) => void
-    updatePerformerSize: (id: string, width: number, height: number) => void
+    updateAgentSize: (id: string, width: number, height: number) => void
 }
 
 export function useCanvasFlowHandlers(args: UseCanvasFlowHandlersArgs) {
     const {
         nodes,
-        editingActId,
+        editingTeamId,
         editingTarget,
         reactFlowInstance,
         canvasAreaRef,
         transformTarget,
         clearTransformTarget,
         closeEditor,
-        closeActEditor,
-        openActEditor,
-        openActRelationEditor,
+        closeTeamEditor,
+        openTeamEditor,
+        openTeamRelationEditor,
         setCanvasCenter,
         selectMarkdownEditor,
-        selectPerformer,
-        setActiveChatPerformer,
-        selectAct,
-        attachPerformerToAct,
+        selectAgent,
+        setActiveChatAgent,
+        selectTeam,
+        attachAgentToTeam,
         addRelation,
         onNodesChange,
         updateMarkdownEditorPosition,
         updateCanvasTerminalPosition,
-        updateActPosition,
-        updatePerformerPosition,
-        updateActSize,
+        updateTeamPosition,
+        updateAgentPosition,
+        updateTeamSize,
         updateMarkdownEditorSize,
         updateCanvasTerminalSize,
-        updatePerformerSize,
+        updateAgentSize,
     } = args
 
     const onEdgeClick = useCallback((_event: React.MouseEvent, edge: import('@xyflow/react').Edge) => {
-        if (!editingActId) return
+        if (!editingTeamId) return
         const relationId = resolveCanvasEdgeClick(edge)
         if (!relationId) return
-        openActRelationEditor(editingActId, relationId)
-    }, [editingActId, openActRelationEditor])
+        openTeamRelationEditor(editingTeamId, relationId)
+    }, [editingTeamId, openTeamRelationEditor])
 
     const onNodeDragStop = useCallback((_: unknown, node: Node) => {
         const result = resolveCanvasDragStop(node)
@@ -93,18 +96,18 @@ export function useCanvasFlowHandlers(args: UseCanvasFlowHandlersArgs) {
             case 'canvasTerminal':
                 updateCanvasTerminalPosition(result.id, result.x, result.y)
                 return
-            case 'act':
-                updateActPosition(result.id, result.x, result.y)
+            case 'team':
+                updateTeamPosition(result.id, result.x, result.y)
                 return
-            case 'performer':
-                updatePerformerPosition(result.id, result.x, result.y)
+            case 'agent':
+                updateAgentPosition(result.id, result.x, result.y)
                 return
         }
     }, [
         updateMarkdownEditorPosition,
         updateCanvasTerminalPosition,
-        updateActPosition,
-        updatePerformerPosition,
+        updateTeamPosition,
+        updateAgentPosition,
     ])
 
     const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
@@ -119,117 +122,117 @@ export function useCanvasFlowHandlers(args: UseCanvasFlowHandlersArgs) {
             case 'markdownEditor':
                 closeEditor()
                 // Keep Team edit mode active when focusing other canvas elements.
-                if (!editingActId) {
-                    closeActEditor()
+                if (!editingTeamId) {
+                    closeTeamEditor()
                 }
                 selectMarkdownEditor(result.id)
                 return
             case 'canvasTerminal':
                 closeEditor()
                 // Keep Team edit mode active when focusing other canvas elements.
-                if (!editingActId) {
-                    closeActEditor()
+                if (!editingTeamId) {
+                    closeTeamEditor()
                 }
-                selectPerformer(null)
+                selectAgent(null)
                 selectMarkdownEditor(null)
                 return
-            case 'act':
+            case 'team':
                 closeEditor()
-                selectPerformer(null)
+                selectAgent(null)
                 selectMarkdownEditor(null)
-                selectAct(result.id)
-                useStudioStore.getState().setSplitViewActivePane(result.id, 'act')
+                selectTeam(result.id)
+                useStudioStore.getState().setSplitViewActivePane(result.id, 'team')
                 return
-            case 'performer':
-                if (editingActId) {
+            case 'agent':
+                if (editingTeamId) {
                     // Stay in Team edit mode - just refocus the Team.
                     closeEditor()
-                    selectAct(editingActId)
+                    selectTeam(editingTeamId)
                     return
                 }
                 if (result.shouldCloseEditor) {
                     closeEditor()
                 }
-                closeActEditor()
-                selectPerformer(result.id)
-                setActiveChatPerformer(result.id)
-                useStudioStore.getState().setSplitViewActivePane(result.id, 'performer')
+                closeTeamEditor()
+                selectAgent(result.id)
+                setActiveChatAgent(result.id)
+                useStudioStore.getState().setSplitViewActivePane(result.id, 'agent')
                 return
         }
     }, [
         editingTarget,
-        editingActId,
+        editingTeamId,
         clearTransformTarget,
         closeEditor,
-        closeActEditor,
+        closeTeamEditor,
         selectMarkdownEditor,
-        selectPerformer,
-        selectAct,
-        setActiveChatPerformer,
+        selectAgent,
+        selectTeam,
+        setActiveChatAgent,
     ])
 
     const onPaneClick = useCallback(() => {
         clearTransformTarget()
         closeEditor()
         // Keep Team edit mode until the user takes an explicit close action.
-        if (!editingActId) {
-            closeActEditor()
-            selectAct(null)
+        if (!editingTeamId) {
+            closeTeamEditor()
+            selectTeam(null)
         }
-        selectPerformer(null)
+        selectAgent(null)
         selectMarkdownEditor(null)
     }, [
         clearTransformTarget,
         closeEditor,
-        editingActId,
-        closeActEditor,
-        selectPerformer,
+        editingTeamId,
+        closeTeamEditor,
+        selectAgent,
         selectMarkdownEditor,
-        selectAct,
+        selectTeam,
     ])
 
     const onConnect = useCallback((connection: Connection) => {
-        routeActConnection({
-            currentActId: editingActId,
+        routeTeamConnection({
+            currentTeamId: editingTeamId,
             connection,
             nodes,
-            onConnectPerformersInAct: (actId, performerIds) => {
-                // Check if at least one performer is already bound, unless Act has no participants
+            onConnectAgentsInTeam: (teamId, agentIds) => {
+                // Check if at least one agent is already bound, unless Team has no participants
                 const state = useStudioStore.getState()
-                const act = state.acts.find((a) => a.id === actId)
-                const participantCount = act ? Object.keys(act.participants).length : 0
+                const team = state.teams.find((a) => a.id === teamId)
+                const participantCount = team ? Object.keys(team.participants).length : 0
 
                 if (participantCount > 0) {
-                    const isPerformerBound = (performerId: string) => {
-                        const performer = state.performers.find((p: PerformerNode) => p.id === performerId)
-                        const derivedFrom = performer?.meta?.derivedFrom?.trim()
-                        return act && Object.values(act.participants).some((binding: WorkspaceActParticipantBinding) => {
-                            const ref = binding.performerRef
-                            return (ref.kind === 'draft' && ref.draftId === performerId)
+                    const isAgentBound = (agentId: string) => {
+                        const agent = state.agents.find((p: WorkspaceAgentNode) => p.id === agentId)
+                        const derivedFrom = agent?.meta?.derivedFrom?.trim()
+                        return team && Object.values(team.participants).some((binding: WorkspaceTeamParticipantBinding) => {
+                            const ref = binding.agentRef
+                            return (ref.kind === 'draft' && ref.draftId === agentId)
                                 || (ref.kind === 'registry' && !!derivedFrom && ref.urn === derivedFrom)
                         })
                     }
-                    if (!isPerformerBound(performerIds[0]) && !isPerformerBound(performerIds[1])) {
-                        // Both performers are unbound — block the connection
+                    if (!isAgentBound(agentIds[0]) && !isAgentBound(agentIds[1])) {
+                        // Both agents are unbound — block the connection
                         return
                     }
                 }
 
-                const sourceKey = attachPerformerToAct(actId, performerIds[0])
-                const targetKey = attachPerformerToAct(actId, performerIds[1])
+                const sourceKey = attachAgentToTeam(teamId, agentIds[0])
+                const targetKey = attachAgentToTeam(teamId, agentIds[1])
                 if (!sourceKey || !targetKey || sourceKey === targetKey) {
                     return
                 }
-                addRelation(actId, [sourceKey, targetKey], 'one-way')
-                openActEditor(actId, 'act')
+                addRelation(teamId, [sourceKey, targetKey], 'one-way')
+                openTeamEditor(teamId, 'team')
             },
         })
     }, [
-        editingActId,
+        editingTeamId,
         nodes,
-        attachPerformerToAct,
+        attachAgentToTeam,
         addRelation,
-        openActEditor,
+        openTeamEditor,
     ])
 
     const handleNodesChange = useCallback((changes: NodeChange<Node>[]) => {
@@ -252,11 +255,11 @@ export function useCanvasFlowHandlers(args: UseCanvasFlowHandlersArgs) {
                 case 'canvasTerminal':
                     updateCanvasTerminalSize(resizeResult.id, resizeResult.width, resizeResult.height)
                     return
-                case 'act':
-                    updateActSize(resizeResult.id, resizeResult.width, resizeResult.height)
+                case 'team':
+                    updateTeamSize(resizeResult.id, resizeResult.width, resizeResult.height)
                     return
-                case 'performer':
-                    updatePerformerSize(resizeResult.id, resizeResult.width, resizeResult.height)
+                case 'agent':
+                    updateAgentSize(resizeResult.id, resizeResult.width, resizeResult.height)
                     return
             }
         })
@@ -266,8 +269,8 @@ export function useCanvasFlowHandlers(args: UseCanvasFlowHandlersArgs) {
         transformTarget,
         updateMarkdownEditorSize,
         updateCanvasTerminalSize,
-        updateActSize,
-        updatePerformerSize,
+        updateTeamSize,
+        updateAgentSize,
     ])
 
     const syncCanvasCenter = useCallback(() => {

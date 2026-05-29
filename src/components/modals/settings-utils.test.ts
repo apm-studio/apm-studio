@@ -296,12 +296,12 @@ describe('buildProviderAuthOptions', () => {
         }
 
         expect(buildProviderAuthOptions(provider)).toEqual([
-            { method: { type: 'api', label: 'API Token' }, methodIndex: 1, source: 'provider' },
-            { method: { type: 'oauth', label: 'Browser OAuth' }, methodIndex: 0, source: 'provider' },
+            { method: { type: 'api', label: 'API Token' }, methodIndex: 1 },
+            { method: { type: 'oauth', label: 'Browser OAuth' }, methodIndex: 0 },
         ])
     })
 
-    it('adds one compatibility API method for env-backed providers with no advertised api auth method', () => {
+    it('uses only provider-declared auth methods', () => {
         const provider: ProviderCard = {
             id: 'openai',
             name: 'OpenAI',
@@ -315,8 +315,7 @@ describe('buildProviderAuthOptions', () => {
         }
 
         expect(buildProviderAuthOptions(provider)).toEqual([
-            { method: { type: 'api', label: 'API Key' }, methodIndex: -1, source: 'compat' },
-            { method: { type: 'oauth', label: 'Browser OAuth' }, methodIndex: 0, source: 'provider' },
+            { method: { type: 'oauth', label: 'Browser OAuth' }, methodIndex: 0 },
         ])
     })
 })
@@ -332,10 +331,26 @@ describe('shouldShowProviderConnectModal', () => {
             modelCount: 5,
             defaultModel: 'zen-free',
             hasPaidModels: false,
-            authMethods: [],
+            authMethods: [{ type: 'api', label: 'API Key' }],
         }
 
         expect(shouldShowProviderConnectModal(provider, undefined)).toBe(true)
+    })
+
+    it('stays closed for connected env-only providers without declared auth methods', () => {
+        const provider: ProviderCard = {
+            id: 'opencode',
+            name: 'OpenCode Zen',
+            source: 'builtin',
+            env: ['OPENCODE_API_KEY'],
+            connected: true,
+            modelCount: 5,
+            defaultModel: 'zen-free',
+            hasPaidModels: false,
+            authMethods: [],
+        }
+
+        expect(shouldShowProviderConnectModal(provider, undefined)).toBe(false)
     })
 
     it('stays closed when there is no provider and no active flow', () => {

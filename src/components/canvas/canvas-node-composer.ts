@@ -1,15 +1,15 @@
 import type { Node } from '@xyflow/react'
 
 export function composeCanvasNodes(args: {
-    performerNodes: Node[]
+    agentNodes: Node[]
     markdownEditorNodes: Node[]
     canvasTerminalNodes: Node[]
-    actNodes: Node[]
+    teamNodes: Node[]
 }) {
     return [
-        ...args.performerNodes,
+        ...args.agentNodes,
         ...args.markdownEditorNodes,
         ...args.canvasTerminalNodes,
-        ...args.actNodes,
+        ...args.teamNodes,
     ]
 }

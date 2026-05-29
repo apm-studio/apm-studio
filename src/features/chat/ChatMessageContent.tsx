@@ -1,10 +1,11 @@
+import type { ChatMessage, ChatMessagePart, ChatMessageToolInfo } from '../../store/session/chat-message-types'
 import { memo, useState, useMemo, useCallback, useDeferredValue, useEffect } from 'react'
 import { ChevronDown, ChevronRight, Copy, Check } from 'lucide-react'
 import MarkdownRenderer from '../../components/shared/MarkdownRenderer'
-import type { ChatMessage, ChatMessagePart, ChatMessageToolInfo } from '../../types'
+
 import { TextShimmer } from '../../components/chat/TextShimmer'
 import { ToolGroup } from './ToolGroup'
-import { useUISettings } from '../../store/settingsSlice'
+import { useUISettings } from '../../store/settings/slice'
 
 function stripMarkdownMarkers(text: string) {
     return text

@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { ChevronDown } from 'lucide-react'
-import type { Todo } from '@opencode-ai/sdk/v2'
+import type { ChatTodo } from '../../../shared/chat-contracts'
 import { AnimatedNumber } from './AnimatedNumber'
 import './TodoDock.css'
 
@@ -52,7 +52,7 @@ function computeDockState(count: number, allDone: boolean, isLive: boolean): Doc
 /* ── Main component ── */
 
 interface TodoDockProps {
-    todos: Todo[]
+    todos: ChatTodo[]
     /** Whether the session is currently active (busy/streaming). Dock auto-clears on idle. */
     isLive?: boolean
     /** Called when the dock wants to clear stale todos from the store */

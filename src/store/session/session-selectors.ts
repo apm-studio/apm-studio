@@ -1,14 +1,15 @@
+import type { ChatMessage } from './chat-message-types'
 import type { StudioState } from '../types'
-import type { ChatMessage } from '../../types'
+
 import type { SessionStatus } from './types'
-import type { PermissionRequest, QuestionRequest, Todo } from '@opencode-ai/sdk/v2'
+import type { ChatPermissionRequest, ChatQuestionRequest, ChatTodo } from '../../../shared/chat-contracts'
 import { mergeSystemPrefixMessages } from '../../lib/chat-messages'
-import { parseActParticipantChatKey } from '../../../shared/chat-targets'
+import { parseTeamParticipantChatKey } from '../../../shared/chat-targets'
 import { canAbortSessionExecution, resolveSessionActivity } from './session-activity'
 import { deriveChatSessionState, IDLE_STATUS } from './chat-session-state'
 
 const EMPTY_MESSAGES: ChatMessage[] = []
-const EMPTY_TODOS: Todo[] = []
+const EMPTY_TODOS: ChatTodo[] = []
 
 // ── Session resolution ──
 
@@ -30,11 +31,11 @@ export function selectChatKeyForSession(state: StudioState, sessionId: string): 
 // ── Stream target resolution (replaces resolveSessionTarget) ──
 
 export type SessionStreamTarget =
-    | { kind: 'performer'; performerId: string }
+    | { kind: 'agent'; agentId: string }
     | {
-        kind: 'act-participant'
+        kind: 'team-participant'
         chatKey: string
-        actId: string
+        teamId: string
         threadId: string
         participantKey: string
     }
@@ -47,11 +48,11 @@ export function selectStreamTarget(state: StudioState, sessionId: string): Sessi
     const chatKey = selectChatKeyForSession(state, sessionId)
     if (!chatKey) return null
 
-    const actTarget = parseActParticipantChatKey(chatKey)
-    if (actTarget) {
-        return { kind: 'act-participant', chatKey, ...actTarget }
+    const teamTarget = parseTeamParticipantChatKey(chatKey)
+    if (teamTarget) {
+        return { kind: 'team-participant', chatKey, ...teamTarget }
     }
-    return { kind: 'performer', performerId: chatKey }
+    return { kind: 'agent', agentId: chatKey }
 }
 
 // ── Messages ──
@@ -146,21 +147,21 @@ export function selectChatKeyIsLoading(state: StudioState, chatKey: string): boo
 /**
  * Get pending permission for a session.
  */
-export function selectPendingPermission(state: StudioState, sessionId: string): PermissionRequest | null {
+export function selectPendingPermission(state: StudioState, sessionId: string): ChatPermissionRequest | null {
     return state.sePermissions[sessionId] || null
 }
 
 /**
  * Get pending question for a session.
  */
-export function selectPendingQuestion(state: StudioState, sessionId: string): QuestionRequest | null {
+export function selectPendingQuestion(state: StudioState, sessionId: string): ChatQuestionRequest | null {
     return state.seQuestions[sessionId] || null
 }
 
 /**
  * Get todos for a session.
  */
-export function selectTodos(state: StudioState, sessionId: string): Todo[] {
+export function selectTodos(state: StudioState, sessionId: string): ChatTodo[] {
     return state.seTodos[sessionId] || EMPTY_TODOS
 }
 

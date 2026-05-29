@@ -1,5 +1,5 @@
-import type { PermissionRequest } from '@opencode-ai/sdk/v2'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { ChatPermissionRequest } from '../../../shared/chat-contracts.js'
 import { formatDiscordBackfillMessages, listStandaloneThreadsForDiscord, waitForAssistantReply } from './studio-runtime.js'
 
 const chatSessionMocks = vi.hoisted(() => ({
@@ -17,7 +17,7 @@ const ownershipMocks = vi.hoisted(() => ({
     list: vi.fn(),
 }))
 
-vi.mock('../chat-session-service.js', () => ({
+vi.mock('../chat/session-service.js', () => ({
     getStudioChatSessionStatus: chatSessionMocks.status,
     listStudioChatSessions: chatSessionMocks.sessions,
     listPendingPermissions: chatSessionMocks.permissions,
@@ -28,7 +28,7 @@ vi.mock('../chat-session-service.js', () => ({
     respondSessionPermission: chatSessionMocks.respondPermission,
 }))
 
-vi.mock('../session-ownership-service.js', () => ({
+vi.mock('../chat/session-ownership-service.js', () => ({
     listSessionOwnershipsForWorkingDir: ownershipMocks.list,
 }))
 
@@ -57,7 +57,7 @@ describe('formatDiscordBackfillMessages', () => {
                 { id: 'user-1', role: 'user', parts: [{ type: 'text', text: 'Plan this.' }] },
                 { id: 'tool-1', role: 'assistant', parts: [{ type: 'tool', text: 'raw tool output' }] },
                 { id: 'assistant-1', role: 'assistant', parts: [{ type: 'text', text: 'Here is a plan.' }] },
-                { id: 'user-2', info: { role: 'user' }, content: 'Revise it.' },
+                { id: 'user-2', role: 'user', content: 'Revise it.' },
             ],
         })
 
@@ -83,7 +83,7 @@ describe('formatDiscordBackfillMessages', () => {
         ])
     })
 
-    it('can hide user messages for Act participant history sync', () => {
+    it('can hide user messages for Team participant history sync', () => {
         const messages = formatDiscordBackfillMessages({
             sessionId: 'session-1',
             assistantLabel: 'Reviewer',
@@ -101,20 +101,20 @@ describe('formatDiscordBackfillMessages', () => {
 })
 
 describe('listStandaloneThreadsForDiscord', () => {
-    it('does not expose orphan ownership records as saved performer threads', async () => {
+    it('does not expose orphan ownership records as saved agent threads', async () => {
         ownershipMocks.list.mockResolvedValue([
             {
                 sessionId: 'session-live',
-                ownerKind: 'performer',
-                ownerId: 'performer-1',
+                ownerKind: 'agent',
+                ownerId: 'agent-1',
                 workingDir: '/tmp/workspace',
                 sidebarTitle: 'Live thread',
                 updatedAt: 20,
             },
             {
                 sessionId: 'session-orphan',
-                ownerKind: 'performer',
-                ownerId: 'performer-1',
+                ownerKind: 'agent',
+                ownerId: 'agent-1',
                 workingDir: '/tmp/workspace',
                 sidebarTitle: 'Orphan thread',
                 updatedAt: 30,
@@ -128,7 +128,7 @@ describe('listStandaloneThreadsForDiscord', () => {
             },
         ])
 
-        await expect(listStandaloneThreadsForDiscord('/tmp/workspace', 'performer-1')).resolves.toEqual([
+        await expect(listStandaloneThreadsForDiscord('/tmp/workspace', 'agent-1')).resolves.toEqual([
             {
                 id: 'session-live',
                 name: 'Live thread',
@@ -141,15 +141,15 @@ describe('listStandaloneThreadsForDiscord', () => {
         ownershipMocks.list.mockResolvedValue([
             {
                 sessionId: 'session-older',
-                ownerKind: 'performer',
-                ownerId: 'performer-1',
+                ownerKind: 'agent',
+                ownerId: 'agent-1',
                 workingDir: '/tmp/workspace',
                 updatedAt: 10,
             },
             {
                 sessionId: 'session-newer',
-                ownerKind: 'performer',
-                ownerId: 'performer-1',
+                ownerKind: 'agent',
+                ownerId: 'agent-1',
                 workingDir: '/tmp/workspace',
                 updatedAt: 20,
             },
@@ -157,19 +157,19 @@ describe('listStandaloneThreadsForDiscord', () => {
         chatSessionMocks.sessions.mockResolvedValue([
             {
                 id: 'session-older',
-                title: 'APM Studio: Planner [studio:performer-1:hash-a]',
+                title: 'APM Studio: Planner [studio:agent-1:hash-a]',
                 createdAt: 100,
                 updatedAt: 10,
             },
             {
                 id: 'session-newer',
-                title: 'APM Studio: Planner [studio:performer-1:hash-b]',
+                title: 'APM Studio: Planner [studio:agent-1:hash-b]',
                 createdAt: 200,
                 updatedAt: 20,
             },
         ])
 
-        await expect(listStandaloneThreadsForDiscord('/tmp/workspace', 'performer-1')).resolves.toEqual([
+        await expect(listStandaloneThreadsForDiscord('/tmp/workspace', 'agent-1')).resolves.toEqual([
             {
                 id: 'session-newer',
                 name: 'New thread (2)',
@@ -191,9 +191,12 @@ describe('waitForAssistantReply', () => {
         vi.useFakeTimers()
         const permission = {
             id: 'permission-1',
-            sessionID: 'session-1',
+            sessionId: 'session-1',
             permission: 'tool.execute',
-        } as PermissionRequest
+            patterns: [],
+            always: [],
+            metadata: {},
+        } satisfies ChatPermissionRequest
         chatSessionMocks.permissions
             .mockResolvedValueOnce([])
             .mockResolvedValueOnce([])

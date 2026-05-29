@@ -1,3 +1,4 @@
+import type { WorkspaceAgentNode, WorkspaceTeamSnapshot } from '../../../shared/workspace-contracts'
 import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react'
 import { Columns2, Maximize2, PanelTop, Plus, Search, Users, Workflow, X } from 'lucide-react'
 import { useDraggable } from '@dnd-kit/core'
@@ -9,8 +10,7 @@ import {
     resolveNodeBaselineHidden,
     SPLIT_VIEW_MAX_PANES,
 } from '../../lib/focus-utils'
-import type { FullscreenNodeType, SplitViewPane } from '../../store/types'
-import type { PerformerNode, WorkspaceAct } from '../../types'
+import type { FullscreenNodeType, SplitViewPane } from '../../store/workspace/types'
 import CanvasControls from './CanvasControls'
 import './StudioViewHeader.css'
 
@@ -21,12 +21,12 @@ type ViewMode = 'canvas' | 'full' | 'split'
 type ViewModeTarget = { id: string; type: FullscreenNodeType }
 type HeaderModeOption = 'full' | 'split'
 
-function paneLabel(pane: SplitViewPane, acts: WorkspaceAct[], performers: PerformerNode[]) {
-    if (pane.type === 'act') {
-        return acts.find((act) => act.id === pane.nodeId)?.name || 'Team'
+function paneLabel(pane: SplitViewPane, teams: WorkspaceTeamSnapshot[], agents: WorkspaceAgentNode[]) {
+    if (pane.type === 'team') {
+        return teams.find((team) => team.id === pane.nodeId)?.name || 'Team'
     }
 
-    return performers.find((performer) => performer.id === pane.nodeId)?.name || 'Agent'
+    return agents.find((agent) => agent.id === pane.nodeId)?.name || 'Agent'
 }
 
 function modeLabel(viewMode: ViewMode) {
@@ -75,7 +75,7 @@ function SplitPanePill({ pane, label, active, onActivate }: SplitPanePillProps) 
             aria-pressed={active}
             title={label}
         >
-            {pane.type === 'act' ? <Workflow size={11} /> : <Users size={11} />}
+            {pane.type === 'team' ? <Workflow size={11} /> : <Users size={11} />}
             <span>{label}</span>
         </button>
     )
@@ -83,20 +83,20 @@ function SplitPanePill({ pane, label, active, onActivate }: SplitPanePillProps) 
 
 export default function StudioViewHeader() {
     const [pickerOpen, setPickerOpen] = useState(false)
-    const [pickerKind, setPickerKind] = useState<PickerKind>('act')
+    const [pickerKind, setPickerKind] = useState<PickerKind>('team')
     const [query, setQuery] = useState('')
     const headerRef = useRef<HTMLDivElement | null>(null)
     const searchRef = useRef<HTMLInputElement | null>(null)
 
     const {
-        acts,
-        performers,
+        teams,
+        agents,
         focusSnapshot,
         viewMode,
         splitView,
         workspaceMode,
-        selectedPerformerId,
-        selectedActId,
+        selectedAgentId,
+        selectedTeamId,
         enterFocusMode,
         enterEmptyFullView,
         enterEmptySplitView,
@@ -105,14 +105,14 @@ export default function StudioViewHeader() {
         setSplitViewActivePane,
         exitFocusMode,
     } = useStudioStore(useShallow((state) => ({
-        acts: state.acts,
-        performers: state.performers,
+        teams: state.teams,
+        agents: state.agents,
         focusSnapshot: state.focusSnapshot,
         viewMode: state.viewMode,
         splitView: state.splitView,
         workspaceMode: state.workspaceMode,
-        selectedPerformerId: state.selectedPerformerId,
-        selectedActId: state.selectedActId,
+        selectedAgentId: state.selectedAgentId,
+        selectedTeamId: state.selectedTeamId,
         enterFocusMode: state.enterFocusMode,
         enterEmptyFullView: state.enterEmptyFullView,
         enterEmptySplitView: state.enterEmptySplitView,
@@ -124,28 +124,28 @@ export default function StudioViewHeader() {
 
     const fullscreenTarget = resolveFocusTarget(focusSnapshot)
     const queryText = query.trim().toLowerCase()
-    const visibleActs = useMemo(() => acts.filter((act) => (
-        !resolveNodeBaselineHidden(focusSnapshot, act.id, 'act', !!act.hidden)
-    )), [acts, focusSnapshot])
-    const visiblePerformers = useMemo(() => performers.filter((performer) => (
-        !resolveNodeBaselineHidden(focusSnapshot, performer.id, 'performer', !!performer.hidden)
-    )), [performers, focusSnapshot])
+    const visibleTeams = useMemo(() => teams.filter((team) => (
+        !resolveNodeBaselineHidden(focusSnapshot, team.id, 'team', !!team.hidden)
+    )), [teams, focusSnapshot])
+    const visibleAgents = useMemo(() => agents.filter((agent) => (
+        !resolveNodeBaselineHidden(focusSnapshot, agent.id, 'agent', !!agent.hidden)
+    )), [agents, focusSnapshot])
     const shownKeys = useMemo(
         () => new Set(splitView.panes.map((pane) => `${pane.type}:${pane.nodeId}`)),
         [splitView.panes],
     )
     const hasRestorableSplitView = useMemo(() => splitView.panes.some((pane) => (
-        pane.type === 'act'
-            ? acts.some((act) => act.id === pane.nodeId)
-            : performers.some((performer) => performer.id === pane.nodeId)
-    )), [acts, performers, splitView.panes])
+        pane.type === 'team'
+            ? teams.some((team) => team.id === pane.nodeId)
+            : agents.some((agent) => agent.id === pane.nodeId)
+    )), [teams, agents, splitView.panes])
     const pickerItems = useMemo(() => {
-        const source = pickerKind === 'act'
-            ? visibleActs.map((act) => ({ id: act.id, type: 'act' as const, name: act.name }))
-            : visiblePerformers.map((performer) => ({ id: performer.id, type: 'performer' as const, name: performer.name }))
+        const source = pickerKind === 'team'
+            ? visibleTeams.map((team) => ({ id: team.id, type: 'team' as const, name: team.name }))
+            : visibleAgents.map((agent) => ({ id: agent.id, type: 'agent' as const, name: agent.name }))
 
         return source.filter((item) => !queryText || item.name.toLowerCase().includes(queryText))
-    }, [pickerKind, queryText, visibleActs, visiblePerformers])
+    }, [pickerKind, queryText, visibleTeams, visibleAgents])
 
     const modeTarget = useMemo<ViewModeTarget | null>(() => {
         if (viewMode === 'split') {
@@ -159,16 +159,16 @@ export default function StudioViewHeader() {
             return fullscreenTarget
         }
 
-        if (selectedPerformerId && visiblePerformers.some((performer) => performer.id === selectedPerformerId)) {
-            return { id: selectedPerformerId, type: 'performer' }
+        if (selectedAgentId && visibleAgents.some((agent) => agent.id === selectedAgentId)) {
+            return { id: selectedAgentId, type: 'agent' }
         }
 
-        if (selectedActId && visibleActs.some((act) => act.id === selectedActId)) {
-            return { id: selectedActId, type: 'act' }
+        if (selectedTeamId && visibleTeams.some((team) => team.id === selectedTeamId)) {
+            return { id: selectedTeamId, type: 'team' }
         }
 
         return null
-    }, [fullscreenTarget, selectedActId, selectedPerformerId, splitView.activePaneId, splitView.panes, viewMode, visibleActs, visiblePerformers])
+    }, [fullscreenTarget, selectedTeamId, selectedAgentId, splitView.activePaneId, splitView.panes, viewMode, visibleTeams, visibleAgents])
 
     const handleSelectViewMode = (nextMode: ViewMode) => {
         if (nextMode === viewMode) return
@@ -281,15 +281,15 @@ export default function StudioViewHeader() {
                     <span className="studio-view-header__mode-pill">Manage canvas</span>
                 )}
                 {viewMode === 'full' && fullViewPane ? (
-                    <span className="studio-view-header__target-pill" title={paneLabel(fullViewPane, acts, performers)}>
-                        {fullViewPane.type === 'act' ? <Workflow size={11} /> : <Users size={11} />}
-                        <span>{paneLabel(fullViewPane, acts, performers)}</span>
+                    <span className="studio-view-header__target-pill" title={paneLabel(fullViewPane, teams, agents)}>
+                        {fullViewPane.type === 'team' ? <Workflow size={11} /> : <Users size={11} />}
+                        <span>{paneLabel(fullViewPane, teams, agents)}</span>
                     </span>
                 ) : null}
                 {viewMode === 'split' ? (
                     <div className="studio-view-header__panes" aria-label="Split View panes">
                         {splitView.panes.map((pane) => {
-                            const label = paneLabel(pane, acts, performers)
+                            const label = paneLabel(pane, teams, agents)
                             return (
                                 <SplitPanePill
                                     key={pane.paneId}
@@ -340,16 +340,16 @@ export default function StudioViewHeader() {
                         <div className="studio-view-picker__tabs">
                             <button
                                 type="button"
-                                className={`tab ${pickerKind === 'act' ? 'active' : ''}`}
-                                onClick={() => setPickerKind('act')}
+                                className={`tab ${pickerKind === 'team' ? 'active' : ''}`}
+                                onClick={() => setPickerKind('team')}
                             >
                                 <Workflow size={11} />
                                 Teams
                             </button>
                             <button
                                 type="button"
-                                className={`tab ${pickerKind === 'performer' ? 'active' : ''}`}
-                                onClick={() => setPickerKind('performer')}
+                                className={`tab ${pickerKind === 'agent' ? 'active' : ''}`}
+                                onClick={() => setPickerKind('agent')}
                             >
                                 <Users size={11} />
                                 Agents
@@ -385,7 +385,7 @@ export default function StudioViewHeader() {
                                     className={`studio-view-picker__row ${shown ? 'is-shown' : ''}`}
                                     onClick={() => handlePick(item.id, item.type)}
                                 >
-                                    {item.type === 'act' ? <Workflow size={13} /> : <Users size={13} />}
+                                    {item.type === 'team' ? <Workflow size={13} /> : <Users size={13} />}
                                     <span>{item.name}</span>
                                     <small>{shown ? 'Shown' : 'Add'}</small>
                                 </button>

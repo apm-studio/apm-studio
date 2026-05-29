@@ -8,12 +8,17 @@ output/
 *.tgz
 
 # Local data
-.dance-of-tal/
 test-results/
 tmp-client-sourcemap/
 .playwright-cli/
 .playwright-mcp/
 
+# APM Studio workspace artifacts
+/.apm-studio/
+/.apm/
+/packages/
+/apm.yml
+/apm.lock.yaml
 
 # Environment and machine-local config
 .env
@@ -43,7 +48,6 @@ AGENT.md
 AGENTS.md
 REFACTOR.md
 prd/
-doc/
 
 # Local config (may contain API keys or sensitive values)
 config.json

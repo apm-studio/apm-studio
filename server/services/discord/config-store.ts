@@ -1,81 +1,14 @@
 import fs from 'fs/promises'
 import path from 'path'
+import type {
+    DiscordConfigUpdateRequest,
+    DiscordIntegrationConfig,
+    DiscordMappings,
+    DiscordPendingInteraction,
+    DiscordWorkspaceMapping,
+    RedactedDiscordIntegrationConfig,
+} from '../../../shared/discord-contracts.js'
 import { STUDIO_DIR } from '../../lib/config.js'
-
-export type DiscordIntegrationConfig = {
-    enabled: boolean
-    token?: string
-    guildId?: string
-    requireManageGuild?: boolean
-    allowedRoleIds?: string[]
-    allowedUserIds?: string[]
-}
-
-export type RedactedDiscordIntegrationConfig = {
-    enabled: boolean
-    hasToken: boolean
-    guildId?: string
-    requireManageGuild: boolean
-    allowedRoleIds: string[]
-    allowedUserIds: string[]
-}
-
-export type DiscordChannelTarget =
-    | {
-        kind: 'performer'
-        workspaceId: string
-        workingDir: string
-        performerId: string
-        sessionId?: string
-    }
-    | {
-        kind: 'act-thread'
-        workspaceId: string
-        workingDir: string
-        actId: string
-        threadId: string
-        sessionIds?: Record<string, string>
-    }
-    | {
-        kind: 'menu'
-        workspaceId: string
-        workingDir: string
-    }
-
-export type DiscordWorkspaceMapping = {
-    workingDir: string
-    categoryId?: string
-    menuChannelId?: string
-    performerCategories?: Record<string, string>
-    actCategories?: Record<string, string>
-    performerChannels: Record<string, string>
-    performerThreadChannels?: Record<string, string>
-    actThreadChannels: Record<string, string>
-    backfilledMessageIds?: Record<string, string[]>
-}
-
-export type DiscordPendingInteraction = {
-    kind: 'permission' | 'question'
-    workspaceId: string
-    channelId: string
-    workingDir: string
-    sessionId: string
-    request: Record<string, unknown>
-    createdAt?: number
-}
-
-export type DiscordMappings = {
-    version: 1 | 2
-    activeWorkspaceId?: string
-    activeCategoryId?: string
-    archiveCategoryId?: string
-    performerCategoryId?: string
-    actCategoryId?: string
-    menuChannelId?: string
-    workspaces: Record<string, DiscordWorkspaceMapping>
-    channels: Record<string, DiscordChannelTarget>
-    pendingInteractions?: Record<string, DiscordPendingInteraction>
-}
 
 const CONFIG_PATH = path.join(STUDIO_DIR, 'discord-config.json')
 const MAPPINGS_PATH = path.join(STUDIO_DIR, 'discord-mappings.json')
@@ -141,15 +74,7 @@ export async function readDiscordConfig(): Promise<DiscordIntegrationConfig> {
 }
 
 export async function writeDiscordConfig(
-    patch: {
-        enabled?: boolean
-        token?: string
-        guildId?: string
-        clearToken?: boolean
-        requireManageGuild?: boolean
-        allowedRoleIds?: string[]
-        allowedUserIds?: string[]
-    },
+    patch: DiscordConfigUpdateRequest,
 ): Promise<DiscordIntegrationConfig> {
     const current = await readDiscordConfig()
     const next: DiscordIntegrationConfig = {
@@ -192,25 +117,30 @@ export async function readDiscordMappings(): Promise<DiscordMappings> {
     try {
         const raw = await fs.readFile(MAPPINGS_PATH, 'utf-8')
         const parsed = JSON.parse(raw) as Partial<DiscordMappings>
+        if (parsed.version !== 2) {
+            return emptyDiscordMappings()
+        }
         return {
-            version: parsed.version === 2 ? 2 : 1,
+            version: 2,
             ...(typeof parsed.activeWorkspaceId === 'string' && parsed.activeWorkspaceId ? { activeWorkspaceId: parsed.activeWorkspaceId } : {}),
             ...(typeof parsed.activeCategoryId === 'string' && parsed.activeCategoryId ? { activeCategoryId: parsed.activeCategoryId } : {}),
             ...(typeof parsed.archiveCategoryId === 'string' && parsed.archiveCategoryId ? { archiveCategoryId: parsed.archiveCategoryId } : {}),
-            ...(typeof parsed.performerCategoryId === 'string' && parsed.performerCategoryId ? { performerCategoryId: parsed.performerCategoryId } : {}),
-            ...(typeof parsed.actCategoryId === 'string' && parsed.actCategoryId ? { actCategoryId: parsed.actCategoryId } : {}),
             ...(typeof parsed.menuChannelId === 'string' && parsed.menuChannelId ? { menuChannelId: parsed.menuChannelId } : {}),
             workspaces: normalizeWorkspaceMappings(parsed.workspaces),
             channels: parsed.channels && typeof parsed.channels === 'object' ? parsed.channels : {},
             pendingInteractions: normalizePendingInteractions(parsed.pendingInteractions),
         }
     } catch {
-        return {
-            version: 2,
-            workspaces: {},
-            channels: {},
-            pendingInteractions: {},
-        }
+        return emptyDiscordMappings()
+    }
+}
+
+function emptyDiscordMappings(): DiscordMappings {
+    return {
+        version: 2,
+        workspaces: {},
+        channels: {},
+        pendingInteractions: {},
     }
 }
 
@@ -257,11 +187,11 @@ function normalizeWorkspaceMappings(value: unknown): Record<string, DiscordWorks
                 workingDir: typeof raw.workingDir === 'string' ? raw.workingDir : '',
                 ...(typeof raw.categoryId === 'string' ? { categoryId: raw.categoryId } : {}),
                 ...(typeof raw.menuChannelId === 'string' ? { menuChannelId: raw.menuChannelId } : {}),
-                performerCategories: raw.performerCategories && typeof raw.performerCategories === 'object' ? raw.performerCategories : {},
-                actCategories: raw.actCategories && typeof raw.actCategories === 'object' ? raw.actCategories : {},
-                performerChannels: raw.performerChannels && typeof raw.performerChannels === 'object' ? raw.performerChannels : {},
-                performerThreadChannels: raw.performerThreadChannels && typeof raw.performerThreadChannels === 'object' ? raw.performerThreadChannels : {},
-                actThreadChannels: raw.actThreadChannels && typeof raw.actThreadChannels === 'object' ? raw.actThreadChannels : {},
+                agentCategories: raw.agentCategories && typeof raw.agentCategories === 'object' ? raw.agentCategories : {},
+                teamCategories: raw.teamCategories && typeof raw.teamCategories === 'object' ? raw.teamCategories : {},
+                agentChannels: raw.agentChannels && typeof raw.agentChannels === 'object' ? raw.agentChannels : {},
+                agentThreadChannels: raw.agentThreadChannels && typeof raw.agentThreadChannels === 'object' ? raw.agentThreadChannels : {},
+                teamThreadChannels: raw.teamThreadChannels && typeof raw.teamThreadChannels === 'object' ? raw.teamThreadChannels : {},
                 backfilledMessageIds: raw.backfilledMessageIds && typeof raw.backfilledMessageIds === 'object' ? raw.backfilledMessageIds : {},
             }
             return [workspaceId, mapping]
@@ -270,7 +200,7 @@ function normalizeWorkspaceMappings(value: unknown): Record<string, DiscordWorks
 }
 
 export async function writeDiscordMappings(mappings: DiscordMappings) {
-    await writePrivateJson(MAPPINGS_PATH, mappings)
+    await writePrivateJson(MAPPINGS_PATH, { ...mappings, version: 2 })
 }
 
 export async function updateDiscordMappings(updater: (current: DiscordMappings) => DiscordMappings | void | Promise<DiscordMappings | void>) {
@@ -293,24 +223,22 @@ export function getOrCreateWorkspaceMapping(
     const existing = mappings.workspaces[workspaceId]
     if (existing) {
         existing.workingDir = workingDir
-        existing.performerCategories ||= {}
-        existing.actCategories ||= {}
-        existing.performerChannels ||= {}
-        existing.performerThreadChannels ||= {}
-        existing.actThreadChannels ||= {}
+        existing.agentCategories ||= {}
+        existing.teamCategories ||= {}
+        existing.agentChannels ||= {}
+        existing.agentThreadChannels ||= {}
+        existing.teamThreadChannels ||= {}
         existing.backfilledMessageIds ||= {}
-        delete (existing as { actThreadControlMessages?: unknown }).actThreadControlMessages
-        delete (existing as { participantRoles?: unknown }).participantRoles
         return existing
     }
 
     const created: DiscordWorkspaceMapping = {
         workingDir,
-        performerCategories: {},
-        actCategories: {},
-        performerChannels: {},
-        performerThreadChannels: {},
-        actThreadChannels: {},
+        agentCategories: {},
+        teamCategories: {},
+        agentChannels: {},
+        agentThreadChannels: {},
+        teamThreadChannels: {},
         backfilledMessageIds: {},
     }
     mappings.workspaces[workspaceId] = created

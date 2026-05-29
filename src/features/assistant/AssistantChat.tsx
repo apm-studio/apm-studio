@@ -1,19 +1,33 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
+import {
+    useState,
+    useRef,
+    useEffect,
+    useCallback,
+    useMemo,
+    type KeyboardEvent,
+    type MouseEvent as ReactMouseEvent,
+} from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useStudioStore } from '../../store'
-import { Send, Sparkles, ChevronUp, AlertCircle, Settings, RefreshCcw, Square, X } from 'lucide-react'
-import { useModels } from '../../hooks/queries'
-import type { RuntimeModelCatalogEntry } from '../../../shared/model-variants'
-import { DropdownMenu } from '../../components/shared/DropdownMenu'
-import { buildAssistantChatKey } from '../../store/assistantSlice'
+import { useModels } from '../../hooks/queries/opencode'
+import { buildAssistantChatKey } from '../../store/assistant/slice'
 import { showToast } from '../../lib/toast'
 import { resizeTextarea } from '../../lib/textarea-autosize'
 import { useChatSession } from '../../store/session/use-chat-session'
 import { TextShimmer } from '../../components/chat/TextShimmer'
 import { useAssistantModels } from './useAssistantModels'
 import { useAssistantToolApplication } from './useAssistantToolApplication'
+import AssistantComposer from './AssistantComposer'
+import AssistantPanelHeader from './AssistantPanelHeader'
+import { AssistantEmptyPrompt, AssistantModelMissingState } from './AssistantEmptyStates'
+import {
+    buildAssistantActionStatusView,
+    groupAssistantModelsByProvider,
+    resolveAssistantModelLabel,
+    resolveAssistantStatusLabel,
+} from './assistant-chat-model'
 
-// Reuse performer chat rendering components
+// Reuse agent chat rendering components
 import ThreadBody from '../chat/ThreadBody'
 import ChatMessageContent from '../chat/ChatMessageContent'
 import {
@@ -23,7 +37,7 @@ import {
     shouldShowAssistantLoadingPlaceholder,
 } from '../chat/chat-message-visibility'
 
-import '../performer/AgentChat.css'
+import '../agent/AgentChat.css'
 import './AssistantChat.css'
 
 export function AssistantChat() {
@@ -87,7 +101,7 @@ export function AssistantChat() {
     })
 
     // Resize handle
-    const onResizeMouseDown = useCallback((e: React.MouseEvent) => {
+    const onResizeMouseDown = useCallback((e: ReactMouseEvent) => {
         e.preventDefault()
         dragging.current = true
         const startX = e.clientX
@@ -140,34 +154,23 @@ export function AssistantChat() {
         document.querySelector<HTMLButtonElement>('[title="Settings"]')?.click()
     }, [])
 
-    const currentModelLabel = useMemo(() => (
-        assistantModel
-            ? (selectedConnectedModel?.name || assistantModel.modelId)
-            : null
-    ), [assistantModel, selectedConnectedModel])
+    const currentModelLabel = useMemo(
+        () => resolveAssistantModelLabel(assistantModel, selectedConnectedModel),
+        [assistantModel, selectedConnectedModel],
+    )
 
     const groupedModels = useMemo(() => (
-        connectedModels.reduce<Record<string, RuntimeModelCatalogEntry[]>>((acc, model) => {
-            if (!acc[model.providerName]) acc[model.providerName] = []
-            acc[model.providerName].push(model)
-            return acc
-        }, {})
+        groupAssistantModelsByProvider(connectedModels)
     ), [connectedModels])
 
-    const statusLabel = useMemo(() => {
-        if (isLoading) return 'Thinking'
-        if (activityKind === 'interactive') return 'Needs input'
-        if (activityKind === 'parked') return 'Waiting'
-        if (!sessionId) return 'Ready'
-        switch (sessionStatus?.type) {
-            case 'error':
-                return 'Needs attention'
-            default:
-                return 'Ready'
-        }
-    }, [activityKind, isLoading, sessionId, sessionStatus?.type])
+    const statusLabel = useMemo(() => resolveAssistantStatusLabel({
+        isLoading,
+        activityKind,
+        sessionId,
+        sessionStatusType: sessionStatus?.type,
+    }), [activityKind, isLoading, sessionId, sessionStatus?.type])
 
-    const handleInputKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    const handleInputKeyDown = useCallback((e: KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.nativeEvent.isComposing) return
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault()
@@ -177,34 +180,18 @@ export function AssistantChat() {
 
     const renderAssistantActionStatus = useCallback((messageId: string) => {
         const result = assistantActionResults[messageId]
-        if (!result) return null
-
-        let toneClass = 'assistant-action-status--success'
-        let label = `Applied ${result.applied} change${result.applied === 1 ? '' : 's'}`
-
-        if (result.failed > 0 && result.applied > 0) {
-            toneClass = 'assistant-action-status--warning'
-            label = `Applied ${result.applied}, failed ${result.failed}`
-        } else if (result.failed > 0) {
-            toneClass = 'assistant-action-status--error'
-            label = `No changes applied (${result.failed} failed)`
-        }
+        const status = buildAssistantActionStatusView(result)
+        if (!status) return null
 
         return (
-            <div className={`assistant-action-status ${toneClass}`}>
-                {label}
+            <div className={`assistant-action-status ${status.toneClass}`}>
+                {status.label}
             </div>
         )
     }, [assistantActionResults])
 
     const renderEmpty = useCallback(() => (
-        <div className="assistant-empty">
-            <Sparkles size={48} className="assistant-empty__icon" />
-            <h3 className="assistant-empty__title">How can I help you design?</h3>
-            <p className="assistant-empty__desc">
-                Ask me to package agents, apply them to assistants, or explain how APM Studio works.
-            </p>
-        </div>
+        <AssistantEmptyPrompt />
     ), [])
 
     const renderMessage = useCallback((msg: typeof messages[number], index: number) => {
@@ -240,66 +227,20 @@ export function AssistantChat() {
     ), [])
 
     const composer = useMemo(() => (
-        <div className="assistant-footer">
-            <div className="assistant-input-wrapper">
-                <textarea
-                    ref={textareaRef}
-                    value={input}
-                    onChange={(e) => {
-                        setInput(e.target.value)
-                        resizeTextarea(e.target, 150)
-                    }}
-                    onKeyDown={handleInputKeyDown}
-                    placeholder={isLoading ? 'Assistant is working...' : 'Ask the assistant...'}
-                    className="assistant-input"
-                    rows={1}
-                    disabled={isLoading || !assistantModel}
-                />
-                {canAbort ? (
-                    <button
-                        className="assistant-submit"
-                        onClick={() => void abortChat(assistantChatKey)}
-                        title="Abort generation"
-                    >
-                        <Square size={14} fill="currentColor" />
-                    </button>
-                ) : (
-                    <button
-                        className="assistant-submit"
-                        onClick={handleSend}
-                        disabled={!input.trim() || !assistantModel}
-                        title="Send message"
-                    >
-                        <Send size={14} />
-                    </button>
-                )}
-            </div>
-
-            <div className="assistant-footer__model-row">
-                <DropdownMenu
-                    trigger={
-                        <button className="assistant-model-pill" title="Change model">
-                            <span className="assistant-model-pill__label">{currentModelLabel || 'Select model'}</span>
-                            <ChevronUp size={10} />
-                        </button>
-                    }
-                >
-                    {Object.entries(groupedModels).map(([providerName, providerModels]) => (
-                        <DropdownMenu.Group key={providerName} label={providerName}>
-                            {providerModels.map((model) => (
-                                <DropdownMenu.Item
-                                    key={`${model.provider}:${model.id}`}
-                                    active={assistantModel?.provider === model.provider && assistantModel?.modelId === model.id}
-                                    onClick={() => setAssistantModel({ provider: model.provider, modelId: model.id })}
-                                >
-                                    {model.name}
-                                </DropdownMenu.Item>
-                            ))}
-                        </DropdownMenu.Group>
-                    ))}
-                </DropdownMenu>
-            </div>
-        </div>
+        <AssistantComposer
+            textareaRef={textareaRef}
+            input={input}
+            isLoading={isLoading}
+            canAbort={canAbort}
+            assistantModel={assistantModel}
+            currentModelLabel={currentModelLabel}
+            groupedModels={groupedModels}
+            onInputChange={setInput}
+            onKeyDown={handleInputKeyDown}
+            onSend={handleSend}
+            onAbort={() => void abortChat(assistantChatKey)}
+            onModelChange={setAssistantModel}
+        />
     ), [
         abortChat,
         assistantChatKey,
@@ -320,54 +261,17 @@ export function AssistantChat() {
         <div className="assistant-panel" style={{ width: panelWidth }}>
             <div className="assistant-resize-handle" onMouseDown={onResizeMouseDown} />
 
-            {/* Header */}
-            <div className="assistant-header">
-                <div className="assistant-header__meta">
-                    <div className="assistant-header__title">
-                        <div className="assistant-header__icon">
-                            <Sparkles size={14} />
-                        </div>
-                        <span>APM Assistant</span>
-                    </div>
-                    <div className="assistant-header__subtitle">
-                        <span>{currentModelLabel || 'No model selected'}</span>
-                        <span className={`assistant-status-pill ${isLoading ? 'is-busy' : ''}`}>{statusLabel}</span>
-                    </div>
-                </div>
-                <div className="assistant-header__actions">
-                    <button
-                        className="assistant-sessions__new"
-                        onClick={handleRefreshSession}
-                        title="Refresh session"
-                        disabled={!hasModels || isLoading}
-                    >
-                        <RefreshCcw size={13} />
-                    </button>
-                    <button
-                        className="icon-btn assistant-header__close"
-                        onClick={toggleAssistant}
-                        title="Hide APM Assistant"
-                    >
-                        <X size={12} />
-                    </button>
-                </div>
-            </div>
+            <AssistantPanelHeader
+                currentModelLabel={currentModelLabel}
+                statusLabel={statusLabel}
+                isLoading={isLoading}
+                hasModels={hasModels}
+                onRefreshSession={handleRefreshSession}
+                onToggleAssistant={toggleAssistant}
+            />
 
-            {/* Messages + Composer — reuses ThreadBody from performer */}
             {!hasModels ? (
-                <div className="assistant-content">
-                    <div className="assistant-empty">
-                        <AlertCircle size={40} className="assistant-empty__icon assistant-empty__icon--warn" />
-                        <h3 className="assistant-empty__title">Model not configured</h3>
-                        <p className="assistant-empty__desc">
-                            To use APM Assistant, configure at least one AI model provider first.
-                        </p>
-                        <button className="assistant-setup-btn" onClick={openSettings}>
-                            <Settings size={14} />
-                            <span>Open Settings</span>
-                        </button>
-                    </div>
-                </div>
+                <AssistantModelMissingState onOpenSettings={openSettings} />
             ) : (
                 <ThreadBody
                     messages={messages}

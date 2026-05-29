@@ -1,6 +1,7 @@
+import type { ChatMessage } from '../../store/session/chat-message-types'
 import { useEffect } from 'react'
 import { showToast } from '../../lib/toast'
-import type { ChatMessage } from '../../types'
+
 import { applyAssistantActions } from './assistant-actions'
 import { getPendingAssistantToolMessages } from './assistant-protocol'
 
@@ -45,7 +46,7 @@ export function useAssistantToolApplication({
                     showToast(
                         summary.applied > 0
                             ? `APM Assistant applied ${summary.applied} change(s), but ${summary.failed} action(s) could not be applied.`
-                            : 'APM Assistant suggested changes, but they could not be applied to the current stage.',
+                            : 'APM Assistant suggested changes, but they could not be applied to the current workspace.',
                         summary.applied > 0 ? 'warning' : 'error',
                         {
                             title: 'Assistant mutation issue',

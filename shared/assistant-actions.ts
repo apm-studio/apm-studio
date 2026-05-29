@@ -1,12 +1,12 @@
-import type { ActSafetyConfig } from './act-types.js'
+import type { TeamSafetyConfig } from './team-types.js'
 
 export type AssistantActionDirection = 'both' | 'one-way'
 export type AssistantParticipantEventType = 'runtime.idle'
 export const ASSISTANT_MUTATION_TOOL_NAME = 'apply_studio_actions'
-export type AssistantStudioNodeType = 'performer' | 'act'
-export type AssistantStudioPanel = 'assetLibrary' | 'workspaceTracking' | 'terminal'
+export type AssistantStudioNodeType = 'agent' | 'team'
+export type AssistantStudioPanel = 'packages' | 'workspaceTracking' | 'terminal'
 export type AssistantStudioSurface = 'canvas' | 'editor'
-export type AssistantActEditorMode = 'act' | 'participant' | 'relation'
+export type AssistantTeamEditorMode = 'team' | 'participant' | 'relation'
 
 export interface AssistantParticipantSubscriptions {
     messagesFrom?: string[]
@@ -17,9 +17,9 @@ export interface AssistantParticipantSubscriptions {
 
 export interface AssistantParticipantSubscriptionsInput {
     messagesFromParticipantKeys?: string[]
-    messagesFromPerformerIds?: string[]
-    messagesFromPerformerRefs?: string[]
-    messagesFromPerformerNames?: string[]
+    messagesFromAgentIds?: string[]
+    messagesFromAgentRefs?: string[]
+    messagesFromAgentNames?: string[]
     messageTags?: string[]
     callboardKeys?: string[]
     eventTypes?: AssistantParticipantEventType[]
@@ -47,50 +47,50 @@ export interface AssistantModelVariantSummary {
     summary: string
 }
 
-export type AssistantActSafetyInput = ActSafetyConfig
+export type AssistantTeamSafetyInput = TeamSafetyConfig
 
-// Fields shared by createPerformer (inline) and updatePerformer (patch)
-export interface AssistantPerformerFields {
+// Fields shared by createAgent (inline) and updateAgent (patch)
+export interface AssistantAgentFields {
     model?: AssistantModelBlueprint | null
     modelVariant?: string | null
     description?: string | null
-    // Tal — specify at most one
-    talUrn?: string | null          // registry URN  (null = clear Tal)
-    talDraftId?: string             // existing draft id
-    talDraftRef?: string            // ref created in same block
-    talDraft?: AssistantDraftBlueprint  // create + attach inline
+    // Instruction — specify at most one
+    instructionUrn?: string | null          // registry URN  (null = clear Instruction)
+    instructionDraftId?: string             // existing draft id
+    instructionDraftRef?: string            // ref created in same block
+    instructionDraft?: AssistantDraftBlueprint  // create + attach inline
     // Skills to add
-    addDanceUrns?: string[]
-    addDanceDraftIds?: string[]
-    addDanceDraftRefs?: string[]
-    addDanceDrafts?: AssistantDraftBlueprint[]
+    addSkillUrns?: string[]
+    addSkillDraftIds?: string[]
+    addSkillDraftRefs?: string[]
+    addSkillDrafts?: AssistantDraftBlueprint[]
     // Skills to remove  (update only)
-    removeDanceUrns?: string[]
-    removeDanceDraftIds?: string[]
+    removeSkillUrns?: string[]
+    removeSkillDraftIds?: string[]
     // MCP
     addMcpServerNames?: string[]
     removeMcpServerNames?: string[]
 }
 
-export interface AssistantActRelationBlueprint {
+export interface AssistantTeamRelationBlueprint {
     sourceParticipantKey?: string
-    sourcePerformerId?: string
-    sourcePerformerRef?: string
-    sourcePerformerName?: string
+    sourceAgentId?: string
+    sourceAgentRef?: string
+    sourceAgentName?: string
     targetParticipantKey?: string
-    targetPerformerId?: string
-    targetPerformerRef?: string
-    targetPerformerName?: string
+    targetAgentId?: string
+    targetAgentRef?: string
+    targetAgentName?: string
     direction?: AssistantActionDirection
     name: string
     description: string
 }
 
-// ── Stage context ────────────────────────────────────────────────────────────
+// ── Workspace context ────────────────────────────────────────────────────────────
 
 export interface AssistantDraftSummary {
     id: string
-    kind: 'tal' | 'dance'
+    kind: 'instruction' | 'skill'
     name: string
     slug?: string
     description?: string
@@ -106,7 +106,7 @@ export interface AssistantAvailableModelSummary {
     variants?: AssistantModelVariantSummary[]
 }
 
-export interface AssistantStagePerformerSummary {
+export interface AssistantWorkspaceAgentSummary {
     id: string
     name: string
     description?: string
@@ -115,22 +115,22 @@ export interface AssistantStagePerformerSummary {
     hidden?: boolean
     model: { provider: string; modelId: string } | null
     modelVariant: string | null
-    talUrn: string | null
-    talDraftId: string | null
-    danceUrns: string[]
-    danceDraftIds: string[]
+    instructionUrn: string | null
+    instructionDraftId: string | null
+    skillUrns: string[]
+    skillDraftIds: string[]
 }
 
-export interface AssistantStageActParticipantSummary {
+export interface AssistantWorkspaceTeamParticipantSummary {
     key: string
-    performerName: string
-    performerId: string | null
+    agentName: string
+    agentId: string | null
     displayName?: string
     description?: string
     subscriptions?: AssistantParticipantSubscriptions
 }
 
-export interface AssistantStageActRelationSummary {
+export interface AssistantWorkspaceTeamRelationSummary {
     id: string
     name: string
     description?: string
@@ -138,38 +138,38 @@ export interface AssistantStageActRelationSummary {
     direction: AssistantActionDirection
 }
 
-export interface AssistantStageActSummary {
+export interface AssistantWorkspaceTeamSummary {
     id: string
     name: string
     description?: string
     position?: { x: number; y: number }
     size?: { width: number; height: number }
     hidden?: boolean
-    actRules?: string[]
-    safety?: AssistantActSafetyInput
-    participants: AssistantStageActParticipantSummary[]
-    relations: AssistantStageActRelationSummary[]
+    teamRules?: string[]
+    safety?: AssistantTeamSafetyInput
+    participants: AssistantWorkspaceTeamParticipantSummary[]
+    relations: AssistantWorkspaceTeamRelationSummary[]
 }
 
-export interface AssistantStageViewSummary {
-    selectedPerformerId: string | null
-    selectedActId: string | null
+export interface AssistantWorkspaceViewSummary {
+    selectedAgentId: string | null
+    selectedTeamId: string | null
     selectedMarkdownEditorId: string | null
-    activeChatPerformerId: string | null
+    activeChatAgentId: string | null
     viewMode: 'canvas' | 'full' | 'split'
     panels: {
-        assetLibrary: boolean
+        packages: boolean
         workspaceTracking: boolean
         terminal: boolean
         assistant: boolean
     }
 }
 
-export interface AssistantStageContext {
+export interface AssistantWorkspaceContext {
     workingDir: string
-    view?: AssistantStageViewSummary
-    performers: AssistantStagePerformerSummary[]
-    acts: AssistantStageActSummary[]
+    view?: AssistantWorkspaceViewSummary
+    agents: AssistantWorkspaceAgentSummary[]
+    teams: AssistantWorkspaceTeamSummary[]
     drafts: AssistantDraftSummary[]
     availableModels: AssistantAvailableModelSummary[]
 }
@@ -182,29 +182,9 @@ export interface AssistantStudioNodeFramePatch {
 // ── Action types ─────────────────────────────────────────────────────────────
 
 export type AssistantAction =
+    // ── Instruction draft CRUD ──────────────────────────
     | {
-        type: 'installRegistryAsset'
-        urn: string
-        scope?: 'global' | 'stage'
-    }
-    | {
-        type: 'addDanceFromGitHub'
-        source: string
-        scope?: 'global' | 'stage'
-    }
-    | {
-        type: 'importInstalledPerformer'
-        urn?: string
-        performerName?: string
-    }
-    | {
-        type: 'importInstalledAct'
-        urn?: string
-        actName?: string
-    }
-    // ── Tal draft CRUD ─────────────────────────────────
-    | {
-        type: 'createTalDraft'
+        type: 'createInstructionDraft'
         ref?: string
         name: string
         content: string
@@ -214,7 +194,7 @@ export type AssistantAction =
         openEditor?: boolean
     }
     | {
-        type: 'updateTalDraft'
+        type: 'updateInstructionDraft'
         draftId?: string
         draftRef?: string
         draftName?: string
@@ -224,14 +204,14 @@ export type AssistantAction =
         tags?: string[]
     }
     | {
-        type: 'deleteTalDraft'
+        type: 'deleteInstructionDraft'
         draftId?: string
         draftRef?: string
         draftName?: string
     }
     // ── Skill draft CRUD ───────────────────────────────
     | {
-        type: 'createDanceDraft'
+        type: 'createSkillDraft'
         ref?: string
         name: string
         content: string
@@ -241,7 +221,7 @@ export type AssistantAction =
         openEditor?: boolean
     }
     | {
-        type: 'updateDanceDraft'
+        type: 'updateSkillDraft'
         draftId?: string
         draftRef?: string
         draftName?: string
@@ -251,13 +231,13 @@ export type AssistantAction =
         tags?: string[]
     }
     | {
-        type: 'deleteDanceDraft'
+        type: 'deleteSkillDraft'
         draftId?: string
         draftRef?: string
         draftName?: string
     }
     | {
-        type: 'upsertDanceBundleFile'
+        type: 'upsertSkillBundleFile'
         draftId?: string
         draftRef?: string
         draftName?: string
@@ -265,115 +245,115 @@ export type AssistantAction =
         content: string
     }
     | {
-        type: 'deleteDanceBundleEntry'
+        type: 'deleteSkillBundleEntry'
         draftId?: string
         draftRef?: string
         draftName?: string
         path: string
     }
-    // ── Performer CRUD ─────────────────────────────────
+    // ── Agent CRUD ─────────────────────────────────────
     | ({
-        type: 'createPerformer'
+        type: 'createAgent'
         ref?: string
         name: string
-    } & AssistantPerformerFields)
+    } & AssistantAgentFields)
     | ({
-        type: 'updatePerformer'
-        performerId?: string
-        performerRef?: string
-        performerName?: string
+        type: 'updateAgent'
+        agentId?: string
+        agentRef?: string
+        agentName?: string
         name?: string
-    } & AssistantPerformerFields)
+    } & AssistantAgentFields)
     | {
-        type: 'deletePerformer'
-        performerId?: string
-        performerRef?: string
-        performerName?: string
+        type: 'deleteAgent'
+        agentId?: string
+        agentRef?: string
+        agentName?: string
     }
-    // ── Act CRUD ───────────────────────────────────────
+    // ── Team CRUD ──────────────────────────────────────
     | {
-        type: 'createAct'
+        type: 'createTeam'
         ref?: string
         name: string
         description?: string
-        actRules?: string[]
-        safety?: AssistantActSafetyInput
+        teamRules?: string[]
+        safety?: AssistantTeamSafetyInput
         // Inline participants + relations
-        participantPerformerIds?: string[]
-        participantPerformerRefs?: string[]
-        participantPerformerNames?: string[]
-        relations?: AssistantActRelationBlueprint[]
+        participantAgentIds?: string[]
+        participantAgentRefs?: string[]
+        participantAgentNames?: string[]
+        relations?: AssistantTeamRelationBlueprint[]
     }
     | {
-        type: 'updateAct'
-        actId?: string
-        actRef?: string
-        actName?: string
+        type: 'updateTeam'
+        teamId?: string
+        teamRef?: string
+        teamName?: string
         name?: string
         description?: string
-        actRules?: string[]
-        safety?: AssistantActSafetyInput | null
+        teamRules?: string[]
+        safety?: AssistantTeamSafetyInput | null
     }
     | {
-        type: 'deleteAct'
-        actId?: string
-        actRef?: string
-        actName?: string
+        type: 'deleteTeam'
+        teamId?: string
+        teamRef?: string
+        teamName?: string
     }
     // ── Participant management ─────────────────────────
     | {
-        type: 'attachPerformerToAct'
-        actId?: string
-        actRef?: string
-        actName?: string
-        performerId?: string
-        performerRef?: string
-        performerName?: string
+        type: 'attachAgentToTeam'
+        teamId?: string
+        teamRef?: string
+        teamName?: string
+        agentId?: string
+        agentRef?: string
+        agentName?: string
     }
     | {
-        type: 'detachParticipantFromAct'
-        actId?: string
-        actRef?: string
-        actName?: string
+        type: 'detachParticipantFromTeam'
+        teamId?: string
+        teamRef?: string
+        teamName?: string
         participantKey?: string
-        performerId?: string
-        performerRef?: string
-        performerName?: string
+        agentId?: string
+        agentRef?: string
+        agentName?: string
     }
     | {
         type: 'updateParticipantSubscriptions'
-        actId?: string
-        actRef?: string
-        actName?: string
+        teamId?: string
+        teamRef?: string
+        teamName?: string
         participantKey?: string
-        performerId?: string
-        performerRef?: string
-        performerName?: string
+        agentId?: string
+        agentRef?: string
+        agentName?: string
         subscriptions: AssistantParticipantSubscriptionsInput | null
     }
     // ── Relation management ────────────────────────────
     | {
-        type: 'connectPerformers'
-        actId?: string
-        actRef?: string
-        actName?: string
+        type: 'connectAgents'
+        teamId?: string
+        teamRef?: string
+        teamName?: string
         sourceParticipantKey?: string
-        sourcePerformerId?: string
-        sourcePerformerRef?: string
-        sourcePerformerName?: string
+        sourceAgentId?: string
+        sourceAgentRef?: string
+        sourceAgentName?: string
         targetParticipantKey?: string
-        targetPerformerId?: string
-        targetPerformerRef?: string
-        targetPerformerName?: string
+        targetAgentId?: string
+        targetAgentRef?: string
+        targetAgentName?: string
         direction?: AssistantActionDirection
         name: string
         description: string
     }
     | {
         type: 'updateRelation'
-        actId?: string
-        actRef?: string
-        actName?: string
+        teamId?: string
+        teamRef?: string
+        teamName?: string
         relationId: string
         name?: string
         description?: string
@@ -381,29 +361,29 @@ export type AssistantAction =
     }
     | {
         type: 'removeRelation'
-        actId?: string
-        actRef?: string
-        actName?: string
+        teamId?: string
+        teamRef?: string
+        teamName?: string
         relationId: string
     }
     // ── Studio UI and canvas operations ─────────────────
     | {
-        type: 'showPerformer'
-        performerId?: string
-        performerRef?: string
-        performerName?: string
+        type: 'showAgent'
+        agentId?: string
+        agentRef?: string
+        agentName?: string
         surface?: AssistantStudioSurface
         reveal?: boolean
         editorFocus?: string
     }
     | {
-        type: 'showAct'
-        actId?: string
-        actRef?: string
-        actName?: string
+        type: 'showTeam'
+        teamId?: string
+        teamRef?: string
+        teamName?: string
         surface?: AssistantStudioSurface
         reveal?: boolean
-        editorMode?: AssistantActEditorMode
+        editorMode?: AssistantTeamEditorMode
         participantKey?: string
         relationId?: string
     }
@@ -412,41 +392,41 @@ export type AssistantAction =
         draftId?: string
         draftRef?: string
         draftName?: string
-        kind?: 'tal' | 'dance'
+        kind?: 'instruction' | 'skill'
     }
     | ({
         type: 'setStudioNodeVisibility'
-        nodeType: 'performer'
+        nodeType: 'agent'
         visible: boolean
     } & {
-        performerId?: string
-        performerRef?: string
-        performerName?: string
+        agentId?: string
+        agentRef?: string
+        agentName?: string
     })
     | ({
         type: 'setStudioNodeVisibility'
-        nodeType: 'act'
+        nodeType: 'team'
         visible: boolean
     } & {
-        actId?: string
-        actRef?: string
-        actName?: string
+        teamId?: string
+        teamRef?: string
+        teamName?: string
     })
     | ({
         type: 'setStudioNodeFrame'
-        nodeType: 'performer'
+        nodeType: 'agent'
     } & AssistantStudioNodeFramePatch & {
-        performerId?: string
-        performerRef?: string
-        performerName?: string
+        agentId?: string
+        agentRef?: string
+        agentName?: string
     })
     | ({
         type: 'setStudioNodeFrame'
-        nodeType: 'act'
+        nodeType: 'team'
     } & AssistantStudioNodeFramePatch & {
-        actId?: string
-        actRef?: string
-        actName?: string
+        teamId?: string
+        teamRef?: string
+        teamName?: string
     })
     | {
         type: 'setStudioPanel'

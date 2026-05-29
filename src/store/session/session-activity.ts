@@ -1,5 +1,6 @@
-import type { PermissionRequest, QuestionRequest } from '@opencode-ai/sdk/v2'
-import type { ChatMessage } from '../../types'
+import type { ChatMessage } from './chat-message-types'
+import type { ChatPermissionRequest, ChatQuestionRequest } from '../../../shared/chat-contracts'
+
 import type { SessionStatus } from './types'
 
 export type SessionActivityKind = 'idle' | 'optimistic' | 'running' | 'interactive' | 'parked'
@@ -94,8 +95,8 @@ export function resolveSessionActivity(params: {
     loading: boolean
     status: SessionStatus | null | undefined
     messages: ChatMessage[]
-    permission?: PermissionRequest | null
-    question?: QuestionRequest | null
+    permission?: ChatPermissionRequest | null
+    question?: ChatQuestionRequest | null
 }) {
     const { loading, status, messages, permission, question } = params
 
@@ -156,8 +157,8 @@ export function isSessionExecutionActive(params: {
     loading: boolean
     status: SessionStatus | null | undefined
     messages: ChatMessage[]
-    permission?: PermissionRequest | null
-    question?: QuestionRequest | null
+    permission?: ChatPermissionRequest | null
+    question?: ChatQuestionRequest | null
 }) {
     return resolveSessionActivity(params).isActive
 }
@@ -166,8 +167,8 @@ export function canAbortSessionExecution(params: {
     loading: boolean
     status: SessionStatus | null | undefined
     messages: ChatMessage[]
-    permission?: PermissionRequest | null
-    question?: QuestionRequest | null
+    permission?: ChatPermissionRequest | null
+    question?: ChatQuestionRequest | null
 }) {
     return resolveSessionActivity(params).canAbort
 }
@@ -176,8 +177,8 @@ export function isSessionTransportActive(params: {
     loading: boolean
     status: SessionStatus | null | undefined
     messages: ChatMessage[]
-    permission?: PermissionRequest | null
-    question?: QuestionRequest | null
+    permission?: ChatPermissionRequest | null
+    question?: ChatQuestionRequest | null
 }) {
     return resolveSessionActivity(params).isTransportActive
 }

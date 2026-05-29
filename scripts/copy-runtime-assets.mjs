@@ -7,12 +7,12 @@ const rootDir = path.resolve(scriptDir, '..')
 
 const assetCopies = [
     {
-        source: path.join(rootDir, 'server', 'services', 'studio-assistant', 'tal'),
-        target: path.join(rootDir, 'dist', 'server', 'services', 'studio-assistant', 'tal'),
+        source: path.join(rootDir, 'server', 'services', 'studio-assistant', 'agent'),
+        target: path.join(rootDir, 'dist', 'server', 'services', 'studio-assistant', 'agent'),
     },
     {
-        source: path.join(rootDir, 'server', 'services', 'studio-assistant', 'dances'),
-        target: path.join(rootDir, 'dist', 'server', 'services', 'studio-assistant', 'dances'),
+        source: path.join(rootDir, 'server', 'services', 'studio-assistant', 'skills'),
+        target: path.join(rootDir, 'dist', 'server', 'services', 'studio-assistant', 'skills'),
     },
 ]
 

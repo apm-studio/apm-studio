@@ -85,7 +85,6 @@ export async function runApmCliInstall(
     options: {
         cwd: string
         env?: NodeJS.ProcessEnv
-        frozen?: boolean
     },
 ): Promise<ApmCliRunResult> {
     const installArgs = [
@@ -94,7 +93,6 @@ export async function runApmCliInstall(
         packageRoot,
         '--target',
         target,
-        ...(options.frozen ? ['--frozen'] : []),
     ]
     const result = await execFileAsync(runner.command, installArgs, {
         cwd: options.cwd,
@@ -113,4 +111,3 @@ export async function runApmCliInstall(
         command: commandDisplay(runner.command, installArgs),
     }
 }
-

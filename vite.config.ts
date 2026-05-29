@@ -2,7 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { STUDIO_API_PORT, STUDIO_VITE_PORT } from './shared/default-ports.js'
+import { STUDIO_DEV_API_PORT, STUDIO_DEV_CLIENT_PORT } from './shared/default-ports.js'
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url))
 
@@ -69,17 +69,17 @@ export default defineConfig(() => {
       },
     },
     server: {
-      port: STUDIO_VITE_PORT,
+      port: STUDIO_DEV_CLIENT_PORT,
       fs: {
         allow: [rootDir],
       },
       proxy: {
         '/api': {
-          target: `http://127.0.0.1:${STUDIO_API_PORT}`,
+          target: `http://127.0.0.1:${STUDIO_DEV_API_PORT}`,
           changeOrigin: true,
         },
         '/ws': {
-          target: `ws://127.0.0.1:${STUDIO_API_PORT}`,
+          target: `ws://127.0.0.1:${STUDIO_DEV_API_PORT}`,
           changeOrigin: true,
           ws: true,
         },

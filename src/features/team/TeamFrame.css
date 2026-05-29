@@ -1,0 +1,140 @@
+/* ── TeamFrame — Canvas node styles ── */
+
+.team-frame {
+    --team-accent: #f59e0b;
+}
+
+.team-frame-shell {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.team-frame-shell--drop-over .canvas-frame {
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--team-accent) 65%, white);
+}
+
+/* ── Title ── */
+.team-frame__title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    user-select: none;
+    min-width: 0;
+}
+.team-frame__icon {
+    color: var(--team-accent);
+    flex-shrink: 0;
+}
+.team-frame__name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    /* allow it to shrink below its content size */
+    min-width: 30px;
+}
+
+.team-frame__thread-chip {
+    font-size: 9px;
+    font-weight: 600;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--team-accent) 15%, transparent);
+    color: var(--team-accent);
+    white-space: nowrap;
+    flex-shrink: 0;
+    max-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ── Meta badges (collapsed) ── */
+.team-frame__meta {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+}
+.team-frame__badge {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 3px;
+    background: var(--bg-elevated);
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+.team-frame__badge--mode {
+    background: rgba(245, 158, 11, 0.12);
+    color: var(--team-accent);
+}
+
+/* ── Edit body (expanded) ── */
+.team-frame__edit-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 6px;
+    overflow: auto;
+    min-height: 200px;
+    background: var(--bg-panel);
+    border-radius: 0 0 6px 6px;
+}
+
+/* ── Empty state ── */
+.team-frame__empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--text-muted);
+    font-size: 11px;
+    user-select: none;
+}
+.team-frame__empty-state svg {
+    opacity: 0.3;
+}
+
+/* ── Editing state chrome ── */
+.team-frame--editing {
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25);
+}
+
+/* ── Chat state chrome ── */
+.team-frame--chat {
+    box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.15);
+}
+
+.team-frame:not(.team-frame--selected) {
+    box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.08);
+    background: color-mix(in srgb, var(--bg-panel) 96%, var(--team-accent) 4%);
+}
+
+.team-frame__chat-btn {
+    opacity: 0.5;
+    transition: opacity 0.15s;
+}
+.team-frame__chat-btn:hover {
+    opacity: 1;
+}
+.team-frame__chat-btn.icon-btn--active {
+    opacity: 1;
+    color: var(--team-accent);
+}
+
+/* ── Handle style ── */
+.team-frame__handle {
+    width: 8px !important;
+    height: 8px !important;
+    background: var(--bg-panel) !important;
+    border: 1.5px solid var(--team-accent) !important;
+    border-radius: 50% !important;
+}
+.team-frame__handle:hover {
+    background: var(--team-accent) !important;
+}

@@ -3,8 +3,8 @@ import type { Node, NodeChange } from '@xyflow/react'
 export type CanvasResizeResult =
     | { kind: 'markdownEditor'; id: string; width: number; height: number }
     | { kind: 'canvasTerminal'; id: string; width: number; height: number }
-    | { kind: 'act'; id: string; width: number; height: number }
-    | { kind: 'performer'; id: string; width: number; height: number }
+    | { kind: 'team'; id: string; width: number; height: number }
+    | { kind: 'agent'; id: string; width: number; height: number }
 
 export function resolveCanvasResizeChange(
     change: NodeChange<Node>,
@@ -25,9 +25,9 @@ export function resolveCanvasResizeChange(
         return { kind: 'canvasTerminal', id: change.id, width, height }
     }
 
-    if (changedNode?.type === 'act') {
-        return { kind: 'act', id: change.id, width, height }
+    if (changedNode?.type === 'team') {
+        return { kind: 'team', id: change.id, width, height }
     }
 
-    return { kind: 'performer', id: change.id, width, height }
+    return { kind: 'agent', id: change.id, width, height }
 }

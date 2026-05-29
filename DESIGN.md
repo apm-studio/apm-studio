@@ -18,7 +18,7 @@ The interface should be:
 - scannable
 - direct
 - low-noise
-- consistent across canvas, panels, modals, chat, and asset tools
+- consistent across canvas, panels, modals, chat, and package tools
 
 Avoid:
 
@@ -74,7 +74,7 @@ Avoid hardcoded theme colors in feature CSS unless the value represents domain-s
 
 Studio is an editor, not a landing page. Default to dense, predictable layouts:
 
-- left sidebar for navigation and assets
+- left sidebar for navigation and primitives
 - canvas as the main working surface
 - right-side panels for assistant, tracking, inspectors, and detail views
 - bottom panel for terminal-like workflows
@@ -140,11 +140,21 @@ The app shell should stay stable across Import, Manage, Run, and Inject: keep th
 
 Keep mode-to-shell decisions centralized in `src/components/app-shell-policy.ts`. Shell components should receive an explicit sidebar/surface mode prop instead of independently reading `workspaceMode` and re-deriving the same policy.
 
-The left sidebar content can still be mode-aware. Manage and Run may expose workspace assets plus the Packages drawer because users compose/edit with drag and drop there. Manage should show editable agents and teams without saved thread/session rows; Run is where thread/session history and run-time creation controls belong. Import and Inject should keep the sidebar quieter, showing only workspace context unless a specific workflow needs more.
+The left sidebar content can still be mode-aware. Manage and Run may expose workspace packages plus the Packages drawer because users compose/edit with drag and drop there. Manage should show editable agents and teams without saved thread/session rows; Run is where thread/session history and run-time creation controls belong. Import and Inject should keep the sidebar quieter, showing only workspace context unless a specific workflow needs more.
 
 Inject should use a three-column rhythm: the shared workspace sidebar, an APM Studio source column, and a Targets column. Targets should read the selected environment's definition files and show matched, new, and target-only items next to the Studio source so users choose the sync action from the comparison itself instead of parsing repeated summary text.
+Keep Inject composed from focused parts: `useInjectController.ts` owns API loading and user actions, `inject-controller-model.ts` owns package/target comparison state, `InjectSourceColumn.tsx` owns Studio source selection chrome, `InjectSourceRows.tsx` plus `inject-source-row-model.ts` own source package row rendering and readiness calculation, `InjectTargetsColumn.tsx` owns target-side summary/tabs, and `InjectTargetRows.tsx` plus `inject-target-row-model.ts` own target-side package row rendering and row status calculation.
 
-Import should behave like a compact source workbench: default to all package source groups, keep search prominent, and show GitHub-derived Agent, Skill, and MCP assets as separate scan-friendly sections that reuse the Packages sidebar `asset-card` classes.
+Import should behave like a compact source workbench: default to all package source groups, keep search prominent, and show GitHub-derived Agent, Skill, and MCP source items as separate scan-friendly sections that reuse the Packages sidebar `primitive-card` classes.
+Keep the Import source workbench composed from focused parts: `ExplorePresetCatalog.tsx` owns page state and import actions, `ExploreSearchPanel.tsx` owns search/curated-source controls, `ExploreResultsPanel.tsx` owns results controls and empty/loading/error states, `ExploreCandidateCard.tsx` owns each imported source row, and `explore-preset-catalog-model.ts` owns filtering, labels, and curated constants.
+
+Markdown editor canvas frames should keep store/API wiring separate from editor chrome and state math: `MarkdownEditorFrame.tsx` owns draft persistence and canvas-node actions, `MarkdownPrimitiveEditor.tsx` and `TagsInput.tsx` own the visual editor, and `markdown-editor-state.ts` owns draft normalization, dirty checks, save patch construction, and saved-draft attachment planning.
+
+Agent canvas frames should follow the same boundary: `AgentFrame.tsx` owns store/query orchestration and panel switching, `AgentFrameHeaderActions.tsx` owns header controls, `agent-frame-state.ts` owns focus/split/manage surface calculation plus frame class and MCP binding row models, `AgentEditPanel.tsx` owns edit controls, and `AgentChatPanel.tsx` owns conversation controls.
+
+Assistant chat should stay separate from Agent runtime UI even though it reuses shared chat rendering: `AssistantChat.tsx` owns assistant store/session wiring, `AssistantPanelHeader.tsx` owns panel chrome, `AssistantComposer.tsx` owns input/model controls, `AssistantEmptyStates.tsx` owns empty/setup states, and `assistant-chat-model.ts` owns status labels, model grouping, and action apply status text.
+
+Team chat surfaces should keep runtime state wiring separate from board/thread rendering: `TeamChatPanel.tsx` owns Team state/session command orchestration, `TeamChatThreadSurface.tsx` owns participant tabs plus board/thread composition, `TeamChatComposer.tsx` owns input/permission/question/todo chrome, `TeamChatThreadRenderers.tsx` owns message/empty/loading rows, and `team-chat-panel-helpers.ts` owns participant execution-state and composer readiness view models.
 
 The Packages drawer should stay local-only. It should follow APM structure: Packages first, Primitives (Agents, Instructions, Skills, MCP) second, and Models third. Agent package rows should be draggable to the canvas; Instructions, Skills, and MCP should be dragged from Primitives. Do not add a Local/Explore switch there; put registry search and community discovery surfaces on the Explore page.
 
@@ -156,7 +166,7 @@ Use `.list-row` or match its rhythm for:
 
 - settings rows
 - grouped metadata
-- selectable asset rows
+- selectable primitive rows
 - inspector relation rows
 - provider and integration rows
 
@@ -268,7 +278,7 @@ The design system is already active:
 
 - `src/main.tsx` imports `src/index.css` and `src/primitives.css`.
 - `src/index.css` imports `src/tokens.css`.
-- Existing UI uses primitives such as `.btn`, `.icon-btn`, `.text-input`, `.select`, `.alert`, and `.toggle-switch` across modals, panels, toolbar actions, chat, asset tools, and Team/Agent editing.
+- Existing UI uses primitives such as `.btn`, `.icon-btn`, `.text-input`, `.select`, `.alert`, and `.toggle-switch` across modals, panels, toolbar actions, chat, package tools, and Team/Agent editing.
 
 Known areas to watch:
 

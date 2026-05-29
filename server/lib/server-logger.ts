@@ -8,7 +8,7 @@ function sanitizePath(path: string) {
 }
 
 export function isVerboseServerLoggingEnabled() {
-    return process.env.STUDIO_VERBOSE_SERVER_LOGS === '1'
+    return process.env.APM_STUDIO_VERBOSE_SERVER_LOGS === '1'
 }
 
 export function serverDebug(scope: string, message: string, ...args: unknown[]) {

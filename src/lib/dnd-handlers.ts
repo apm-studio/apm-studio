@@ -1,14 +1,18 @@
+import type { PrimitiveCard } from './primitive-types'
 /**
  * DnD mapping logic extracted from App.tsx.
  *
- * Contains pure helper functions and types for drag-and-drop asset resolution
- * on the Studio canvas. These functions map dragged asset data to store
+ * Contains pure helper functions and types for drag-and-drop primitive resolution
+ * on the Studio canvas. These functions map dragged primitive data to store
  * mutations without depending on React state.
  */
 
-import type { AssetCard, AssetRef } from '../types'
-import type { FullscreenNodeType, StudioState } from '../store'
-import { assetUrnPath } from './asset-urn'
+import type { SharedPrimitiveRef } from '../../shared/chat-contracts'
+
+import type { StudioState } from '../store/types'
+import type { FullscreenNodeType } from '../store/workspace/types'
+import type { ApmPackageScope } from '../../shared/apm-contracts'
+import { primitiveUrnPath } from './primitive-urn'
 
 // ── Types ───────────────────────────────────────────────
 
@@ -17,11 +21,11 @@ export type DragPreview = {
     label: string;
 };
 
-export type DragAsset = Omit<Partial<AssetCard>, 'kind' | 'source'> & {
-    kind?: AssetCard['kind'] | 'apm-package';
+export type DragPrimitive = Omit<Partial<PrimitiveCard>, 'kind' | 'source'> & {
+    kind?: PrimitiveCard['kind'] | 'apm-package';
     label?: string;
     source?: string;
-    scope?: 'stage' | 'global';
+    scope?: ApmPackageScope;
     packageId?: string;
     packageKind?: string;
     manifestPath?: string;
@@ -46,157 +50,157 @@ export type DragAsset = Omit<Partial<AssetCard>, 'kind' | 'source'> & {
     declaredMcpServerNames?: string[];
     matchedMcpServerNames?: string[];
     missingMcpServerNames?: string[];
-    inlineInstruction?: string | null;
-    agentId?: string | null;
+    agentBody?: string | null;
+    runtimeAgentId?: string | null;
     planMode?: boolean;
-    /** Structured draft content for performer/act drafts */
+    /** Structured draft content for agent/team drafts */
     draftContent?: unknown;
 };
 
 export type DropTargetData = {
     type?: string;
-    performerId?: string | null;
-    actId?: string | null;
+    agentId?: string | null;
+    teamId?: string | null;
     editorId?: string;
     splitPaneId?: string | null;
 };
 
-export type PerformerAssetPayload = Parameters<StudioState['addPerformerFromAsset']>[0];
+export type AgentPrimitivePayload = Parameters<StudioState['addAgentFromPrimitive']>[0];
 
 // ── Helpers ─────────────────────────────────────────────
 
-export function toDragPreview(asset: DragAsset): DragPreview {
+export function toDragPreview(primitive: DragPrimitive): DragPreview {
     return {
-        kind: asset?.kind || 'asset',
-        label: asset?.label || asset?.name || asset?.modelId || 'Asset',
+        kind: primitive?.kind || 'primitive',
+        label: primitive?.label || primitive?.name || primitive?.modelId || 'Primitive',
     };
 }
 
-export function isWorkspaceNodeDrag(asset: DragAsset | undefined | null): asset is DragAsset & {
+export function isWorkspaceNodeDrag(primitive: DragPrimitive | undefined | null): primitive is DragPrimitive & {
     source: 'workspace-node'
     nodeId: string
     nodeType: FullscreenNodeType
 } {
-    return asset?.source === 'workspace-node'
-        && typeof asset.nodeId === 'string'
-        && (asset.nodeType === 'performer' || asset.nodeType === 'act')
+    return primitive?.source === 'workspace-node'
+        && typeof primitive.nodeId === 'string'
+        && (primitive.nodeType === 'agent' || primitive.nodeType === 'team')
 }
 
-export function isSplitPaneDrag(asset: DragAsset | undefined | null): asset is DragAsset & {
+export function isSplitPaneDrag(primitive: DragPrimitive | undefined | null): primitive is DragPrimitive & {
     source: 'split-pane'
     paneId: string
     nodeId: string
     nodeType: FullscreenNodeType
 } {
-    return asset?.source === 'split-pane'
-        && typeof asset.paneId === 'string'
-        && typeof asset.nodeId === 'string'
-        && (asset.nodeType === 'performer' || asset.nodeType === 'act')
+    return primitive?.source === 'split-pane'
+        && typeof primitive.paneId === 'string'
+        && typeof primitive.nodeId === 'string'
+        && (primitive.nodeType === 'agent' || primitive.nodeType === 'team')
 }
 
-export function isSplitViewNodeDrag(asset: DragAsset | undefined | null): asset is DragAsset & {
+export function isSplitViewNodeDrag(primitive: DragPrimitive | undefined | null): primitive is DragPrimitive & {
     source: 'workspace-node' | 'split-pane'
     paneId?: string
     nodeId: string
     nodeType: FullscreenNodeType
 } {
-    return isWorkspaceNodeDrag(asset) || isSplitPaneDrag(asset)
+    return isWorkspaceNodeDrag(primitive) || isSplitPaneDrag(primitive)
 }
 
-export function assetRefFromDragAsset(asset: DragAsset): AssetRef | null {
-    if (asset?.source === 'draft' && typeof asset.draftId === 'string') {
-        return { kind: 'draft' as const, draftId: asset.draftId };
+export function primitiveRefFromDragPrimitive(primitive: DragPrimitive): SharedPrimitiveRef | null {
+    if (primitive?.source === 'draft' && typeof primitive.draftId === 'string') {
+        return { kind: 'draft' as const, draftId: primitive.draftId };
     }
-    if (typeof asset?.urn === 'string' && asset.urn.length > 0) {
-        return { kind: 'registry' as const, urn: asset.urn };
+    if (typeof primitive?.urn === 'string' && primitive.urn.length > 0) {
+        return { kind: 'registry' as const, urn: primitive.urn };
     }
     return null;
 }
 
-export function isInstalledAsset(asset: DragAsset) {
-    return asset.source === 'stage' || asset.source === 'global';
+export function isPackagePrimitiveDrag(primitive: DragPrimitive) {
+    return primitive.source === 'workspace' || primitive.source === 'user';
 }
 
-export function getAssetAuthor(asset: DragAsset) {
-    return String(asset.author || '').replace(/^@/, '');
+export function getPrimitiveAuthor(primitive: DragPrimitive) {
+    return String(primitive.author || '').replace(/^@/, '');
 }
 
-export function getAssetSlug(asset: DragAsset) {
-    if (typeof asset.urn === 'string' && asset.urn.length > 0) {
-        return assetUrnPath(asset.urn) || asset.slug || asset.name || '';
+export function getPrimitiveSlug(primitive: DragPrimitive) {
+    if (typeof primitive.urn === 'string' && primitive.urn.length > 0) {
+        return primitiveUrnPath(primitive.urn) || primitive.slug || primitive.name || '';
     }
-    return asset.slug || asset.name || '';
+    return primitive.slug || primitive.name || '';
 }
 
-// ── Asset → Performer applicators ───────────────────────
+// ── Primitive → Agent applicators ───────────────────────
 
-export function applyTalToPerformer(store: StudioState, performerId: string, asset: DragAsset) {
-    const ref = assetRefFromDragAsset(asset);
+export function applyInstructionToAgent(store: StudioState, agentId: string, primitive: DragPrimitive) {
+    const ref = primitiveRefFromDragPrimitive(primitive);
     if (ref) {
-        store.setPerformerTalRef(performerId, ref);
+        store.setAgentInstructionRef(agentId, ref);
         return;
     }
-    store.setPerformerTal(performerId, asset as AssetCard);
+    store.setAgentInstruction(agentId, primitive as PrimitiveCard);
 }
 
-export function applyDanceToPerformer(store: StudioState, performerId: string, asset: DragAsset) {
-    const ref = assetRefFromDragAsset(asset);
+export function applySkillToAgent(store: StudioState, agentId: string, primitive: DragPrimitive) {
+    const ref = primitiveRefFromDragPrimitive(primitive);
     if (ref) {
-        store.addPerformerDanceRef(performerId, ref);
+        store.addAgentSkillRef(agentId, ref);
         return;
     }
-    store.addPerformerDance(performerId, asset as AssetCard);
+    store.addAgentSkill(agentId, primitive as PrimitiveCard);
 }
 
-export function applyModelToPerformer(
+export function applyModelToAgent(
     store: StudioState,
-    performerId: string,
-    asset: DragAsset,
+    agentId: string,
+    primitive: DragPrimitive,
     showDropWarning: (message: string) => void,
 ) {
-    store.setPerformerModel(performerId, {
-        provider: asset.provider as string,
-        modelId: asset.modelId as string,
+    store.setAgentModel(agentId, {
+        provider: primitive.provider as string,
+        modelId: primitive.modelId as string,
     });
-    if (asset.connected === false) {
-        showDropWarning(`${asset.providerName || asset.provider} is not connected in Settings yet. The agent can keep this model selection, but it will not run until provider access is configured.`);
+    if (primitive.connected === false) {
+        showDropWarning(`${primitive.providerName || primitive.provider} is not connected in Settings yet. The agent can keep this model selection, but it will not run until provider access is configured.`);
     }
 }
 
-export function applyMcpToPerformer(store: StudioState, performerId: string, asset: DragAsset) {
-    store.addPerformerMcp(performerId, asset as Parameters<StudioState['addPerformerMcp']>[1]);
+export function applyMcpToAgent(store: StudioState, agentId: string, primitive: DragPrimitive) {
+    store.addAgentMcp(agentId, primitive as Parameters<StudioState['addAgentMcp']>[1]);
 }
 
-export async function applyAssetToPerformerTarget(
+export async function applyPrimitiveToAgentTarget(
     store: StudioState,
-    performerId: string,
+    agentId: string,
     dropType: string | undefined,
-    asset: DragAsset,
+    primitive: DragPrimitive,
     showDropWarning: (message: string) => void,
-    resolvePerformerAssetForStudio: (asset: DragAsset) => Promise<PerformerAssetPayload>,
+    resolveAgentPrimitiveForStudio: (primitive: DragPrimitive) => Promise<AgentPrimitivePayload>,
 ) {
-    if (asset.kind === 'performer') {
-        store.applyPerformerAsset(performerId, await resolvePerformerAssetForStudio(asset));
+    if (primitive.kind === 'agent') {
+        store.applyAgentPrimitive(agentId, await resolveAgentPrimitiveForStudio(primitive));
         return true;
     }
 
-    if (dropType === 'tal' && asset.kind === 'tal') {
-        applyTalToPerformer(store, performerId, asset);
+    if (dropType === 'instruction' && primitive.kind === 'instruction') {
+        applyInstructionToAgent(store, agentId, primitive);
         return true;
     }
 
-    if (dropType === 'dance' && asset.kind === 'dance') {
-        applyDanceToPerformer(store, performerId, asset);
+    if (dropType === 'skill' && primitive.kind === 'skill') {
+        applySkillToAgent(store, agentId, primitive);
         return true;
     }
 
-    if (dropType === 'model' && asset.kind === 'model') {
-        applyModelToPerformer(store, performerId, asset, showDropWarning);
+    if (dropType === 'model' && primitive.kind === 'model') {
+        applyModelToAgent(store, agentId, primitive, showDropWarning);
         return true;
     }
 
-    if (dropType === 'mcp' && asset.kind === 'mcp') {
-        applyMcpToPerformer(store, performerId, asset);
+    if (dropType === 'mcp' && primitive.kind === 'mcp') {
+        applyMcpToAgent(store, agentId, primitive);
         return true;
     }
 

@@ -17,7 +17,7 @@ Studio has exactly three change classes.
    - no runtime reload
    - no chat blocking
 2. `lazy_projection`
-   - stage change that affects projected agent or tool output
+   - Agent, Team, draft, or package primitive change that affects projected agent or tool output
    - edit immediately
    - do not affect a currently running session
    - adopt at the next execution boundary
@@ -28,8 +28,8 @@ Studio has exactly three change classes.
 
 ## Source Of Truth
 
-- client policy: `src/store/runtime-change-policy.ts`, `src/store/runtime-execution.ts`
-- server execution boundary: `server/services/runtime-preparation-service.ts`
+- client policy: `src/store/runtime/change-policy.ts`, `src/store/runtime/execution.ts`
+- server execution boundary: `server/services/runtime/preparation-service.ts`
 
 Rules:
 
@@ -50,9 +50,9 @@ Rules:
 `lazy_projection`
 
 - Agent create, update, delete
-- Agent Instruction, Skill, model, variant, MCP, binding, and delivery mode changes. Model changes affect Studio Run projection only; external assistant injection must omit model selection.
+- Agent Instruction, Skill, model, variant, MCP, binding, and delivery mode changes. Model changes affect Studio Run projection only; external target sync must omit model selection.
 - Instruction and Skill draft content changes
-- installed GitHub Skill update or GitHub Skill re-import
+- local GitHub Skill update or GitHub Skill re-import
 - runtime-affecting uninstall or draft delete
 - Team participant, relation, rule, and safety changes
 
@@ -72,8 +72,8 @@ Do not infer runtime change from broad workspace signatures.
 Use:
 
 - `runtimeReloadPending`
-- `projectionDirty.performerIds`
-- `projectionDirty.actIds`
+- `projectionDirty.agentIds`
+- `projectionDirty.teamIds`
 - `projectionDirty.draftIds`
 - `projectionDirty.workspaceWide`
 
@@ -111,22 +111,27 @@ Every execution path should follow this order.
 
 - Agent Instruction content is inserted raw at the top of the projected agent body
 - do not add a synthetic `Core Instructions` heading
-- do not inject fallback instructions when no TAL is configured
+- do not inject fallback instructions when no Instruction is configured
 - preview or prewarm may materialize projection files
 - preview or prewarm must not clear `projectionDirty`
 - files may exist in a `projection pending adoption` state until a later dispose
-- workspace saves must not sync generated external-agent files such as Codex, Claude, or Gemini assistant exports
-- server startup must not prewarm generated external-agent files such as Codex, Claude, or Gemini assistant exports
-- workspace Agent projection materializes only Studio/OpenCode runtime artifacts; external assistant targets such as Codex, Claude, or Gemini are injected manually through APM target sync
-- external assistant files are generated from local APM package roots and should be treated as target projection output, not hand-authored source
+- workspace saves must not sync generated external-agent files such as Codex, Claude, or Gemini target files
+- server startup must not prewarm generated external-agent files such as Codex, Claude, or Gemini target files
+- workspace Agent projection materializes only Studio/OpenCode runtime artifacts; external assistant targets such as Codex, Claude, or Gemini are synced manually through APM target sync
+- workspace Agent projection inputs use `SharedPrimitiveRef` from `shared/chat-contracts.ts`; projection modules must not define a local primitive-ref alias or parallel primitive reference shape
+- `server/services/opencode-projection/workspace-agent-projection-service.ts` owns projection orchestration: skill compile, agent compile, file-write delegation, and returning the runtime snapshot. Workspace hash and projected Agent identity belong in `agent-projection-identity.ts`; tool/model capability resolution belongs in `agent-projection-runtime.ts`; request-target relation prompts belong in `agent-projection-relations.ts`; projection file writes, stale file cleanup, group manifest updates, git exclude updates, and projection-pending marks belong in `agent-projection-writer.ts`.
+- external assistant files are generated from local APM package roots and should be treated as target sync output, not hand-authored source
 - external assistant files are managed by `Inject`, not by normal Studio save, startup, chat projection, or Team projection
-- `GET /api/apm/targets` must be a dry-run target/tooling status calculation and must not write assistant files. Target summaries include supported export units, sync strategy, output hints, Studio-managed current items, and read-only target definition files so the Inject UI can compare APM Studio with the selected target.
-- `POST /api/apm/sync` is the manual path that exports the selected unit (`agent-packages`, `agents`, `instructions`, `skills`, or `mcp`) to one or more targets selected from Codex, Claude, OpenCode, Cursor, Windsurf, Copilot, Gemini, and Agent Skills. It receives only Studio packages marked for push by the Inject comparison UI. It prefers the external Microsoft APM CLI through a configured command, local `apm`, or `uvx --from git+https://github.com/microsoft/apm.git apm`; Studio-native TypeScript projection is a fallback for supported agent and skill units.
-- target injection writes do not require OpenCode `dispose`
-- The Studio UI exposes this manual external-assistant injection as the top-level `Inject` mode; that mode remains a manual injection boundary and does not make external assistant files part of normal workspace save or runtime preparation. The screen should keep the flow simple: workspace context, Studio source selection, then target-by-target sync preview.
-- The Inject screen currently lives under `src/features/export`; it should not be reintroduced through workspace/canvas feature barrels because external assistant injection is not a workspace editing surface.
-- APM target inspection and manual sync HTTP routes live in `server/routes/apm-sync.ts`; package CRUD and import routes should stay in their own APM route modules.
-- Target-specific Studio fallback projection lives in `server/services/agent-projection/`. Codex agent packages project as custom subagents; model selection remains Studio Run-only.
+- `GET /api/apm/targets` must be a dry-run target/tooling status calculation and must not write assistant files. Target summaries include supported sync units, sync strategy, output hints, Studio-managed current items, and read-only target definition files so the Inject UI can compare APM Studio with the selected target.
+- `POST /api/apm/sync` is the manual path that syncs the selected unit (`agent-packages`, `agents`, `instructions`, `skills`, or `mcp`) to one or more targets selected from Codex, Claude, OpenCode, Cursor, Windsurf, Copilot, Gemini, and Agent Skills. It rejects unknown sync units at the route/service boundary, receives only Studio packages marked for push by the Inject comparison UI, and prefers the external Microsoft APM CLI through a configured command, local `apm`, or `uvx --from git+https://github.com/microsoft/apm.git apm`; Studio-native TypeScript projection is a fallback for supported agent and skill units.
+- target sync writes do not require OpenCode `dispose`
+- The Studio UI exposes this manual external-assistant sync as the top-level `Inject` mode; that mode remains a manual target-sync boundary and does not make external assistant files part of normal workspace save or runtime preparation. The screen should keep the flow simple: workspace context, Studio source selection, then target-by-target sync preview.
+- Inject may list unmanaged target definition files, but it must only pair a Studio package with a target definition when `.apm-studio/projections/apm-sync.json` records the managed `packageId`; do not guess package-to-target matches from names, slugs, or file paths.
+- The Inject screen currently lives under `src/features/inject`; it should not be reintroduced through workspace/canvas feature barrels because external assistant target sync is not a workspace editing surface.
+- APM target inspection and manual sync HTTP routes live in `server/routes/apm/sync.ts`; package CRUD and import routes should stay in their own APM route modules.
+- Target-specific Studio fallback sync lives in `server/services/apm-package/studio-fallback-sync.ts`, but target availability must come from the single registry in `server/services/apm-package/sync-targets.ts`. Codex agent packages project as custom subagents; model selection remains Studio Run-only.
+- CLI-first sync orchestration lives in `server/services/apm-package/target-sync.ts`; temporary APM package assembly belongs in `sync-temp-package.ts`, and copying CLI-produced target artifacts back into the workspace belongs in `sync-cli-artifacts.ts`.
+- CLI sync and Studio fallback sync both record managed output in `.apm-studio/projections/apm-sync.json`; no separate fallback ownership file should be introduced.
 
 ## Team Rules
 
@@ -135,6 +140,8 @@ Every execution path should follow this order.
 - Team participant execution should reuse the standalone Agent projection
 - Team-scoped participant projection must not create external assistant target files
 - Team collaboration context belongs in turn-scoped system prompt context
+- Team runtime HTTP request/response contracts live in `shared/team-types.ts`; browser API clients, route handlers, Team runtime services, and Team tool endpoints should import the current thread, event, message, board, wake-condition, and error-response shapes instead of redefining local objects.
+- Team runtime definition validation lives in `shared/team-definition-validation.ts`; route handlers and UI readiness checks should share that validator so runnable-state hints and server rejection rules do not drift.
 - merely targeting a Team participant must not widen adoption scope by itself
 - if projection adoption is blocked by a busy working directory, defer and retry the wake instead of dropping it
 - stale `busy` and `retry` states should be corrected when the latest turn is already settled or parked on `wait_until`
@@ -152,9 +159,10 @@ Every execution path should follow this order.
 - managed sidecar readiness should use OpenCode `/global/health`
 - if a managed sidecar child is already alive, readiness retries must wait on that child rather than spawning a duplicate process
 - if the managed sidecar port already has a reachable OpenCode process from a previous Studio run, Studio may reuse it for readiness instead of blocking startup; restart remains unavailable unless Studio owns the child process
+- OpenCode adapter HTTP response contracts live in `shared/opencode-contracts.ts`; browser clients and route handlers should share those health, restart, runtime-apply, runtime tool resolution, MCP server/auth, config, file/find, provider-auth, usage, agent, and VCS shapes instead of local ad hoc response types.
 - dev sidecar/tooling paths should use the repo-local APM Studio contract and registry implementation
-- production sidecar/tooling paths must not depend on `dance-of-tal`
-- managed config root is `STUDIO_DIR/opencode`
+- production sidecar/tooling paths must not depend on a development workspace name
+- managed config root is `APM_STUDIO_HOME/opencode`, falling back to `~/.apm-studio/opencode`
 - do not silently migrate MCP or config state from `~/.config/opencode`
 - the Settings auto-approve permission toggle only manages the simple global permission modes `{}` and `{ "*": "allow" }`; if custom OpenCode permission rules exist, Studio should not overwrite them from the toggle
 
@@ -162,8 +170,8 @@ Every execution path should follow this order.
 
 - Studio terminal PTYs are owned by the Studio Hono server, not OpenCode
 - OpenCode `instance.dispose` must not close pinned or canvas terminal sessions
-- terminal exit and kill behavior belongs to `server/services/terminal-service.ts`
-- terminal WebSocket routing belongs to the Hono route in `server/routes/terminal.ts`
+- terminal session orchestration, exit, and kill behavior belongs to `server/services/terminal/service.ts`; socket connection glue belongs in `server/services/terminal/terminal-connection.ts`; shell resolution/listing belongs in `server/services/terminal/terminal-shells.ts`; shared terminal service contracts belong in `server/services/terminal/terminal-types.ts`
+- terminal WebSocket routing belongs to the Hono route in `server/routes/terminal/index.ts`
 - terminal shell selection follows this order:
   - `APM_STUDIO_TERMINAL_SHELL`
   - Studio-owned OpenCode global config `shell`

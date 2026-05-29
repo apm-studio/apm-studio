@@ -576,7 +576,7 @@ async function runOpen(command: OpenCommand, packageMeta: StudioPackageMeta) {
     process.env.PORT = String(resolvedPort)
     delete process.env.OPENCODE_URL
 
-    const { initializeStudioProject } = await import('./server/services/studio-service.js')
+    const { initializeStudioProject } = await import('./server/services/studio/service.js')
     await initializeStudioProject(resolvedProjectDir)
 
     const studioUrl = `http://localhost:${resolvedPort}`

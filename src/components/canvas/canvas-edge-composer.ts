@@ -1,17 +1,17 @@
-import type { Edge } from '@xyflow/react'
+import type { WorkspaceAgentNode, WorkspaceTeamSnapshot } from '../../../shared/workspace-contracts'
+import type {
+    Edge } from '@xyflow/react'
 import { MarkerType } from '@xyflow/react'
-import type { WorkspaceAct, PerformerNode } from '../../types'
-
-function resolvePerformerNodeId(
-    act: WorkspaceAct,
+function resolveAgentNodeId(
+    team: WorkspaceTeamSnapshot,
     participantKey: string,
-    performers: PerformerNode[],
+    agents: WorkspaceAgentNode[],
 ): string | null {
-    const binding = act.participants[participantKey]
+    const binding = team.participants[participantKey]
     if (!binding) return null
-    const ref = binding.performerRef
+    const ref = binding.agentRef
     if (ref.kind === 'draft') return ref.draftId || null
-    return performers.find((performer) => performer.meta?.derivedFrom === ref.urn)?.id || null
+    return agents.find((agent) => agent.meta?.derivedFrom === ref.urn)?.id || null
 }
 
 /**
@@ -42,8 +42,8 @@ function pickHandles(
 const PAIR_OFFSET = 50
 
 function buildRelationEdges(
-    acts: WorkspaceAct[],
-    performers: PerformerNode[],
+    teams: WorkspaceTeamSnapshot[],
+    agents: WorkspaceAgentNode[],
     posMap: Map<string, { x: number; y: number }>,
 ): Edge[] {
     const edges: Edge[] = []
@@ -51,10 +51,10 @@ function buildRelationEdges(
     const pairCounts = new Map<string, number>()
 
     // First pass: count totals per pair
-    for (const act of acts) {
-        for (const relation of act.relations) {
-            const s = resolvePerformerNodeId(act, relation.between[0], performers)
-            const t = resolvePerformerNodeId(act, relation.between[1], performers)
+    for (const team of teams) {
+        for (const relation of team.relations) {
+            const s = resolveAgentNodeId(team, relation.between[0], agents)
+            const t = resolveAgentNodeId(team, relation.between[1], agents)
             if (!s || !t) continue
             const key = [s, t].sort().join(':')
             pairTotals.set(key, (pairTotals.get(key) || 0) + 1)
@@ -62,10 +62,10 @@ function buildRelationEdges(
     }
 
     // Second pass: build edges
-    for (const act of acts) {
-        for (const relation of act.relations) {
-            const sourceId = resolvePerformerNodeId(act, relation.between[0], performers)
-            const targetId = resolvePerformerNodeId(act, relation.between[1], performers)
+    for (const team of teams) {
+        for (const relation of team.relations) {
+            const sourceId = resolveAgentNodeId(team, relation.between[0], agents)
+            const targetId = resolveAgentNodeId(team, relation.between[1], agents)
             if (!sourceId || !targetId) continue
 
             const pairKey = [sourceId, targetId].sort().join(':')
@@ -92,7 +92,7 @@ function buildRelationEdges(
             const isOneWay = relation.direction === 'one-way'
 
             edges.push({
-                id: `rel:${act.id}:${relation.id}`,
+                id: `rel:${team.id}:${relation.id}`,
                 source: sourceId,
                 target: targetId,
                 sourceHandle: handles.sourceHandle,
@@ -135,20 +135,20 @@ function buildRelationEdges(
 }
 
 export function composeCanvasEdges(
-    acts: WorkspaceAct[],
-    editingActId: string | null,
-    performers?: PerformerNode[],
+    teams: WorkspaceTeamSnapshot[],
+    editingTeamId: string | null,
+    agents?: WorkspaceAgentNode[],
 ) {
-    if (!editingActId) return []
-    const editingAct = acts.find((act) => act.id === editingActId)
-    if (!editingAct) return []
+    if (!editingTeamId) return []
+    const editingTeam = teams.find((team) => team.id === editingTeamId)
+    if (!editingTeam) return []
 
     const posMap = new Map<string, { x: number; y: number }>()
-    if (performers) {
-        for (const p of performers) {
+    if (agents) {
+        for (const p of agents) {
             posMap.set(p.id, p.position)
         }
     }
 
-    return buildRelationEdges([editingAct], performers || [], posMap)
+    return buildRelationEdges([editingTeam], agents || [], posMap)
 }

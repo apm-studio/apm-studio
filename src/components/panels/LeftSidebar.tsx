@@ -5,8 +5,8 @@ import type { AppSidebarMode } from '../app-shell-policy';
 import WorkspaceExplorer from './WorkspaceExplorer';
 import './LeftSidebar.css';
 
-const AssetLibrary = lazy(() =>
-    import('../../features/assets').then((module) => ({ default: module.AssetLibrary })),
+const PackageLibrary = lazy(() =>
+    import('../../features/packages').then((module) => ({ default: module.PackageLibrary })),
 );
 
 type LeftSidebarProps = {
@@ -14,9 +14,9 @@ type LeftSidebarProps = {
     showThreads?: boolean
 }
 
-export default function LeftSidebar({ mode = 'workspace-assets', showThreads = true }: LeftSidebarProps) {
-    const isAssetLibraryOpen = useStudioStore((s) => s.isAssetLibraryOpen);
-    const setAssetLibraryOpen = useStudioStore((s) => s.setAssetLibraryOpen);
+export default function LeftSidebar({ mode = 'workspace-primitives', showThreads = true }: LeftSidebarProps) {
+    const isPackageLibraryOpen = useStudioStore((s) => s.isPackageLibraryOpen);
+    const setPackageLibraryOpen = useStudioStore((s) => s.setPackageLibraryOpen);
     const focusSnapshot = useStudioStore((s) => s.focusSnapshot);
     const [sidebarWidth, setSidebarWidth] = useState(240);
     const [drawerWidth, setDrawerWidth] = useState(320);
@@ -76,30 +76,30 @@ export default function LeftSidebar({ mode = 'workspace-assets', showThreads = t
 
     const isFocusActive = !!focusSnapshot;
     const workspaceOnly = mode === 'workspace-only';
-    const canUseAssetLibrary = !isFocusActive && mode === 'workspace-assets';
-    const isAssetDrawerOpen = canUseAssetLibrary && isAssetLibraryOpen;
+    const canUsePackageLibrary = !isFocusActive && mode === 'workspace-primitives';
+    const isPackageDrawerOpen = canUsePackageLibrary && isPackageLibraryOpen;
 
     useEffect(() => {
-        if (!canUseAssetLibrary && isAssetLibraryOpen) {
-            setAssetLibraryOpen(false);
+        if (!canUsePackageLibrary && isPackageLibraryOpen) {
+            setPackageLibraryOpen(false);
         }
-    }, [canUseAssetLibrary, isAssetLibraryOpen, setAssetLibraryOpen]);
+    }, [canUsePackageLibrary, isPackageLibraryOpen, setPackageLibraryOpen]);
 
     return (
-        <div className={`sidebar-container ${isAssetDrawerOpen ? 'sidebar-container--drawer-open' : ''}`}>
+        <div className={`sidebar-container ${isPackageDrawerOpen ? 'sidebar-container--drawer-open' : ''}`}>
             <div className="sidebar" style={{ width: sidebarWidth }}>
                 <div className="sidebar-main-top" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                     <WorkspaceExplorer workspaceOnly={workspaceOnly} showThreads={showThreads} />
                 </div>
-                {canUseAssetLibrary && (
-                    <div className="sidebar-main-bottom sidebar-main-bottom--asset-drawer">
+                {canUsePackageLibrary && (
+                    <div className="sidebar-main-bottom sidebar-main-bottom--package-drawer">
                         <button
-                            className={`asset-library-btn ${isAssetDrawerOpen ? 'active' : ''}`}
-                            onClick={() => setAssetLibraryOpen(!isAssetLibraryOpen)}
+                            className={`package-library-btn ${isPackageDrawerOpen ? 'active' : ''}`}
+                            onClick={() => setPackageLibraryOpen(!isPackageLibraryOpen)}
                         >
                             <LayoutGrid size={14} />
                             <span>Packages</span>
-                            <ChevronRight size={12} className={`asset-library-arrow ${isAssetDrawerOpen ? 'rotated' : ''}`} />
+                            <ChevronRight size={12} className={`package-library-arrow ${isPackageDrawerOpen ? 'rotated' : ''}`} />
                         </button>
                     </div>
                 )}
@@ -113,8 +113,8 @@ export default function LeftSidebar({ mode = 'workspace-assets', showThreads = t
                 />
             </div>
             <div
-                className={`sidebar-drawer left-drawer ${isAssetDrawerOpen ? 'open' : ''}`}
-                style={isAssetDrawerOpen ? { width: drawerWidth } : undefined}
+                className={`sidebar-drawer left-drawer ${isPackageDrawerOpen ? 'open' : ''}`}
+                style={isPackageDrawerOpen ? { width: drawerWidth } : undefined}
             >
                 <div
                     className="sidebar-resize-handle sidebar-resize-handle--drawer"
@@ -124,9 +124,9 @@ export default function LeftSidebar({ mode = 'workspace-assets', showThreads = t
                         event.stopPropagation();
                     }}
                 />
-                {isAssetDrawerOpen ? (
+                {isPackageDrawerOpen ? (
                     <Suspense fallback={null}>
-                        <AssetLibrary onClose={() => setAssetLibraryOpen(false)} />
+                        <PackageLibrary onClose={() => setPackageLibraryOpen(false)} />
                     </Suspense>
                 ) : null}
             </div>

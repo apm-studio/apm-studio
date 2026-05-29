@@ -1,20 +1,22 @@
-import type { Node } from '@xyflow/react'
+import type { DraftPrimitive } from '../../lib/primitive-types'
 import type {
-    CanvasTerminalNode,
-    DraftAsset,
-    MarkdownEditorNode,
-    PerformerNode,
-    WorkspaceAct,
-} from '../../types'
-import type { WorkspaceSlice } from '../../store/types'
-import {
-    ACT_DEFAULT_WIDTH,
-    resolveActExpandedHeight,
-} from '../../lib/act-layout'
-import { assetUrnDisplayName } from '../../lib/asset-urn'
-import { hasModelConfig } from '../../lib/performers'
+    Node } from '@xyflow/react'
 
-type CanvasNodeKind = 'performer' | 'markdownEditor' | 'canvasTerminal' | 'act'
+import type {
+    WorkspaceCanvasTerminalNode,
+    WorkspaceMarkdownEditorNode,
+    WorkspaceAgentNode,
+    WorkspaceTeamSnapshot,
+} from '../../../shared/workspace-contracts'
+import type { WorkspaceSlice } from '../../store/workspace/types'
+import {
+    TEAM_DEFAULT_WIDTH,
+    resolveTeamExpandedHeight,
+} from '../../lib/team-layout'
+import { primitiveUrnDisplayName } from '../../lib/primitive-urn'
+import { hasModelConfig } from '../../lib/agents'
+
+type CanvasNodeKind = 'agent' | 'markdownEditor' | 'canvasTerminal' | 'team'
 
 function getCanvasWindowZIndex({
     selected = false,
@@ -34,9 +36,9 @@ function getCanvasWindowZIndex({
     return 1
 }
 
-function assetRefLabel(
+function primitiveRefLabel(
     ref: { kind: 'registry'; urn: string } | { kind: 'draft'; draftId: string } | null | undefined,
-    drafts: Record<string, DraftAsset>,
+    drafts: Record<string, DraftPrimitive>,
 ) {
     if (!ref) {
         return null
@@ -45,19 +47,19 @@ function assetRefLabel(
         const draft = drafts[ref.draftId]
         return draft?.name || draft?.slug || `Draft · ${ref.draftId.slice(0, 8)}`
     }
-    return assetUrnDisplayName(ref.urn)
+    return primitiveUrnDisplayName(ref.urn)
 }
 
-function danceSummaryLabel(
+function skillSummaryLabel(
     refs: Array<{ kind: 'registry'; urn: string } | { kind: 'draft'; draftId: string }>,
-    drafts: Record<string, DraftAsset>,
+    drafts: Record<string, DraftPrimitive>,
 ) {
     if (refs.length === 0) {
         return null
     }
 
     const labels = refs
-        .map((ref) => assetRefLabel(ref, drafts))
+        .map((ref) => primitiveRefLabel(ref, drafts))
         .filter((label): label is string => !!label)
 
     if (labels.length === 0) {
@@ -67,89 +69,89 @@ function danceSummaryLabel(
     return labels.length > 1 ? `${labels[0]} +${labels.length - 1}` : labels[0]
 }
 
-export function buildPerformerCanvasNodes(args: {
-    acts: WorkspaceAct[]
-    editingActId: string | null
-    performers: PerformerNode[]
-    selectedPerformerId: string | null
-    focusedPerformerId: string | null
+export function buildAgentCanvasNodes(args: {
+    teams: WorkspaceTeamSnapshot[]
+    editingTeamId: string | null
+    agents: WorkspaceAgentNode[]
+    selectedAgentId: string | null
+    focusedAgentId: string | null
     editingTarget: WorkspaceSlice['editingTarget']
     transformTarget: { id: string; type: CanvasNodeKind } | null
-    drafts: Record<string, DraftAsset>
-    performerMcpSummary: (performer: PerformerNode) => string | null
+    drafts: Record<string, DraftPrimitive>
+    agentMcpSummary: (agent: WorkspaceAgentNode) => string | null
     onActivateTransform: (type: CanvasNodeKind, id: string) => void
     onDeactivateTransform: (type: CanvasNodeKind, id: string) => void
 }) {
     const {
-        acts,
-        editingActId,
-        performers,
-        selectedPerformerId,
-        focusedPerformerId,
+        teams,
+        editingTeamId,
+        agents,
+        selectedAgentId,
+        focusedAgentId,
         editingTarget,
         transformTarget,
         drafts,
-        performerMcpSummary,
+        agentMcpSummary,
         onActivateTransform,
         onDeactivateTransform,
     } = args
 
-    const editingAct = editingActId
-        ? acts.find((act) => act.id === editingActId) || null
+    const editingTeam = editingTeamId
+        ? teams.find((team) => team.id === editingTeamId) || null
         : null
 
-    const isPerformerInEditingAct = (performer: PerformerNode) => {
-        if (!editingAct) return false
-        return Object.values(editingAct.participants).some((binding) => {
-            const ref = binding.performerRef
+    const isAgentInEditingTeam = (agent: WorkspaceAgentNode) => {
+        if (!editingTeam) return false
+        return Object.values(editingTeam.participants).some((binding) => {
+            const ref = binding.agentRef
             if (ref.kind === 'draft') {
-                return ref.draftId === performer.id
+                return ref.draftId === agent.id
             }
-            return performer.meta?.derivedFrom === ref.urn
+            return agent.meta?.derivedFrom === ref.urn
         })
     }
 
-    return performers.map((performer) => ({
-        id: performer.id,
-        type: 'performer',
-        position: performer.position,
-        selected: performer.id === selectedPerformerId,
+    return agents.map((agent) => ({
+        id: agent.id,
+        type: 'agent',
+        position: agent.position,
+        selected: agent.id === selectedAgentId,
         dragHandle: '.canvas-frame__header',
-        hidden: performer.hidden,
+        hidden: agent.hidden,
         zIndex: getCanvasWindowZIndex({
-            selected: performer.id === selectedPerformerId,
-            focused: focusedPerformerId === performer.id,
-            editing: editingTarget?.type === 'performer' && editingTarget.id === performer.id,
-            transformActive: transformTarget?.type === 'performer' && transformTarget.id === performer.id,
+            selected: agent.id === selectedAgentId,
+            focused: focusedAgentId === agent.id,
+            editing: editingTarget?.type === 'agent' && editingTarget.id === agent.id,
+            transformActive: transformTarget?.type === 'agent' && transformTarget.id === agent.id,
         }),
         data: {
-            name: performer.name,
-            width: performer.width,
-            height: performer.height,
-            model: performer.model,
-            modelLabel: performer.model?.modelId || null,
-            modelTitle: performer.model ? `${performer.model.provider}/${performer.model.modelId}` : null,
-            modelVariant: performer.modelVariant || null,
-            agentId: performer.agentId || null,
-            modelConfigured: hasModelConfig(performer.model),
-            planMode: performer.planMode,
-            transformActive: transformTarget?.type === 'performer' && transformTarget.id === performer.id,
-            onActivateTransform: () => onActivateTransform('performer', performer.id),
-            onDeactivateTransform: () => onDeactivateTransform('performer', performer.id),
-            talLabel: assetRefLabel(performer.talRef, drafts),
-            danceSummary: danceSummaryLabel(performer.danceRefs, drafts),
-            mcpSummary: performerMcpSummary(performer),
-            editMode: editingTarget?.type === 'performer' && editingTarget.id === performer.id,
-            actEditConnectVisible: !!editingAct,
-            actEditParticipant: isPerformerInEditingAct(performer),
-            actEditDimmed: !!editingAct && !isPerformerInEditingAct(performer),
+            name: agent.name,
+            width: agent.width,
+            height: agent.height,
+            model: agent.model,
+            modelLabel: agent.model?.modelId || null,
+            modelTitle: agent.model ? `${agent.model.provider}/${agent.model.modelId}` : null,
+            modelVariant: agent.modelVariant || null,
+            runtimeAgentId: agent.runtimeAgentId || null,
+            modelConfigured: hasModelConfig(agent.model),
+            planMode: agent.planMode,
+            transformActive: transformTarget?.type === 'agent' && transformTarget.id === agent.id,
+            onActivateTransform: () => onActivateTransform('agent', agent.id),
+            onDeactivateTransform: () => onDeactivateTransform('agent', agent.id),
+            instructionLabel: primitiveRefLabel(agent.instructionRef, drafts),
+            skillSummary: skillSummaryLabel(agent.skillRefs, drafts),
+            mcpSummary: agentMcpSummary(agent),
+            editMode: editingTarget?.type === 'agent' && editingTarget.id === agent.id,
+            teamEditConnectVisible: !!editingTeam,
+            teamEditParticipant: isAgentInEditingTeam(agent),
+            teamEditDimmed: !!editingTeam && !isAgentInEditingTeam(agent),
         } as Record<string, unknown>,
-        style: { width: performer.width || 400, height: performer.height || 500 },
+        style: { width: agent.width || 400, height: agent.height || 500 },
     })) satisfies Node[]
 }
 
 export function buildMarkdownEditorCanvasNodes(args: {
-    markdownEditors: MarkdownEditorNode[]
+    markdownEditors: WorkspaceMarkdownEditorNode[]
     selectedMarkdownEditorId: string | null
     transformTarget: { id: string; type: CanvasNodeKind } | null
     workingDir: string
@@ -194,7 +196,7 @@ export function buildMarkdownEditorCanvasNodes(args: {
 }
 
 export function buildCanvasTerminalWindowNodes(args: {
-    canvasTerminals: CanvasTerminalNode[]
+    canvasTerminals: WorkspaceCanvasTerminalNode[]
     transformTarget: { id: string; type: CanvasNodeKind } | null
     onActivateTransform: (type: CanvasNodeKind, id: string) => void
     onDeactivateTransform: (type: CanvasNodeKind, id: string) => void
@@ -236,42 +238,42 @@ export function buildCanvasTerminalWindowNodes(args: {
     })) satisfies Node[]
 }
 
-export function buildActCanvasNodes(args: {
-    acts: WorkspaceAct[]
-    editingActId: string | null
-    selectedActId: string | null
+export function buildTeamCanvasNodes(args: {
+    teams: WorkspaceTeamSnapshot[]
+    editingTeamId: string | null
+    selectedTeamId: string | null
     transformTarget: { id: string; type: CanvasNodeKind } | null
     onActivateTransform: (type: CanvasNodeKind, id: string) => void
     onDeactivateTransform: (type: CanvasNodeKind, id: string) => void
 }) {
     const {
-        acts,
-        editingActId,
-        selectedActId,
+        teams,
+        editingTeamId,
+        selectedTeamId,
         transformTarget,
         onActivateTransform,
         onDeactivateTransform,
     } = args
 
-    return acts.map((act) => ({
-        id: act.id,
-        type: 'act' as const,
-        position: act.position,
+    return teams.map((team) => ({
+        id: team.id,
+        type: 'team' as const,
+        position: team.position,
         dragHandle: '.canvas-frame__header',
-        hidden: act.hidden,
+        hidden: team.hidden,
         zIndex: getCanvasWindowZIndex({
-            editing: editingActId === act.id,
-            selected: selectedActId === act.id,
-            transformActive: transformTarget?.type === 'act' && transformTarget.id === act.id,
+            editing: editingTeamId === team.id,
+            selected: selectedTeamId === team.id,
+            transformActive: transformTarget?.type === 'team' && transformTarget.id === team.id,
         }),
         data: {
-            width: act.width || ACT_DEFAULT_WIDTH,
-            height: resolveActExpandedHeight(act.height),
-            editMode: editingActId === act.id,
-            transformActive: transformTarget?.type === 'act' && transformTarget.id === act.id,
-            onActivateTransform: () => onActivateTransform('act', act.id),
-            onDeactivateTransform: () => onDeactivateTransform('act', act.id),
+            width: team.width || TEAM_DEFAULT_WIDTH,
+            height: resolveTeamExpandedHeight(team.height),
+            editMode: editingTeamId === team.id,
+            transformActive: transformTarget?.type === 'team' && transformTarget.id === team.id,
+            onActivateTransform: () => onActivateTransform('team', team.id),
+            onDeactivateTransform: () => onDeactivateTransform('team', team.id),
         } as Record<string, unknown>,
-        style: { width: act.width || ACT_DEFAULT_WIDTH, height: resolveActExpandedHeight(act.height) },
+        style: { width: team.width || TEAM_DEFAULT_WIDTH, height: resolveTeamExpandedHeight(team.height) },
     })) satisfies Node[]
 }

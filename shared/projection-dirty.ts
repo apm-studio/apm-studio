@@ -1,6 +1,6 @@
 export interface ProjectionDirtyPatch {
-    performerIds?: string[]
-    actIds?: string[]
+    agentIds?: string[]
+    teamIds?: string[]
     draftIds?: string[]
     workspaceWide?: boolean
 }
@@ -16,13 +16,13 @@ export function normalizeProjectionDirtyPatch(
         return {}
     }
 
-    const performerIds = unique(patch.performerIds || [])
-    const actIds = unique(patch.actIds || [])
+    const agentIds = unique(patch.agentIds || [])
+    const teamIds = unique(patch.teamIds || [])
     const draftIds = unique(patch.draftIds || [])
 
     return {
-        ...(performerIds.length > 0 ? { performerIds } : {}),
-        ...(actIds.length > 0 ? { actIds } : {}),
+        ...(agentIds.length > 0 ? { agentIds } : {}),
+        ...(teamIds.length > 0 ? { teamIds } : {}),
         ...(draftIds.length > 0 ? { draftIds } : {}),
         ...(patch.workspaceWide === true ? { workspaceWide: true } : {}),
     }
@@ -32,8 +32,8 @@ export function mergeProjectionDirtyPatches(
     ...patches: Array<ProjectionDirtyPatch | null | undefined>
 ): ProjectionDirtyPatch {
     return normalizeProjectionDirtyPatch({
-        performerIds: patches.flatMap((patch) => patch?.performerIds || []),
-        actIds: patches.flatMap((patch) => patch?.actIds || []),
+        agentIds: patches.flatMap((patch) => patch?.agentIds || []),
+        teamIds: patches.flatMap((patch) => patch?.teamIds || []),
         draftIds: patches.flatMap((patch) => patch?.draftIds || []),
         workspaceWide: patches.some((patch) => patch?.workspaceWide === true),
     })
@@ -44,7 +44,7 @@ export function projectionDirtyPatchHasAny(
 ) {
     const normalized = normalizeProjectionDirtyPatch(patch)
     return normalized.workspaceWide === true
-        || (normalized.performerIds?.length || 0) > 0
-        || (normalized.actIds?.length || 0) > 0
+        || (normalized.agentIds?.length || 0) > 0
+        || (normalized.teamIds?.length || 0) > 0
         || (normalized.draftIds?.length || 0) > 0
 }

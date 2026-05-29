@@ -2,17 +2,17 @@
  * usePermissionInteraction — shared hook for PermissionDock / QuestionWizard rendering.
  *
  * Encapsulates the "isResponding" local state and the decision callbacks
- * that are duplicated between PerformerChatComposer and ActChatPanel.
+ * that are duplicated between AgentChatComposer and TeamChatPanel.
  */
 import { useState, useCallback } from 'react'
-import type { PermissionRequest, QuestionRequest, QuestionAnswer } from '@opencode-ai/sdk/v2'
+import type { ChatPermissionRequest, ChatQuestionAnswer, ChatQuestionRequest } from '../../shared/chat-contracts'
 
 interface UsePermissionInteractionParams {
     sessionId: string | null
-    permissionRequest: PermissionRequest | null
-    questionRequest: QuestionRequest | null
+    permissionRequest: ChatPermissionRequest | null
+    questionRequest: ChatQuestionRequest | null
     respondToPermission: (sessionId: string, permissionId: string, response: 'once' | 'always' | 'reject') => Promise<void>
-    respondToQuestion: (sessionId: string, questionId: string, answers: QuestionAnswer[]) => Promise<void>
+    respondToQuestion: (sessionId: string, questionId: string, answers: ChatQuestionAnswer[]) => Promise<void>
     rejectQuestion: (sessionId: string, questionId: string) => Promise<void>
 }
 
@@ -33,7 +33,7 @@ export function usePermissionInteraction({
         setIsResponding(false)
     }, [sessionId, permissionRequest, respondToPermission])
 
-    const handleQuestionRespond = useCallback(async (answers: QuestionAnswer[]) => {
+    const handleQuestionRespond = useCallback(async (answers: ChatQuestionAnswer[]) => {
         if (!sessionId || !questionRequest) return
         setIsResponding(true)
         await respondToQuestion(sessionId, questionRequest.id, answers)

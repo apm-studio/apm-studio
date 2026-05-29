@@ -3,11 +3,9 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
 import SettingsDiscord from './SettingsDiscord'
 
-vi.mock('../../api', () => ({
-    api: {
-        discord: {
-            status: vi.fn(),
-        },
+vi.mock('../../api-clients/discord', () => ({
+    discordApi: {
+        status: vi.fn(),
     },
 }))
 

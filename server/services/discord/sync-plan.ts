@@ -38,11 +38,11 @@ export function entityCategoryName(name: string, fallback = 'studio') {
     return compactWhitespace(name || fallback).slice(0, DISCORD_NAME_MAX) || fallback
 }
 
-export function performerCategoryName(name: string) {
+export function agentCategoryName(name: string) {
     return `👤 ${entityCategoryName(name, 'agent')}`.slice(0, DISCORD_NAME_MAX)
 }
 
-export function actCategoryName(name: string) {
+export function teamCategoryName(name: string) {
     return `👥 ${entityCategoryName(name, 'team')}`.slice(0, DISCORD_NAME_MAX)
 }
 
@@ -73,34 +73,34 @@ export function threadChannelName(name: string | undefined, threadId: string) {
     return sanitizeDiscordName(name || defaultThreadName(), 'new-thread')
 }
 
-export function performerChannelName(name: string) {
+export function agentChannelName(name: string) {
     return sanitizeDiscordName(name, 'agent')
 }
 
-export function actThreadChannelName(actName: string, threadName?: string) {
-    return threadChannelName(threadName, actName)
+export function teamThreadChannelName(teamName: string, threadName?: string) {
+    return threadChannelName(threadName, teamName)
 }
 
-export function actThreadMappingKey(actId: string, threadId: string) {
-    return `${actId}:${threadId}`
+export function teamThreadMappingKey(teamId: string, threadId: string) {
+    return `${teamId}:${threadId}`
 }
 
-export function performerThreadMappingKey(performerId: string, sessionId: string) {
-    return `${performerId}:${sessionId}`
+export function agentThreadMappingKey(agentId: string, sessionId: string) {
+    return `${agentId}:${sessionId}`
 }
 
 export type DiscordLiveThreadIds = Record<string, Iterable<string> | null | undefined>
 
 export type DiscordThreadCleanupMapping = {
-    performerThreadChannels?: Record<string, string>
-    actThreadChannels?: Record<string, string>
+    agentThreadChannels?: Record<string, string>
+    teamThreadChannels?: Record<string, string>
     backfilledMessageIds?: Record<string, string[]>
 }
 
 export type DiscordThreadCleanupPlan = {
     staleChannelIds: string[]
-    removedPerformerThreadKeys: string[]
-    removedActThreadKeys: string[]
+    removedAgentThreadKeys: string[]
+    removedTeamThreadKeys: string[]
 }
 
 function liveThreadMap(value: DiscordLiveThreadIds) {
@@ -128,31 +128,31 @@ function mappedThreadIsLive(key: string, liveIdsByOwner: Map<string, Set<string>
 
 export function pruneStaleDiscordThreadMappings(args: {
     mapping: DiscordThreadCleanupMapping
-    performerThreadIds: DiscordLiveThreadIds
-    actThreadIds: DiscordLiveThreadIds
+    agentThreadIds: DiscordLiveThreadIds
+    teamThreadIds: DiscordLiveThreadIds
 }): DiscordThreadCleanupPlan {
-    const performerLiveIds = liveThreadMap(args.performerThreadIds)
-    const actLiveIds = liveThreadMap(args.actThreadIds)
+    const agentLiveIds = liveThreadMap(args.agentThreadIds)
+    const teamLiveIds = liveThreadMap(args.teamThreadIds)
     const staleChannelIds = new Set<string>()
-    const removedPerformerThreadKeys: string[] = []
-    const removedActThreadKeys: string[] = []
+    const removedAgentThreadKeys: string[] = []
+    const removedTeamThreadKeys: string[] = []
 
-    for (const [key, channelId] of Object.entries(args.mapping.performerThreadChannels || {})) {
-        if (mappedThreadIsLive(key, performerLiveIds)) {
+    for (const [key, channelId] of Object.entries(args.mapping.agentThreadChannels || {})) {
+        if (mappedThreadIsLive(key, agentLiveIds)) {
             continue
         }
         staleChannelIds.add(channelId)
-        removedPerformerThreadKeys.push(key)
-        delete args.mapping.performerThreadChannels?.[key]
+        removedAgentThreadKeys.push(key)
+        delete args.mapping.agentThreadChannels?.[key]
     }
 
-    for (const [key, channelId] of Object.entries(args.mapping.actThreadChannels || {})) {
-        if (mappedThreadIsLive(key, actLiveIds)) {
+    for (const [key, channelId] of Object.entries(args.mapping.teamThreadChannels || {})) {
+        if (mappedThreadIsLive(key, teamLiveIds)) {
             continue
         }
         staleChannelIds.add(channelId)
-        removedActThreadKeys.push(key)
-        delete args.mapping.actThreadChannels?.[key]
+        removedTeamThreadKeys.push(key)
+        delete args.mapping.teamThreadChannels?.[key]
     }
 
     for (const channelId of staleChannelIds) {
@@ -161,7 +161,7 @@ export function pruneStaleDiscordThreadMappings(args: {
 
     return {
         staleChannelIds: Array.from(staleChannelIds),
-        removedPerformerThreadKeys,
-        removedActThreadKeys,
+        removedAgentThreadKeys,
+        removedTeamThreadKeys,
     }
 }

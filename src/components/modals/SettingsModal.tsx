@@ -2,9 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { RefreshCw, Settings, X, Sliders, Server, LayoutGrid, MessageCircle, BarChart2 } from 'lucide-react'
-import { api } from '../../api'
+import { opencodeApi } from '../../api-clients/opencode'
 import { useStudioStore } from '../../store'
-import { queryKeys } from '../../hooks/queries'
+import { queryKeys } from '../../hooks/queries/keys'
 import './SettingsModal.css'
 import './SettingsControls.css'
 import { useProviderAuth } from './useProviderAuth'
@@ -73,8 +73,8 @@ export default function SettingsModal({ open, onClose, initialTab = 'general' }:
 
         try {
             const [providerRes, authMethodsRes] = await Promise.all([
-                api.providers.list(),
-                api.provider.authMethods().catch(() => ({})),
+                opencodeApi.providers.list(),
+                opencodeApi.provider.authMethods().catch(() => ({})),
             ])
 
             const mergedProviders = buildProviderCards(

@@ -1,5 +1,4 @@
-import type { ChatMessage } from '../types'
-
+import type { ChatMessage } from '../store/session/chat-message-types'
 const CHAT_DEBUG_STORAGE_KEYS = ['apm-studio-chat-debug']
 
 function readStorageFlag(storage: Storage | undefined) {

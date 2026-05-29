@@ -1,7 +1,8 @@
-import type { WorkspaceAct } from '../../types'
-import type { WorkspaceSlice, ActSlice } from '../../store/types'
+import type { WorkspaceTeamSnapshot } from '../../../shared/workspace-contracts'
+import type { TeamSlice } from '../../store/team/types'
+import type { WorkspaceSlice } from '../../store/workspace/types'
 
 export type WorkspaceExplorerEditingTarget = WorkspaceSlice['editingTarget']
-export type WorkspaceExplorerAct = WorkspaceAct
-export type WorkspaceExplorerActThread = ActSlice['actThreads'][string][number]
-export type PerformerEditorFocus = Parameters<WorkspaceSlice['openPerformerEditor']>[1]
+export type WorkspaceExplorerTeam = WorkspaceTeamSnapshot
+export type WorkspaceExplorerTeamThread = TeamSlice['teamThreads'][string][number]
+export type AgentEditorFocus = Parameters<WorkspaceSlice['openAgentEditor']>[1]

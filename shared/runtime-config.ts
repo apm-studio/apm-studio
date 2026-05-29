@@ -1,4 +1,4 @@
-import type { SharedAssetRef } from './chat-contracts.js'
+import type { SharedPrimitiveRef } from './chat-contracts.js'
 import { extractMcpServerNamesFromConfig } from './mcp-config.js'
 
 export type SharedModelConfig = {
@@ -6,13 +6,13 @@ export type SharedModelConfig = {
     modelId: string
 }
 
-export type PerformerRuntimeConfigInput = {
-    talRef?: SharedAssetRef | null
-    inlineInstruction?: string | null
-    danceRefs?: SharedAssetRef[] | null
+export type AgentRuntimeConfigInput = {
+    instructionRef?: SharedPrimitiveRef | null
+    agentBody?: string | null
+    skillRefs?: SharedPrimitiveRef[] | null
     model?: SharedModelConfig | null
     modelVariant?: string | null
-    agentId?: string | null
+    runtimeAgentId?: string | null
     mcpServerNames?: string[] | null
     mcpBindingMap?: Record<string, string> | null
     declaredMcpConfig?: Record<string, unknown> | null
@@ -36,67 +36,67 @@ function hashString(value: string): string {
     return `${(h2 >>> 0).toString(16).padStart(8, '0')}${(h1 >>> 0).toString(16).padStart(8, '0')}`
 }
 
-export function assetRefKey(ref: SharedAssetRef | null | undefined): string | null {
+export function primitiveRefKey(ref: SharedPrimitiveRef | null | undefined): string | null {
     if (!ref) return null
     return ref.kind === 'registry' ? `registry:${ref.urn}` : `draft:${ref.draftId}`
 }
 
-export function assetRefKeys(refs: SharedAssetRef[] | undefined | null): string[] {
+export function primitiveRefKeys(refs: SharedPrimitiveRef[] | undefined | null): string[] {
     return (refs || [])
-        .map((ref) => assetRefKey(ref))
+        .map((ref) => primitiveRefKey(ref))
         .filter((key): key is string => !!key)
 }
 
 export function resolveMappedMcpServerNames(
-    performer: Pick<PerformerRuntimeConfigInput, 'mcpServerNames' | 'mcpBindingMap'>,
+    agent: Pick<AgentRuntimeConfigInput, 'mcpServerNames' | 'mcpBindingMap'>,
 ) {
     return unique([
-        ...(performer.mcpServerNames || []),
-        ...Object.values(performer.mcpBindingMap || {}).filter(Boolean),
+        ...(agent.mcpServerNames || []),
+        ...Object.values(agent.mcpBindingMap || {}).filter(Boolean),
     ])
 }
 
-export function resolvePerformerAgentId(
-    performer: Pick<PerformerRuntimeConfigInput, 'agentId' | 'planMode'>,
+export function resolveAgentRuntimeId(
+    agent: Pick<AgentRuntimeConfigInput, 'runtimeAgentId' | 'planMode'>,
 ): string {
-    return performer.agentId || (performer.planMode ? 'plan' : 'build')
+    return agent.runtimeAgentId || (agent.planMode ? 'plan' : 'build')
 }
 
-export function resolvePerformerRuntimeConfig(
-    performer: PerformerRuntimeConfigInput,
+export function resolveAgentRuntimeConfig(
+    agent: AgentRuntimeConfigInput,
 ) {
     return {
-        talRef: performer.talRef || null,
-        inlineInstruction: typeof performer.inlineInstruction === 'string' ? performer.inlineInstruction : null,
-        danceRefs: performer.danceRefs || [],
-        model: performer.model || null,
-        modelVariant: performer.modelVariant || null,
-        agentId: resolvePerformerAgentId(performer),
-        mcpServerNames: resolveMappedMcpServerNames(performer),
-        planMode: !!performer.planMode,
+        instructionRef: agent.instructionRef || null,
+        agentBody: typeof agent.agentBody === 'string' ? agent.agentBody : null,
+        skillRefs: agent.skillRefs || [],
+        model: agent.model || null,
+        modelVariant: agent.modelVariant || null,
+        runtimeAgentId: resolveAgentRuntimeId(agent),
+        mcpServerNames: resolveMappedMcpServerNames(agent),
+        planMode: !!agent.planMode,
     }
 }
 
-export function buildPerformerConfigHash(
-    performer: PerformerRuntimeConfigInput,
+export function buildAgentConfigHash(
+    agent: AgentRuntimeConfigInput,
 ): string {
     const normalized = {
-        talRef: assetRefKey(performer.talRef),
-        inlineInstruction: typeof performer.inlineInstruction === 'string' ? performer.inlineInstruction : null,
-        danceRefs: [...assetRefKeys(performer.danceRefs)].sort(),
-        mcpServerNames: [...resolveMappedMcpServerNames(performer)].sort(),
+        instructionRef: primitiveRefKey(agent.instructionRef),
+        agentBody: typeof agent.agentBody === 'string' ? agent.agentBody : null,
+        skillRefs: [...primitiveRefKeys(agent.skillRefs)].sort(),
+        mcpServerNames: [...resolveMappedMcpServerNames(agent)].sort(),
         mcpBindingMap: Object.fromEntries(
-            Object.entries(performer.mcpBindingMap || {})
+            Object.entries(agent.mcpBindingMap || {})
                 .filter(([, value]) => !!value)
                 .sort(([left], [right]) => left.localeCompare(right)),
         ),
-        declaredMcpServerNames: extractMcpServerNamesFromConfig(performer.declaredMcpConfig),
-        model: performer.model ? {
-            provider: performer.model.provider,
-            modelId: performer.model.modelId,
+        declaredMcpServerNames: extractMcpServerNamesFromConfig(agent.declaredMcpConfig),
+        model: agent.model ? {
+            provider: agent.model.provider,
+            modelId: agent.model.modelId,
         } : null,
-        modelVariant: performer.modelVariant || null,
-        agentId: resolvePerformerAgentId(performer),
+        modelVariant: agent.modelVariant || null,
+        runtimeAgentId: resolveAgentRuntimeId(agent),
     }
     return `cfg_${hashString(JSON.stringify(normalized))}`
 }

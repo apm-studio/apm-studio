@@ -1,54 +1,54 @@
 import { describe, expect, it } from 'vitest'
 import {
-    groupPerformerSessionsById,
-    resolveActThreadActivityAt,
+    groupAgentSessionsById,
+    resolveTeamThreadActivityAt,
     resolveSessionActivityAt,
     workspaceLabel,
     workspaceShortPath,
-    type PerformerSessionRow,
+    type AgentSessionRow,
 } from './workspace-explorer-utils'
 
 describe('workspace explorer activity helpers', () => {
-    it('prefers updated activity over created time for performer sessions', () => {
-        const grouped = groupPerformerSessionsById([
+    it('prefers updated activity over created time for agent sessions', () => {
+        const grouped = groupAgentSessionsById([
             {
-                performerId: 'performer-1',
+                agentId: 'agent-1',
                 active: false,
                 session: { id: 'session-older', createdAt: 10, updatedAt: 50 },
             },
             {
-                performerId: 'performer-1',
+                agentId: 'agent-1',
                 active: true,
                 session: { id: 'session-newer', createdAt: 20, updatedAt: 40 },
             },
-        ] satisfies PerformerSessionRow[])
+        ] satisfies AgentSessionRow[])
 
-        expect(grouped.get('performer-1')?.map((entry) => entry.session.id)).toEqual([
+        expect(grouped.get('agent-1')?.map((entry) => entry.session.id)).toEqual([
             'session-older',
             'session-newer',
         ])
     })
 
     it('nests subagent sessions beneath their parent session', () => {
-        const grouped = groupPerformerSessionsById([
+        const grouped = groupAgentSessionsById([
             {
-                performerId: 'performer-1',
+                agentId: 'agent-1',
                 active: false,
                 session: { id: 'parent', createdAt: 10, updatedAt: 90 },
             },
             {
-                performerId: 'performer-1',
+                agentId: 'agent-1',
                 active: true,
                 session: { id: 'child', parentId: 'parent', createdAt: 30, updatedAt: 80 },
             },
             {
-                performerId: 'performer-1',
+                agentId: 'agent-1',
                 active: false,
                 session: { id: 'sibling', createdAt: 20, updatedAt: 70 },
             },
-        ] satisfies PerformerSessionRow[])
+        ] satisfies AgentSessionRow[])
 
-        expect(grouped.get('performer-1')).toEqual([
+        expect(grouped.get('agent-1')).toEqual([
             expect.objectContaining({
                 session: expect.objectContaining({ id: 'parent' }),
                 depth: 0,
@@ -71,8 +71,8 @@ describe('workspace explorer activity helpers', () => {
         expect(resolveSessionActivityAt({ createdAt: 10, updatedAt: 20 }, 90)).toBe(90)
     })
 
-    it('uses the most recent participant session for act thread ordering', () => {
-        expect(resolveActThreadActivityAt({
+    it('uses the most recent participant session for team thread ordering', () => {
+        expect(resolveTeamThreadActivityAt({
             createdAt: 30,
             participantSessions: {
                 alpha: 'session-a',

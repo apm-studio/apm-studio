@@ -1,12 +1,10 @@
 import { resolveRuntimeModel } from '../../lib/model-catalog.js'
 import { StudioValidationError } from '../../lib/opencode-errors.js'
-import type { AssistantStageContext } from '../../../shared/assistant-actions.js'
+import type { AssistantWorkspaceContext } from '../../../shared/assistant-actions.js'
 import { buildAssistantToolMap } from './assistant-tools.js'
-import {
-    buildAssistantActionPrompt,
-    buildAssistantDiscoveryPrompt,
-    ensureAssistantAgent,
-} from './assistant-service.js'
+import { buildAssistantActionPrompt } from './assistant-context-prompt.js'
+import { buildAssistantDiscoveryPrompt } from './assistant-discovery-prompt.js'
+import { ensureAssistantAgent } from './assistant-service.js'
 
 function toCapabilitySnapshot(runtimeModel: Awaited<ReturnType<typeof resolveRuntimeModel>>) {
     if (!runtimeModel) {
@@ -27,7 +25,7 @@ export async function prepareAssistantChatRequest(
     options: {
         message: string
         model: { provider: string; modelId: string }
-        assistantContext: AssistantStageContext | null
+        assistantContext: AssistantWorkspaceContext | null
     },
 ) {
     const runtimeModel = await resolveRuntimeModel(workingDir, options.model)

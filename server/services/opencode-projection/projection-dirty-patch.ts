@@ -1,4 +1,4 @@
-import type { SharedAssetRef } from '../../../shared/chat-contracts.js'
+import type { SharedPrimitiveRef } from '../../../shared/chat-contracts.js'
 import { normalizeProjectionDirtyPatch, type ProjectionDirtyPatch } from '../../../shared/projection-dirty.js'
 
 function unique(values: Array<string | null | undefined>) {
@@ -6,24 +6,24 @@ function unique(values: Array<string | null | undefined>) {
 }
 
 function draftIdsFromRuntimeRefs(
-    talRef: SharedAssetRef | null | undefined,
-    danceRefs: SharedAssetRef[] | null | undefined,
+    instructionRef: SharedPrimitiveRef | null | undefined,
+    skillRefs: SharedPrimitiveRef[] | null | undefined,
 ) {
     return unique([
-        talRef?.kind === 'draft' ? talRef.draftId : null,
-        ...((danceRefs || []).map((ref) => ref.kind === 'draft' ? ref.draftId : null)),
+        instructionRef?.kind === 'draft' ? instructionRef.draftId : null,
+        ...((skillRefs || []).map((ref) => ref.kind === 'draft' ? ref.draftId : null)),
     ])
 }
 
 export function buildProjectionDirtyPatch(input: {
-    performerId?: string | null
-    actId?: string | null
-    talRef: SharedAssetRef | null | undefined
-    danceRefs: SharedAssetRef[] | null | undefined
+    agentId?: string | null
+    teamId?: string | null
+    instructionRef: SharedPrimitiveRef | null | undefined
+    skillRefs: SharedPrimitiveRef[] | null | undefined
 }): ProjectionDirtyPatch {
     return normalizeProjectionDirtyPatch({
-        performerIds: unique([input.performerId]),
-        actIds: unique([input.actId]),
-        draftIds: draftIdsFromRuntimeRefs(input.talRef, input.danceRefs),
+        agentIds: unique([input.agentId]),
+        teamIds: unique([input.teamId]),
+        draftIds: draftIdsFromRuntimeRefs(input.instructionRef, input.skillRefs),
     })
 }

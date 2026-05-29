@@ -4,17 +4,16 @@ import type {
     ApmPackageManifest,
     MicrosoftApmPackageSourceSummary,
 } from '../../../shared/apm-contracts.js'
-import type { SharedAssetRef } from '../../../shared/chat-contracts.js'
-import { getAssetPayload, readAsset, danceAssetDir } from '../../lib/apm-asset-source.js'
-import { readDraft, readDraftTextContent } from '../draft-service.js'
+import type { SharedPrimitiveRef } from '../../../shared/chat-contracts.js'
+import { readDraft, readDraftTextContent } from '../drafts/service.js'
 import {
-    danceBundleDir,
-    isDanceBundleDraft,
+    skillBundleDir,
+    isSkillBundleDraft,
     readBundleSkillContent,
-} from '../dance-bundle-service.js'
+} from '../drafts/skill-bundle-service.js'
 import { syncSkillBundleSiblings } from '../opencode-projection/skill-bundle-sync.js'
-import { packageDirForRead, sourceDir, sourceDirForRead, toPosixPath } from './paths.js'
-import { isRecord, yamlString } from './yaml-io.js'
+import { packageDir, sourceDir, toPosixPath } from './paths.js'
+import { yamlString } from './yaml-io.js'
 
 type MaterializedSkill = {
     logicalName: string
@@ -77,6 +76,12 @@ function workspaceRelative(workingDir: string, filePath: string) {
     return toPosixPath(path.relative(workingDir, filePath))
 }
 
+function localPackageRef(relativePath: string) {
+    return relativePath.startsWith('.') || path.isAbsolute(relativePath)
+        ? relativePath
+        : `./${relativePath}`
+}
+
 function packageRelative(root: string, filePath: string) {
     return toPosixPath(path.relative(root, filePath))
 }
@@ -88,72 +93,25 @@ function quoteShellArg(value: string) {
     return `'${value.replace(/'/g, "'\\''")}'`
 }
 
-function parseUrnName(urn: string) {
-    const parts = urn.split('/')
-    return parts[3] || parts.at(-1) || urn
-}
-
-function assetDescription(value: unknown, fallback: string) {
-    if (isRecord(value)) {
-        if (typeof value.description === 'string' && value.description.trim()) {
-            return value.description
-        }
-        if (typeof value.summary === 'string' && value.summary.trim()) {
-            return value.summary
-        }
-        if (typeof value.name === 'string' && value.name.trim()) {
-            return value.name
-        }
-    }
-    return fallback
-}
-
 async function resolveInstructionContent(
     workingDir: string,
-    ref: SharedAssetRef | null | undefined,
+    ref: SharedPrimitiveRef | null | undefined,
 ) {
     if (!ref) return null
-    if (ref.kind === 'registry') {
-        return getAssetPayload(workingDir, ref.urn)
+    if (ref.kind !== 'draft') {
+        throw new Error('Registry instruction references are no longer supported. Import the source as an APM package primitive instead.')
     }
-    return readDraftTextContent(workingDir, 'tal', ref.draftId)
-}
-
-async function materializeRegistrySkill(
-    workingDir: string,
-    ref: Extract<SharedAssetRef, { kind: 'registry' }>,
-    targetDir: string,
-    usedNames: Set<string>,
-): Promise<MaterializedSkill> {
-    const body = await getAssetPayload(workingDir, ref.urn)
-    if (!body) {
-        throw new Error(`Skill '${ref.urn}' has no local content.`)
-    }
-    const asset = await readAsset(workingDir, ref.urn)
-    const logicalName = uniqueSegment(parseUrnName(ref.urn), usedNames)
-    const description = assetDescription(asset, logicalName)
-    const skillDir = path.join(targetDir, logicalName)
-    const skillFile = path.join(skillDir, 'SKILL.md')
-
-    await writeText(skillFile, skillContent(logicalName, description, body))
-    await syncSkillBundleSiblings(danceAssetDir(workingDir, ref.urn), skillDir, {
-        excludedNames: ['SKILL.md', 'draft.json'],
-    })
-
-    return {
-        logicalName,
-        relativePath: packageRelative(path.dirname(path.dirname(targetDir)), skillFile),
-    }
+    return readDraftTextContent(workingDir, 'instruction', ref.draftId)
 }
 
 async function materializeDraftSkill(
     workingDir: string,
-    ref: Extract<SharedAssetRef, { kind: 'draft' }>,
+    ref: Extract<SharedPrimitiveRef, { kind: 'draft' }>,
     targetDir: string,
     usedNames: Set<string>,
 ): Promise<MaterializedSkill> {
-    const isBundle = await isDanceBundleDraft(workingDir, ref.draftId)
-    const draft = await readDraft(workingDir, 'dance', ref.draftId)
+    const isBundle = await isSkillBundleDraft(workingDir, ref.draftId)
+    const draft = await readDraft(workingDir, 'skill', ref.draftId)
     const body = isBundle
         ? await readBundleSkillContent(workingDir, ref.draftId)
         : (typeof draft?.content === 'string' ? draft.content : null)
@@ -170,7 +128,7 @@ async function materializeDraftSkill(
 
     await writeText(skillFile, skillContent(logicalName, description, body))
     if (isBundle) {
-        await syncSkillBundleSiblings(danceBundleDir(workingDir, ref.draftId), skillDir, {
+        await syncSkillBundleSiblings(skillBundleDir(workingDir, ref.draftId), skillDir, {
             excludedNames: ['SKILL.md', 'draft.json'],
         })
     }
@@ -183,13 +141,14 @@ async function materializeDraftSkill(
 
 async function materializeSkill(
     workingDir: string,
-    ref: SharedAssetRef,
+    ref: SharedPrimitiveRef,
     targetDir: string,
     usedNames: Set<string>,
 ) {
-    return ref.kind === 'registry'
-        ? materializeRegistrySkill(workingDir, ref, targetDir, usedNames)
-        : materializeDraftSkill(workingDir, ref, targetDir, usedNames)
+    if (ref.kind !== 'draft') {
+        throw new Error('Registry skill references are no longer supported. Import the source as an APM package primitive instead.')
+    }
+    return materializeDraftSkill(workingDir, ref, targetDir, usedNames)
 }
 
 async function discoverPrimitivePaths(dir: string) {
@@ -218,20 +177,20 @@ function countPrimitives(relativePaths: string[]) {
 }
 
 function agentName(agent: NonNullable<ApmPackageManifest['x-apm']>['agent']) {
-    return agent?.agentName || agent?.performerName || 'Agent'
+    return agent?.agentName || 'Agent'
 }
 
 function agentBody(agent: NonNullable<ApmPackageManifest['x-apm']>['agent']) {
-    const body = agent?.agentBody ?? agent?.inlineInstruction
+    const body = agent?.agentBody
     return typeof body === 'string' && body.trim() ? body.trim() : null
 }
 
 function instructionRef(agent: NonNullable<ApmPackageManifest['x-apm']>['agent']) {
-    return agent?.instructionRef || agent?.talRef || null
+    return agent?.instructionRef || null
 }
 
 function skillRefs(agent: NonNullable<ApmPackageManifest['x-apm']>['agent']) {
-    return agent?.skillRefs || agent?.danceRefs || []
+    return agent?.skillRefs || []
 }
 
 function summaryWarnings(
@@ -268,8 +227,8 @@ export async function summarizeMicrosoftApmPackageSource(
     manifest: ApmPackageManifest,
     generationWarnings: string[] = [],
 ): Promise<MicrosoftApmPackageSourceSummary> {
-    const root = await packageDirForRead(workingDir, packageId)
-    const source = await sourceDirForRead(workingDir, packageId)
+    const root = packageDir(workingDir, packageId)
+    const source = sourceDir(workingDir, packageId)
     const rootRelative = workspaceRelative(workingDir, root)
     const sourceRelative = workspaceRelative(workingDir, source)
     const primitivePaths = (await discoverPrimitivePaths(source))
@@ -280,7 +239,7 @@ export async function summarizeMicrosoftApmPackageSource(
     return {
         packageRoot: rootRelative,
         sourceDir: sourceRelative,
-        installCommand: `apm install ${quoteShellArg(rootRelative)} --target codex`,
+        installCommand: `apm install ${quoteShellArg(localPackageRef(rootRelative))} --target codex`,
         validateCommand: `(cd ${quoteShellArg(rootRelative)} && apm compile --validate)`,
         packCommand: `(cd ${quoteShellArg(rootRelative)} && apm pack --archive)`,
         primitiveCounts,

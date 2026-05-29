@@ -1,7 +1,7 @@
 import { PackagePlus, Play, Upload, Wrench } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useStudioStore } from '../store'
-import type { WorkspaceMode } from '../store/types'
+import type { WorkspaceMode } from '../store/workspace/types'
 import { getCanvasViewportSize } from '../lib/focus-utils'
 import StudioViewHeader from './canvas/StudioViewHeader'
 import type { AppHeaderConfig } from './AppHeaderContext'
@@ -19,7 +19,7 @@ const APP_MODE_OPTIONS: AppModeOption[] = [
         mode: 'import',
         label: 'Import',
         icon: <PackagePlus size={13} />,
-        title: 'Import packages and source assets from GitHub',
+        title: 'Import packages and source primitives from GitHub',
     },
     {
         mode: 'manage',
@@ -34,10 +34,10 @@ const APP_MODE_OPTIONS: AppModeOption[] = [
         title: 'Run local agents and teams in Full or Split view',
     },
     {
-        mode: 'export',
+        mode: 'inject',
         label: 'Inject',
         icon: <Upload size={13} />,
-        title: 'Export local package units into external assistant targets',
+        title: 'Sync local package units into external assistant targets',
     },
 ]
 
@@ -55,8 +55,8 @@ type AppModeHeaderProps = {
 }
 
 function modeContextLabel(mode: WorkspaceMode) {
-    if (mode === 'import') return 'Import packages and source assets'
-    if (mode === 'export') return 'Export assistant targets'
+    if (mode === 'import') return 'Import packages and source primitives'
+    if (mode === 'inject') return 'Sync assistant targets'
     if (mode === 'run') return 'Run workspace'
     return 'Manage workspace'
 }
@@ -80,12 +80,12 @@ export default function AppModeHeader({ pageHeader }: AppModeHeaderProps) {
         }
 
         const viewportSize = getCanvasViewportSize()
-        if (state.selectedActId) {
-            state.enterFocusMode(state.selectedActId, 'act', viewportSize)
+        if (state.selectedTeamId) {
+            state.enterFocusMode(state.selectedTeamId, 'team', viewportSize)
             return
         }
-        if (state.selectedPerformerId) {
-            state.enterFocusMode(state.selectedPerformerId, 'performer', viewportSize)
+        if (state.selectedAgentId) {
+            state.enterFocusMode(state.selectedAgentId, 'agent', viewportSize)
             return
         }
         state.enterEmptyFullView()

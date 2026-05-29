@@ -1,26 +1,22 @@
 import fs from 'fs/promises'
 import path from 'path'
 import type {
-    ApmPackageExportResponse,
     ApmPackageImportRequest,
     ApmPackageLock,
     ApmPackageManifest,
     ApmPackageReadResponse,
     ApmPackageSummary,
 } from '../../../shared/apm-contracts.js'
-import type { WorkspacePerformerSnapshot } from '../workspace-service.js'
-import {
-    buildApmLockForManifest,
-    performerFromExtension,
-} from './manifest.js'
+import type { WorkspaceAgentSnapshot } from '../../../shared/workspace-contracts.js'
+import { agentFromExtension } from './manifest-agent-normalization.js'
 import { summarizeMicrosoftApmPackageSource } from './microsoft-apm-source.js'
-import { readLockFile, readManifestFile, writePackageFiles } from './package-files.js'
+import { readManifestFile, writePackageFiles } from './package-files.js'
 import {
     LOCK_FILE,
     MANIFEST_FILE,
-    lockPathForRead,
-    manifestPathForRead,
-    sourceDirForRead,
+    lockPath,
+    manifestPath,
+    sourceDir,
     toPosixPath,
 } from './paths.js'
 import {
@@ -29,7 +25,7 @@ import {
     readLocalWorkspaceDocument,
     writeLocalWorkspaceDocument,
 } from './workspace.js'
-import { isRecord, parseYamlRecord, readText, yamlString } from './yaml-io.js'
+import { isRecord, parseYamlRecord, readText } from './yaml-io.js'
 
 function extractMcpServerNames(manifest: ApmPackageManifest) {
     return Array.isArray(manifest.dependencies?.mcp)
@@ -56,10 +52,10 @@ function agentComponentsFromManifest(manifest: ApmPackageManifest): ApmPackageSu
     }
 
     return {
-        instructions: agent?.instructionRef || agent?.talRef
+        instructions: agent?.instructionRef
             ? 1
             : manifestArrayLength(manifest.instructions),
-        skills: (agent?.skillRefs || agent?.danceRefs)?.length || manifestArrayLength(manifest.skills),
+        skills: agent?.skillRefs?.length || manifestArrayLength(manifest.skills),
         mcp: (agent?.mcpServerNames || extractMcpServerNames(manifest)).length,
         model: hasModel(agent?.model),
     }
@@ -89,12 +85,12 @@ function parseMarkdownFrontmatter(raw: string) {
     }
 }
 
-async function performerFromMicrosoftApmSource(
+async function agentFromMicrosoftApmSource(
     workingDir: string,
     packageId: string,
     manifest: ApmPackageManifest,
-): Promise<WorkspacePerformerSnapshot | null> {
-    const agentsDir = path.join(await sourceDirForRead(workingDir, packageId), 'agents')
+): Promise<WorkspaceAgentSnapshot | null> {
+    const agentsDir = path.join(sourceDir(workingDir, packageId), 'agents')
     const entries = await fs.readdir(agentsDir, { withFileTypes: true }).catch(() => [])
     const agentFile = entries
         .filter((entry) => entry.isFile() && entry.name.endsWith('.agent.md'))
@@ -111,11 +107,11 @@ async function performerFromMicrosoftApmSource(
         name,
         model: modelId ? { provider: 'openai', modelId } : null,
         modelVariant: null,
-        inlineInstruction: parsed.body || null,
-        talRef: null,
-        danceRefs: [],
+        agentBody: parsed.body || null,
+        instructionRef: null,
+        skillRefs: [],
         mcpServerNames: extractMcpServerNames(manifest),
-        agentId: null,
+        runtimeAgentId: null,
         planMode: false,
         meta: {
             derivedFrom: `apm:${toPosixPath(path.relative(workingDir, agentFile))}`,
@@ -129,8 +125,8 @@ async function packageSummaryFromManifest(
     packageId: string,
     manifest: ApmPackageManifest,
 ): Promise<ApmPackageSummary> {
-    const readableManifestPath = await manifestPathForRead(workingDir, packageId)
-    const readableLockPath = await lockPathForRead(workingDir, packageId)
+    const readableManifestPath = manifestPath(workingDir, packageId)
+    const readableLockPath = lockPath(workingDir, packageId)
     const stat = await fs.stat(readableManifestPath).catch(() => null)
     const extension = manifest['x-apm']
     return {
@@ -139,7 +135,7 @@ async function packageSummaryFromManifest(
         version: manifest.version,
         description: typeof manifest.description === 'string' ? manifest.description : undefined,
         kind: extension?.kind || 'unknown',
-        agentName: extension?.agent?.agentName || extension?.agent?.performerName,
+        agentName: extension?.agent?.agentName,
         agentComponents: agentComponentsFromManifest(manifest),
         derivedFrom: extension?.agent?.derivedFrom || null,
         manifestPath: toPosixPath(path.relative(workingDir, readableManifestPath)),
@@ -164,7 +160,7 @@ export async function listApmPackages(workingDir: string): Promise<ApmPackageSum
     const summaries: ApmPackageSummary[] = []
 
     for (const packageId of ids) {
-        const manifest = await readManifestFile(await manifestPathForRead(workingDir, packageId)).catch(() => null)
+        const manifest = await readManifestFile(manifestPath(workingDir, packageId)).catch(() => null)
         if (!manifest) continue
         summaries.push(await packageSummaryFromManifest(workingDir, packageId, manifest))
     }
@@ -176,8 +172,8 @@ export async function readApmPackage(
     workingDir: string,
     packageId: string,
 ): Promise<ApmPackageReadResponse | null> {
-    const manifestFile = await manifestPathForRead(workingDir, packageId)
-    const lockFile = await lockPathForRead(workingDir, packageId)
+    const manifestFile = manifestPath(workingDir, packageId)
+    const lockFile = lockPath(workingDir, packageId)
     const manifestYaml = await readText(manifestFile)
     if (!manifestYaml) return null
     const manifest = parseYamlRecord<ApmPackageManifest>(manifestYaml, MANIFEST_FILE)
@@ -241,54 +237,37 @@ export async function importApmPackage(
     return writeApmPackage(workingDir, packageId, manifest)
 }
 
-export async function exportApmPackage(
-    workingDir: string,
-    packageId: string,
-): Promise<ApmPackageExportResponse | null> {
-    const manifest = await readManifestFile(await manifestPathForRead(workingDir, packageId))
-    if (!manifest) return null
-    const lock = await readLockFile(await lockPathForRead(workingDir, packageId)) || buildApmLockForManifest(manifest)
-    return {
-        packageId: manifest['x-apm']?.packageId || packageId,
-        manifestYaml: yamlString(manifest),
-        lockYaml: yamlString(lock),
-        manifestPath: toPosixPath(path.relative(workingDir, await manifestPathForRead(workingDir, packageId))),
-        lockPath: toPosixPath(path.relative(workingDir, await lockPathForRead(workingDir, packageId))),
-        microsoftApm: await summarizeMicrosoftApmPackageSource(workingDir, packageId, manifest),
-    }
-}
-
 export async function listApmAgentProjectionSnapshots(
     workingDir: string,
-): Promise<WorkspacePerformerSnapshot[]> {
+): Promise<WorkspaceAgentSnapshot[]> {
     const ids = await activePackageIds(workingDir) ?? await packageIdsFromDisk(workingDir)
-    const performers: WorkspacePerformerSnapshot[] = []
+    const agents: WorkspaceAgentSnapshot[] = []
     for (const packageId of ids) {
-        const manifest = await readManifestFile(await manifestPathForRead(workingDir, packageId)).catch(() => null)
+        const manifest = await readManifestFile(manifestPath(workingDir, packageId)).catch(() => null)
         const agent = manifest?.['x-apm']?.agent
         if (agent) {
-            const extensionPerformer = performerFromExtension(agent, manifest)
-            const sourcePerformer = manifest
-                ? await performerFromMicrosoftApmSource(workingDir, packageId, manifest)
+            const extensionAgent = agentFromExtension(agent, manifest)
+            const sourceAgent = manifest
+                ? await agentFromMicrosoftApmSource(workingDir, packageId, manifest)
                 : null
-            performers.push(sourcePerformer
+            agents.push(sourceAgent
                 ? {
-                    ...extensionPerformer,
-                    inlineInstruction: sourcePerformer.inlineInstruction || extensionPerformer.inlineInstruction,
-                    meta: sourcePerformer.meta || extensionPerformer.meta,
+                    ...extensionAgent,
+                    agentBody: sourceAgent.agentBody || extensionAgent.agentBody,
+                    meta: sourceAgent.meta || extensionAgent.meta,
                 }
-                : extensionPerformer)
+                : extensionAgent)
             continue
         }
         if (manifest) {
-            const sourcePerformer = await performerFromMicrosoftApmSource(workingDir, packageId, manifest)
-            if (sourcePerformer) {
-                performers.push(sourcePerformer)
+            const sourceAgent = await agentFromMicrosoftApmSource(workingDir, packageId, manifest)
+            if (sourceAgent) {
+                agents.push(sourceAgent)
             }
         }
     }
-    if (performers.length > 0) {
-        return performers
+    if (agents.length > 0) {
+        return agents
     }
 
     return []

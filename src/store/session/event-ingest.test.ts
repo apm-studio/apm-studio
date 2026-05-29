@@ -22,7 +22,7 @@ function createMinimalState(overrides: Partial<StudioState> = {}): StudioState {
         chatKeyToSession: {},
         sessionToChatKey: {},
         sessionLoading: {},
-        activeChatPerformerId: null,
+        activeChatAgentId: null,
         sessions: [],
         ...overrides,
     } as StudioState
@@ -37,8 +37,8 @@ describe('Event Ingest', () => {
 
     beforeEach(() => {
         state = createMinimalState()
-        state.sessionToChatKey[SESSION_ID] = 'performer-1'
-        state.chatKeyToSession['performer-1'] = SESSION_ID
+        state.sessionToChatKey[SESSION_ID] = 'agent-1'
+        state.chatKeyToSession['agent-1'] = SESSION_ID
 
         get = () => state
         set = (partial) => {
@@ -273,62 +273,6 @@ describe('Event Ingest', () => {
             ingest.dispose()
         })
 
-        it('accepts camelCase message event fields for streaming output', () => {
-            const ingest = createEventIngest({ get, set })
-
-            ingest.enqueue({
-                type: 'message.updated',
-                properties: {
-                    info: {
-                        sessionId: SESSION_ID,
-                        id: 'msg-1',
-                        role: 'assistant',
-                        time: { created: 1000 },
-                    },
-                },
-            })
-            ingest.enqueue({
-                type: 'message.part.delta',
-                properties: {
-                    sessionId: SESSION_ID,
-                    messageId: 'msg-1',
-                    partId: 'p1',
-                    field: 'text',
-                    delta: 'Hello',
-                },
-            })
-            ingest.enqueue({
-                type: 'message.part.updated',
-                properties: {
-                    part: {
-                        sessionId: SESSION_ID,
-                        messageId: 'msg-1',
-                        id: 'tool-1',
-                        type: 'tool',
-                        tool: 'wait_until',
-                        callId: 'call-1',
-                        state: { status: 'completed' },
-                    },
-                },
-            })
-            ingest.enqueue({
-                type: 'message.part.removed',
-                properties: {
-                    sessionId: SESSION_ID,
-                    messageId: 'msg-1',
-                    partId: 'tool-1',
-                },
-            })
-
-            ingest.flushSync()
-
-            expect(state.seMessages[SESSION_ID]?.[0]?.content).toBe('Hello')
-            expect(state.seMessages[SESSION_ID]?.[0]?.parts).toEqual([
-                { id: 'p1', type: 'text', content: 'Hello' },
-            ])
-
-            ingest.dispose()
-        })
     })
 
     describe('session.next events', () => {

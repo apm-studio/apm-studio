@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { createPerformerNode } from '../../lib/performers-node'
+import { createAgentNode } from '../../lib/agents-node'
 import {
-    applyMcpCatalogImpactToPerformers,
+    applyMcpCatalogImpactToAgents,
     buildMcpCatalogImpact,
     buildMcpDrafts,
     getMcpEntryValidationError,
@@ -67,10 +67,10 @@ describe('mcp-catalog-utils', () => {
         ])).toBe("MCP 'github' is duplicated. Server names must be unique.")
     })
 
-    it('builds rename and delete impact against performer references', () => {
-        const performers = [
-            createPerformerNode({
-                id: 'performer-1',
+    it('builds rename and delete impact against agent references', () => {
+        const agents = [
+            createAgentNode({
+                id: 'agent-1',
                 name: 'Planner',
                 x: 0,
                 y: 0,
@@ -79,8 +79,8 @@ describe('mcp-catalog-utils', () => {
                     prod: 'github',
                 },
             }),
-            createPerformerNode({
-                id: 'performer-2',
+            createAgentNode({
+                id: 'agent-2',
                 name: 'Writer',
                 x: 0,
                 y: 0,
@@ -99,7 +99,7 @@ describe('mcp-catalog-utils', () => {
             [
                 createDraft({ key: 'github', name: 'github-prod', command: 'npx' }),
             ],
-            performers,
+            agents,
         )
 
         expect(impact).toEqual({
@@ -107,22 +107,22 @@ describe('mcp-catalog-utils', () => {
                 key: 'github',
                 previousName: 'github',
                 nextName: 'github-prod',
-                affectedPerformerIds: ['performer-1'],
+                affectedAgentIds: ['agent-1'],
             }],
             deletes: [{
                 key: 'filesystem',
                 name: 'filesystem',
-                affectedPerformerIds: ['performer-2'],
+                affectedAgentIds: ['agent-2'],
             }],
-            affectedPerformerIds: ['performer-1', 'performer-2'],
-            affectedPerformerNames: ['Planner', 'Writer'],
+            affectedAgentIds: ['agent-1', 'agent-2'],
+            affectedAgentNames: ['Planner', 'Writer'],
         })
     })
 
-    it('rewrites performer MCP selections and bindings for rename/delete impact', () => {
-        const performers = [
-            createPerformerNode({
-                id: 'performer-1',
+    it('rewrites agent MCP selections and bindings for rename/delete impact', () => {
+        const agents = [
+            createAgentNode({
+                id: 'agent-1',
                 name: 'Planner',
                 x: 0,
                 y: 0,
@@ -132,11 +132,11 @@ describe('mcp-catalog-utils', () => {
                     archive: 'filesystem',
                 },
                 meta: {
-                    publishBindingUrn: 'performer/@acme/planner',
+                    sourceBindingUrn: 'agent/@acme/planner',
                 },
             }),
-            createPerformerNode({
-                id: 'performer-2',
+            createAgentNode({
+                id: 'agent-2',
                 name: 'Writer',
                 x: 0,
                 y: 0,
@@ -144,32 +144,32 @@ describe('mcp-catalog-utils', () => {
             }),
         ]
 
-        const nextPerformers = applyMcpCatalogImpactToPerformers(performers, {
+        const nextAgents = applyMcpCatalogImpactToAgents(agents, {
             renames: [{
                 key: 'github',
                 previousName: 'github',
                 nextName: 'github-prod',
-                affectedPerformerIds: ['performer-1'],
+                affectedAgentIds: ['agent-1'],
             }],
             deletes: [{
                 key: 'filesystem',
                 name: 'filesystem',
-                affectedPerformerIds: ['performer-1'],
+                affectedAgentIds: ['agent-1'],
             }],
-            affectedPerformerIds: ['performer-1'],
-            affectedPerformerNames: ['Planner'],
+            affectedAgentIds: ['agent-1'],
+            affectedAgentNames: ['Planner'],
         })
 
-        expect(nextPerformers[0]).toEqual(expect.objectContaining({
+        expect(nextAgents[0]).toEqual(expect.objectContaining({
             mcpServerNames: ['github-prod'],
             mcpBindingMap: {
                 prod: 'github-prod',
             },
             meta: expect.objectContaining({
-                publishBindingUrn: null,
+                sourceBindingUrn: null,
             }),
         }))
-        expect(nextPerformers[1]).toBe(performers[1])
+        expect(nextAgents[1]).toBe(agents[1])
     })
 
     it('round-trips startup state for disabled MCP servers', () => {
@@ -207,14 +207,14 @@ describe('mcp-catalog-utils', () => {
             },
         }, [
             createDraft({
-                key: 'asset-mcp-local-draft',
+                key: 'package-mcp-local-draft',
                 name: 'dartlab',
                 command: 'dartlab-mcp',
             }),
         ])
 
         expect(drafts[0]).toEqual(expect.objectContaining({
-            key: 'asset-mcp-local-draft',
+            key: 'package-mcp-local-draft',
             name: 'dartlab',
         }))
     })

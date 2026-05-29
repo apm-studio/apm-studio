@@ -12,7 +12,7 @@ describe('assistant-protocol', () => {
     it('parses a valid tool input envelope', () => {
         const envelope = parseAssistantActionEnvelope({
             version: 1,
-            actions: [{ type: 'createAct', name: 'Review Flow' }],
+            actions: [{ type: 'createTeam', name: 'Review Flow' }],
         })
 
         expect(envelope?.actions).toHaveLength(1)
@@ -22,14 +22,14 @@ describe('assistant-protocol', () => {
         const envelope = parseAssistantActionEnvelope({
             version: 1,
             actions: [
-                { type: 'showPerformer', performerName: 'Writer', surface: 'editor' },
-                { type: 'showAct', actName: 'Review Flow', surface: 'editor', editorMode: 'act' },
-                { type: 'showDraft', draftName: 'Review Tal', kind: 'tal' },
-                { type: 'setStudioPanel', panel: 'assetLibrary', open: true },
+                { type: 'showAgent', agentName: 'Writer', surface: 'editor' },
+                { type: 'showTeam', teamName: 'Review Flow', surface: 'editor', editorMode: 'team' },
+                { type: 'showDraft', draftName: 'Review Instruction', kind: 'instruction' },
+                { type: 'setStudioPanel', panel: 'packages', open: true },
                 {
                     type: 'setStudioNodeFrame',
-                    nodeType: 'performer',
-                    performerName: 'Writer',
+                    nodeType: 'agent',
+                    agentName: 'Writer',
                     position: { x: 120, y: 80 },
                     size: { width: 420, height: 520 },
                 },
@@ -37,14 +37,14 @@ describe('assistant-protocol', () => {
         })
 
         expect(envelope?.actions).toHaveLength(5)
-        expect(envelope?.actions[0]).toMatchObject({ type: 'showPerformer', surface: 'editor' })
+        expect(envelope?.actions[0]).toMatchObject({ type: 'showAgent', surface: 'editor' })
         expect(lintAssistantActionEnvelope(envelope!)).toEqual([])
     })
 
     it('rejects invalid action payloads from tool input', () => {
         const envelope = parseAssistantActionEnvelope({
             version: 1,
-            actions: [{ type: 'updatePerformer', model: { provider: 'openai', modelId: 'gpt-4.1' } }],
+            actions: [{ type: 'updateAgent', model: { provider: 'openai', modelId: 'gpt-4.1' } }],
         })
 
         expect(envelope).toBeNull()
@@ -53,25 +53,25 @@ describe('assistant-protocol', () => {
     it('parses a valid tool input envelope from JSON text', () => {
         const envelope = parseAssistantActionEnvelope(JSON.stringify({
             version: 1,
-            actions: [{ type: 'createPerformer', ref: 'writer', name: 'Writer' }],
+            actions: [{ type: 'createAgent', ref: 'writer', name: 'Writer' }],
         }))
 
         expect(envelope?.actions).toHaveLength(1)
-        expect(envelope?.actions[0]).toMatchObject({ type: 'createPerformer', name: 'Writer' })
+        expect(envelope?.actions[0]).toMatchObject({ type: 'createAgent', name: 'Writer' })
     })
 
-    it('normalizes empty performer Tal placeholders before linting', () => {
+    it('normalizes empty agent Instruction placeholders before linting', () => {
         const envelope = parseAssistantActionEnvelope({
             version: 1,
             actions: [{
-                type: 'createPerformer',
+                type: 'createAgent',
                 ref: 'brand',
                 name: 'Brand Strategist',
                 model: { provider: 'openai', modelId: 'gpt-5.3-codex' },
-                talUrn: null,
-                talDraftId: '',
-                talDraftRef: '',
-                talDraft: {
+                instructionUrn: null,
+                instructionDraftId: '',
+                instructionDraftRef: '',
+                instructionDraft: {
                     ref: '',
                     name: '',
                     content: '',
@@ -85,15 +85,98 @@ describe('assistant-protocol', () => {
 
         expect(envelope).not.toBeNull()
         expect(envelope?.actions[0]).toMatchObject({
-            type: 'createPerformer',
+            type: 'createAgent',
             ref: 'brand',
             name: 'Brand Strategist',
             model: { provider: 'openai', modelId: 'gpt-5.3-codex' },
         })
-        expect((envelope?.actions[0] as { talDraft?: unknown }).talDraft).toBeUndefined()
-        expect((envelope?.actions[0] as { talDraftId?: unknown }).talDraftId).toBeUndefined()
-        expect((envelope?.actions[0] as { talDraftRef?: unknown }).talDraftRef).toBeUndefined()
+        expect((envelope?.actions[0] as { instructionDraft?: unknown }).instructionDraft).toBeUndefined()
+        expect((envelope?.actions[0] as { instructionDraftId?: unknown }).instructionDraftId).toBeUndefined()
+        expect((envelope?.actions[0] as { instructionDraftRef?: unknown }).instructionDraftRef).toBeUndefined()
         expect(lintAssistantActionEnvelope(envelope!)).toEqual([])
+    })
+
+    it('drops unknown action fields at the assistant action boundary', () => {
+        const envelope = parseAssistantActionEnvelope({
+            version: 1,
+            actions: [
+                {
+                    type: 'createAgent',
+                    ref: 'writer',
+                    name: 'Writer',
+                    model: { provider: 'openai', modelId: 'gpt-5', extra: 'drop-me' },
+                    instructionDraft: {
+                        ref: 'writer-instruction',
+                        name: 'Writer Instruction',
+                        content: '# Role',
+                        extra: 'drop-me',
+                    },
+                    unknownTopLevel: true,
+                },
+                {
+                    type: 'createTeam',
+                    ref: 'flow',
+                    name: 'Flow',
+                    participantAgentRefs: ['writer'],
+                    relations: [{
+                        sourceAgentRef: 'writer',
+                        targetAgentName: 'Reviewer',
+                        direction: 'one-way',
+                        name: 'handoff',
+                        description: 'Send draft.',
+                        ignored: true,
+                    }],
+                    ignored: true,
+                },
+                {
+                    type: 'updateParticipantSubscriptions',
+                    teamRef: 'flow',
+                    agentRef: 'writer',
+                    subscriptions: {
+                        messagesFromAgentRefs: ['writer'],
+                        messageTags: ['handoff'],
+                        ignored: true,
+                    },
+                    ignored: true,
+                },
+            ],
+        })
+
+        expect(envelope?.actions).toEqual([
+            {
+                type: 'createAgent',
+                ref: 'writer',
+                name: 'Writer',
+                model: { provider: 'openai', modelId: 'gpt-5' },
+                instructionDraft: {
+                    ref: 'writer-instruction',
+                    name: 'Writer Instruction',
+                    content: '# Role',
+                },
+            },
+            {
+                type: 'createTeam',
+                ref: 'flow',
+                name: 'Flow',
+                participantAgentRefs: ['writer'],
+                relations: [{
+                    sourceAgentRef: 'writer',
+                    targetAgentName: 'Reviewer',
+                    direction: 'one-way',
+                    name: 'handoff',
+                    description: 'Send draft.',
+                }],
+            },
+            {
+                type: 'updateParticipantSubscriptions',
+                teamRef: 'flow',
+                agentRef: 'writer',
+                subscriptions: {
+                    messagesFromAgentRefs: ['writer'],
+                    messageTags: ['handoff'],
+                },
+            },
+        ])
     })
 
     it('extracts completed assistant mutation tool calls in order', () => {
@@ -108,7 +191,7 @@ describe('assistant-protocol', () => {
                         status: 'completed',
                         input: {
                             version: 1,
-                            actions: [{ type: 'createPerformer', ref: 'writer', name: 'Writer' }],
+                            actions: [{ type: 'createAgent', ref: 'writer', name: 'Writer' }],
                         },
                     },
                 },
@@ -121,7 +204,7 @@ describe('assistant-protocol', () => {
                         status: 'completed',
                         input: {
                             version: 1,
-                            actions: [{ type: 'createAct', name: 'Review Flow', participantPerformerNames: ['Writer'] }],
+                            actions: [{ type: 'createTeam', name: 'Review Flow', participantAgentNames: ['Writer'] }],
                         },
                     },
                 },
@@ -130,9 +213,9 @@ describe('assistant-protocol', () => {
 
         expect(calls).toHaveLength(2)
         expect(calls[0].callId).toBe('call-1')
-        expect(calls[0].actions[0]).toMatchObject({ type: 'createPerformer', name: 'Writer' })
+        expect(calls[0].actions[0]).toMatchObject({ type: 'createAgent', name: 'Writer' })
         expect(calls[1].callId).toBe('call-2')
-        expect(calls[1].actions[0]).toMatchObject({ type: 'createAct', name: 'Review Flow' })
+        expect(calls[1].actions[0]).toMatchObject({ type: 'createTeam', name: 'Review Flow' })
     })
 
     it('ignores non-completed or non-assistant tool parts', () => {
@@ -147,7 +230,7 @@ describe('assistant-protocol', () => {
                         status: 'running',
                         input: {
                             version: 1,
-                            actions: [{ type: 'createPerformer', name: 'Writer' }],
+                            actions: [{ type: 'createAgent', name: 'Writer' }],
                         },
                     },
                 },
@@ -181,7 +264,7 @@ describe('assistant-protocol', () => {
                         },
                         input: JSON.stringify({
                             version: 1,
-                            actions: [{ type: 'createAct', name: 'Review Flow' }],
+                            actions: [{ type: 'createTeam', name: 'Review Flow' }],
                         }) as unknown as Record<string, unknown>,
                     },
                 },
@@ -189,7 +272,7 @@ describe('assistant-protocol', () => {
         })
 
         expect(calls).toHaveLength(1)
-        expect(calls[0].actions[0]).toMatchObject({ type: 'createAct', name: 'Review Flow' })
+        expect(calls[0].actions[0]).toMatchObject({ type: 'createTeam', name: 'Review Flow' })
     })
 
     it('collects unapplied assistant tool messages without waiting for session idle', () => {
@@ -207,7 +290,7 @@ describe('assistant-protocol', () => {
                             status: 'completed',
                             input: {
                                 version: 1,
-                                actions: [{ type: 'createPerformer', name: 'Writer' }],
+                                actions: [{ type: 'createAgent', name: 'Writer' }],
                             },
                         },
                     },
@@ -231,7 +314,7 @@ describe('assistant-protocol', () => {
                             status: 'completed',
                             input: {
                                 version: 1,
-                                actions: [{ type: 'createAct', name: 'Review Flow' }],
+                                actions: [{ type: 'createTeam', name: 'Review Flow' }],
                             },
                         },
                     },
@@ -243,7 +326,7 @@ describe('assistant-protocol', () => {
         expect(pending[0]).toMatchObject({
             messageId: 'msg-1',
         })
-        expect(pending[0].actionCalls[0].actions[0]).toMatchObject({ type: 'createPerformer', name: 'Writer' })
+        expect(pending[0].actionCalls[0].actions[0]).toMatchObject({ type: 'createAgent', name: 'Writer' })
     })
 
     it('skips assistant messages that were already applied', () => {
@@ -261,7 +344,7 @@ describe('assistant-protocol', () => {
                             status: 'completed',
                             input: {
                                 version: 1,
-                                actions: [{ type: 'createPerformer', name: 'Writer' }],
+                                actions: [{ type: 'createAgent', name: 'Writer' }],
                             },
                         },
                     },
@@ -276,9 +359,9 @@ describe('assistant-protocol', () => {
         const envelope = parseAssistantActionEnvelope({
             version: 1,
             actions: [
-                { type: 'createAct', name: 'Review Flow', participantPerformerRefs: ['writer', 'reviewer'] },
-                { type: 'createPerformer', ref: 'writer', name: 'Writer' },
-                { type: 'createPerformer', ref: 'reviewer', name: 'Reviewer' },
+                { type: 'createTeam', name: 'Review Flow', participantAgentRefs: ['writer', 'reviewer'] },
+                { type: 'createAgent', ref: 'writer', name: 'Writer' },
+                { type: 'createAgent', ref: 'reviewer', name: 'Reviewer' },
             ],
         })
 
@@ -287,17 +370,17 @@ describe('assistant-protocol', () => {
             {
                 level: 'warning',
                 actionIndex: 0,
-                message: 'createAct has multiple participants but no relations. This often produces a disconnected workflow.',
+                message: 'createTeam has multiple participants but no relations. This often produces a disconnected workflow.',
             },
             {
                 level: 'error',
                 actionIndex: 0,
-                message: 'performer ref "writer" is used before it is created in the same tool call.',
+                message: 'agent ref "writer" is used before it is created in the same tool call.',
             },
             {
                 level: 'error',
                 actionIndex: 0,
-                message: 'performer ref "reviewer" is used before it is created in the same tool call.',
+                message: 'agent ref "reviewer" is used before it is created in the same tool call.',
             },
         ])
     })
@@ -306,8 +389,8 @@ describe('assistant-protocol', () => {
         const envelope = parseAssistantActionEnvelope({
             version: 1,
             actions: [
-                { type: 'showPerformer', performerRef: 'writer' },
-                { type: 'setStudioNodeFrame', nodeType: 'act', actRef: 'flow', position: { x: 0, y: 0 } },
+                { type: 'showAgent', agentRef: 'writer' },
+                { type: 'setStudioNodeFrame', nodeType: 'team', teamRef: 'flow', position: { x: 0, y: 0 } },
             ],
         })
 
@@ -316,12 +399,12 @@ describe('assistant-protocol', () => {
             {
                 level: 'error',
                 actionIndex: 0,
-                message: 'performer ref "writer" is used before it is created in the same tool call.',
+                message: 'agent ref "writer" is used before it is created in the same tool call.',
             },
             {
                 level: 'error',
                 actionIndex: 1,
-                message: 'act ref "flow" is used before it is created in the same tool call.',
+                message: 'team ref "flow" is used before it is created in the same tool call.',
             },
         ])
     })

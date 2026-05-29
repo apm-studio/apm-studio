@@ -7,7 +7,7 @@ import {
     revealCanvasNodeWithoutZoom,
     syncFocusViewport,
 } from '../../lib/focus-utils'
-import type { CanvasRevealTarget, FocusSnapshot, WorkspaceViewMode } from '../../store/types'
+import type { CanvasRevealTarget, FocusSnapshot, WorkspaceViewMode } from '../../store/workspace/types'
 
 export function useCanvasFocusFit(args: {
     focusSnapshot: FocusSnapshot | null

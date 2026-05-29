@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import {
-    actCategoryName,
-    actThreadChannelName,
-    actThreadMappingKey,
+    teamCategoryName,
+    teamThreadChannelName,
+    teamThreadMappingKey,
     archiveCategoryName,
     controlChannelName,
     entityCategoryName,
     isStudioEntityCategoryName,
-    performerChannelName,
-    performerCategoryName,
-    performerThreadMappingKey,
+    agentChannelName,
+    agentCategoryName,
+    agentThreadMappingKey,
     pruneStaleDiscordThreadMappings,
     sanitizeDiscordName,
     threadChannelName,
@@ -20,15 +20,15 @@ import {
 describe('discord sync plan helpers', () => {
     it('normalizes Discord channel names without losing useful labels', () => {
         expect(sanitizeDiscordName('Research Lead!!')).toBe('research-lead')
-        expect(performerChannelName('Code Reviewer')).toBe('code-reviewer')
+        expect(agentChannelName('Code Reviewer')).toBe('code-reviewer')
         expect(threadChannelName('First Thread', 'thread-123456')).toBe('first-thread')
         expect(threadChannelName(undefined, 'thread-123456')).toBe('new-thread-1')
-        expect(actThreadChannelName('Review Act', 'First Thread')).toBe('first-thread')
-        expect(entityCategoryName('Review Act')).toBe('Review Act')
-        expect(performerCategoryName('Code Reviewer')).toBe('👤 Code Reviewer')
-        expect(actCategoryName('Review Act')).toBe('👥 Review Act')
+        expect(teamThreadChannelName('Review Team', 'First Thread')).toBe('first-thread')
+        expect(entityCategoryName('Review Team')).toBe('Review Team')
+        expect(agentCategoryName('Code Reviewer')).toBe('👤 Code Reviewer')
+        expect(teamCategoryName('Review Team')).toBe('👥 Review Team')
         expect(isStudioEntityCategoryName('👤 Code Reviewer')).toBe(true)
-        expect(isStudioEntityCategoryName('👥 Review Act')).toBe(true)
+        expect(isStudioEntityCategoryName('👥 Review Team')).toBe(true)
         expect(isStudioEntityCategoryName('studio-workspace')).toBe(false)
     })
 
@@ -45,93 +45,93 @@ describe('discord sync plan helpers', () => {
     })
 
     it('builds stable mapping keys', () => {
-        expect(actThreadMappingKey('act-1', 'thread-1')).toBe('act-1:thread-1')
-        expect(performerThreadMappingKey('performer-1', 'session-1')).toBe('performer-1:session-1')
+        expect(teamThreadMappingKey('team-1', 'thread-1')).toBe('team-1:thread-1')
+        expect(agentThreadMappingKey('agent-1', 'session-1')).toBe('agent-1:session-1')
     })
 
     it('keeps workspace categories human-readable', () => {
-        expect(workspaceCategoryName('/tmp/dance-workspace')).toBe('dance-workspace')
+        expect(workspaceCategoryName('/tmp/studio-workspace')).toBe('studio-workspace')
         expect(archiveCategoryName()).toBe('archived')
         expect(controlChannelName()).toBe('studio-control')
     })
 
     it('prunes Discord thread channel mappings that are no longer in Studio', () => {
         const mapping = {
-            performerThreadChannels: {
-                [performerThreadMappingKey('performer-1', 'session-live')]: 'channel-performer-live',
-                [performerThreadMappingKey('performer-1', 'session-stale')]: 'channel-performer-stale',
-                [performerThreadMappingKey('performer-deleted', 'session-old')]: 'channel-performer-deleted',
+            agentThreadChannels: {
+                [agentThreadMappingKey('agent-1', 'session-live')]: 'channel-agent-live',
+                [agentThreadMappingKey('agent-1', 'session-stale')]: 'channel-agent-stale',
+                [agentThreadMappingKey('agent-deleted', 'session-old')]: 'channel-agent-deleted',
             },
-            actThreadChannels: {
-                [actThreadMappingKey('act-1', 'thread-live')]: 'channel-act-live',
-                [actThreadMappingKey('act-1', 'thread-stale')]: 'channel-act-stale',
-                [actThreadMappingKey('act-deleted', 'thread-old')]: 'channel-act-deleted',
+            teamThreadChannels: {
+                [teamThreadMappingKey('team-1', 'thread-live')]: 'channel-team-live',
+                [teamThreadMappingKey('team-1', 'thread-stale')]: 'channel-team-stale',
+                [teamThreadMappingKey('team-deleted', 'thread-old')]: 'channel-team-deleted',
             },
             backfilledMessageIds: {
-                'channel-performer-live': ['message-1'],
-                'channel-performer-stale': ['message-2'],
-                'channel-act-stale': ['message-3'],
+                'channel-agent-live': ['message-1'],
+                'channel-agent-stale': ['message-2'],
+                'channel-team-stale': ['message-3'],
             },
         }
 
         const cleanup = pruneStaleDiscordThreadMappings({
             mapping,
-            performerThreadIds: {
-                'performer-1': ['session-live'],
+            agentThreadIds: {
+                'agent-1': ['session-live'],
             },
-            actThreadIds: {
-                'act-1': ['thread-live'],
+            teamThreadIds: {
+                'team-1': ['thread-live'],
             },
         })
 
         expect(cleanup.staleChannelIds.sort()).toEqual([
-            'channel-act-deleted',
-            'channel-act-stale',
-            'channel-performer-deleted',
-            'channel-performer-stale',
+            'channel-agent-deleted',
+            'channel-agent-stale',
+            'channel-team-deleted',
+            'channel-team-stale',
         ])
-        expect(mapping.performerThreadChannels).toEqual({
-            [performerThreadMappingKey('performer-1', 'session-live')]: 'channel-performer-live',
+        expect(mapping.agentThreadChannels).toEqual({
+            [agentThreadMappingKey('agent-1', 'session-live')]: 'channel-agent-live',
         })
-        expect(mapping.actThreadChannels).toEqual({
-            [actThreadMappingKey('act-1', 'thread-live')]: 'channel-act-live',
+        expect(mapping.teamThreadChannels).toEqual({
+            [teamThreadMappingKey('team-1', 'thread-live')]: 'channel-team-live',
         })
         expect(mapping.backfilledMessageIds).toEqual({
-            'channel-performer-live': ['message-1'],
+            'channel-agent-live': ['message-1'],
         })
     })
 
     it('keeps mapped threads when an active owner thread list could not be read', () => {
         const mapping = {
-            performerThreadChannels: {
-                [performerThreadMappingKey('performer-1', 'session-unknown')]: 'channel-performer-unknown',
-                [performerThreadMappingKey('performer-deleted', 'session-old')]: 'channel-performer-deleted',
+            agentThreadChannels: {
+                [agentThreadMappingKey('agent-1', 'session-unknown')]: 'channel-agent-unknown',
+                [agentThreadMappingKey('agent-deleted', 'session-old')]: 'channel-agent-deleted',
             },
-            actThreadChannels: {
-                [actThreadMappingKey('act-1', 'thread-unknown')]: 'channel-act-unknown',
-                [actThreadMappingKey('act-deleted', 'thread-old')]: 'channel-act-deleted',
+            teamThreadChannels: {
+                [teamThreadMappingKey('team-1', 'thread-unknown')]: 'channel-team-unknown',
+                [teamThreadMappingKey('team-deleted', 'thread-old')]: 'channel-team-deleted',
             },
         }
 
         const cleanup = pruneStaleDiscordThreadMappings({
             mapping,
-            performerThreadIds: {
-                'performer-1': null,
+            agentThreadIds: {
+                'agent-1': null,
             },
-            actThreadIds: {
-                'act-1': undefined,
+            teamThreadIds: {
+                'team-1': undefined,
             },
         })
 
         expect(cleanup.staleChannelIds.sort()).toEqual([
-            'channel-act-deleted',
-            'channel-performer-deleted',
+            'channel-agent-deleted',
+            'channel-team-deleted',
         ])
-        expect(mapping.performerThreadChannels).toEqual({
-            [performerThreadMappingKey('performer-1', 'session-unknown')]: 'channel-performer-unknown',
+        expect(mapping.agentThreadChannels).toEqual({
+            [agentThreadMappingKey('agent-1', 'session-unknown')]: 'channel-agent-unknown',
         })
-        expect(mapping.actThreadChannels).toEqual({
-            [actThreadMappingKey('act-1', 'thread-unknown')]: 'channel-act-unknown',
+        expect(mapping.teamThreadChannels).toEqual({
+            [teamThreadMappingKey('team-1', 'thread-unknown')]: 'channel-team-unknown',
         })
     })
 })

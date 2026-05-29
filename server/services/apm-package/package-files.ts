@@ -3,6 +3,7 @@ import type { ApmPackageLock, ApmPackageManifest } from '../../../shared/apm-con
 import { buildApmLockForManifest, validateApmPackageManifest } from './manifest.js'
 import { syncMicrosoftApmSourceTree } from './microsoft-apm-source.js'
 import { LOCK_FILE, MANIFEST_FILE, lockPath, manifestPath, packageDir } from './paths.js'
+import { ensureRootApmPackageDependency } from './root-manifest.js'
 import { parseYamlRecord, readText, yamlString } from './yaml-io.js'
 
 export async function readManifestFile(filePath: string): Promise<ApmPackageManifest | null> {
@@ -33,5 +34,6 @@ export async function writePackageFiles(
     await fs.writeFile(manifestPath(workingDir, packageId), yamlString(manifest), 'utf-8')
     await fs.writeFile(lockPath(workingDir, packageId), yamlString(lock), 'utf-8')
     await syncMicrosoftApmSourceTree(workingDir, packageId, manifest)
+    await ensureRootApmPackageDependency(workingDir, packageId)
     return { manifest, lock }
 }

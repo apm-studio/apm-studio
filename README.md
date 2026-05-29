@@ -12,7 +12,7 @@
 
 APM Studio is a local workspace for importing, managing, running, and injecting reusable coding-agent packages. It gives you a visual canvas for composing instructions, skills, MCP requirements, Studio Run model settings, and multi-agent workflows, then projects agent packages into the assistant runtime you choose.
 
-The core idea is simple: build an APM-style agent package, keep it versionable and inspectable, and export it into the coding assistants you already use.
+The core idea is simple: build an APM-style agent package, keep it versionable and inspectable, and sync it into the coding assistants you already use.
 
 ## Quick Start
 
@@ -36,16 +36,16 @@ npm run dev
 
 ## Why APM Studio
 
-AI coding assistants are powerful, but their reusable behavior often ends up scattered across prompts, skill folders, project docs, model settings, and app-specific config. APM Studio turns those pieces into APM-backed packages you can import, manage, run, and export.
+AI coding assistants are powerful, but their reusable behavior often ends up scattered across prompts, skill folders, project docs, model settings, and app-specific config. APM Studio turns those pieces into APM-backed packages you can import, manage, run, and inject into target assistants.
 
 | Capability | What it gives you |
 | --- | --- |
 | Agent packages | Compose instructions, skills, MCP requirements, and Studio-run model settings as reusable packages. |
 | Visual editing | Arrange agents and team workflows on a local canvas. |
-| Inject | Export Studio agent packages and APM primitives to external coding assistants through a CLI-first target pipeline with Studio fallback where supported. |
+| Inject | Sync Studio agent packages and APM primitives to external coding assistants through a CLI-first target pipeline with Studio fallback where supported. |
 | Runtime chat | Test standalone agents and multi-agent workflows through the local runtime. |
-| APM-first state | Keep canonical package state in `.apm-studio/packages/<packageId>/apm.yml` plus the package `.apm/` source tree while generated runtime artifacts stay disposable. |
-| Import, Manage, Run, Inject | Import source-reference presets, manage packages locally, run agents/teams in Studio, then export selected package units to assistant apps. |
+| APM-first state | Keep canonical package state in `packages/<packageId>/apm.yml` plus the package `.apm/` source tree while `.apm-studio/` stores Studio UI metadata, drafts, and cache. |
+| Import, Manage, Run, Inject | Import source-reference presets, manage packages locally, run agents/teams in Studio, then sync selected package units to assistant apps. |
 | GitHub-backed registry | Preview and import community repos as APM packages without copying package content into the registry. |
 
 ## Concepts
@@ -56,12 +56,12 @@ AI coding assistants are powerful, but their reusable behavior often ends up sca
 | Skill | A reusable capability bundle, usually backed by `SKILL.md`. |
 | Agent Package | A runnable agent built from instruction, MCP, skills, and a Studio-only model setting. |
 | Team Workflow | A multi-agent workflow with participants, relationships, and collaboration rules. |
-| Inject | A management mode for exporting agent packages, agents, instructions, skills, and MCP configuration to external assistant apps. |
+| Inject | A management mode for syncing agent packages, agents, instructions, skills, and MCP configuration to external assistant apps. |
 
 ```text
 Instruction + MCP + Skills + Studio Run model = Agent Package
 Agent Packages + rules = Team Workflow
-GitHub repo -> APM Studio -> APM CLI-first target projection -> assistant app
+GitHub repo -> APM Studio -> APM CLI-first target sync -> assistant app
 ```
 
 The community registry lives in the sibling `apm-registry` Worker project. It stores GitHub source references, import recipes, target compatibility, trust metadata, and presets; package content remains in source repositories and local APM manifests.
@@ -118,9 +118,9 @@ npm test
 Important directories:
 
 - `src/`: browser UI and workspace state.
-- `shared/`: client/server contracts, including local asset contracts.
-- `server/`: API routes, Import behavior, assistant export, runtime preparation, and projections.
+- `shared/`: client/server contracts for packages, runtime, workspace state, and target sync.
+- `server/`: API routes, Import behavior, target sync, runtime preparation, and projections.
 - `.opencode/`: generated runtime artifacts.
 - `doc/`: behavior and boundary guides.
 
-The former external asset contract and registry helpers now live inside this repo. `dance-of-tal` is no longer an npm dependency.
+Local APM package content lives under `packages/*`; generated runtime output and assistant target files are not source of truth.

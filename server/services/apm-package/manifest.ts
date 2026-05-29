@@ -1,14 +1,16 @@
-import crypto from 'crypto'
 import type {
     ApmPackageLock,
     ApmPackageManifest,
     ApmValidationResult,
     ApmAgentExtension,
 } from '../../../shared/apm-contracts.js'
-import type { SharedAssetRef } from '../../../shared/chat-contracts.js'
-import type { WorkspacePerformerSnapshot } from '../workspace-service.js'
+import type { SharedPrimitiveRef } from '../../../shared/chat-contracts.js'
+import type {
+    WorkspaceAgentSnapshot,
+} from '../../../shared/workspace-contracts.js'
 import { APM_VERSION } from './paths.js'
 import { isRecord } from './yaml-io.js'
+import { hashManifest } from './manifest-hash.js'
 
 function slugifyName(value: string) {
     const slug = value
@@ -20,140 +22,16 @@ function slugifyName(value: string) {
     return slug || 'agent'
 }
 
-function sortForHash(value: unknown): unknown {
-    if (Array.isArray(value)) {
-        return value.map(sortForHash)
-    }
-    if (isRecord(value)) {
-        return Object.fromEntries(
-            Object.keys(value)
-                .sort()
-                .map((key) => [key, sortForHash(value[key])]),
-        )
-    }
-    return value
-}
-
-function hashManifest(manifest: ApmPackageManifest) {
-    return `sha256:${crypto.createHash('sha256').update(JSON.stringify(sortForHash(manifest))).digest('hex')}`
-}
-
-function manifestRef(ref: SharedAssetRef | null | undefined) {
+function manifestRef(ref: SharedPrimitiveRef | null | undefined) {
     if (!ref) return null
     return ref.kind === 'registry'
         ? { source: 'registry', urn: ref.urn }
         : { source: 'local', draftId: ref.draftId }
 }
 
-function authoringDescription(performer: WorkspacePerformerSnapshot) {
-    const value = performer.meta?.authoring?.description
+function authoringDescription(agent: WorkspaceAgentSnapshot) {
+    const value = agent.meta?.authoring?.description
     return typeof value === 'string' && value.trim() ? value.trim() : null
-}
-
-function agentBodyFromManifest(manifest: ApmPackageManifest): string | null {
-    const agent = Array.isArray(manifest.agents) ? manifest.agents[0] : null
-    if (isRecord(agent)) {
-        const instruction = agent.instruction
-        if (typeof instruction === 'string' && instruction.trim()) {
-            return instruction
-        }
-        if (isRecord(instruction) && typeof instruction.content === 'string' && instruction.content.trim()) {
-            return instruction.content
-        }
-    }
-
-    return null
-}
-
-function legacyInlineInstructionFromManifest(manifest: ApmPackageManifest): string | null {
-    const agentBody = agentBodyFromManifest(manifest)
-    if (agentBody) {
-        return agentBody
-    }
-
-    const instruction = Array.isArray(manifest.instructions) ? manifest.instructions[0] : null
-    if (typeof instruction === 'string' && instruction.trim()) {
-        return instruction
-    }
-    if (isRecord(instruction) && typeof instruction.content === 'string' && instruction.content.trim()) {
-        return instruction.content
-    }
-
-    return null
-}
-
-function extensionAgentNodeId(extension: ApmAgentExtension) {
-    return extension.agentNodeId || extension.performerId || extension.agentName || extension.performerName || 'agent'
-}
-
-function extensionAgentName(extension: ApmAgentExtension) {
-    return extension.agentName || extension.performerName || extensionAgentNodeId(extension)
-}
-
-function extensionAgentBody(extension: ApmAgentExtension, manifest?: ApmPackageManifest) {
-    const body = extension.agentBody ?? extension.inlineInstruction
-    if (typeof body === 'string' && body.trim()) {
-        return body
-    }
-    return manifest ? legacyInlineInstructionFromManifest(manifest) : null
-}
-
-function extensionInstructionRef(extension: ApmAgentExtension) {
-    return extension.instructionRef || extension.talRef || null
-}
-
-function extensionSkillRefs(extension: ApmAgentExtension) {
-    return extension.skillRefs || extension.danceRefs || []
-}
-
-export function normalizePerformer(value: unknown): WorkspacePerformerSnapshot | null {
-    if (!isRecord(value)) return null
-    if (typeof value.id !== 'string' || !value.id) return null
-    if (typeof value.name !== 'string' || !value.name) return null
-
-    const model = isRecord(value.model)
-        && typeof value.model.provider === 'string'
-        && typeof value.model.modelId === 'string'
-        ? { provider: value.model.provider, modelId: value.model.modelId }
-        : null
-
-    return {
-        ...(value as WorkspacePerformerSnapshot),
-        id: value.id,
-        name: value.name,
-        model,
-        danceRefs: Array.isArray(value.danceRefs) ? value.danceRefs as SharedAssetRef[] : [],
-        inlineInstruction: typeof value.inlineInstruction === 'string' ? value.inlineInstruction : null,
-        mcpServerNames: Array.isArray(value.mcpServerNames)
-            ? value.mcpServerNames.filter((entry): entry is string => typeof entry === 'string')
-            : [],
-    }
-}
-
-export function performerFromExtension(
-    extension: ApmAgentExtension,
-    manifest?: ApmPackageManifest,
-): WorkspacePerformerSnapshot {
-    const agentName = extensionAgentName(extension)
-    const description = extension.description
-        || (typeof manifest?.description === 'string' ? manifest.description : null)
-        || null
-    return {
-        id: extensionAgentNodeId(extension),
-        name: agentName,
-        model: extension.model,
-        modelVariant: extension.modelVariant || null,
-        inlineInstruction: extensionAgentBody(extension, manifest),
-        talRef: extensionInstructionRef(extension),
-        danceRefs: extensionSkillRefs(extension),
-        mcpServerNames: extension.mcpServerNames || [],
-        agentId: extension.agentId || null,
-        planMode: extension.planMode === true,
-        meta: {
-            ...(extension.derivedFrom ? { derivedFrom: extension.derivedFrom } : {}),
-            ...(description ? { authoring: { description } } : {}),
-        },
-    }
 }
 
 export function validateApmPackageManifest(manifest: unknown): ApmValidationResult {
@@ -203,27 +81,27 @@ export function validateApmPackageManifest(manifest: unknown): ApmValidationResu
     return { valid: errors.length === 0, errors, warnings }
 }
 
-export function buildApmManifestForAgent(performer: WorkspacePerformerSnapshot): ApmPackageManifest {
-    const packageId = performer.id
-    const name = slugifyName(performer.name)
-    const danceRefs = performer.danceRefs || []
-    const talRef = performer.talRef || null
-    const agentBody = performer.inlineInstruction || null
-    const mcpServerNames = performer.mcpServerNames || []
-    const description = authoringDescription(performer)
+export function buildApmManifestForAgent(agent: WorkspaceAgentSnapshot): ApmPackageManifest {
+    const packageId = agent.id
+    const name = slugifyName(agent.name)
+    const skillRefs = agent.skillRefs || []
+    const instructionRef = agent.instructionRef || null
+    const agentBody = agent.agentBody || null
+    const mcpServerNames = agent.mcpServerNames || []
+    const description = authoringDescription(agent)
     const agentExtension: ApmAgentExtension = {
-        agentNodeId: performer.id,
-        agentName: performer.name,
+        agentNodeId: agent.id,
+        agentName: agent.name,
         description,
-        model: performer.model || null,
-        modelVariant: performer.modelVariant || null,
+        model: agent.model || null,
+        modelVariant: agent.modelVariant || null,
         agentBody,
-        instructionRef: talRef,
-        skillRefs: danceRefs,
+        instructionRef: instructionRef,
+        skillRefs: skillRefs,
         mcpServerNames,
-        agentId: performer.agentId || null,
-        planMode: performer.planMode === true,
-        derivedFrom: performer.meta?.derivedFrom || null,
+        runtimeAgentId: agent.runtimeAgentId || null,
+        planMode: agent.planMode === true,
+        derivedFrom: agent.meta?.derivedFrom || null,
     }
 
     return {
@@ -231,21 +109,21 @@ export function buildApmManifestForAgent(performer: WorkspacePerformerSnapshot):
         version: '0.1.0',
         type: 'hybrid',
         includes: 'auto',
-        description: description || `${performer.name} agent package for APM Studio.`,
+        description: description || `${agent.name} agent package for APM Studio.`,
         dependencies: {
             apm: [],
             mcp: mcpServerNames.map((serverName) => ({ name: serverName })),
         },
         agents: [{
-            id: performer.id,
-            name: performer.name,
+            id: agent.id,
+            name: agent.name,
             ...(description ? { description } : {}),
             ...(agentBody ? {
                 instruction: { source: 'inline', content: agentBody },
             } : {}),
         }],
-        instructions: talRef ? [manifestRef(talRef)] : [],
-        skills: danceRefs.map(manifestRef),
+        instructions: instructionRef ? [manifestRef(instructionRef)] : [],
+        skills: skillRefs.map(manifestRef),
         scripts: {},
         'x-apm': {
             schemaVersion: 1,

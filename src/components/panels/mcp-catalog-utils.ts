@@ -1,6 +1,6 @@
+import type { WorkspaceAgentNode } from '../../../shared/workspace-contracts'
 import type { McpCatalog, McpEntryConfig } from '../../../shared/mcp-catalog'
-import type { PerformerNode } from '../../types'
-import { applyPerformerPatch } from '../../store/workspace-helpers'
+import { applyAgentPatch } from '../../store/workspace/helpers'
 
 export type McpKVPair = { key: string; value: string }
 
@@ -25,20 +25,20 @@ export type McpCatalogRenameImpact = {
     key: string
     previousName: string
     nextName: string
-    affectedPerformerIds: string[]
+    affectedAgentIds: string[]
 }
 
 export type McpCatalogDeleteImpact = {
     key: string
     name: string
-    affectedPerformerIds: string[]
+    affectedAgentIds: string[]
 }
 
 export type McpCatalogImpact = {
     renames: McpCatalogRenameImpact[]
     deletes: McpCatalogDeleteImpact[]
-    affectedPerformerIds: string[]
-    affectedPerformerNames: string[]
+    affectedAgentIds: string[]
+    affectedAgentNames: string[]
 }
 
 export function isRemoteDraft(draft: McpEntryDraft): boolean {
@@ -88,9 +88,9 @@ function persistedName(entry: McpEntryDraft | undefined) {
     return entry?.name.trim() || ''
 }
 
-function performerReferencesMcpName(performer: PerformerNode, serverName: string) {
-    return performer.mcpServerNames.includes(serverName)
-        || Object.values(performer.mcpBindingMap || {}).includes(serverName)
+function agentReferencesMcpName(agent: WorkspaceAgentNode, serverName: string) {
+    return agent.mcpServerNames.includes(serverName)
+        || Object.values(agent.mcpBindingMap || {}).includes(serverName)
 }
 
 export function buildMcpDrafts(catalog: McpCatalog, previousEntries: McpEntryDraft[] = []): McpEntryDraft[] {
@@ -161,7 +161,7 @@ export function getMcpEntryValidationError(entries: McpEntryDraft[]): string | n
 export function buildMcpCatalogImpact(
     previousEntries: McpEntryDraft[],
     nextEntries: McpEntryDraft[],
-    performers: PerformerNode[],
+    agents: WorkspaceAgentNode[],
 ): McpCatalogImpact {
     const nextByKey = new Map(nextEntries.map((entry) => [entry.key, entry]))
     const renames: McpCatalogRenameImpact[] = []
@@ -175,15 +175,15 @@ export function buildMcpCatalogImpact(
 
         const nextEntry = nextByKey.get(previousEntry.key)
         const nextName = persistedName(nextEntry)
-        const affectedPerformerIds = performers
-            .filter((performer) => performerReferencesMcpName(performer, previousName))
-            .map((performer) => performer.id)
+        const affectedAgentIds = agents
+            .filter((agent) => agentReferencesMcpName(agent, previousName))
+            .map((agent) => agent.id)
 
         if (!nextName) {
             deletes.push({
                 key: previousEntry.key,
                 name: previousName,
-                affectedPerformerIds,
+                affectedAgentIds,
             })
             continue
         }
@@ -193,49 +193,49 @@ export function buildMcpCatalogImpact(
                 key: previousEntry.key,
                 previousName,
                 nextName,
-                affectedPerformerIds,
+                affectedAgentIds,
             })
         }
     }
 
-    const affectedPerformerIds = Array.from(new Set([
-        ...renames.flatMap((rename) => rename.affectedPerformerIds),
-        ...deletes.flatMap((item) => item.affectedPerformerIds),
+    const affectedAgentIds = Array.from(new Set([
+        ...renames.flatMap((rename) => rename.affectedAgentIds),
+        ...deletes.flatMap((item) => item.affectedAgentIds),
     ]))
-    const affectedPerformerNames = performers
-        .filter((performer) => affectedPerformerIds.includes(performer.id))
-        .map((performer) => performer.name)
+    const affectedAgentNames = agents
+        .filter((agent) => affectedAgentIds.includes(agent.id))
+        .map((agent) => agent.name)
         .sort((left, right) => left.localeCompare(right))
 
     return {
         renames,
         deletes,
-        affectedPerformerIds,
-        affectedPerformerNames,
+        affectedAgentIds,
+        affectedAgentNames,
     }
 }
 
 export function hasMcpCatalogImpact(impact: McpCatalogImpact) {
-    return impact.affectedPerformerIds.length > 0
+    return impact.affectedAgentIds.length > 0
 }
 
-export function applyMcpCatalogImpactToPerformers(
-    performers: PerformerNode[],
+export function applyMcpCatalogImpactToAgents(
+    agents: WorkspaceAgentNode[],
     impact: McpCatalogImpact,
-): PerformerNode[] {
+): WorkspaceAgentNode[] {
     if (!hasMcpCatalogImpact(impact)) {
-        return performers
+        return agents
     }
 
     const renameMap = new Map(impact.renames.map((rename) => [rename.previousName, rename.nextName]))
     const deletedNames = new Set(impact.deletes.map((item) => item.name))
     let changedAny = false
 
-    const nextPerformers = performers.map((performer) => {
+    const nextAgents = agents.map((agent) => {
         let changed = false
 
         const nextMcpServerNames = Array.from(new Set(
-            performer.mcpServerNames
+            agent.mcpServerNames
                 .map((name) => {
                     const nextName = renameMap.get(name) || name
                     if (nextName !== name) {
@@ -251,7 +251,7 @@ export function applyMcpCatalogImpactToPerformers(
         ))
 
         const nextMcpBindingMap = Object.fromEntries(
-            Object.entries(performer.mcpBindingMap || {}).flatMap(([placeholderName, serverName]) => {
+            Object.entries(agent.mcpBindingMap || {}).flatMap(([placeholderName, serverName]) => {
                 if (deletedNames.has(serverName)) {
                     changed = true
                     return []
@@ -267,20 +267,20 @@ export function applyMcpCatalogImpactToPerformers(
 
         if (
             !changed
-            && nextMcpServerNames.length === performer.mcpServerNames.length
-            && Object.keys(nextMcpBindingMap).length === Object.keys(performer.mcpBindingMap || {}).length
+            && nextMcpServerNames.length === agent.mcpServerNames.length
+            && Object.keys(nextMcpBindingMap).length === Object.keys(agent.mcpBindingMap || {}).length
         ) {
-            return performer
+            return agent
         }
 
         changedAny = true
-        return applyPerformerPatch(performer, {
+        return applyAgentPatch(agent, {
             mcpServerNames: nextMcpServerNames,
             mcpBindingMap: nextMcpBindingMap,
         })
     })
 
-    return changedAny ? nextPerformers : performers
+    return changedAny ? nextAgents : agents
 }
 
 export function serializeMcpEntries(entries: McpEntryDraft[]): McpCatalog {

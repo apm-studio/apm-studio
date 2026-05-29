@@ -1,4 +1,4 @@
-import type { ChatMessage, ChatMessageToolInfo } from '../../types'
+import type { ChatMessage, ChatMessageToolInfo } from '../../store/session/chat-message-types'
 import type { AssistantAction, AssistantActionEnvelope } from '../../../shared/assistant-actions'
 import { ASSISTANT_MUTATION_TOOL_NAME } from '../../../shared/assistant-actions'
 import {

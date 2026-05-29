@@ -1,8 +1,9 @@
+import type { ChatMessage } from '../session/chat-message-types'
 /**
  * Chat slice internal utilities and types shared across sub-modules.
  */
 import type { StudioState } from '../types'
-import type { ChatMessage } from '../../types'
+
 import {
     appendLocalMessage,
     appendSystemNotice,

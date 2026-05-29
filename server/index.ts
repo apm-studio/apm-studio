@@ -9,7 +9,7 @@ import { refreshAssistantProjectionOnServerStartup } from './services/studio-ass
 import { PORT, OPENCODE_URL, STUDIO_DIR, IS_PRODUCTION, getActiveProjectDir } from './lib/config.js'
 import { ensureOpencodeSidecar, stopOpencodeSidecar } from './lib/opencode-sidecar.js'
 import { discordIntegrationService } from './services/discord/discord-service.js'
-import { terminalManager } from './services/terminal-service.js'
+import { terminalManager } from './services/terminal/service.js'
 
 const app = createServerApp()
 let server: ReturnType<typeof serve> | null = null

@@ -2,42 +2,42 @@ export const ASSISTANT_CHAT_OWNER_ID = 'studio-assistant'
 
 export type ChatTargetDescriptor =
     | {
-        kind: 'performer'
+        kind: 'agent'
         chatKey: string
-        performerId: string
+        agentId: string
     }
     | {
         kind: 'assistant'
         chatKey: string
     }
     | {
-        kind: 'act-participant'
+        kind: 'team-participant'
         chatKey: string
-        actId: string
+        teamId: string
         threadId: string
         participantKey: string
     }
 
-export function buildActParticipantChatKey(actId: string, threadId: string, participantKey: string) {
-    return `act:${actId}:thread:${threadId}:participant:${participantKey}`
+export function buildTeamParticipantChatKey(teamId: string, threadId: string, participantKey: string) {
+    return `team:${teamId}:thread:${threadId}:participant:${participantKey}`
 }
 
-export function parseActParticipantChatKey(chatKey: string) {
-    const match = chatKey.match(/^act:([^:]+):thread:([^:]+):participant:(.+)$/)
+export function parseTeamParticipantChatKey(chatKey: string) {
+    const match = chatKey.match(/^team:([^:]+):thread:([^:]+):participant:(.+)$/)
     if (!match) {
         return null
     }
 
-    const [, actId, threadId, participantKey] = match
+    const [, teamId, threadId, participantKey] = match
     return {
-        actId,
+        teamId,
         threadId,
         participantKey,
     }
 }
 
-export function isActParticipantChatKey(chatKey: string) {
-    return parseActParticipantChatKey(chatKey) !== null
+export function isTeamParticipantChatKey(chatKey: string) {
+    return parseTeamParticipantChatKey(chatKey) !== null
 }
 
 export function hashWorkspaceKey(input: string) {
@@ -69,18 +69,18 @@ export function describeChatTarget(chatKey: string): ChatTargetDescriptor {
         }
     }
 
-    const actParticipant = parseActParticipantChatKey(chatKey)
-    if (actParticipant) {
+    const teamParticipant = parseTeamParticipantChatKey(chatKey)
+    if (teamParticipant) {
         return {
-            kind: 'act-participant',
+            kind: 'team-participant',
             chatKey,
-            ...actParticipant,
+            ...teamParticipant,
         }
     }
 
     return {
-        kind: 'performer',
+        kind: 'agent',
         chatKey,
-        performerId: chatKey,
+        agentId: chatKey,
     }
 }

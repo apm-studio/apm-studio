@@ -1,10 +1,10 @@
+import type { WorkspaceAgentNode, WorkspaceTeamSnapshot } from '../../../shared/workspace-contracts'
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { Columns2, Users, Workflow } from 'lucide-react'
-import type { DragAsset } from '../../lib/dnd-handlers'
+import type { DragPrimitive } from '../../lib/dnd-handlers'
 import { isSplitPaneDrag, isSplitViewNodeDrag } from '../../lib/dnd-handlers'
 import { resolveSplitDropIntent, SPLIT_VIEW_MAX_PANES } from '../../lib/focus-utils'
-import type { FullscreenNodeType, SplitViewState, WorkspaceViewMode } from '../../store/types'
-import type { PerformerNode, WorkspaceAct } from '../../types'
+import type { FullscreenNodeType, SplitViewState, WorkspaceViewMode } from '../../store/workspace/types'
 import './SplitViewDropOverlay.css'
 
 type ActiveDragLike = {
@@ -18,20 +18,20 @@ type Props = {
     viewMode: WorkspaceViewMode
     splitView: SplitViewState
     viewportSize: { width: number; height: number } | null
-    acts: WorkspaceAct[]
-    performers: PerformerNode[]
+    teams: WorkspaceTeamSnapshot[]
+    agents: WorkspaceAgentNode[]
 }
 
-function nodeLabel(nodeId: string, nodeType: FullscreenNodeType, acts: WorkspaceAct[], performers: PerformerNode[]) {
-    if (nodeType === 'act') {
-        return acts.find((act) => act.id === nodeId)?.name || 'Team'
+function nodeLabel(nodeId: string, nodeType: FullscreenNodeType, teams: WorkspaceTeamSnapshot[], agents: WorkspaceAgentNode[]) {
+    if (nodeType === 'team') {
+        return teams.find((team) => team.id === nodeId)?.name || 'Team'
     }
 
-    return performers.find((performer) => performer.id === nodeId)?.name || 'Agent'
+    return agents.find((agent) => agent.id === nodeId)?.name || 'Agent'
 }
 
 function nodeIcon(nodeType: FullscreenNodeType) {
-    return nodeType === 'act' ? <Workflow size={13} /> : <Users size={13} />
+    return nodeType === 'team' ? <Workflow size={13} /> : <Users size={13} />
 }
 
 function slotStyle(slot: { x: number; y: number; width: number; height: number }): CSSProperties {
@@ -80,7 +80,7 @@ function intentLabel(direction: string, isReordering: boolean) {
     return isReordering ? 'Move here' : 'Place here'
 }
 
-function dragKeyFromData(dragData: DragAsset | undefined) {
+function dragKeyFromData(dragData: DragPrimitive | undefined) {
     if (!isSplitViewNodeDrag(dragData)) {
         return null
     }
@@ -93,11 +93,11 @@ export default function SplitViewDropOverlay({
     viewMode,
     splitView,
     viewportSize,
-    acts,
-    performers,
+    teams,
+    agents,
 }: Props) {
     const [trackedPoint, setTrackedPoint] = useState<{ key: string; point: { x: number; y: number } } | null>(null)
-    const dragData = active?.data?.current as DragAsset | undefined
+    const dragData = active?.data?.current as DragPrimitive | undefined
     const isDraggingSplitNode = isSplitViewNodeDrag(dragData)
     const isReordering = isSplitPaneDrag(dragData)
     const dragKey = dragKeyFromData(dragData)
@@ -154,7 +154,7 @@ export default function SplitViewDropOverlay({
                 <div className="split-view-drop-overlay__full-target">
                     <Columns2 size={16} />
                     <strong>Open Split View</strong>
-                    <span>{nodeLabel(dragData.nodeId, dragData.nodeType, acts, performers)}</span>
+                    <span>{nodeLabel(dragData.nodeId, dragData.nodeType, teams, agents)}</span>
                 </div>
             </div>
         )
@@ -179,8 +179,8 @@ export default function SplitViewDropOverlay({
                                 ? nodeLabel(
                                     intentPane.nodeId,
                                     intentPane.type,
-                                    acts,
-                                    performers,
+                                    teams,
+                                    agents,
                                 )
                                 : `${Math.min(splitView.panes.length + 1, SPLIT_VIEW_MAX_PANES)}/${SPLIT_VIEW_MAX_PANES}`}
                         </span>

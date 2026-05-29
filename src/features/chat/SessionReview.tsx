@@ -1,10 +1,10 @@
 import { useMemo } from 'react'
 import { FileEdit } from 'lucide-react'
-import type { ChatMessage } from '../../types'
+import type { ChatSessionDiffEntry } from '../../../shared/chat-contracts'
 import { DiffChanges } from '../../components/chat/DiffChanges'
 import { DiffBlock } from '../../components/chat/SyntaxBlock'
 import {
-    resolveSessionReviewDiffs,
+    normalizeSessionDiffEntries,
     type FileDiffInfo,
 } from './session-review-diffs'
 import './SessionReview.css'
@@ -67,21 +67,17 @@ function FileDiffItem({ diff }: { diff: FileDiffInfo }) {
 }
 
 export interface SessionReviewProps {
-    messages: ChatMessage[]
-    diffEntries?: Array<Record<string, unknown>> | null
+    diffEntries?: ChatSessionDiffEntry[] | null
     className?: string
 }
 
 /**
- * SessionReview — diff review panel showing all file changes in the session.
- *
- * Scans chat messages for edit/write/patch tool parts and displays
- * per-file diffs inline so opening the panel immediately reveals changes.
+ * SessionReview — diff review panel showing server-normalized session changes.
  */
-export function SessionReview({ messages, diffEntries, className = '' }: SessionReviewProps) {
+export function SessionReview({ diffEntries, className = '' }: SessionReviewProps) {
     const diffs = useMemo(
-        () => resolveSessionReviewDiffs(messages, diffEntries),
-        [diffEntries, messages],
+        () => normalizeSessionDiffEntries(diffEntries),
+        [diffEntries],
     )
 
     const totalAdditions = useMemo(() => diffs.reduce((s, d) => s + d.additions, 0), [diffs])

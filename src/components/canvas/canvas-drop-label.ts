@@ -1,7 +1,7 @@
 export function getCanvasDropLabel(activeKind: string | undefined) {
-    if (activeKind !== 'performer') {
+    if (activeKind !== 'agent') {
         return null
     }
 
-    return 'Drop to add this agent to the current stage'
+    return 'Drop to add this agent to the current workspace'
 }

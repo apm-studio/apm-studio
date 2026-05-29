@@ -14,13 +14,11 @@ const {
     showToastMock: vi.fn(),
 }))
 
-vi.mock('../../api', () => ({
-    api: {
-        chat: {
-            respondPermission: respondPermissionMock,
-            respondQuestion: respondQuestionMock,
-            rejectQuestion: rejectQuestionMock,
-        },
+vi.mock('../../api-clients/chat', () => ({
+    chatApi: {
+        respondPermission: respondPermissionMock,
+        respondQuestion: respondQuestionMock,
+        rejectQuestion: rejectQuestionMock,
     },
 }))
 
@@ -46,7 +44,7 @@ function createMinimalState(overrides: Partial<StudioState> = {}): StudioState {
         sessionToChatKey: {},
         sessionLoading: {},
         sessionMutationPending: {},
-        activeChatPerformerId: null,
+        activeChatAgentId: null,
         sessions: [],
         ...overrides,
     } as StudioState
@@ -77,7 +75,7 @@ describe('chat approvals', () => {
 
     it('removes permissions from session-owned entity state on success', async () => {
         const sessionId = 'session-1'
-        const permission = { id: 'perm-1', sessionID: sessionId, permission: 'file.read', patterns: [], always: [], metadata: {} }
+        const permission = { id: 'perm-1', sessionId, permission: 'file.read', patterns: [], always: [], metadata: {} }
         const state = createMinimalState({
             sePermissions: { [sessionId]: permission },
         })
@@ -93,7 +91,7 @@ describe('chat approvals', () => {
 
     it('restores questions into session-owned entity state on failure', async () => {
         const sessionId = 'session-1'
-        const question = { id: 'q-1', sessionID: sessionId, questions: [] }
+        const question = { id: 'q-1', sessionId, questions: [] }
         const state = createMinimalState({
             seQuestions: { [sessionId]: question },
         })

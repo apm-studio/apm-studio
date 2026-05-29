@@ -3,7 +3,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { promises as fs } from 'node:fs'
 import { gzipSync } from 'node:zlib'
-import { importApmPackagesFromGitHub, listApmGitHubSourceAssets, previewApmPackagesFromGitHub } from './github-import.js'
+import { importApmPackagesFromGitHub, listApmGitHubSourceItems, previewApmPackagesFromGitHub } from './github-import.js'
 import { readApmPackage } from './repository.js'
 
 function jsonResponse(body: unknown) {
@@ -131,9 +131,9 @@ describe('APM GitHub source import', () => {
         })
     })
 
-    it('can import GitHub packages into the global package workspace', async () => {
-        const globalDir = await fs.mkdtemp(path.join(os.tmpdir(), 'apm-global-'))
-        vi.stubEnv('APM_STUDIO_HOME', globalDir)
+    it('can import GitHub packages into the user-scope APM workspace', async () => {
+        const userDir = await fs.mkdtemp(path.join(os.tmpdir(), 'apm-user-'))
+        vi.stubEnv('APM_STUDIO_USER_APM_HOME', userDir)
         const fetchMock = vi.fn(async (url: string | URL) => {
             const href = url.toString()
             if (href === 'https://api.github.com/repos/VoltAgent/awesome-claude-code-subagents') {
@@ -164,18 +164,18 @@ describe('APM GitHub source import', () => {
             source: 'VoltAgent/awesome-claude-code-subagents/categories/04-quality-security',
             format: 'claude-md',
             limit: 1,
-            scope: 'global',
+            scope: 'user',
         })
 
-        expect(result.scope).toBe('global')
-        expect(result.targetWorkingDir).toBe(globalDir)
-        expect(await readApmPackage(globalDir, result.packages[0].packageId)).not.toBeNull()
+        expect(result.scope).toBe('user')
+        expect(result.targetWorkingDir).toBe(userDir)
+        expect(await readApmPackage(userDir, result.packages[0].packageId)).not.toBeNull()
         expect(await readApmPackage(workingDir, result.packages[0].packageId)).toBeNull()
 
-        await fs.rm(globalDir, { recursive: true, force: true }).catch(() => {})
+        await fs.rm(userDir, { recursive: true, force: true }).catch(() => {})
     })
 
-    it('lists source assets converted from supported GitHub preset repos', async () => {
+    it('lists source primitives converted from supported GitHub preset repos', async () => {
         const fetchMock = vi.fn(async (url: string | URL) => {
             const href = url.toString()
             if (href === 'https://api.github.com/repos/VoltAgent/awesome-claude-code-subagents') {
@@ -216,7 +216,7 @@ describe('APM GitHub source import', () => {
         })
         vi.stubGlobal('fetch', fetchMock)
 
-        const result = await listApmGitHubSourceAssets({
+        const result = await listApmGitHubSourceItems({
             sources: ['awesome-claude-code-subagents', 'awesome-agent-skills'],
             limitPerSource: 2,
         })
@@ -225,7 +225,7 @@ describe('APM GitHub source import', () => {
             'awesome-agent-skills',
             'awesome-claude-code-subagents',
         ])
-        expect(result.assets).toEqual(expect.arrayContaining([
+        expect(result.primitives).toEqual(expect.arrayContaining([
             expect.objectContaining({
                 kind: 'agent',
                 name: 'code-reviewer',
@@ -249,7 +249,7 @@ describe('APM GitHub source import', () => {
                 sourceUrl: 'https://github.com/angular/skills',
             }),
         ]))
-        expect(result.assets).toHaveLength(3)
+        expect(result.primitives).toHaveLength(3)
     })
 
     it('previews mixed APM, Skill, instruction, and MCP repo candidates without writing packages', async () => {
@@ -366,12 +366,12 @@ describe('APM GitHub source import', () => {
         })
         vi.stubGlobal('fetch', fetchMock)
 
-        const result = await listApmGitHubSourceAssets({
+        const result = await listApmGitHubSourceItems({
             sources: ['awesome-copilot', 'addy-agent-skills', 'vercel-skills', 'microsoft-skills'],
             limitPerSource: 2,
         })
 
-        expect(result.assets).toEqual(expect.arrayContaining([
+        expect(result.primitives).toEqual(expect.arrayContaining([
             expect.objectContaining({
                 kind: 'package',
                 repo: 'github/awesome-copilot',
@@ -397,6 +397,6 @@ describe('APM GitHub source import', () => {
                 importRequest: expect.objectContaining({ source: 'microsoft/skills' }),
             }),
         ]))
-        expect(result.assets).toHaveLength(4)
+        expect(result.primitives).toHaveLength(4)
     })
 })

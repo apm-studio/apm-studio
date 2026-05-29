@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { RefreshCw, AlertCircle, Zap, Clock } from 'lucide-react'
-import { api } from '../../api'
+import { opencodeApi } from '../../api-clients/opencode'
 
 type QuotaWindow = {
     percentUsed: number
@@ -218,7 +218,7 @@ export default function SettingsUsing() {
         setLoading(true)
         setFetchError(null)
         try {
-            setData(await api.usage.get())
+            setData(await opencodeApi.usage.get())
         } catch (err) {
             setFetchError(err instanceof Error ? err.message : String(err))
         } finally {

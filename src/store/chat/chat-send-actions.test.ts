@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { StudioState } from '../types'
 import type { ChatRuntimeConfig } from './chat-runtime-target'
 import { createChatSendActions } from './chat-send-actions'
-import { createEmptyProjectionDirtyState } from '../runtime-change-policy'
+import { createEmptyProjectionDirtyState } from '../runtime/change-policy'
 
 const {
     sendMock,
@@ -14,11 +14,14 @@ const {
     resolveChatRuntimeTargetMock: vi.fn(),
 }))
 
-vi.mock('../../api', () => ({
-    api: {
-        chat: {
-            send: sendMock,
-        },
+vi.mock('../../api-clients/chat', () => ({
+    chatApi: {
+        send: sendMock,
+    },
+}))
+
+vi.mock('../../api-clients/opencode', () => ({
+    opencodeApi: {
         models: {
             list: listModelsMock,
         },
@@ -29,7 +32,7 @@ vi.mock('../../lib/api-errors', () => ({
     formatStudioApiErrorMessage: () => 'request failed',
 }))
 
-vi.mock('../../lib/performers', () => ({
+vi.mock('../../lib/agents', () => ({
     hasModelConfig: () => true,
 }))
 
@@ -49,50 +52,50 @@ vi.mock('./chat-runtime-target', async () => {
 
 function createRuntimeConfig(): ChatRuntimeConfig {
     return {
-        talRef: null,
-        danceRefs: [],
+        instructionRef: null,
+        skillRefs: [],
         model: { provider: 'openai', modelId: 'gpt-5.4' },
         modelVariant: null,
-        agentId: 'build',
+        runtimeAgentId: 'build',
         mcpServerNames: [],
         planMode: false,
     }
 }
 
-function createPerformerTarget(chatKey = 'performer-1') {
+function createAgentTarget(chatKey = 'agent-1') {
     return {
         chatKey,
-        kind: 'performer' as const,
-        name: 'Performer 1',
+        kind: 'agent' as const,
+        name: 'Agent 1',
         runtimeConfig: createRuntimeConfig(),
         assistantContext: null,
         executionScope: {
-            performerId: chatKey,
-            actId: null,
+            agentId: chatKey,
+            teamId: null,
         },
         requestTarget: {
-            performerId: chatKey,
-            performerName: 'Performer 1',
+            agentId: chatKey,
+            agentName: 'Agent 1',
         },
     }
 }
 
-function createActTarget(chatKey: string, actId: string, threadId: string) {
+function createTeamTarget(chatKey: string, teamId: string, threadId: string) {
     return {
         chatKey,
-        kind: 'act-participant' as const,
+        kind: 'team-participant' as const,
         name: 'Lead',
         runtimeConfig: createRuntimeConfig(),
         assistantContext: null,
         executionScope: {
-            performerId: 'local-performer',
-            actId,
+            agentId: 'local-agent',
+            teamId,
         },
         requestTarget: {
-            performerId: chatKey,
-            performerName: 'Lead',
-            actId,
-            actThreadId: threadId,
+            agentId: chatKey,
+            agentName: 'Lead',
+            teamId,
+            teamThreadId: threadId,
         },
     }
 }
@@ -112,18 +115,18 @@ function createAssistantTarget(
         },
         assistantContext: {
             workingDir: '/tmp/workspace',
-            performers: [],
-            acts: [],
+            agents: [],
+            teams: [],
             drafts: [],
             availableModels,
         },
         executionScope: {
-            performerId: null,
-            actId: null,
+            runtimeAgentId: null,
+            teamId: null,
         },
         requestTarget: {
-            performerId: chatKey,
-            performerName: 'APM Assistant',
+            agentId: chatKey,
+            agentName: 'APM Assistant',
         },
     }
 }
@@ -134,7 +137,7 @@ function createMinimalState(overrides: Partial<StudioState> = {}): StudioState {
         projectionDirty: createEmptyProjectionDirtyState(),
         workspaceDirty: false,
         workingDir: '/tmp/workspace',
-        performers: [],
+        agents: [],
         seEntities: {},
         seMessages: {},
         seStatuses: {},
@@ -146,9 +149,9 @@ function createMinimalState(overrides: Partial<StudioState> = {}): StudioState {
         chatKeyToSession: {},
         sessionToChatKey: {},
         sessionLoading: {},
-        activeChatPerformerId: null,
+        activeChatAgentId: null,
         sessions: [],
-        actThreads: {},
+        teamThreads: {},
         assistantAvailableModels: [],
         watchSessionLifecycle: vi.fn(),
         stopWatchingSessionLifecycle: vi.fn(),
@@ -168,8 +171,8 @@ function createMinimalState(overrides: Partial<StudioState> = {}): StudioState {
         delete state.chatDrafts[chatKey]
     })
     state.upsertSession = vi.fn()
-    state.setSessionMessages = vi.fn((sessionId: string, messages: unknown[]) => {
-        state.seMessages[sessionId] = messages as StudioState['seMessages'][string]
+    state.setSessionMessages = vi.fn((sessionId: string, messages: StudioState['seMessages'][string]) => {
+        state.seMessages[sessionId] = messages
     })
     state.setSessionLoading = vi.fn((sessionId: string, loading: boolean) => {
         if (loading) {
@@ -203,8 +206,8 @@ describe('chat send actions', () => {
     it('starts authoritative lifecycle supervision after a successful send', async () => {
         const sessionId = 'session-1'
         const state = createMinimalState({
-            chatKeyToSession: { 'performer-1': sessionId },
-            sessionToChatKey: { [sessionId]: 'performer-1' },
+            chatKeyToSession: { 'agent-1': sessionId },
+            sessionToChatKey: { [sessionId]: 'agent-1' },
             sessionLoading: { [sessionId]: true },
             initRealtimeEvents: vi.fn(),
         })
@@ -213,30 +216,30 @@ describe('chat send actions', () => {
             Object.assign(state, typeof partial === 'function' ? partial(state) : partial)
         }
 
-        resolveChatRuntimeTargetMock.mockReturnValue(createPerformerTarget())
+        resolveChatRuntimeTargetMock.mockReturnValue(createAgentTarget())
         sendMock.mockResolvedValue(undefined)
 
         const actions = createChatSendActions(set, get, async () => ({
             sessionId,
-            runtimeConfig: createPerformerTarget().runtimeConfig,
+            runtimeConfig: createAgentTarget().runtimeConfig,
         }))
 
-        await actions.sendMessage('performer-1', 'hello')
+        await actions.sendMessage('agent-1', 'hello')
 
-        expect(state.watchSessionLifecycle).toHaveBeenCalledWith('performer-1', sessionId)
+        expect(state.watchSessionLifecycle).toHaveBeenCalledWith('agent-1', sessionId)
     })
 
     it('sends the current projection dirty scope as an execution hint', async () => {
         const sessionId = 'session-1'
         const state = createMinimalState({
             projectionDirty: {
-                performerIds: ['performer-2'],
-                actIds: [],
+                agentIds: ['agent-2'],
+                teamIds: [],
                 draftIds: ['draft-1'],
                 workspaceWide: false,
             },
-            chatKeyToSession: { 'performer-1': sessionId },
-            sessionToChatKey: { [sessionId]: 'performer-1' },
+            chatKeyToSession: { 'agent-1': sessionId },
+            sessionToChatKey: { [sessionId]: 'agent-1' },
             sessionLoading: { [sessionId]: true },
             initRealtimeEvents: vi.fn(),
         })
@@ -245,31 +248,31 @@ describe('chat send actions', () => {
             Object.assign(state, typeof partial === 'function' ? partial(state) : partial)
         }
 
-        resolveChatRuntimeTargetMock.mockReturnValue(createPerformerTarget())
+        resolveChatRuntimeTargetMock.mockReturnValue(createAgentTarget())
         sendMock.mockResolvedValue(undefined)
 
         const actions = createChatSendActions(set, get, async () => ({
             sessionId,
-            runtimeConfig: createPerformerTarget().runtimeConfig,
+            runtimeConfig: createAgentTarget().runtimeConfig,
         }))
 
-        await actions.sendMessage('performer-1', 'hello')
+        await actions.sendMessage('agent-1', 'hello')
 
         expect(sendMock).toHaveBeenCalledWith(sessionId, expect.objectContaining({
             projectionScope: {
-                performerIds: ['performer-2'],
-                actIds: [],
+                agentIds: ['agent-2'],
+                teamIds: [],
                 draftIds: ['draft-1'],
                 workspaceWide: false,
             },
         }))
     })
 
-    it('does not start client lifecycle supervision for act sends', async () => {
-        const actId = 'act-1'
+    it('does not start client lifecycle supervision for team sends', async () => {
+        const teamId = 'team-1'
         const threadId = 'thread-1'
         const participantKey = 'participant-1'
-        const chatKey = `act:${actId}:thread:${threadId}:participant:${participantKey}`
+        const chatKey = `team:${teamId}:thread:${threadId}:participant:${participantKey}`
         const sessionId = 'session-1'
         const state = createMinimalState({
             chatKeyToSession: { [chatKey]: sessionId },
@@ -282,15 +285,15 @@ describe('chat send actions', () => {
             Object.assign(state, typeof partial === 'function' ? partial(state) : partial)
         }
 
-        resolveChatRuntimeTargetMock.mockReturnValue(createActTarget(chatKey, actId, threadId))
+        resolveChatRuntimeTargetMock.mockReturnValue(createTeamTarget(chatKey, teamId, threadId))
         sendMock.mockResolvedValue(undefined)
 
         const actions = createChatSendActions(set, get, async () => ({
             sessionId,
-            runtimeConfig: createActTarget(chatKey, actId, threadId).runtimeConfig,
+            runtimeConfig: createTeamTarget(chatKey, teamId, threadId).runtimeConfig,
         }))
 
-        await actions.sendActMessage(actId, threadId, participantKey, 'hello')
+        await actions.sendTeamMessage(teamId, threadId, participantKey, 'hello')
 
         expect(state.watchSessionLifecycle).not.toHaveBeenCalled()
     })
@@ -298,10 +301,10 @@ describe('chat send actions', () => {
     it('shows the first standalone user input as the sidebar title immediately and refreshes later', async () => {
         const sessionId = 'session-standalone-1'
         const state = createMinimalState({
-            chatKeyToSession: { 'performer-1': sessionId },
-            sessionToChatKey: { [sessionId]: 'performer-1' },
+            chatKeyToSession: { 'agent-1': sessionId },
+            sessionToChatKey: { [sessionId]: 'agent-1' },
             sessionLoading: { [sessionId]: true },
-            sessions: [{ id: sessionId, title: 'APM Studio: Performer 1 [studio:performer-1:hash]' }],
+            sessions: [{ id: sessionId, title: 'APM Studio: Agent 1 [studio:agent-1:hash]' }],
             initRealtimeEvents: vi.fn(),
             listSessions: vi.fn(async () => {}),
         })
@@ -310,15 +313,15 @@ describe('chat send actions', () => {
             Object.assign(state, typeof partial === 'function' ? partial(state) : partial)
         }
 
-        resolveChatRuntimeTargetMock.mockReturnValue(createPerformerTarget())
+        resolveChatRuntimeTargetMock.mockReturnValue(createAgentTarget())
         sendMock.mockResolvedValue(undefined)
 
         const actions = createChatSendActions(set, get, async () => ({
             sessionId,
-            runtimeConfig: createPerformerTarget().runtimeConfig,
+            runtimeConfig: createAgentTarget().runtimeConfig,
         }))
 
-        await actions.sendMessage('performer-1', 'Draft launch notes for the beta release')
+        await actions.sendMessage('agent-1', 'Draft launch notes for the beta release')
 
         expect(state.sessions[0]?.sidebarTitle).toBe('Draft launch notes for the beta release')
 
@@ -326,20 +329,20 @@ describe('chat send actions', () => {
         expect(state.listSessions).toHaveBeenCalledTimes(3)
     })
 
-    it('shows the first Act user input as the thread name immediately and refreshes thread snapshots later', async () => {
-        const actId = 'act-1'
+    it('shows the first Team user input as the thread name immediately and refreshes thread snapshots later', async () => {
+        const teamId = 'team-1'
         const threadId = 'thread-1'
         const participantKey = 'participant-1'
-        const chatKey = `act:${actId}:thread:${threadId}:participant:${participantKey}`
-        const sessionId = 'session-act-1'
+        const chatKey = `team:${teamId}:thread:${threadId}:participant:${participantKey}`
+        const sessionId = 'session-team-1'
         const state = createMinimalState({
             chatKeyToSession: { [chatKey]: sessionId },
             sessionToChatKey: { [sessionId]: chatKey },
             sessionLoading: { [sessionId]: true },
-            actThreads: {
-                [actId]: [{
+            teamThreads: {
+                [teamId]: [{
                     id: threadId,
-                    actId,
+                    teamId,
                     status: 'idle',
                     participantSessions: {},
                     participantStatuses: {},
@@ -354,21 +357,21 @@ describe('chat send actions', () => {
             Object.assign(state, typeof partial === 'function' ? partial(state) : partial)
         }
 
-        resolveChatRuntimeTargetMock.mockReturnValue(createActTarget(chatKey, actId, threadId))
+        resolveChatRuntimeTargetMock.mockReturnValue(createTeamTarget(chatKey, teamId, threadId))
         sendMock.mockResolvedValue(undefined)
 
         const actions = createChatSendActions(set, get, async () => ({
             sessionId,
-            runtimeConfig: createActTarget(chatKey, actId, threadId).runtimeConfig,
+            runtimeConfig: createTeamTarget(chatKey, teamId, threadId).runtimeConfig,
         }))
 
-        await actions.sendActMessage(actId, threadId, participantKey, 'Investigate why the mobile build failed')
+        await actions.sendTeamMessage(teamId, threadId, participantKey, 'Investigate why the mobile build failed')
 
-        expect(state.actThreads[actId]?.[0]?.name).toBe('Investigate why the mobile build failed')
+        expect(state.teamThreads[teamId]?.[0]?.name).toBe('Investigate why the mobile build failed')
 
         await vi.advanceTimersByTimeAsync(12_100)
         expect(state.loadThreads).toHaveBeenCalledTimes(3)
-        expect(state.loadThreads).toHaveBeenCalledWith(actId)
+        expect(state.loadThreads).toHaveBeenCalledWith(teamId)
     })
 
     it('hydrates assistant available models before sending when the workspace cache is empty', async () => {
@@ -504,7 +507,7 @@ describe('chat send actions', () => {
             modelId: 'gpt-5.4',
         })
         expect(sendMock).toHaveBeenCalledWith(sessionId, expect.objectContaining({
-            performer: expect.objectContaining({
+            agent: expect.objectContaining({
                 model: {
                     provider: 'openai',
                     modelId: 'gpt-5.4',

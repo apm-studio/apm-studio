@@ -1,5 +1,6 @@
 import { getOpencode } from './opencode.js'
 import type { ModelSelection } from '../../shared/model-types.js'
+import type { RuntimeToolResolution } from '../../shared/opencode-contracts.js'
 import {
     mcpToolPattern,
     type McpCatalog,
@@ -7,20 +8,6 @@ import {
 import { readGlobalMcpCatalog, readProjectMcpServerNames } from './mcp-catalog.js'
 import type { McpLiveStatusMap } from './mcp-catalog.js'
 import { unwrapOpencodeResult } from './opencode-errors.js'
-
-export type RuntimeToolResolution = {
-    selectedMcpServers: string[]
-    requestedTools: string[]
-    availableTools: string[]
-    resolvedTools: string[]
-    unavailableTools: string[]
-    unavailableDetails: Array<{
-        serverName: string
-        reason: 'not_defined' | 'shadowed_by_project' | 'needs_auth' | 'needs_client_registration' | 'connect_failed'
-        toolId?: string
-        detail?: string
-    }>
-}
 
 function unique(values: string[]) {
     return Array.from(new Set(values.filter(Boolean)))

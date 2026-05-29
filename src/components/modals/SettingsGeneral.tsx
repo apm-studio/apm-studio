@@ -4,9 +4,9 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { api } from '../../api'
+import { opencodeApi } from '../../api-clients/opencode'
 import { useStudioStore } from '../../store'
-import { useUISettings } from '../../store/settingsSlice'
+import { useUISettings } from '../../store/settings/slice'
 import {
     buildPermissionModePatch,
     resolvePermissionMode,
@@ -77,8 +77,8 @@ export default function SettingsGeneral() {
         setShellError(null)
         try {
             const [config, shells] = await Promise.all([
-                api.config.getGlobal().catch(() => ({})),
-                api.opencodeTerminal.shells().catch(() => []),
+                opencodeApi.config.getGlobal().catch(() => ({})),
+                opencodeApi.terminal.shells().catch(() => []),
             ])
             const configRecord = config as Record<string, unknown>
             const shell = typeof configRecord.shell === 'string' ? configRecord.shell.trim() : ''
@@ -103,7 +103,7 @@ export default function SettingsGeneral() {
         setShellStatus(null)
         try {
             const nextShell = shellValue.trim()
-            await api.config.updateGlobal({ shell: nextShell || undefined })
+            await opencodeApi.config.updateGlobal({ shell: nextShell || undefined })
             setSavedShell(nextShell)
             setShellValue(nextShell)
             recordStudioChange({ kind: 'runtime_config' })
@@ -120,7 +120,7 @@ export default function SettingsGeneral() {
         setPermissionError(null)
         setPermissionStatus(null)
         try {
-            await api.config.updateGlobal(buildPermissionModePatch(autoApprove))
+            await opencodeApi.config.updateGlobal(buildPermissionModePatch(autoApprove))
             setPermissionMode(autoApprove ? 'auto' : 'default')
             recordStudioChange({ kind: 'runtime_config' })
             setPermissionStatus('Saved')

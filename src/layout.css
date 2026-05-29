@@ -139,8 +139,8 @@
     line-height: 1.5;
 }
 
-/* ── Act Edit Dimming Overlay ─── */
-.canvas-act-dimming {
+/* ── Team Edit Dimming Overlay ─── */
+.canvas-team-dimming {
     position: absolute;
     inset: 0;
     z-index: 30;
@@ -148,7 +148,7 @@
     cursor: pointer;
     transition: background 0.2s;
 }
-.canvas-act-dimming:hover {
+.canvas-team-dimming:hover {
     background: rgba(0, 0, 0, 0.18);
 }
 

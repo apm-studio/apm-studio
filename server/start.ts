@@ -1,9 +1,9 @@
 import { spawn, type ChildProcess } from 'node:child_process'
-import { STUDIO_API_PORT, STUDIO_OPENCODE_PORT, STUDIO_VITE_PORT } from '../shared/default-ports.js'
+import { STUDIO_DEV_API_PORT, STUDIO_DEV_CLIENT_PORT, STUDIO_DEV_OPENCODE_PORT } from '../shared/default-ports.js'
 import { resolvePackageBinCommand } from './lib/package-bin.js'
 
-const SERVER_URL = `http://127.0.0.1:${STUDIO_API_PORT}/api/health`
-const OPENCODE_HEALTH_URL = `http://127.0.0.1:${STUDIO_API_PORT}/api/opencode/health`
+const SERVER_URL = `http://127.0.0.1:${STUDIO_DEV_API_PORT}/api/health`
+const OPENCODE_HEALTH_URL = `http://127.0.0.1:${STUDIO_DEV_API_PORT}/api/opencode/health`
 const STARTUP_TIMEOUT_MS = 30_000
 const POLL_INTERVAL_MS = 250
 const SHUTDOWN_TIMEOUT_MS = 5_000
@@ -92,8 +92,8 @@ function buildDevEnv(extraEnv: NodeJS.ProcessEnv = {}) {
         ...process.env,
         ...extraEnv,
         APM_STUDIO_PRODUCTION: '0',
-        PORT: String(STUDIO_API_PORT),
-        OPENCODE_PORT: String(STUDIO_OPENCODE_PORT),
+        PORT: String(STUDIO_DEV_API_PORT),
+        OPENCODE_PORT: String(STUDIO_DEV_OPENCODE_PORT),
     }
     delete env.OPENCODE_URL
     return env
@@ -160,7 +160,7 @@ async function main() {
         void stopAll(0)
     })
 
-    console.log(`[dev:all] Starting Hono server on ${STUDIO_API_PORT}...`)
+    console.log(`[dev:all] Starting Hono server on ${STUDIO_DEV_API_PORT}...`)
     spawnManaged(
         'server',
         resolvePackageCommand('tsx', 'tsx', 'tsx'),
@@ -174,7 +174,7 @@ async function main() {
         `${OPENCODE_HEALTH_URL}?workingDir=${encodeURIComponent(process.cwd())}`,
     )
 
-    console.log(`[dev:all] Hono server is ready. Starting Vite on ${STUDIO_VITE_PORT}...`)
+    console.log(`[dev:all] Hono server is ready. Starting Vite on ${STUDIO_DEV_CLIENT_PORT}...`)
     spawnManaged('vite', resolvePackageCommand('vite', 'vite', 'vite'))
 
     await new Promise<void>(() => {})

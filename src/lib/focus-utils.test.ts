@@ -62,7 +62,7 @@ describe('revealCanvasNodeWithoutZoom', () => {
 
         revealCanvasNodeWithoutZoom({
             getNode: () => ({
-                id: 'performer-1',
+                id: 'agent-1',
                 position: { x: 10, y: 20 },
                 width: 200,
                 height: 100,
@@ -70,7 +70,7 @@ describe('revealCanvasNodeWithoutZoom', () => {
             }),
             getViewport: () => ({ x: 0, y: 0, zoom: 1.75 }),
             setCenter,
-        }, 'performer-1')
+        }, 'agent-1')
 
         expect(setCenter).toHaveBeenCalledWith(110, 70, {
             zoom: 1.75,
@@ -92,48 +92,48 @@ describe('syncFocusViewport', () => {
 describe('focus snapshot visibility helpers', () => {
     it('resolves hidden state from the saved baseline while focus mode is active', () => {
         const focusSnapshot = {
-            nodeId: 'performer-1',
-            type: 'performer' as const,
-            hiddenPerformerIds: ['performer-2'],
-            hiddenActIds: ['act-2'],
+            nodeId: 'agent-1',
+            type: 'agent' as const,
+            hiddenAgentIds: ['agent-2'],
+            hiddenTeamIds: ['team-2'],
             hiddenEditorIds: [],
             hiddenTerminalIds: [],
             nodeSize: { width: 320, height: 400 },
-            assetLibraryOpen: true,
+            packageLibraryOpen: true,
             assistantOpen: true,
             trackingOpen: false,
             terminalOpen: true,
         }
 
-        expect(resolveNodeBaselineHidden(focusSnapshot, 'performer-2', 'performer', false)).toBe(true)
-        expect(resolveNodeBaselineHidden(focusSnapshot, 'act-2', 'act', false)).toBe(true)
-        expect(resolveNodeBaselineHidden(focusSnapshot, 'performer-3', 'performer', true)).toBe(false)
+        expect(resolveNodeBaselineHidden(focusSnapshot, 'agent-2', 'agent', false)).toBe(true)
+        expect(resolveNodeBaselineHidden(focusSnapshot, 'team-2', 'team', false)).toBe(true)
+        expect(resolveNodeBaselineHidden(focusSnapshot, 'agent-3', 'agent', true)).toBe(false)
     })
 
     it('updates only the targeted hidden-id list in the focus snapshot', () => {
         const focusSnapshot = {
-            nodeId: 'performer-1',
-            type: 'performer' as const,
-            hiddenPerformerIds: ['performer-2'],
-            hiddenActIds: [],
+            nodeId: 'agent-1',
+            type: 'agent' as const,
+            hiddenAgentIds: ['agent-2'],
+            hiddenTeamIds: [],
             hiddenEditorIds: [],
             hiddenTerminalIds: [],
             nodeSize: { width: 320, height: 400 },
-            assetLibraryOpen: true,
+            packageLibraryOpen: true,
             assistantOpen: true,
             trackingOpen: false,
             terminalOpen: true,
         }
 
-        expect(setFocusSnapshotNodeHidden(focusSnapshot, 'performer-3', 'performer', true)).toMatchObject({
-            hiddenPerformerIds: ['performer-2', 'performer-3'],
+        expect(setFocusSnapshotNodeHidden(focusSnapshot, 'agent-3', 'agent', true)).toMatchObject({
+            hiddenAgentIds: ['agent-2', 'agent-3'],
         })
-        expect(setFocusSnapshotNodeHidden(focusSnapshot, 'performer-2', 'performer', false)).toMatchObject({
-            hiddenPerformerIds: [],
+        expect(setFocusSnapshotNodeHidden(focusSnapshot, 'agent-2', 'agent', false)).toMatchObject({
+            hiddenAgentIds: [],
         })
-        expect(setFocusSnapshotNodeHidden(focusSnapshot, 'act-1', 'act', true)).toMatchObject({
-            hiddenPerformerIds: ['performer-2'],
-            hiddenActIds: ['act-1'],
+        expect(setFocusSnapshotNodeHidden(focusSnapshot, 'team-1', 'team', true)).toMatchObject({
+            hiddenAgentIds: ['agent-2'],
+            hiddenTeamIds: ['team-1'],
         })
     })
 })

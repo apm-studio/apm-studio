@@ -35,31 +35,6 @@ button.toolbar__item:hover {
     color: var(--text-primary);
 }
 
-.apm-status.apm-ok {
-    color: var(--status-success);
-    cursor: default;
-}
-
-.apm-status.apm-missing {
-    color: var(--status-danger);
-}
-
-.apm-auth-status {
-    transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
-}
-
-.apm-auth-status--ok {
-    color: var(--status-success);
-}
-
-.apm-auth-status--warn {
-    color: var(--text-main);
-}
-
-.apm-auth-status--warn:hover {
-    background: var(--bg-hover);
-}
-
 .divider-v {
     width: 1px;
     height: 16px;

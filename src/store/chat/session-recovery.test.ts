@@ -5,11 +5,9 @@ const { statusMock } = vi.hoisted(() => ({
     statusMock: vi.fn(),
 }))
 
-vi.mock('../../api', () => ({
-    api: {
-        chat: {
-            status: statusMock,
-        },
+vi.mock('../../api-clients/chat', () => ({
+    chatApi: {
+        status: statusMock,
     },
 }))
 
@@ -33,8 +31,8 @@ describe('createSessionSupervisor', () => {
             sessionToChatKey: Record<string, string>
         } = {
             sessionLoading: { 'session-1': true },
-            chatKeyToSession: { 'performer-1': 'session-1' },
-            sessionToChatKey: { 'session-1': 'performer-1' },
+            chatKeyToSession: { 'agent-1': 'session-1' },
+            sessionToChatKey: { 'session-1': 'agent-1' },
         }
         const get = () => state
 
@@ -54,7 +52,7 @@ describe('createSessionSupervisor', () => {
             },
         })
 
-        supervisor.schedule('performer-1', 'session-1')
+        supervisor.schedule('agent-1', 'session-1')
 
         await vi.advanceTimersByTimeAsync(1_200)
         await Promise.resolve()
@@ -62,7 +60,7 @@ describe('createSessionSupervisor', () => {
         expect(statusMock).toHaveBeenCalledWith('session-1')
         expect(setSessionStatus).toHaveBeenCalledWith('session-1', { type: 'idle' })
         expect(setSessionLoading).toHaveBeenCalledWith('session-1', false)
-        expect(syncSessionMessages).toHaveBeenCalledWith('performer-1', 'session-1')
+        expect(syncSessionMessages).toHaveBeenCalledWith('agent-1', 'session-1')
         expect(supervisor.isRunning('session-1')).toBe(false)
     })
 })

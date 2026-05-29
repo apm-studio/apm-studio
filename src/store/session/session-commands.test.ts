@@ -8,11 +8,9 @@ const { createSessionMock } = vi.hoisted(() => ({
     createSessionMock: vi.fn(),
 }))
 
-vi.mock('../../api', () => ({
-    api: {
-        chat: {
-            createSession: createSessionMock,
-        },
+vi.mock('../../api-clients/chat', () => ({
+    chatApi: {
+        createSession: createSessionMock,
     },
 }))
 
@@ -32,7 +30,7 @@ function createSessionState(overrides: Partial<StudioState> = {}) {
 
     state = {
         ...slice,
-        actThreads: {},
+        teamThreads: {},
         ...overrides,
     } as StudioState
 
@@ -50,30 +48,30 @@ describe('session commands', () => {
     it('creates a fresh backend session even when the chat key is already bound', async () => {
         createSessionMock.mockResolvedValue({
             sessionId: 'session-new',
-            title: 'Performer 1',
+            title: 'Agent 1',
         })
 
         const store = createSessionState({
-            chatKeyToSession: { 'performer-1': 'session-old' },
-            sessionToChatKey: { 'session-old': 'performer-1' },
+            chatKeyToSession: { 'agent-1': 'session-old' },
+            sessionToChatKey: { 'session-old': 'agent-1' },
         })
 
         const sessionId = await createFreshSessionBinding(
             store.set,
             store.get,
-            describeChatTarget('performer-1'),
-            { title: 'Performer 1' },
+            describeChatTarget('agent-1'),
+            { title: 'Agent 1' },
         )
 
         const state = store.get()
         expect(sessionId).toBe('session-new')
         expect(createSessionMock).toHaveBeenCalledOnce()
-        expect(state.chatKeyToSession['performer-1']).toBe('session-new')
+        expect(state.chatKeyToSession['agent-1']).toBe('session-new')
         expect(state.sessionToChatKey['session-old']).toBeUndefined()
-        expect(state.sessionToChatKey['session-new']).toBe('performer-1')
+        expect(state.sessionToChatKey['session-new']).toBe('agent-1')
         expect(state.seEntities['session-new']).toMatchObject({
             id: 'session-new',
-            title: 'Performer 1',
+            title: 'Agent 1',
         })
     })
 })

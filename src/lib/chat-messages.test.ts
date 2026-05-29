@@ -1,6 +1,7 @@
+import type { ChatMessage } from '../store/session/chat-message-types'
 import { describe, expect, it } from 'vitest'
 import { mapSessionMessagesToChatMessages, mergeLiveSessionSnapshot, mergePendingOptimisticUserMessages } from './chat-messages'
-import type { ChatMessage } from '../types'
+
 import { reduceMessagePartUpdated, reduceMessageUpdated } from '../store/session/event-reducer'
 import type { StudioState } from '../store/types'
 
@@ -111,14 +112,11 @@ describe('mapSessionMessagesToChatMessages', () => {
     it('keeps snapshot text parts aligned with live reducer assembly', () => {
         const rawMessage = {
             id: 'msg-1',
-            info: {
-                id: 'msg-1',
-                role: 'assistant',
-                time: { created: 1000 },
-            },
+            role: 'assistant',
+            createdAt: 1000,
             parts: [
                 { id: 'text-1', type: 'text', text: 'Hello' },
-                { id: 'tool-1', type: 'tool', tool: 'wait_until', state: { status: 'completed' } },
+                { id: 'tool-1', type: 'tool', tool: 'wait_until', callId: 'call-1', state: { status: 'completed' } },
                 { id: 'text-2', type: 'text', text: 'World' },
             ],
         }
@@ -133,10 +131,10 @@ describe('mapSessionMessagesToChatMessages', () => {
             seTodos: {},
             chatDrafts: {},
             chatPrefixes: {},
-            chatKeyToSession: { 'performer-1': 'session-1' },
-            sessionToChatKey: { 'session-1': 'performer-1' },
+            chatKeyToSession: { 'agent-1': 'session-1' },
+            sessionToChatKey: { 'session-1': 'agent-1' },
             sessionLoading: {},
-            activeChatPerformerId: null,
+            activeChatAgentId: null,
             sessions: [],
         } as unknown as StudioState
         const get = () => state
@@ -154,6 +152,7 @@ describe('mapSessionMessagesToChatMessages', () => {
             id: 'tool-1',
             type: 'tool',
             tool: 'wait_until',
+            callID: 'call-1',
             state: { status: 'completed' },
         }, get, set)
         reduceMessagePartUpdated('session-1', 'msg-1', {
@@ -171,16 +170,14 @@ describe('mapSessionMessagesToChatMessages', () => {
     it('preserves tool metadata from session snapshots', () => {
         const rawMessage = {
             id: 'msg-1',
-            info: {
-                id: 'msg-1',
-                role: 'assistant',
-                time: { created: 1000 },
-            },
+            role: 'assistant',
+            createdAt: 1000,
             parts: [
                 {
                     id: 'tool-1',
                     type: 'tool',
                     tool: 'apply_patch',
+                    callId: 'call-1',
                     state: {
                         status: 'completed',
                         metadata: {
@@ -224,15 +221,11 @@ describe('mapSessionMessagesToChatMessages', () => {
             role: 'user',
             agent: 'build',
             model: {
-                providerID: 'openai',
-                modelID: 'gpt-5.4',
+                providerId: 'openai',
+                modelId: 'gpt-5.4',
                 variant: 'high',
             },
-            info: {
-                id: 'msg-user-1',
-                role: 'user',
-                time: { created: 2000 },
-            },
+            createdAt: 2000,
             parts: [
                 { id: 'text-1', type: 'text', text: 'Review this PDF' },
                 { id: 'file-1', type: 'file', filename: 'spec.long.filename.pdf', mime: 'application/pdf' },
@@ -266,15 +259,29 @@ describe('mapSessionMessagesToChatMessages', () => {
             providerID: 'anthropic',
             modelID: 'claude-sonnet-4',
             variant: 'reasoning-high',
-            info: {
-                id: 'msg-user-top-level-metadata',
-                role: 'user',
-                time: { created: 3000 },
-            },
+            createdAt: 3000,
             text: 'Top-level metadata',
         }
 
         const mapped = mapSessionMessagesToChatMessages([rawMessage as never])[0]
+
+        expect(mapped.metadata).toBeUndefined()
+    })
+
+    it('does not read agent or variant metadata from nested info aliases', () => {
+        const message = {
+            id: 'msg-info-metadata',
+            role: 'assistant',
+            content: 'Done',
+            info: {
+                id: 'msg-info-metadata',
+                role: 'assistant',
+                agent: 'build',
+                variant: 'high',
+            },
+        }
+
+        const mapped = mapSessionMessagesToChatMessages([message as never])[0]
 
         expect(mapped.metadata).toBeUndefined()
     })

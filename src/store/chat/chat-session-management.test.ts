@@ -1,5 +1,7 @@
+import type { ChatMessage } from '../session/chat-message-types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { ChatMessage } from '../../types'
+import type { ChatSessionDiffEntry } from '../../../shared/chat-contracts'
+
 import type { StudioState } from '../types'
 import { createChatSessionManagement } from './chat-session-management'
 
@@ -17,16 +19,14 @@ const {
     appendSystemNoticeMock: vi.fn(),
 }))
 
-vi.mock('../../api', () => ({
-    api: {
-        chat: {
-            revert: revertMock,
-            unrevert: unrevertMock,
-            diff: diffMock,
-            list: vi.fn(),
-            deleteSession: vi.fn(),
-            abort: vi.fn(),
-        },
+vi.mock('../../api-clients/chat', () => ({
+    chatApi: {
+        revert: revertMock,
+        unrevert: unrevertMock,
+        diff: diffMock,
+        list: vi.fn(),
+        deleteSession: vi.fn(),
+        abort: vi.fn(),
     },
 }))
 
@@ -61,10 +61,10 @@ function createMessage(id: string, role: ChatMessage['role'], content: string, t
 
 function createMinimalState(): StudioState {
     const state = {
-        selectedPerformerId: 'performer-1',
-        selectedPerformerSessionId: 'session-1',
-        chatKeyToSession: { 'performer-1': 'session-1' },
-        sessionToChatKey: { 'session-1': 'performer-1' },
+        selectedAgentId: 'agent-1',
+        selectedAgentSessionId: 'session-1',
+        chatKeyToSession: { 'agent-1': 'session-1' },
+        sessionToChatKey: { 'session-1': 'agent-1' },
         seMessages: {
             'session-1': [
                 createMessage('user-1', 'user', 'first', 1),
@@ -86,7 +86,7 @@ function createMinimalState(): StudioState {
         seQuestions: {},
         seTodos: {},
         sessions: [],
-        activeChatPerformerId: 'performer-1',
+        activeChatAgentId: 'agent-1',
     } as unknown as StudioState
 
     state.setSessionMutationPending = vi.fn()
@@ -124,9 +124,9 @@ describe('chat-session-management review/revert flow', () => {
             Object.assign(state, typeof partial === 'function' ? partial(state) : partial)
         }
 
-        const initialDiff = [{ file: 'src/example.ts', additions: 3, deletions: 1 }]
-        const revertedDiff = [{ file: 'src/example.ts', additions: 1, deletions: 1 }]
-        const finalDiff: Array<Record<string, unknown>> = []
+        const initialDiff: ChatSessionDiffEntry[] = [{ file: 'src/example.ts', before: 'old', after: 'new', additions: 3, deletions: 1, status: 'modified' }]
+        const revertedDiff: ChatSessionDiffEntry[] = [{ file: 'src/example.ts', before: 'older', after: 'newer', additions: 1, deletions: 1, status: 'modified' }]
+        const finalDiff: ChatSessionDiffEntry[] = []
 
         diffMock
             .mockResolvedValueOnce(initialDiff)
@@ -134,28 +134,28 @@ describe('chat-session-management review/revert flow', () => {
             .mockResolvedValueOnce(finalDiff)
 
         revertMock
-            .mockResolvedValueOnce({ revert: { messageID: 'user-2' } })
-            .mockResolvedValueOnce({ revert: { messageID: 'user-3' } })
+            .mockResolvedValueOnce({ revert: { messageId: 'user-2' } })
+            .mockResolvedValueOnce({ revert: { messageId: 'user-3' } })
         unrevertMock.mockResolvedValueOnce({})
         syncChatMessagesMock.mockResolvedValue(undefined)
 
         const actions = createChatSessionManagement(set, get)
 
-        await expect(actions.getDiff('performer-1')).resolves.toEqual(initialDiff)
+        await expect(actions.getDiff('agent-1')).resolves.toEqual(initialDiff)
 
-        await actions.revertSession('performer-1', 'user-2')
+        await actions.revertSession('agent-1', 'user-2')
         expect(revertMock).toHaveBeenNthCalledWith(1, 'session-1', 'user-2')
         expect(state.sessionReverts['session-1']).toEqual({ messageId: 'user-2' })
 
-        await expect(actions.getDiff('performer-1')).resolves.toEqual(revertedDiff)
+        await expect(actions.getDiff('agent-1')).resolves.toEqual(revertedDiff)
 
-        await actions.restoreRevertedMessage('performer-1', 'user-2')
+        await actions.restoreRevertedMessage('agent-1', 'user-2')
         expect(revertMock).toHaveBeenNthCalledWith(2, 'session-1', 'user-3')
         expect(state.sessionReverts['session-1']).toEqual({ messageId: 'user-3' })
 
-        await expect(actions.getDiff('performer-1')).resolves.toEqual(finalDiff)
+        await expect(actions.getDiff('agent-1')).resolves.toEqual(finalDiff)
 
-        await actions.restoreRevertedMessage('performer-1', 'user-3')
+        await actions.restoreRevertedMessage('agent-1', 'user-3')
         expect(unrevertMock).toHaveBeenCalledWith('session-1')
         expect(state.sessionReverts['session-1']).toBeUndefined()
         expect(syncChatMessagesMock).toHaveBeenCalledTimes(3)

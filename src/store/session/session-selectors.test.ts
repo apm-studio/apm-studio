@@ -17,7 +17,7 @@ function createMinimalState(overrides: Partial<StudioState> = {}): StudioState {
         sessionLoading: {},
         sessionMutationPending: {},
         sessionReverts: {},
-        activeChatPerformerId: null,
+        activeChatAgentId: null,
         sessions: [],
         ...overrides,
     } as StudioState
@@ -26,7 +26,7 @@ function createMinimalState(overrides: Partial<StudioState> = {}): StudioState {
 describe('session selectors', () => {
     it('prepends system prefix messages to entity-backed chat messages', () => {
         const sessionId = 'session-1'
-        const chatKey = 'performer-1'
+        const chatKey = 'agent-1'
         const state = createMinimalState({
             chatKeyToSession: { [chatKey]: sessionId },
             sessionToChatKey: { [sessionId]: chatKey },
@@ -50,7 +50,7 @@ describe('session selectors', () => {
 
     it('does not duplicate prefix messages already present in entity messages', () => {
         const sessionId = 'session-1'
-        const chatKey = 'performer-1'
+        const chatKey = 'agent-1'
         const shared = { id: 'prefix-1', role: 'system' as const, content: 'prefix', timestamp: 1 }
         const state = createMinimalState({
             chatKeyToSession: { [chatKey]: sessionId },
@@ -70,18 +70,18 @@ describe('session selectors', () => {
         ])
     })
 
-    it('returns structured act participant stream targets', () => {
+    it('returns structured team participant stream targets', () => {
         const sessionId = 'session-1'
-        const chatKey = 'act:act-1:thread:thread-1:participant:participant-2'
+        const chatKey = 'team:team-1:thread:thread-1:participant:participant-2'
         const state = createMinimalState({
             chatKeyToSession: { [chatKey]: sessionId },
             sessionToChatKey: { [sessionId]: chatKey },
         })
 
         expect(selectStreamTarget(state, sessionId)).toEqual({
-            kind: 'act-participant',
+            kind: 'team-participant',
             chatKey,
-            actId: 'act-1',
+            teamId: 'team-1',
             threadId: 'thread-1',
             participantKey: 'participant-2',
         })
@@ -131,7 +131,7 @@ describe('session selectors', () => {
 
     it('keeps mutation pending separate from execution loading', () => {
         const sessionId = 'session-1'
-        const chatKey = 'performer-1'
+        const chatKey = 'agent-1'
         const state = createMinimalState({
             chatKeyToSession: { [chatKey]: sessionId },
             sessionToChatKey: { [sessionId]: chatKey },

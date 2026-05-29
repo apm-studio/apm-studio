@@ -1,14 +1,17 @@
-import { buildActParticipantChatKey } from '../../../shared/chat-targets'
+import type { ChatMessage } from '../session/chat-message-types'
+import { buildTeamParticipantChatKey } from '../../../shared/chat-targets'
 import { deriveProvisionalThreadTitle } from '../../../shared/session-metadata'
-import { api } from '../../api'
+import { chatApi } from '../../api-clients/chat'
+import { opencodeApi } from '../../api-clients/opencode'
 import { formatStudioApiErrorMessage } from '../../lib/api-errors'
 import {
     pickPreferredAssistantModel,
     toAssistantAvailableModels,
 } from '../../lib/assistant-models'
 import { logChatDebug } from '../../lib/chat-debug'
-import { hasModelConfig } from '../../lib/performers'
-import type { AssetRef, ChatMessage } from '../../types'
+import { hasModelConfig } from '../../lib/agents'
+import type { SharedPrimitiveRef } from '../../../shared/chat-contracts'
+
 import {
     appendChatMessage,
     appendChatSystemMessage,
@@ -28,7 +31,7 @@ import {
     patchSessionRuntimeActor,
     reconcileSessionRuntimeActor,
 } from '../session/session-runtime-manager'
-import { preparePendingRuntimeExecution } from '../runtime-execution'
+import { preparePendingRuntimeExecution } from '../runtime/execution'
 import { projectionDirtyPatchHasAny } from '../../../shared/projection-dirty'
 
 const THREAD_TITLE_REFRESH_DELAYS_MS = [1_500, 5_000, 12_000]
@@ -62,7 +65,7 @@ function createOptimisticUserMessage(
             }))
             : undefined,
         metadata: {
-            agentName: runtimeConfig.agentId || 'build',
+            agentName: runtimeConfig.runtimeAgentId || 'build',
             modelId: runtimeConfig.model?.modelId,
             provider: runtimeConfig.model?.provider,
             variant: runtimeConfig.modelVariant || undefined,
@@ -77,8 +80,8 @@ export function createChatSendActions(
         chatKey: string,
         options?: {
             resetMessages?: Array<{ id: string; role: 'user' | 'assistant' | 'system'; content: string; timestamp: number }>
-            actId?: string
-            performerName?: string
+            teamId?: string
+            agentName?: string
             preserveDraftMessages?: boolean
         },
     ) => Promise<{ sessionId: string | null; runtimeConfig: ChatRuntimeConfig }>,
@@ -114,16 +117,16 @@ export function createChatSendActions(
         }))
     }
 
-    const applyOptimisticActThreadName = (actId: string, threadId: string, name: string) => {
+    const applyOptimisticTeamThreadName = (teamId: string, threadId: string, name: string) => {
         const trimmed = name.trim()
         if (!trimmed) {
             return
         }
 
         set((state) => ({
-            actThreads: {
-                ...state.actThreads,
-                [actId]: (state.actThreads[actId] || []).map((thread) => (
+            teamThreads: {
+                ...state.teamThreads,
+                [teamId]: (state.teamThreads[teamId] || []).map((thread) => (
                     thread.id === threadId && !thread.name?.trim()
                         ? { ...thread, name: trimmed }
                         : thread
@@ -137,12 +140,12 @@ export function createChatSendActions(
             return
         }
 
-        const actId = target.requestTarget.actId
-        const threadId = target.requestTarget.actThreadId
+        const teamId = target.requestTarget.teamId
+        const threadId = target.requestTarget.teamThreadId
         for (const delay of THREAD_TITLE_REFRESH_DELAYS_MS) {
             setTimeout(() => {
-                if (actId && threadId) {
-                    void get().loadThreads(actId).catch(() => {})
+                if (teamId && threadId) {
+                    void get().loadThreads(teamId).catch(() => {})
                     return
                 }
                 void get().listSessions().catch(() => {})
@@ -154,7 +157,7 @@ export function createChatSendActions(
         chatKey: string,
         text: string,
         attachments?: Array<{ type: 'file'; mime: string; url: string; filename?: string }>,
-        extraDanceRefs: AssetRef[] = [],
+        extraSkillRefs: SharedPrimitiveRef[] = [],
     ) => {
         let sessionId: string | undefined = resolveChatKeySession(get, chatKey) || undefined
         let target = resolveChatRuntimeTarget(get, chatKey)
@@ -164,7 +167,7 @@ export function createChatSendActions(
         ensureSessionRuntimeActor(set, get, chatKey, sessionId)
 
         if (target.kind === 'assistant' && target.assistantContext) {
-            const refreshedModels = await api.models.list().catch(() => null)
+            const refreshedModels = await opencodeApi.models.list().catch(() => null)
             if (refreshedModels) {
                 const availableAssistantModels = toAssistantAvailableModels(refreshedModels)
                 get().setAssistantAvailableModels(availableAssistantModels)
@@ -211,8 +214,8 @@ export function createChatSendActions(
         })
 
         const prepared = await preparePendingRuntimeExecution(get, {
-            performerId: target.executionScope.performerId,
-            actId: target.executionScope.actId,
+            agentId: target.executionScope.agentId,
+            teamId: target.executionScope.teamId,
             runtimeConfig,
         })
         if (prepared.blocked) {
@@ -250,7 +253,7 @@ export function createChatSendActions(
             try {
                 const freshSession = await createFreshSession(chatKey, {
                     preserveDraftMessages: true,
-                    performerName: target.name,
+                    agentName: target.name,
                 })
                 sessionId = freshSession.sessionId || undefined
                 if (sessionId) {
@@ -278,10 +281,10 @@ export function createChatSendActions(
         }
 
         if (shouldSeedThreadTitle && provisionalThreadTitle) {
-            if (target.requestTarget.actId && target.requestTarget.actThreadId) {
-                applyOptimisticActThreadName(
-                    target.requestTarget.actId,
-                    target.requestTarget.actThreadId,
+            if (target.requestTarget.teamId && target.requestTarget.teamThreadId) {
+                applyOptimisticTeamThreadName(
+                    target.requestTarget.teamId,
+                    target.requestTarget.teamThreadId,
                     provisionalThreadTitle,
                 )
             } else {
@@ -294,29 +297,29 @@ export function createChatSendActions(
             const projectionScope = projectionDirtyPatchHasAny(get().projectionDirty)
                 ? get().projectionDirty
                 : null
-            await api.chat.send(sessionId, {
+            await chatApi.send(sessionId, {
                 message: text,
                 projectionScope,
-                performer: {
-                    performerId: target.requestTarget.performerId,
-                    performerName: target.requestTarget.performerName,
-                    talRef: runtimeConfig.talRef,
-                    inlineInstruction: runtimeConfig.inlineInstruction,
-                    danceRefs: runtimeConfig.danceRefs,
-                    extraDanceRefs,
+                agent: {
+                    agentId: target.requestTarget.agentId,
+                    agentName: target.requestTarget.agentName,
+                    instructionRef: runtimeConfig.instructionRef,
+                    agentBody: runtimeConfig.agentBody,
+                    skillRefs: runtimeConfig.skillRefs,
+                    extraSkillRefs,
                     model: runtimeConfig.model,
                     modelVariant: runtimeConfig.modelVariant,
-                    agentId: runtimeConfig.agentId,
+                    runtimeAgentId: runtimeConfig.runtimeAgentId,
                     mcpServerNames: runtimeConfig.mcpServerNames,
                     planMode: runtimeConfig.planMode,
                 },
                 attachments,
-                ...(target.requestTarget.actId ? { actId: target.requestTarget.actId } : {}),
-                ...(target.requestTarget.actThreadId ? { actThreadId: target.requestTarget.actThreadId } : {}),
+                ...(target.requestTarget.teamId ? { teamId: target.requestTarget.teamId } : {}),
+                ...(target.requestTarget.teamThreadId ? { teamThreadId: target.requestTarget.teamThreadId } : {}),
                 assistantContext: target.assistantContext || null,
             })
 
-            if (target.kind !== 'act-participant') {
+            if (target.kind !== 'team-participant') {
                 get().watchSessionLifecycle(chatKey, sessionId)
             }
             reconcileSessionRuntimeActor(set, get, chatKey, sessionId)
@@ -348,13 +351,13 @@ export function createChatSendActions(
         }
     }
 
-    const sendActMessage = async (actId: string, threadId: string, participantKey: string, text: string) => {
-        const chatKey = buildActParticipantChatKey(actId, threadId, participantKey)
+    const sendTeamMessage = async (teamId: string, threadId: string, participantKey: string, text: string) => {
+        const chatKey = buildTeamParticipantChatKey(teamId, threadId, participantKey)
         return sendMessage(chatKey, text)
     }
 
     return {
         sendMessage,
-        sendActMessage,
+        sendTeamMessage,
     }
 }

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
 import { useStudioStore } from '../../store'
 import { resolveSplitPaneRects, SPLIT_VIEW_GAP } from '../../lib/focus-utils'
-import type { SplitViewState, WorkspaceViewMode } from '../../store/types'
+import type { SplitViewState, WorkspaceViewMode } from '../../store/workspace/types'
 import './SplitViewResizeOverlay.css'
 
 type Props = {

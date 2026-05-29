@@ -8,14 +8,17 @@ describe('isOpencodeReachable', () => {
     })
 
     it('checks the OpenCode global health endpoint for sidecar readiness', async () => {
-        const fetchMock = vi.fn(async () => ({ ok: true }) as Response)
+        const fetchMock = vi.fn(async (input: string | URL | Request) => {
+            void input
+            return { ok: true } as Response
+        })
         vi.stubEnv('OPENCODE_PORT', '43155')
         vi.stubGlobal('fetch', fetchMock)
 
         const { isOpencodeReachable } = await import('./opencode-sidecar.js')
 
         await expect(isOpencodeReachable()).resolves.toBe(true)
-        const firstCall = fetchMock.mock.calls[0] as unknown[] | undefined
+        const firstCall = fetchMock.mock.calls[0]
         expect(String(firstCall?.[0])).toBe('http://localhost:43155/global/health')
     })
 

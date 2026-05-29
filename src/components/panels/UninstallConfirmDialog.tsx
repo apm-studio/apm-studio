@@ -1,5 +1,5 @@
 import { createPortal } from 'react-dom'
-import { AlertTriangle, Hexagon, Users, Zap, X } from 'lucide-react'
+import { AlertTriangle, Hexagon, Package, Workflow, Zap, X } from 'lucide-react'
 
 type UninstallPlanItem = {
     urn?: string
@@ -21,10 +21,10 @@ type Props = {
 
 function KindIcon({ kind }: { kind: string }) {
     switch (kind) {
-        case 'tal': return <Hexagon size={12} />
-        case 'dance': return <Zap size={12} />
-        case 'performer': return <Users size={12} />
-        case 'act': return <Zap size={12} />
+        case 'instruction': return <Hexagon size={12} />
+        case 'skill': return <Zap size={12} />
+        case 'agent': return <Package size={12} />
+        case 'team': return <Workflow size={12} />
         default: return null
     }
 }
@@ -38,7 +38,7 @@ export default function UninstallConfirmDialog({ target, dependents, loading, ac
             <div className="uninstall-confirm-dialog" onClick={(e) => e.stopPropagation()}>
                 <div className="uninstall-confirm-dialog__header">
                     <AlertTriangle size={16} style={{ color: 'var(--danger)' }} />
-                    <span>{actionName} {totalCount} asset{totalCount > 1 ? 's' : ''}?</span>
+                    <span>{actionName} {totalCount} primitive{totalCount > 1 ? 's' : ''}?</span>
                     <button className="icon-btn" onClick={onCancel} style={{ marginLeft: 'auto' }}>
                         <X size={14} />
                     </button>
@@ -54,7 +54,7 @@ export default function UninstallConfirmDialog({ target, dependents, loading, ac
                     {dependents.length > 0 && (
                         <>
                             <div className="uninstall-confirm-dialog__warning">
-                                The following assets depend on this and will also be {actionName.toLowerCase()}ed:
+                                The following primitives depend on this and will also be {actionName.toLowerCase()}ed:
                             </div>
                             <ul className="uninstall-confirm-dialog__list">
                                 {dependents.map((dep) => (
@@ -70,7 +70,7 @@ export default function UninstallConfirmDialog({ target, dependents, loading, ac
                     )}
 
                     <div className="uninstall-confirm-dialog__note">
-                        References to {totalCount > 1 ? 'these assets' : 'this asset'} in canvas performers and acts will also be removed.
+                        References to {totalCount > 1 ? 'these primitives' : 'this primitive'} in canvas agents and teams will also be removed.
                     </div>
                 </div>
 

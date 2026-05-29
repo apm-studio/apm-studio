@@ -17,4 +17,14 @@ describe('normalizeOpencodeError', () => {
             'OpenCode interrupted the current run unexpectedly. Retry in a moment, and if it keeps happening restart OpenCode from Settings.',
         )
     })
+
+    it('maps external gateway statuses to Studio API error statuses', () => {
+        const payload = normalizeOpencodeError({
+            status: 502,
+            message: 'OpenCode gateway failed',
+        })
+
+        expect(payload.code).toBe('runtime_unavailable')
+        expect(payload.status).toBe(503)
+    })
 })

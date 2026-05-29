@@ -1,19 +1,19 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
-import { createPerformerNode } from '../../lib/performers-node'
+import { createAgentNode } from '../../lib/agents-node'
 
 let useStudioStore: typeof import('../../store').useStudioStore
 let applyAssistantAction: typeof import('./assistant-actions').applyAssistantAction
 let applyAssistantActions: typeof import('./assistant-actions').applyAssistantActions
 
-const listAssetsMock = vi.fn().mockResolvedValue([])
+const listPrimitivesMock = vi.fn().mockResolvedValue([])
 const createDraftMock = vi.fn()
 const updateDraftMock = vi.fn()
 const deleteDraftMock = vi.fn()
-const writeDanceBundleFileMock = vi.fn()
-const deleteDanceBundleFileMock = vi.fn()
-const deleteActRuntimeMock = vi.fn().mockResolvedValue({ ok: true })
-const listActThreadsMock = vi.fn().mockResolvedValue({ threads: [] })
+const writeSkillBundleFileMock = vi.fn()
+const deleteSkillBundleFileMock = vi.fn()
+const deleteTeamRuntimeMock = vi.fn().mockResolvedValue({ ok: true })
+const listTeamThreadsMock = vi.fn().mockResolvedValue({ threads: [] })
 
 function overlaps(
     left: { x: number; y: number; width: number; height: number },
@@ -27,28 +27,22 @@ function overlaps(
     )
 }
 
-vi.mock('../../api', () => ({
-    api: {
-        assets: {
-            list: listAssetsMock,
+vi.mock('../../api-clients/drafts', () => ({
+    draftApi: {
+        create: createDraftMock,
+        update: updateDraftMock,
+        delete: deleteDraftMock,
+        skillBundle: {
+            writeFile: writeSkillBundleFileMock,
+            deleteFile: deleteSkillBundleFileMock,
         },
-        drafts: {
-            create: createDraftMock,
-            update: updateDraftMock,
-            delete: deleteDraftMock,
-            danceBundle: {
-                writeFile: writeDanceBundleFileMock,
-                deleteFile: deleteDanceBundleFileMock,
-            },
-        },
-        apm: {
-            install: vi.fn(),
-            addFromGitHub: vi.fn(),
-        },
-        actRuntime: {
-            deleteAct: deleteActRuntimeMock,
-            listThreads: listActThreadsMock,
-        },
+    },
+}))
+
+vi.mock('../../api-clients/team-runtime', () => ({
+    teamRuntimeApi: {
+        deleteTeam: deleteTeamRuntimeMock,
+        listThreads: listTeamThreadsMock,
     },
 }))
 
@@ -68,30 +62,30 @@ beforeAll(async () => {
 })
 
 afterEach(() => {
-    listAssetsMock.mockClear()
+    listPrimitivesMock.mockClear()
     createDraftMock.mockReset()
     updateDraftMock.mockReset()
     deleteDraftMock.mockReset()
-    writeDanceBundleFileMock.mockReset()
-    deleteDanceBundleFileMock.mockReset()
-    deleteActRuntimeMock.mockReset().mockResolvedValue({ ok: true })
-    listActThreadsMock.mockReset().mockResolvedValue({ threads: [] })
+    writeSkillBundleFileMock.mockReset()
+    deleteSkillBundleFileMock.mockReset()
+    deleteTeamRuntimeMock.mockReset().mockResolvedValue({ ok: true })
+    listTeamThreadsMock.mockReset().mockResolvedValue({ threads: [] })
     useStudioStore.setState({
-        performers: [],
-        acts: [],
+        agents: [],
+        teams: [],
         drafts: {},
-        actThreads: {},
+        teamThreads: {},
         workspaceDirty: false,
         workingDir: '',
-        selectedActId: null,
-        selectedPerformerId: null,
+        selectedTeamId: null,
+        selectedAgentId: null,
         selectedMarkdownEditorId: null,
         markdownEditors: [],
         editingTarget: null,
-        actEditorState: null,
+        teamEditorState: null,
         activeThreadId: null,
         activeThreadParticipantKey: null,
-        isAssetLibraryOpen: false,
+        isPackageLibraryOpen: false,
         isTrackingOpen: false,
         isTerminalOpen: false,
         canvasRevealTarget: null,
@@ -99,66 +93,67 @@ afterEach(() => {
 })
 
 describe('assistant-actions', () => {
-    it('creates, updates, and deletes a tal draft through draft CRUD actions', async () => {
+    it('creates, updates, and deletes an instruction draft through draft CRUD actions', async () => {
         createDraftMock.mockResolvedValue({
-            id: 'tal-draft-1',
-            kind: 'tal',
-            name: 'Reviewer Tal',
+            id: 'instruction-draft-1',
+            kind: 'instruction',
+            name: 'Reviewer Instruction',
             content: '# Role',
             updatedAt: Date.now(),
         })
         updateDraftMock.mockResolvedValue({
-            id: 'tal-draft-1',
-            kind: 'tal',
-            name: 'Senior Reviewer Tal',
+            id: 'instruction-draft-1',
+            kind: 'instruction',
+            name: 'Senior Reviewer Instruction',
             content: '# Updated Role',
             updatedAt: Date.now(),
         })
 
         const result = await applyAssistantActions([
             {
-                type: 'createTalDraft',
-                ref: 'reviewer-tal',
-                name: 'Reviewer Tal',
+                type: 'createInstructionDraft',
+                ref: 'reviewer-instruction',
+                name: 'Reviewer Instruction',
                 content: '# Role',
             },
             {
-                type: 'updateTalDraft',
-                draftRef: 'reviewer-tal',
-                name: 'Senior Reviewer Tal',
+                type: 'updateInstructionDraft',
+                draftRef: 'reviewer-instruction',
+                name: 'Senior Reviewer Instruction',
                 content: '# Updated Role',
             },
             {
-                type: 'deleteTalDraft',
-                draftRef: 'reviewer-tal',
+                type: 'deleteInstructionDraft',
+                draftRef: 'reviewer-instruction',
             },
         ])
 
         expect(result).toEqual({ applied: 3, failed: 0 })
-        expect(updateDraftMock).toHaveBeenCalledWith('tal', 'tal-draft-1', {
-            name: 'Senior Reviewer Tal',
+        expect(updateDraftMock).toHaveBeenCalledWith('instruction', 'instruction-draft-1', {
+            name: 'Senior Reviewer Instruction',
             content: '# Updated Role',
         })
-        expect(deleteDraftMock).toHaveBeenCalledWith('tal', 'tal-draft-1')
+        expect(deleteDraftMock).toHaveBeenCalledWith('instruction', 'instruction-draft-1')
         expect(useStudioStore.getState().drafts).toEqual({})
     })
 
-    it('updates and deletes a saved dance draft through draft CRUD actions', async () => {
+    it('updates and deletes a saved skill draft through draft CRUD actions', async () => {
         useStudioStore.setState({
             drafts: {
-                'dance-draft-1': {
-                    id: 'dance-draft-1',
-                    kind: 'dance',
+                'skill-draft-1': {
+                    id: 'skill-draft-1',
+                    kind: 'skill',
                     name: 'Review Skill',
                     content: '---\nname: review-skill\n---',
+                    createdAt: Date.now(),
                     updatedAt: Date.now(),
                     saveState: 'saved',
                 },
             },
         })
         updateDraftMock.mockResolvedValue({
-            id: 'dance-draft-1',
-            kind: 'dance',
+            id: 'skill-draft-1',
+            kind: 'skill',
             name: 'Updated Review Skill',
             content: '---\nname: updated-review-skill\n---',
             updatedAt: Date.now(),
@@ -166,45 +161,45 @@ describe('assistant-actions', () => {
 
         const result = await applyAssistantActions([
             {
-                type: 'updateDanceDraft',
-                draftId: 'dance-draft-1',
+                type: 'updateSkillDraft',
+                draftId: 'skill-draft-1',
                 name: 'Updated Review Skill',
                 content: '---\nname: updated-review-skill\n---',
             },
             {
-                type: 'deleteDanceDraft',
-                draftId: 'dance-draft-1',
+                type: 'deleteSkillDraft',
+                draftId: 'skill-draft-1',
             },
         ])
 
         expect(result).toEqual({ applied: 2, failed: 0 })
-        expect(updateDraftMock).toHaveBeenCalledWith('dance', 'dance-draft-1', {
+        expect(updateDraftMock).toHaveBeenCalledWith('skill', 'skill-draft-1', {
             name: 'Updated Review Skill',
             content: '---\nname: updated-review-skill\n---',
         })
-        expect(deleteDraftMock).toHaveBeenCalledWith('dance', 'dance-draft-1')
+        expect(deleteDraftMock).toHaveBeenCalledWith('skill', 'skill-draft-1')
         expect(useStudioStore.getState().drafts).toEqual({})
     })
 
-    it('updates participant subscriptions using performer-name locators', async () => {
+    it('updates participant subscriptions using agent-name locators', async () => {
         useStudioStore.setState({
-            performers: [
-                createPerformerNode({
-                    id: 'performer-researcher',
+            agents: [
+                createAgentNode({
+                    id: 'agent-researcher',
                     name: 'Researcher',
                     x: 0,
                     y: 0,
                 }),
-                createPerformerNode({
-                    id: 'performer-writer',
+                createAgentNode({
+                    id: 'agent-writer',
                     name: 'Writer',
                     x: 0,
                     y: 0,
                 }),
             ],
-            acts: [
+            teams: [
                 {
-                    id: 'act-1',
+                    id: 'team-1',
                     name: 'Research Flow',
                     position: { x: 0, y: 0 },
                     width: 400,
@@ -212,26 +207,26 @@ describe('assistant-actions', () => {
                     createdAt: Date.now(),
                     participants: {
                         'participant-researcher': {
-                            performerRef: { kind: 'draft', draftId: 'performer-researcher' },
+                            agentRef: { kind: 'draft', draftId: 'agent-researcher' },
                             position: { x: 0, y: 0 },
                         },
                         'participant-writer': {
-                            performerRef: { kind: 'draft', draftId: 'performer-writer' },
+                            agentRef: { kind: 'draft', draftId: 'agent-writer' },
                             position: { x: 100, y: 0 },
                         },
                     },
                     relations: [],
                 },
             ],
-            actThreads: {},
+            teamThreads: {},
         })
 
         const result = await applyAssistantAction({
             type: 'updateParticipantSubscriptions',
-            actId: 'act-1',
-            performerName: 'Writer',
+            teamId: 'team-1',
+            agentName: 'Writer',
             subscriptions: {
-                messagesFromPerformerNames: ['Researcher'],
+                messagesFromAgentNames: ['Researcher'],
                 messageTags: ['handoff'],
                 callboardKeys: ['brief'],
                 eventTypes: ['runtime.idle'],
@@ -239,7 +234,7 @@ describe('assistant-actions', () => {
         })
 
         expect(result.success).toBe(true)
-        expect(useStudioStore.getState().acts[0].participants['participant-writer'].subscriptions).toEqual({
+        expect(useStudioStore.getState().teams[0].participants['participant-writer'].subscriptions).toEqual({
             messagesFrom: ['participant-researcher'],
             messageTags: ['handoff'],
             callboardKeys: ['brief'],
@@ -247,18 +242,18 @@ describe('assistant-actions', () => {
         })
     })
 
-    it('creates and updates a performer through Stage CRUD actions', async () => {
+    it('creates and updates an agent through Workspace CRUD actions', async () => {
         const result = await applyAssistantActions([
             {
-                type: 'createPerformer',
+                type: 'createAgent',
                 ref: 'writer',
                 name: 'Writer',
                 model: { provider: 'openai', modelId: 'gpt-5.4' },
                 modelVariant: 'reasoning-high',
             },
             {
-                type: 'updatePerformer',
-                performerRef: 'writer',
+                type: 'updateAgent',
+                agentRef: 'writer',
                 name: 'Senior Writer',
                 model: { provider: 'anthropic', modelId: 'claude-sonnet-4' },
                 modelVariant: 'thinking-deep',
@@ -267,66 +262,66 @@ describe('assistant-actions', () => {
 
         expect(result).toEqual({ applied: 2, failed: 0 })
 
-        const performer = useStudioStore.getState().performers[0]
-        expect(performer?.name).toBe('Senior Writer')
-        expect(performer?.model).toEqual({ provider: 'anthropic', modelId: 'claude-sonnet-4' })
-        expect(performer?.modelVariant).toBe('thinking-deep')
+        const agent = useStudioStore.getState().agents[0]
+        expect(agent?.name).toBe('Senior Writer')
+        expect(agent?.model).toEqual({ provider: 'anthropic', modelId: 'claude-sonnet-4' })
+        expect(agent?.modelVariant).toBe('thinking-deep')
     })
 
-    it('deletes a performer and removes attached act bindings', async () => {
-        const performerId = useStudioStore.getState().addPerformer('Reviewer')
-        const actId = useStudioStore.getState().addAct('Code Review')
-        const participantKey = useStudioStore.getState().attachPerformerToAct(actId, performerId)
+    it('deletes an agent and removes attached team bindings', async () => {
+        const agentId = useStudioStore.getState().addAgent('Reviewer')
+        const teamId = useStudioStore.getState().addTeam('Code Review')
+        const participantKey = useStudioStore.getState().attachAgentToTeam(teamId, agentId)
 
         expect(participantKey).toBeTruthy()
 
         const result = await applyAssistantAction({
-            type: 'deletePerformer',
-            performerId,
+            type: 'deleteAgent',
+            agentId,
         })
 
         expect(result.success).toBe(true)
-        expect(useStudioStore.getState().performers).toHaveLength(0)
-        expect(useStudioStore.getState().acts[0]?.participants).toEqual({})
+        expect(useStudioStore.getState().agents).toHaveLength(0)
+        expect(useStudioStore.getState().teams[0]?.participants).toEqual({})
     })
 
-    it('fails cleanly when performer or act CRUD targets do not exist', async () => {
-        const performerResult = await applyAssistantAction({
-            type: 'updatePerformer',
-            performerName: 'Missing Performer',
+    it('fails cleanly when agent or team CRUD targets do not exist', async () => {
+        const agentResult = await applyAssistantAction({
+            type: 'updateAgent',
+            agentName: 'Missing Agent',
             name: 'Still Missing',
         })
-        const actResult = await applyAssistantAction({
-            type: 'deleteAct',
-            actName: 'Missing Act',
+        const teamResult = await applyAssistantAction({
+            type: 'deleteTeam',
+            teamName: 'Missing Team',
         })
 
-        expect(performerResult.success).toBe(false)
-        expect(actResult.success).toBe(false)
+        expect(agentResult.success).toBe(false)
+        expect(teamResult.success).toBe(false)
     })
 
-    it('creates and updates an act from same-call performer refs', async () => {
+    it('creates and updates a team from same-call agent refs', async () => {
         const result = await applyAssistantActions([
             {
-                type: 'createPerformer',
+                type: 'createAgent',
                 ref: 'dev',
                 name: 'Developer',
             },
             {
-                type: 'createPerformer',
+                type: 'createAgent',
                 ref: 'rev',
                 name: 'Reviewer',
             },
             {
-                type: 'createAct',
-                ref: 'review-act',
+                type: 'createTeam',
+                ref: 'review-team',
                 name: 'Code Review',
                 description: 'Initial review flow.',
-                participantPerformerRefs: ['dev', 'rev'],
+                participantAgentRefs: ['dev', 'rev'],
                 relations: [
                     {
-                        sourcePerformerRef: 'dev',
-                        targetPerformerRef: 'rev',
+                        sourceAgentRef: 'dev',
+                        targetAgentRef: 'rev',
                         direction: 'one-way',
                         name: 'request review',
                         description: 'Developer sends work to Reviewer.',
@@ -334,74 +329,74 @@ describe('assistant-actions', () => {
                 ],
             },
             {
-                type: 'updateAct',
-                actRef: 'review-act',
+                type: 'updateTeam',
+                teamRef: 'review-team',
                 description: 'Updated review flow.',
-                actRules: ['Escalate blockers quickly.'],
+                teamRules: ['Escalate blockers quickly.'],
             },
         ])
 
         expect(result).toEqual({ applied: 4, failed: 0 })
 
-        const act = useStudioStore.getState().acts[0]
-        expect(act?.name).toBe('Code Review')
-        expect(act?.description).toBe('Updated review flow.')
-        expect(act?.actRules).toEqual(['Escalate blockers quickly.'])
-        expect(Object.keys(act?.participants || {})).toHaveLength(2)
-        expect(act?.relations).toHaveLength(1)
-        expect(act?.relations[0]).toMatchObject({
+        const team = useStudioStore.getState().teams[0]
+        expect(team?.name).toBe('Code Review')
+        expect(team?.description).toBe('Updated review flow.')
+        expect(team?.teamRules).toEqual(['Escalate blockers quickly.'])
+        expect(Object.keys(team?.participants || {})).toHaveLength(2)
+        expect(team?.relations).toHaveLength(1)
+        expect(team?.relations[0]).toMatchObject({
             direction: 'one-way',
             name: 'request review',
             description: 'Developer sends work to Reviewer.',
         })
 
-        const performers = useStudioStore.getState().performers.map((performer) => ({
-            x: performer.position.x,
-            y: performer.position.y,
-            width: performer.width || 320,
-            height: performer.height || 400,
+        const agents = useStudioStore.getState().agents.map((agent) => ({
+            x: agent.position.x,
+            y: agent.position.y,
+            width: agent.width || 320,
+            height: agent.height || 400,
         }))
-        const actRect = {
-            x: act!.position.x,
-            y: act!.position.y,
-            width: act!.width,
-            height: act!.height,
+        const teamRect = {
+            x: team!.position.x,
+            y: team!.position.y,
+            width: team!.width,
+            height: team!.height,
         }
 
-        expect(performers.every((performer) => performer.y < actRect.y)).toBe(true)
-        expect(overlaps(performers[0], performers[1])).toBe(false)
-        expect(performers.every((performer) => overlaps(performer, actRect) === false)).toBe(true)
+        expect(agents.every((agent) => agent.y < teamRect.y)).toBe(true)
+        expect(overlaps(agents[0], agents[1])).toBe(false)
+        expect(agents.every((agent) => overlaps(agent, teamRect) === false)).toBe(true)
         expect(useStudioStore.getState().canvasRevealTarget).toMatchObject({
-            id: act!.id,
-            type: 'act',
+            id: team!.id,
+            type: 'team',
         })
     })
 
-    it('applies performer descriptions and act safety settings', async () => {
+    it('applies agent descriptions and team safety settings', async () => {
         const result = await applyAssistantActions([
             {
-                type: 'createPerformer',
+                type: 'createAgent',
                 ref: 'macro_analyst',
                 name: 'Macro Analyst',
                 description: 'Tracks regime changes and hands off evidence-backed context.',
             },
             {
-                type: 'createPerformer',
+                type: 'createAgent',
                 ref: 'equity_researcher',
                 name: 'Equity Researcher',
             },
             {
-                type: 'createAct',
+                type: 'createTeam',
                 name: 'Investment Analyst Team',
                 safety: {
                     threadTimeoutMs: 600000,
                     loopDetectionThreshold: 3,
                 },
-                participantPerformerRefs: ['macro_analyst', 'equity_researcher'],
+                participantAgentRefs: ['macro_analyst', 'equity_researcher'],
                 relations: [
                     {
-                        sourcePerformerRef: 'macro_analyst',
-                        targetPerformerRef: 'equity_researcher',
+                        sourceAgentRef: 'macro_analyst',
+                        targetAgentRef: 'equity_researcher',
                         direction: 'one-way',
                         name: 'macro handoff',
                         description: 'Macro Analyst hands regime context to Equity Researcher.',
@@ -412,17 +407,17 @@ describe('assistant-actions', () => {
 
         expect(result).toEqual({ applied: 3, failed: 0 })
 
-        const act = useStudioStore.getState().acts[0]
-        const performer = useStudioStore.getState().performers.find((entry) => entry.name === 'Macro Analyst')
-        expect(performer?.meta?.authoring?.description).toBe('Tracks regime changes and hands off evidence-backed context.')
-        expect(act?.name).toBe('Investment Analyst Team')
-        expect(act?.safety).toEqual({
+        const team = useStudioStore.getState().teams[0]
+        const agent = useStudioStore.getState().agents.find((entry) => entry.name === 'Macro Analyst')
+        expect(agent?.meta?.authoring?.description).toBe('Tracks regime changes and hands off evidence-backed context.')
+        expect(team?.name).toBe('Investment Analyst Team')
+        expect(team?.safety).toEqual({
             threadTimeoutMs: 600000,
             loopDetectionThreshold: 3,
         })
-        expect(Object.keys(act?.participants || {})).toHaveLength(2)
-        expect(act?.relations).toHaveLength(1)
-        expect(act?.relations[0]).toMatchObject({
+        expect(Object.keys(team?.participants || {})).toHaveLength(2)
+        expect(team?.relations).toHaveLength(1)
+        expect(team?.relations[0]).toMatchObject({
             direction: 'one-way',
             name: 'macro handoff',
             description: 'Macro Analyst hands regime context to Equity Researcher.',
@@ -432,23 +427,23 @@ describe('assistant-actions', () => {
     it('fails to create a relation when name or description is missing', async () => {
         const result = await applyAssistantActions([
             {
-                type: 'createPerformer',
+                type: 'createAgent',
                 ref: 'macro_analyst',
                 name: 'Macro Analyst',
             },
             {
-                type: 'createPerformer',
+                type: 'createAgent',
                 ref: 'equity_researcher',
                 name: 'Equity Researcher',
             },
             {
-                type: 'createAct',
+                type: 'createTeam',
                 name: 'Investment Analyst Team',
-                participantPerformerRefs: ['macro_analyst', 'equity_researcher'],
+                participantAgentRefs: ['macro_analyst', 'equity_researcher'],
                 relations: [
                     {
-                        sourcePerformerRef: 'macro_analyst',
-                        targetPerformerRef: 'equity_researcher',
+                        sourceAgentRef: 'macro_analyst',
+                        targetAgentRef: 'equity_researcher',
                         direction: 'one-way',
                         name: 'macro handoff',
                         description: '',
@@ -459,25 +454,25 @@ describe('assistant-actions', () => {
 
         expect(result).toEqual({ applied: 2, failed: 1 })
 
-        expect(useStudioStore.getState().acts).toHaveLength(0)
+        expect(useStudioStore.getState().teams).toHaveLength(0)
     })
 
-    it('deletes an act by name', async () => {
-        useStudioStore.getState().addAct('Code Review')
+    it('deletes a team by name', async () => {
+        useStudioStore.getState().addTeam('Code Review')
 
         const result = await applyAssistantAction({
-            type: 'deleteAct',
-            actName: 'Code Review',
+            type: 'deleteTeam',
+            teamName: 'Code Review',
         })
 
         expect(result.success).toBe(true)
-        expect(useStudioStore.getState().acts).toHaveLength(0)
+        expect(useStudioStore.getState().teams).toHaveLength(0)
     })
 
-    it('creates a dance draft and writes bundle files using same-call draft refs', async () => {
+    it('creates a skill draft and writes bundle files using same-call draft refs', async () => {
         createDraftMock.mockResolvedValue({
-            id: 'dance-draft-1',
-            kind: 'dance',
+            id: 'skill-draft-1',
+            kind: 'skill',
             name: 'Review Skill',
             content: '---\nname: review-skill\n---',
             updatedAt: Date.now(),
@@ -485,19 +480,19 @@ describe('assistant-actions', () => {
 
         const result = await applyAssistantActions([
             {
-                type: 'createDanceDraft',
+                type: 'createSkillDraft',
                 ref: 'skill',
                 name: 'Review Skill',
                 content: '---\nname: review-skill\n---',
             },
             {
-                type: 'upsertDanceBundleFile',
+                type: 'upsertSkillBundleFile',
                 draftRef: 'skill',
                 path: 'references/checklist.md',
                 content: '# Checklist',
             },
             {
-                type: 'upsertDanceBundleFile',
+                type: 'upsertSkillBundleFile',
                 draftRef: 'skill',
                 path: 'agents/openai.yaml',
                 content: 'display_name: Review Skill',
@@ -505,18 +500,19 @@ describe('assistant-actions', () => {
         ])
 
         expect(result).toEqual({ applied: 3, failed: 0 })
-        expect(writeDanceBundleFileMock).toHaveBeenNthCalledWith(1, 'dance-draft-1', 'references/checklist.md', '# Checklist')
-        expect(writeDanceBundleFileMock).toHaveBeenNthCalledWith(2, 'dance-draft-1', 'agents/openai.yaml', 'display_name: Review Skill')
+        expect(writeSkillBundleFileMock).toHaveBeenNthCalledWith(1, 'skill-draft-1', 'references/checklist.md', '# Checklist')
+        expect(writeSkillBundleFileMock).toHaveBeenNthCalledWith(2, 'skill-draft-1', 'agents/openai.yaml', 'display_name: Review Skill')
     })
 
     it('deletes Skill folder entries for saved drafts', async () => {
         useStudioStore.setState({
             drafts: {
-                'dance-draft-1': {
-                    id: 'dance-draft-1',
-                    kind: 'dance',
+                'skill-draft-1': {
+                    id: 'skill-draft-1',
+                    kind: 'skill',
                     name: 'Review Skill',
                     content: '---\nname: review-skill\n---',
+                    createdAt: Date.now(),
                     updatedAt: Date.now(),
                     saveState: 'saved',
                 },
@@ -524,23 +520,24 @@ describe('assistant-actions', () => {
         })
 
         const result = await applyAssistantAction({
-            type: 'deleteDanceBundleEntry',
-            draftId: 'dance-draft-1',
+            type: 'deleteSkillBundleEntry',
+            draftId: 'skill-draft-1',
             path: 'scripts\\old-helper.sh',
         })
 
         expect(result.success).toBe(true)
-        expect(deleteDanceBundleFileMock).toHaveBeenCalledWith('dance-draft-1', 'scripts/old-helper.sh')
+        expect(deleteSkillBundleFileMock).toHaveBeenCalledWith('skill-draft-1', 'scripts/old-helper.sh')
     })
 
-    it('fails cleanly for unsaved dance drafts before calling bundle APIs', async () => {
+    it('fails cleanly for unsaved skill drafts before calling bundle APIs', async () => {
         useStudioStore.setState({
             drafts: {
-                'dance-draft-1': {
-                    id: 'dance-draft-1',
-                    kind: 'dance',
+                'skill-draft-1': {
+                    id: 'skill-draft-1',
+                    kind: 'skill',
                     name: 'Unsaved Skill',
                     content: '---\nname: unsaved-skill\n---',
+                    createdAt: Date.now(),
                     updatedAt: Date.now(),
                     saveState: 'unsaved',
                 },
@@ -548,26 +545,27 @@ describe('assistant-actions', () => {
         })
 
         const result = await applyAssistantAction({
-            type: 'upsertDanceBundleFile',
-            draftId: 'dance-draft-1',
+            type: 'upsertSkillBundleFile',
+            draftId: 'skill-draft-1',
             path: 'references/checklist.md',
             content: '# Checklist',
         })
 
         expect(result.success).toBe(false)
-        expect(writeDanceBundleFileMock).not.toHaveBeenCalled()
+        expect(writeSkillBundleFileMock).not.toHaveBeenCalled()
     })
 
     it('applies Studio UI operations for nodes, drafts, panels, and canvas frames', async () => {
-        const performerId = useStudioStore.getState().addPerformer('Writer')
-        const actId = useStudioStore.getState().addAct('Review Flow')
+        const agentId = useStudioStore.getState().addAgent('Writer')
+        const teamId = useStudioStore.getState().addTeam('Review Flow')
         useStudioStore.setState({
             drafts: {
-                'tal-draft-1': {
-                    id: 'tal-draft-1',
-                    kind: 'tal',
-                    name: 'Writer Tal',
+                'instruction-draft-1': {
+                    id: 'instruction-draft-1',
+                    kind: 'instruction',
+                    name: 'Writer Instruction',
                     content: '# Writer',
+                    createdAt: Date.now(),
                     updatedAt: Date.now(),
                     saveState: 'saved',
                 },
@@ -575,20 +573,20 @@ describe('assistant-actions', () => {
         })
 
         const result = await applyAssistantActions([
-            { type: 'showPerformer', performerId, surface: 'editor', editorFocus: 'model' },
-            { type: 'showAct', actId, surface: 'editor', editorMode: 'act' },
-            { type: 'showDraft', draftId: 'tal-draft-1', kind: 'tal' },
-            { type: 'setStudioPanel', panel: 'assetLibrary', open: true },
+            { type: 'showAgent', agentId, surface: 'editor', editorFocus: 'model' },
+            { type: 'showTeam', teamId, surface: 'editor', editorMode: 'team' },
+            { type: 'showDraft', draftId: 'instruction-draft-1', kind: 'instruction' },
+            { type: 'setStudioPanel', panel: 'packages', open: true },
             {
                 type: 'setStudioNodeVisibility',
-                nodeType: 'performer',
-                performerId,
+                nodeType: 'agent',
+                agentId,
                 visible: false,
             },
             {
                 type: 'setStudioNodeFrame',
-                nodeType: 'act',
-                actId,
+                nodeType: 'team',
+                teamId,
                 position: { x: 320, y: 240 },
                 size: { width: 520, height: 460 },
             },
@@ -597,16 +595,16 @@ describe('assistant-actions', () => {
         expect(result).toEqual({ applied: 6, failed: 0 })
         const state = useStudioStore.getState()
         expect(state.editingTarget).toEqual(null)
-        expect(state.actEditorState).toMatchObject({ actId, mode: 'act' })
+        expect(state.teamEditorState).toMatchObject({ teamId: teamId, mode: 'team' })
         expect(state.selectedMarkdownEditorId).toBeTruthy()
-        expect(state.markdownEditors[0]).toMatchObject({ draftId: 'tal-draft-1', kind: 'tal' })
-        expect(state.isAssetLibraryOpen).toBe(true)
-        expect(state.performers.find((entry) => entry.id === performerId)?.hidden).toBe(true)
-        expect(state.acts.find((entry) => entry.id === actId)).toMatchObject({
+        expect(state.markdownEditors[0]).toMatchObject({ draftId: 'instruction-draft-1', kind: 'instruction' })
+        expect(state.isPackageLibraryOpen).toBe(true)
+        expect(state.agents.find((entry) => entry.id === agentId)?.hidden).toBe(true)
+        expect(state.teams.find((entry) => entry.id === teamId)).toMatchObject({
             position: { x: 320, y: 240 },
             width: 520,
             height: 460,
         })
-        expect(state.canvasRevealTarget).toMatchObject({ id: actId, type: 'act' })
+        expect(state.canvasRevealTarget).toMatchObject({ id: teamId, type: 'team' })
     })
 })

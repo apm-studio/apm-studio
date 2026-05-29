@@ -18,6 +18,6 @@ export function createChatSessionActions(set: ChatSet, get: ChatGet) {
         getDiff: sessionManagement.getDiff,
         listSessions: sessionManagement.listSessions,
         deleteSession: sessionManagement.deleteSession,
-        detachPerformerSession: sessionManagement.detachPerformerSession,
+        detachAgentSession: sessionManagement.detachAgentSession,
     }
 }

@@ -1,8 +1,8 @@
 /**
- * Permission and question approval handlers extracted from chatSlice.
+ * Permission and question approval handlers for the chat slice.
  */
-import type { QuestionAnswer } from '@opencode-ai/sdk/v2'
-import { api } from '../../api'
+import type { ChatQuestionAnswer } from '../../../shared/chat-contracts'
+import { chatApi } from '../../api-clients/chat'
 import { showToast } from '../../lib/toast'
 import { formatStudioApiErrorMessage } from '../../lib/api-errors'
 import type { ChatGet } from './chat-internals'
@@ -23,7 +23,7 @@ export function createChatApprovals(set: ChatSet, get: ChatGet) {
                 patch: { hasPermission: false },
             })
             try {
-                await api.chat.respondPermission(sessionId, permissionId, response)
+                await chatApi.respondPermission(sessionId, permissionId, response)
             } catch (err) {
                 console.error('Failed to respond to permission:', err)
                 // Restore on failure so user can retry
@@ -38,7 +38,7 @@ export function createChatApprovals(set: ChatSet, get: ChatGet) {
             }
         },
 
-        respondToQuestion: async (sessionId: string, questionId: string, answers: QuestionAnswer[]) => {
+        respondToQuestion: async (sessionId: string, questionId: string, answers: ChatQuestionAnswer[]) => {
             const original = get().seQuestions[sessionId]
             get().clearSessionQuestion(sessionId)
             patchSessionRuntimeActor(set, get, {
@@ -46,7 +46,7 @@ export function createChatApprovals(set: ChatSet, get: ChatGet) {
                 patch: { hasQuestion: false },
             })
             try {
-                await api.chat.respondQuestion(questionId, answers)
+                await chatApi.respondQuestion(questionId, answers)
             } catch (err) {
                 console.error('Failed to respond to question:', err)
                 if (original) {
@@ -68,7 +68,7 @@ export function createChatApprovals(set: ChatSet, get: ChatGet) {
                 patch: { hasQuestion: false },
             })
             try {
-                await api.chat.rejectQuestion(questionId)
+                await chatApi.rejectQuestion(questionId)
             } catch (err) {
                 console.error('Failed to reject question:', err)
                 if (original) {

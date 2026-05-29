@@ -1,26 +1,89 @@
 // Draft CRUD — Shared contracts between client and server
 
-import type { SharedAssetRef } from './chat-contracts.js'
+import type { SharedPrimitiveRef } from './chat-contracts.js'
+import type {
+    WorkspaceModelConfig,
+    WorkspacePoint,
+    WorkspaceTeamMetadata,
+} from './workspace-contracts.js'
+import type {
+    ParticipantSubscriptions,
+    TeamRelation,
+    TeamSafetyConfig,
+} from './team-types.js'
 
-export type DraftAssetKind = 'tal' | 'dance' | 'performer' | 'act'
+export type DraftKind = 'instruction' | 'skill' | 'agent' | 'team'
+
+// ── Content shapes ──────────────────────────────────────
+
+/**
+ * Agent draft content shape (when DraftFile.kind === 'agent').
+ */
+export interface AgentDraftContent {
+    instructionRef: SharedPrimitiveRef | null
+    agentBody?: string | null
+    skillRefs: SharedPrimitiveRef[]
+    model: WorkspaceModelConfig | null
+    modelVariant?: string | null
+    mcpServerNames: string[]
+    mcpBindingMap?: Record<string, string>
+    planMode?: boolean
+    runtimeAgentId?: string | null
+}
+
+/**
+ * Team draft content shape (when DraftFile.kind === 'team').
+ * Participant graph only; no standalone runtime-mode settings.
+ */
+export interface TeamDraftContent {
+    description?: string
+    teamRules?: string[]
+    participants: Record<string, TeamDraftParticipantBinding>
+    relations: TeamRelation[]
+    /** Authoring state — preserved across draft save/load round-trip */
+    position?: WorkspacePoint
+    width?: number
+    height?: number
+    hidden?: boolean
+    safety?: TeamSafetyConfig & {
+        confirmModeEnabled?: boolean
+        cooldownMs?: number
+    }
+    meta?: WorkspaceTeamMetadata
+}
+
+export interface TeamDraftParticipantBinding {
+    agentRef: SharedPrimitiveRef
+    displayName?: string
+    subscriptions?: ParticipantSubscriptions
+    /** Participant canvas position — preserved across draft save/load round-trip */
+    position?: WorkspacePoint
+}
+
+/** Map from draft kind to its typed content */
+export interface DraftContentMap {
+    instruction: string
+    skill: string
+    agent: AgentDraftContent
+    team: TeamDraftContent
+}
+
+export type DraftContent = DraftContentMap[DraftKind]
 
 /**
  * A draft file stored at `.apm-studio/drafts/<kind>/<id>.json`.
  * Drafts are project-local only — no global scope.
- *
- * @template T – The content type. Defaults to `unknown`;
- *   use `DraftFile<PerformerDraftContent>` etc. when you know the kind.
  */
-export interface DraftFile<T = unknown> {
+export interface DraftFile<T = DraftContent> {
     id: string
-    kind: DraftAssetKind
+    kind: DraftKind
     name: string
-    /** string for tal/dance markdown content; object for performer/act config */
+    /** string for instruction/skill markdown content; object for agent/team config */
     content: T
     slug?: string
     description?: string
     tags?: string[]
-    /** Original URN if this draft was created by modifying a named asset */
+    /** Original URN if this draft was created by modifying a named primitive */
     derivedFrom?: string | null
     createdAt: number
     updatedAt: number
@@ -28,88 +91,13 @@ export interface DraftFile<T = unknown> {
     formatVersion?: number
 }
 
-/** Map from draft kind to its typed content */
-export interface DraftContentMap {
-    tal: string
-    dance: string
-    performer: PerformerDraftContent
-    act: ActDraftContent
-}
-
 /** Convenience: typed DraftFile for a specific kind */
-export type TypedDraftFile<K extends DraftAssetKind> = DraftFile<DraftContentMap[K]>
-
-// ── Content shapes ──────────────────────────────────────
-
-/**
- * Performer draft content shape (when DraftFile.kind === 'performer').
- */
-export interface PerformerDraftContent {
-    talRef: { kind: 'registry'; urn: string } | { kind: 'draft'; draftId: string } | null
-    inlineInstruction?: string | null
-    danceRefs: Array<{ kind: 'registry'; urn: string } | { kind: 'draft'; draftId: string }>
-    model: { provider: string; modelId: string } | null
-    modelVariant?: string | null
-    mcpServerNames: string[]
-    mcpBindingMap?: Record<string, string>
-    planMode?: boolean
-    agentId?: string | null
-}
-
-/**
- * Act draft content shape (when DraftFile.kind === 'act').
- * Participant choreography only; no standalone runtime-mode settings.
- */
-export interface ActDraftContent {
-    description?: string
-    actRules?: string[]
-    participants: Record<string, ActDraftParticipantBinding>
-    relations: ActDraftRelation[]
-    /** Authoring state — preserved across draft save/load round-trip */
-    position?: { x: number; y: number }
-    width?: number
-    height?: number
-    hidden?: boolean
-    safety?: {
-        maxEvents?: number
-        maxMessagesPerPair?: number
-        maxBoardUpdatesPerKey?: number
-        quietWindowMs?: number
-        threadTimeoutMs?: number
-        loopDetectionThreshold?: number
-        confirmModeEnabled?: boolean
-        cooldownMs?: number
-    }
-    meta?: Record<string, unknown>
-}
-
-export interface ActDraftParticipantBinding {
-    performerRef: SharedAssetRef
-    subscriptions?: {
-        messagesFrom?: string[]
-        messageTags?: string[]
-        callboardKeys?: string[]
-        eventTypes?: string[]
-    }
-    /** Participant canvas position — preserved across draft save/load round-trip */
-    position?: { x: number; y: number }
-}
-
-/** Communication contract relation (between pair, not from/to) */
-export interface ActDraftRelation {
-    id: string
-    between: [string, string]
-    direction: 'both' | 'one-way'
-    name: string
-    description: string
-}
+export type TypedDraftFile<K extends DraftKind> = DraftFile<DraftContentMap[K]>
 
 // ── CRUD Request / Response types ────────────────────────
 
-export interface CreateDraftRequest {
-    kind: DraftAssetKind
+type DraftMetadataRequestFields = {
     name: string
-    content: unknown
     /** Optional: caller-specified ID. If omitted, generated server-side. */
     id?: string
     slug?: string
@@ -118,9 +106,16 @@ export interface CreateDraftRequest {
     derivedFrom?: string | null
 }
 
-export interface UpdateDraftRequest {
+export type CreateDraftRequest<K extends DraftKind = DraftKind> = K extends DraftKind
+    ? DraftMetadataRequestFields & {
+        kind: K
+        content: DraftContentMap[K]
+    }
+    : never
+
+export type UpdateDraftRequest<K extends DraftKind = DraftKind> = {
     name?: string
-    content?: unknown
+    content?: DraftContentMap[K]
     slug?: string
     description?: string
     tags?: string[]
@@ -135,7 +130,29 @@ export interface DraftResponse {
     draft: DraftFile
 }
 
-// ── Dance Bundle Types ──────────────────────────────────
+export interface DraftDeleteRequest {
+    cascade?: boolean
+}
+
+export interface DraftDeleteResponse {
+    ok: true
+    deletedIds: string[]
+}
+
+export interface DraftDependencyPlanItem {
+    draftId: string
+    kind: DraftKind
+    name: string
+    source: 'draft'
+    reason: string
+}
+
+export interface DraftDeletePreviewResponse {
+    target: DraftDependencyPlanItem
+    dependents: DraftDependencyPlanItem[]
+}
+
+// ── Skill Bundle Types ──────────────────────────────────
 
 export interface BundleTreeEntry {
     name: string
@@ -143,6 +160,10 @@ export interface BundleTreeEntry {
     /** Relative path from bundle root */
     path: string
     children?: BundleTreeEntry[]
+}
+
+export interface BundleTreeResponse {
+    tree: BundleTreeEntry[]
 }
 
 export interface BundleFileReadResponse {
@@ -159,3 +180,14 @@ export interface BundleFileCreateRequest {
     path: string
     isDirectory?: boolean
 }
+
+export interface BundleFileDeleteRequest {
+    path: string
+}
+
+export interface BundleFileOperationResponse {
+    ok: true
+    path: string
+}
+
+export type BundleFolderOpenResponse = BundleFileOperationResponse

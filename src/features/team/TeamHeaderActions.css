@@ -1,0 +1,64 @@
+.team-frame__header-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.team-frame__readiness-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    margin-right: 4px;
+    flex-shrink: 0;
+    background: var(--text-secondary, #888);
+    transition: background 0.2s;
+}
+
+.team-frame__readiness-apm--ok {
+    background: #34d399;
+}
+
+.team-frame__readiness-apm--warning {
+    background: #fbbf24;
+}
+
+.team-frame__readiness-apm--error {
+    background: #f87171;
+}
+
+.team-frame__focus-btn,
+.team-frame__edit-btn,
+.team-frame__close-btn {
+    opacity: 0.5;
+    transition: opacity 0.15s;
+}
+
+.team-frame__focus-btn:hover,
+.team-frame__edit-btn:hover,
+.team-frame__close-btn:hover {
+    opacity: 1;
+}
+
+.team-frame__edit-btn.active {
+    opacity: 1;
+    color: var(--team-accent);
+}
+
+.team-frame__focus-btn.active {
+    opacity: 1;
+    color: var(--team-accent);
+}
+
+.team-frame__activity-btn {
+    opacity: 0.5;
+    transition: opacity 0.15s, color 0.15s;
+}
+
+.team-frame__activity-btn:hover {
+    opacity: 1;
+}
+
+.team-frame__activity-btn.active {
+    opacity: 1;
+    color: var(--team-accent);
+}

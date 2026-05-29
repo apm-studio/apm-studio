@@ -1,3 +1,4 @@
+import type { ChatMessageToolInfo } from './chat-message-types'
 /**
  * Event Reducer — Phase 2
  *
@@ -9,8 +10,25 @@
  */
 import type { StudioState } from '../types'
 import type { SessionStatus } from './types'
-import type { ChatMessage, ChatMessagePart, ChatMessageToolInfo } from '../../types'
-import type { PermissionRequest, QuestionRequest, Todo } from '@opencode-ai/sdk/v2'
+
+import type { ChatPermissionRequest, ChatQuestionRequest, ChatTodo } from '../../../shared/chat-contracts'
+import {
+    mapSessionEventMessagePart,
+    type SessionEventMessagePart,
+} from './event-message-parts'
+import {
+    applyMessagePartDelta,
+    finalizeStaleToolPartsAsError,
+    patchToolCallStatusByCallId,
+    removeMessagePartFromMessages,
+    upsertMessageEnvelope,
+    upsertMessagePart,
+} from './event-message-state'
+import {
+    buildSessionErrorMessage,
+    removeRetryMessage,
+    upsertRetryMessage,
+} from './event-status-state'
 
 // ── Shared types ──
 
@@ -72,27 +90,7 @@ export function reduceMessageRemoved(
 export function reduceMessagePartUpdated(
     sessionId: string,
     messageId: string,
-    part: {
-        id: string
-        type?: string
-        text?: string
-        tool?: string
-        callID?: string
-        state?: {
-            status?: 'pending' | 'running' | 'completed' | 'error' | 'failed'
-            title?: string
-            input?: unknown
-            metadata?: unknown
-            output?: unknown
-            error?: unknown
-            time?: { start: number; end?: number }
-        }
-        reason?: string
-        cost?: unknown
-        tokens?: unknown
-        auto?: boolean
-        overflow?: unknown
-    },
+    part: SessionEventMessagePart,
     get: GetFn,
     set: SetFn,
 ) {
@@ -100,82 +98,10 @@ export function reduceMessagePartUpdated(
     if (!hasSession(state, sessionId)) return
 
     const messages = state.seMessages[sessionId] || []
-
-    if (part.type === 'text') {
-        const textPart: ChatMessagePart = {
-            id: part.id,
-            type: 'text',
-            content: typeof part.text === 'string' ? part.text : '',
-        }
-        const updated = upsertMessagePart(messages, messageId, textPart)
-        set({ seMessages: { ...state.seMessages, [sessionId]: updated } })
-        return
-    }
-
-    if (part.type === 'reasoning') {
-        const reasoningPart: ChatMessagePart = {
-            id: part.id,
-            type: 'reasoning',
-            content: typeof part.text === 'string' ? part.text : '',
-        }
-        const updated = upsertMessagePart(messages, messageId, reasoningPart)
-        set({ seMessages: { ...state.seMessages, [sessionId]: updated } })
-        return
-    }
-
-    if (part.type === 'tool') {
-        const s = part.state || {}
-        const status = s.status === 'failed' ? 'error' : s.status
-        const toolPart: ChatMessagePart = {
-            id: part.id,
-            type: 'tool',
-            tool: {
-                name: part.tool || 'unknown',
-                callId: part.callID || part.id,
-                status: status || 'pending',
-                title: s.title,
-                input: s.input as Record<string, unknown> | undefined,
-                metadata: s.metadata as Record<string, unknown> | undefined,
-                output: s.output as string | undefined,
-                error: formatToolError(s.error),
-                time: s.time,
-            },
-        }
-        const updated = upsertMessagePart(messages, messageId, toolPart)
-        set({ seMessages: { ...state.seMessages, [sessionId]: updated } })
-        return
-    }
-
-    if (part.type === 'step-start' || part.type === 'step-finish') {
-        const stepPart: ChatMessagePart = {
-            id: part.id,
-            type: part.type,
-            step: part.type === 'step-finish'
-                ? {
-                    reason: part.reason,
-                    cost: typeof part.cost === 'number' ? part.cost : undefined,
-                    tokens: part.tokens as ChatMessagePart['step'] extends { tokens?: infer T } ? T : never,
-                }
-                : undefined,
-        }
-        const updated = upsertMessagePart(messages, messageId, stepPart)
-        set({ seMessages: { ...state.seMessages, [sessionId]: updated } })
-        return
-    }
-
-    if (part.type === 'compaction') {
-        const compactionPart: ChatMessagePart = {
-            id: part.id,
-            type: 'compaction',
-            compaction: {
-                auto: !!part.auto,
-                overflow: part.overflow as boolean | undefined,
-                summary: typeof part.text === 'string' ? part.text : undefined,
-            },
-        }
-        const updated = upsertMessagePart(messages, messageId, compactionPart)
-        set({ seMessages: { ...state.seMessages, [sessionId]: updated } })
-    }
+    const messagePart = mapSessionEventMessagePart(part)
+    if (!messagePart) return
+    const updated = upsertMessagePart(messages, messageId, messagePart)
+    set({ seMessages: { ...state.seMessages, [sessionId]: updated } })
 }
 
 export function reduceMessagePartDelta(
@@ -191,76 +117,8 @@ export function reduceMessagePartDelta(
     if (!hasSession(state, sessionId)) return
 
     const messages = state.seMessages[sessionId] || []
-
-    // Find existing part to determine kind
-    const existingMsg = messages.find((m) => m.id === messageId)
-    const existingPart = existingMsg?.parts?.find((p) => p.id === partId)
-
-    if (existingPart?.type === 'reasoning') {
-        // Append delta to reasoning part
-        const updated = upsertMessagePart(messages, messageId, {
-            ...existingPart,
-            content: (existingPart.content || '') + delta,
-        })
-        set({ seMessages: { ...state.seMessages, [sessionId]: updated } })
-        return
-    }
-
-    if (existingPart?.type === 'tool' && existingPart.tool) {
-        const currentMetadata = existingPart.tool.metadata || {}
-        const appendMetadataValue = (key: string) => {
-            const existingValue = currentMetadata[key]
-            return typeof existingValue === 'string' ? existingValue + delta : delta
-        }
-
-        let nextOutput = existingPart.tool.output
-        let nextMetadata: Record<string, unknown> | undefined = currentMetadata
-
-        if (field === 'output' || field === 'state.output') {
-            nextOutput = (existingPart.tool.output || '') + delta
-        } else if (field === 'stdout' || field === 'state.stdout') {
-            nextMetadata = {
-                ...currentMetadata,
-                stdout: appendMetadataValue('stdout'),
-            }
-        } else if (field === 'stderr' || field === 'state.stderr') {
-            nextMetadata = {
-                ...currentMetadata,
-                stderr: appendMetadataValue('stderr'),
-            }
-        } else if (field === 'metadata.output' || field === 'state.metadata.output') {
-            nextMetadata = {
-                ...currentMetadata,
-                output: appendMetadataValue('output'),
-            }
-        } else {
-            return
-        }
-
-        const updated = upsertMessagePart(messages, messageId, {
-            ...existingPart,
-            tool: {
-                ...existingPart.tool,
-                output: nextOutput,
-                metadata: nextMetadata,
-            },
-        })
-        set({ seMessages: { ...state.seMessages, [sessionId]: updated } })
-        return
-    }
-
-    const existingTextContent = existingPart?.type === 'text'
-        ? existingPart.content || ''
-        : (
-            existingMsg && !(existingMsg.parts || []).some((part) => part.type === 'text')
-                ? existingMsg.content || ''
-                : ''
-        )
-    const updated = upsertMessagePart(messages, messageId, {
-        id: partId,
-        type: 'text',
-        content: existingTextContent + delta,
-    })
+    const updated = applyMessagePartDelta(messages, messageId, partId, field, delta)
+    if (!updated) return
     set({ seMessages: { ...state.seMessages, [sessionId]: updated } })
 }
 
@@ -290,35 +148,7 @@ export function reduceToolCallStatusByCallId(
     if (!hasSession(state, sessionId) || !callId) return
 
     const messages = state.seMessages[sessionId] || []
-    let changed = false
-    const nextMessages = messages.map((message) => {
-        if (!message.parts?.length) return message
-
-        let messageChanged = false
-        const nextParts = message.parts.map((part) => {
-            if (part.type !== 'tool' || !part.tool || part.tool.callId !== callId) {
-                return part
-            }
-            messageChanged = true
-            changed = true
-            return {
-                ...part,
-                tool: {
-                    ...part.tool,
-                    ...patch,
-                    error: patch.error !== undefined ? formatToolError(patch.error) : part.tool.error,
-                    metadata: patch.metadata !== undefined
-                        ? {
-                            ...(part.tool.metadata || {}),
-                            ...patch.metadata,
-                        }
-                        : part.tool.metadata,
-                },
-            }
-        })
-
-        return messageChanged ? { ...message, parts: nextParts } : message
-    })
+    const { messages: nextMessages, changed } = patchToolCallStatusByCallId(messages, callId, patch)
 
     if (changed) {
         set({ seMessages: { ...state.seMessages, [sessionId]: nextMessages } })
@@ -341,29 +171,14 @@ export function reduceSessionStatus(
         sessionLoading: withoutKey(state.sessionLoading, sessionId),
     })
 
-    if (status.type === 'busy') {
-        // Clean up retry messages
+    if (status.type === 'busy' || status.type === 'idle') {
         const messages = get().seMessages[sessionId] || []
-        const retryMsgId = `retry-${sessionId}`
-        if (messages.some((m) => m.id === retryMsgId)) {
+        const nextMessages = removeRetryMessage(messages, sessionId)
+        if (nextMessages !== messages) {
             set({
                 seMessages: {
                     ...get().seMessages,
-                    [sessionId]: messages.filter((m) => m.id !== retryMsgId),
-                },
-            })
-        }
-    }
-
-    if (status.type === 'idle') {
-        // Clean up retry messages
-        const messages = get().seMessages[sessionId] || []
-        const retryMsgId = `retry-${sessionId}`
-        if (messages.some((m) => m.id === retryMsgId)) {
-            set({
-                seMessages: {
-                    ...get().seMessages,
-                    [sessionId]: messages.filter((m) => m.id !== retryMsgId),
+                    [sessionId]: nextMessages,
                 },
             })
         }
@@ -371,26 +186,7 @@ export function reduceSessionStatus(
 
     if (status.type === 'retry') {
         const messages = get().seMessages[sessionId] || []
-        const retryMsgId = `retry-${sessionId}`
-        const retryContent = `⏳ Retrying (Attempt ${status.attempt}): ${status.message || 'Operation failed, retrying...'}`
-        const retryIndex = messages.findIndex((m) => m.id === retryMsgId)
-        if (retryIndex >= 0) {
-            const next = [...messages]
-            next[retryIndex] = { ...next[retryIndex], content: retryContent }
-            set({ seMessages: { ...get().seMessages, [sessionId]: next } })
-        } else {
-            set({
-                seMessages: {
-                    ...get().seMessages,
-                    [sessionId]: [...messages, {
-                        id: retryMsgId,
-                        role: 'system' as const,
-                        content: retryContent,
-                        timestamp: Date.now(),
-                    }],
-                },
-            })
-        }
+        set({ seMessages: { ...get().seMessages, [sessionId]: upsertRetryMessage(messages, sessionId, status) } })
     }
 }
 
@@ -410,34 +206,14 @@ export function reduceSessionError(
     })
 
     const messages = get().seMessages[sessionId] || []
-    // Mark stale running/pending tool parts as error
-    const finalized = messages.map((msg) => {
-        if (!msg.parts) return msg
-        const hasStale = msg.parts.some(
-            (p) => p.type === 'tool' && p.tool && (p.tool.status === 'running' || p.tool.status === 'pending'),
-        )
-        if (!hasStale) return msg
-        return {
-            ...msg,
-            parts: msg.parts.map((p) =>
-                p.type === 'tool' && p.tool && (p.tool.status === 'running' || p.tool.status === 'pending')
-                    ? { ...p, tool: { ...p.tool, status: 'error' as const } }
-                    : p,
-            ),
-        }
-    })
+    const finalized = finalizeStaleToolPartsAsError(messages)
 
     set({
         seMessages: {
             ...get().seMessages,
             [sessionId]: [
                 ...finalized,
-                {
-                    id: `system-${Date.now()}`,
-                    role: 'system' as const,
-                    content: `⚠️ ${errorMessage}`,
-                    timestamp: Date.now(),
-                },
+                buildSessionErrorMessage(errorMessage),
             ],
         },
     })
@@ -447,7 +223,7 @@ export function reduceSessionError(
 
 export function reducePermissionAsked(
     sessionId: string,
-    permission: PermissionRequest,
+    permission: ChatPermissionRequest,
     get: GetFn,
     set: SetFn,
 ) {
@@ -473,7 +249,7 @@ export function reducePermissionReplied(
 
 export function reduceQuestionAsked(
     sessionId: string,
-    question: QuestionRequest,
+    question: ChatQuestionRequest,
     get: GetFn,
     set: SetFn,
 ) {
@@ -499,7 +275,7 @@ export function reduceQuestionReplied(
 
 export function reduceTodoUpdated(
     sessionId: string,
-    todos: Todo[],
+    todos: ChatTodo[],
     get: GetFn,
     set: SetFn,
 ) {
@@ -510,158 +286,4 @@ export function reduceTodoUpdated(
             [sessionId]: todos,
         },
     })
-}
-
-// ── Internal helpers ──
-
-function upsertMessagePart(messages: ChatMessage[], messageId: string, part: ChatMessagePart): ChatMessage[] {
-    const next = [...messages]
-    const idx = next.findIndex((m) => m.id === messageId)
-    if (idx === -1) {
-        const created: ChatMessage = {
-            id: messageId,
-            role: 'assistant',
-            content: '',
-            timestamp: Date.now(),
-            parts: [part],
-        }
-        next.push(applyMessageParts(created, [part], { preserveContentWithoutTextParts: false }))
-        return next
-    }
-
-    const message = next[idx]
-    const existingParts = message.parts ? [...message.parts] : []
-    const partIdx = existingParts.findIndex((p) => p.id === part.id)
-    if (partIdx === -1) {
-        existingParts.push(part)
-    } else {
-        existingParts[partIdx] = part
-    }
-    next[idx] = applyMessageParts(message, existingParts, {
-        preserveContentWithoutTextParts: part.type !== 'text' && !hasTextParts(message.parts || []),
-    })
-    return next
-}
-
-function removeMessagePartFromMessages(messages: ChatMessage[], messageId: string, partId: string): ChatMessage[] {
-    const next = [...messages]
-    const idx = next.findIndex((m) => m.id === messageId)
-    if (idx === -1) return next
-
-    const message = next[idx]
-    if (!message.parts?.length) return next
-
-    const removedPart = message.parts.find((part) => part.id === partId)
-    const nextParts = message.parts.filter((p) => p.id !== partId)
-    next[idx] = applyMessageParts(message, nextParts, {
-        preserveContentWithoutTextParts: removedPart?.type !== 'text',
-    })
-    return next
-}
-
-function hasTextParts(parts: ChatMessagePart[]) {
-    return parts.some((part) => part.type === 'text')
-}
-
-function buildContentFromTextParts(parts: ChatMessagePart[]) {
-    return parts
-        .filter((part) => part.type === 'text')
-        .map((part) => part.content || '')
-        .join('\n')
-}
-
-function applyMessageParts(
-    message: ChatMessage,
-    parts: ChatMessagePart[],
-    options: { preserveContentWithoutTextParts: boolean },
-): ChatMessage {
-    if (hasTextParts(parts)) {
-        return {
-            ...message,
-            parts,
-            content: buildContentFromTextParts(parts),
-        }
-    }
-
-    return {
-        ...message,
-        parts,
-        content: options.preserveContentWithoutTextParts ? message.content : '',
-    }
-}
-
-function findLatestTempUserMessageIndex(messages: ChatMessage[]): number {
-    for (let index = messages.length - 1; index >= 0; index--) {
-        const message = messages[index]
-        if (message.role === 'user' && message.id.startsWith('temp-')) {
-            return index
-        }
-    }
-    return -1
-}
-
-function upsertMessageEnvelope(
-    messages: ChatMessage[],
-    messageId: string,
-    role: ChatMessage['role'],
-    timestamp: number,
-): ChatMessage[] {
-    const next = [...messages]
-    const existingIndex = next.findIndex((message) => message.id === messageId)
-    if (existingIndex >= 0) {
-        next[existingIndex] = {
-            ...next[existingIndex],
-            role,
-            timestamp,
-        }
-        return next
-    }
-
-    if (role === 'user') {
-        const tempIndex = findLatestTempUserMessageIndex(next)
-        if (tempIndex >= 0) {
-            next[tempIndex] = {
-                ...next[tempIndex],
-                id: messageId,
-                role,
-                timestamp,
-            }
-            return next
-        }
-    }
-
-    next.push({
-        id: messageId,
-        role,
-        content: '',
-        timestamp,
-    })
-    return next
-}
-
-function formatToolError(error: unknown): string | undefined {
-    if (error === undefined || error === null) {
-        return undefined
-    }
-    if (typeof error === 'string') {
-        return error
-    }
-    if (typeof error === 'object') {
-        const record = error as Record<string, unknown>
-        const data = record.data && typeof record.data === 'object' ? record.data as Record<string, unknown> : null
-        const message = typeof data?.message === 'string' && data.message.trim()
-            ? data.message.trim()
-            : typeof record.message === 'string' && record.message.trim()
-                ? record.message.trim()
-                : null
-        if (message) {
-            return message
-        }
-        try {
-            return JSON.stringify(error)
-        } catch {
-            return 'Tool call failed.'
-        }
-    }
-    return String(error)
 }

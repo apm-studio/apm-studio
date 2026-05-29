@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { CheckCircle, ExternalLink, RefreshCw, Unplug, AlertCircle } from 'lucide-react'
-import { api } from '../../api'
-import type { DiscordIntegrationStatus } from '../../api-clients/discord'
+import { discordApi } from '../../api-clients/discord'
+import type { DiscordIntegrationStatus } from '../../../shared/discord-contracts'
 import { showToast } from '../../lib/toast'
 import { useStudioStore } from '../../store'
 
@@ -48,7 +48,7 @@ export default function SettingsDiscord() {
         setLoading(true)
         setError(null)
         try {
-            const next = await api.discord.status()
+            const next = await discordApi.status()
             setStatus(next)
             setEnabled(next.config.enabled)
             setGuildId(next.config.guildId || '')
@@ -70,7 +70,7 @@ export default function SettingsDiscord() {
         setSaving(true)
         setError(null)
         try {
-            const next = await api.discord.updateConfig({
+            const next = await discordApi.updateConfig({
                 enabled,
                 ...(token.trim() ? { token: token.trim() } : {}),
                 guildId,
@@ -100,7 +100,7 @@ export default function SettingsDiscord() {
         setSaving(true)
         setError(null)
         try {
-            const next = await api.discord.disconnect()
+            const next = await discordApi.disconnect()
             setStatus(next)
             setEnabled(false)
             setGuildId('')
@@ -127,7 +127,7 @@ export default function SettingsDiscord() {
                     throw new Error('Save the current workspace before syncing Discord.')
                 }
             }
-            const result = await api.discord.sync(scope === 'current' ? targetWorkspaceId : null)
+            const result = await discordApi.sync(scope === 'current' ? targetWorkspaceId : null)
             const failedCount = result.failedWorkspaces?.length || 0
             showToast(
                 scope === 'current'

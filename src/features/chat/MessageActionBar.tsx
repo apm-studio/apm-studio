@@ -1,13 +1,14 @@
+import type { ChatMessage } from '../../store/session/chat-message-types'
 import { useState } from 'react'
 import { Copy, Check, CornerDownLeft } from 'lucide-react'
-import type { ChatMessage } from '../../types'
+
 import './MessageActionBar.css'
 
 type MessageActionBarProps = {
     message: ChatMessage
-    performerId: string
+    agentId: string
     canRevert: boolean
-    onRevert: (performerId: string, messageId: string) => void
+    onRevert: (agentId: string, messageId: string) => void
 }
 
 function shortenModelId(modelId: string): string {
@@ -38,7 +39,7 @@ function MetadataBadge({ metadata }: { metadata: NonNullable<ChatMessage['metada
 
 export default function MessageActionBar({
     message,
-    performerId,
+    agentId,
     canRevert,
     onRevert,
 }: MessageActionBarProps) {
@@ -78,7 +79,7 @@ export default function MessageActionBar({
                 {showRevert ? (
                     <button
                         className="msg-action-btn"
-                        onClick={() => onRevert(performerId, message.id)}
+                        onClick={() => onRevert(agentId, message.id)}
                         title="Revert to this message"
                     >
                         <CornerDownLeft size={12} />

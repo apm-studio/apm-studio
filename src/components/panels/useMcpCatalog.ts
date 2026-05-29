@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { api } from '../../api'
-import { queryKeys, useMcpServers } from '../../hooks/queries'
+import { opencodeApi } from '../../api-clients/opencode'
+import { queryKeys } from '../../hooks/queries/keys'
+import { useMcpServers } from '../../hooks/queries/opencode'
 import { showToast } from '../../lib/toast'
 import type { McpCatalog } from '../../../shared/mcp-catalog'
 import type { McpCatalogImpact, McpEntryDraft } from './mcp-catalog-utils'
 import {
-    applyMcpCatalogImpactToPerformers,
+    applyMcpCatalogImpactToAgents,
     buildMcpCatalogImpact,
     buildMcpDrafts,
     cloneMcpDraftEntries,
@@ -64,7 +65,7 @@ export function useMcpCatalog(workingDir: string, showMcps: boolean): McpCatalog
     } | null>(null)
     const queryClient = useQueryClient()
     const recordStudioChange = useStudioStore((state) => state.recordStudioChange)
-    const performers = useStudioStore((state) => state.performers)
+    const agents = useStudioStore((state) => state.agents)
     const runtimeReloadPending = useStudioStore((state) => state.runtimeReloadPending)
 
     const { data: mcpServers = [] } = useMcpServers(showMcps)
@@ -82,7 +83,7 @@ export function useMcpCatalog(workingDir: string, showMcps: boolean): McpCatalog
             return
         }
         setMcpCatalogLoaded(false)
-        api.mcp.getCatalog()
+        opencodeApi.mcp.getCatalog()
             .then((result) => {
                 const drafts = buildMcpDrafts(result)
                 setMcpEntries(drafts)
@@ -102,7 +103,7 @@ export function useMcpCatalog(workingDir: string, showMcps: boolean): McpCatalog
 
     const invalidateMcpQueries = useCallback(async (includeRuntimeTools = false) => {
         const queryKey = [...queryKeys.mcpServers, workingDir] as const
-        const refreshed = await api.mcp.list({ refresh: true }).catch(() => null)
+        const refreshed = await opencodeApi.mcp.list({ refresh: true }).catch(() => null)
         if (refreshed) {
             queryClient.setQueryData(queryKey, refreshed)
         }
@@ -144,7 +145,7 @@ export function useMcpCatalog(workingDir: string, showMcps: boolean): McpCatalog
                 setMcpCatalogStatus(`Timed out waiting for ${pendingMcpAuthName} authentication.`)
                 return
             }
-            void api.mcp.list({ refresh: true })
+            void opencodeApi.mcp.list({ refresh: true })
                 .then((refreshed) => {
                     queryClient.setQueryData([...queryKeys.mcpServers, workingDir], refreshed)
                 })
@@ -165,20 +166,20 @@ export function useMcpCatalog(workingDir: string, showMcps: boolean): McpCatalog
 
         let changed = false
         useStudioStore.setState((state) => {
-            const nextPerformers = applyMcpCatalogImpactToPerformers(state.performers, impact)
-            if (nextPerformers === state.performers) {
+            const nextAgents = applyMcpCatalogImpactToAgents(state.agents, impact)
+            if (nextAgents === state.agents) {
                 return {}
             }
             changed = true
             return {
-                performers: nextPerformers,
+                agents: nextAgents,
                 workspaceDirty: true,
             }
         })
         if (changed) {
             recordStudioChange({
-                kind: 'performer',
-                performerIds: impact.affectedPerformerIds,
+                kind: 'agent',
+                agentIds: impact.affectedAgentIds,
             })
         }
     }
@@ -191,11 +192,11 @@ export function useMcpCatalog(workingDir: string, showMcps: boolean): McpCatalog
         setMcpCatalogStatus(null)
         try {
             const nextMcpCatalog: McpCatalog = serializeMcpEntries(entries)
-            const savedCatalog = await api.mcp.updateCatalog(nextMcpCatalog)
+            const savedCatalog = await opencodeApi.mcp.updateCatalog(nextMcpCatalog)
             setMcpEntries(buildMcpDrafts(savedCatalog, entries))
             if (impact && hasMcpCatalogImpact(impact)) {
                 applyCatalogImpactToStudio(impact)
-                setMcpCatalogStatus(`Saved Studio MCP library and updated ${impact.affectedPerformerIds.length} agent reference${impact.affectedPerformerIds.length === 1 ? '' : 's'}.`)
+                setMcpCatalogStatus(`Saved Studio MCP library and updated ${impact.affectedAgentIds.length} agent reference${impact.affectedAgentIds.length === 1 ? '' : 's'}.`)
             } else {
                 setMcpCatalogStatus('Saved Studio MCP library. Agents enable servers individually.')
             }
@@ -243,7 +244,7 @@ export function useMcpCatalog(workingDir: string, showMcps: boolean): McpCatalog
             return false
         }
 
-        const impact = buildMcpCatalogImpact(mcpEntries, nextEntries, performers)
+        const impact = buildMcpCatalogImpact(mcpEntries, nextEntries, agents)
         if (hasMcpCatalogImpact(impact)) {
             return new Promise<boolean>((resolve) => {
                 pendingSaveRef.current = {
@@ -270,7 +271,7 @@ export function useMcpCatalog(workingDir: string, showMcps: boolean): McpCatalog
             return false
         }
 
-        const impact = buildMcpCatalogImpact(mcpEntries, nextEntries, performers)
+        const impact = buildMcpCatalogImpact(mcpEntries, nextEntries, agents)
         if (hasMcpCatalogImpact(impact)) {
             return new Promise<boolean>((resolve) => {
                 pendingSaveRef.current = {
@@ -286,7 +287,7 @@ export function useMcpCatalog(workingDir: string, showMcps: boolean): McpCatalog
     }
 
     const createMcpEntryDraft = () => {
-        const key = makeId('asset-mcp')
+        const key = makeId('package-mcp')
         return createLocalMcpEntryDraft(key)
     }
 
@@ -320,7 +321,7 @@ export function useMcpCatalog(workingDir: string, showMcps: boolean): McpCatalog
     // ── Server operations ───────────────────────────────
 
     const runConnectMcpServer = async (name: string) => runMcpCatalogAction(
-        () => api.mcp.connect(name),
+        () => opencodeApi.mcp.connect(name),
         {
             successMessage: `Connection test passed for ${name}.`,
             failureMessage: `Connection test failed for ${name}.`,
@@ -333,7 +334,7 @@ export function useMcpCatalog(workingDir: string, showMcps: boolean): McpCatalog
         setMcpCatalogStatus(null)
 
         try {
-            const result = await api.mcp.authStart(name)
+            const result = await opencodeApi.mcp.authStart(name)
             let opened = false
             try {
                 if (popup && !popup.closed) {
@@ -373,7 +374,7 @@ export function useMcpCatalog(workingDir: string, showMcps: boolean): McpCatalog
 
     const runClearMcpAuth = async (name: string) => {
         await runMcpCatalogAction(
-            () => api.mcp.clearAuth(name),
+            () => opencodeApi.mcp.clearAuth(name),
             {
                 successMessage: `Cleared stored authentication for ${name}.`,
                 failureMessage: `Failed to clear authentication for ${name}.`,

@@ -628,6 +628,10 @@
 
 /* ── Todos ── */
 
+.todo-tool-content {
+    padding: 6px 8px;
+}
+
 .todo-inline-list {
     display: flex;
     flex-direction: column;

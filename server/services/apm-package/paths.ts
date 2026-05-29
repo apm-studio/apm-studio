@@ -1,7 +1,6 @@
 import path from 'path'
-import { APM_STUDIO_STORE_DIR } from '../../lib/apm-studio-paths.js'
+import { getApmStudioDir } from '../../lib/apm-studio-paths.js'
 
-export { APM_STUDIO_STORE_DIR }
 export const PACKAGE_DIR = 'packages'
 export const MANIFEST_FILE = 'apm.yml'
 export const LOCK_FILE = 'apm.lock.yaml'
@@ -24,58 +23,26 @@ export function toPosixPath(value: string) {
     return value.replace(/\\/g, '/')
 }
 
-export function apmStudioDir(workingDir: string) {
-    return path.join(workingDir, APM_STUDIO_STORE_DIR)
-}
-
-export async function apmStudioDirForRead(workingDir: string) {
-    return apmStudioDir(workingDir)
-}
-
 export function packageRoot(workingDir: string) {
-    return path.join(apmStudioDir(workingDir), PACKAGE_DIR)
-}
-
-export async function packageRootForRead(workingDir: string) {
-    return path.join(await apmStudioDirForRead(workingDir), PACKAGE_DIR)
+    return path.join(workingDir, PACKAGE_DIR)
 }
 
 export function packageDir(workingDir: string, packageId: string) {
     return path.join(packageRoot(workingDir), sanitizePackageId(packageId))
 }
 
-export async function packageDirForRead(workingDir: string, packageId: string) {
-    return path.join(await packageRootForRead(workingDir), sanitizePackageId(packageId))
-}
-
 export function manifestPath(workingDir: string, packageId: string) {
     return path.join(packageDir(workingDir, packageId), MANIFEST_FILE)
-}
-
-export async function manifestPathForRead(workingDir: string, packageId: string) {
-    return path.join(await packageDirForRead(workingDir, packageId), MANIFEST_FILE)
 }
 
 export function lockPath(workingDir: string, packageId: string) {
     return path.join(packageDir(workingDir, packageId), LOCK_FILE)
 }
 
-export async function lockPathForRead(workingDir: string, packageId: string) {
-    return path.join(await packageDirForRead(workingDir, packageId), LOCK_FILE)
-}
-
 export function sourceDir(workingDir: string, packageId: string) {
     return path.join(packageDir(workingDir, packageId), APM_SOURCE_DIR)
 }
 
-export async function sourceDirForRead(workingDir: string, packageId: string) {
-    return path.join(await packageDirForRead(workingDir, packageId), APM_SOURCE_DIR)
-}
-
 export function localWorkspacePath(workingDir: string) {
-    return path.join(apmStudioDir(workingDir), 'workspace.json')
-}
-
-export async function localWorkspacePathForRead(workingDir: string) {
-    return localWorkspacePath(workingDir)
+    return path.join(getApmStudioDir(workingDir), 'workspace.json')
 }
