@@ -412,9 +412,9 @@ describe('workspace side panels', () => {
             workspaceDirty: false,
         } as StudioState)
 
-        harness.get().setWorkspaceMode('inject')
+        harness.get().setWorkspaceMode('manage')
 
-        expect(harness.get().workspaceMode).toBe('inject')
+        expect(harness.get().workspaceMode).toBe('manage')
         expect(harness.get().isTrackingOpen).toBe(false)
         expect(harness.get().isAssistantOpen).toBe(false)
         expect(harness.get().isTerminalOpen).toBe(false)
@@ -428,9 +428,9 @@ describe('workspace side panels', () => {
         expect(harness.get().isTerminalOpen).toBe(false)
         expect(harness.get().workspaceDirty).toBe(false)
 
-        harness.get().setWorkspaceMode('run')
+        harness.get().setWorkspaceMode('studio-agent')
 
-        expect(harness.get().workspaceMode).toBe('run')
+        expect(harness.get().workspaceMode).toBe('studio-agent')
         expect(harness.get().isAssistantOpen).toBe(false)
         expect(harness.get().isTerminalOpen).toBe(false)
         expect(harness.get().workspaceDirty).toBe(false)

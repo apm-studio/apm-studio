@@ -159,7 +159,7 @@ export function validateTeamDefinition(def: TeamDefinition | undefined): TeamDef
     const participantKeySet = new Set(participantKeys)
     const issues: TeamDefinitionValidationIssue[] = []
     if (participantKeys.length === 0) {
-        issues.push(issue('no-participants', 'Team must have at least one agent', { mode: 'team' }))
+        issues.push(issue('no-participants', 'Team must have at least one Studio Agent', { mode: 'team' }))
     }
 
     for (const [key, binding] of Object.entries(def.participants || {})) {

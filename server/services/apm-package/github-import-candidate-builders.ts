@@ -1,5 +1,5 @@
 import path from 'path'
-import type { ApmPackageManifest } from '../../../shared/apm-contracts.js'
+import type { ApmDependency, ApmPackageManifest } from '../../../shared/apm-contracts.js'
 import { MANIFEST_FILE } from './paths.js'
 import { parseYamlRecord } from './yaml-io.js'
 import {
@@ -171,6 +171,49 @@ export function buildSkillManifest(repo: string, ref: string, sourcePath: string
     }
 }
 
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+    return !!value && typeof value === 'object' && !Array.isArray(value)
+}
+
+function stringRecord(value: unknown) {
+    if (!isPlainRecord(value)) return undefined
+    const entries = Object.entries(value)
+        .filter((entry): entry is [string, string] => typeof entry[1] === 'string')
+    return entries.length > 0 ? Object.fromEntries(entries) : undefined
+}
+
+function mcpDependencyFromConfig(name: string, value: unknown): ApmDependency {
+    if (!isPlainRecord(value)) return { name }
+
+    const command = typeof value.command === 'string' && value.command.trim()
+        ? value.command.trim()
+        : null
+    const url = typeof value.url === 'string' && value.url.trim()
+        ? value.url.trim()
+        : null
+    const rawTransport = typeof value.transport === 'string'
+        ? value.transport
+        : (typeof value.type === 'string' ? value.type : null)
+    const transport = rawTransport?.trim()
+    if (!command && !url) {
+        return transport ? { name, transport } : { name }
+    }
+
+    const dependency: Record<string, unknown> = {
+        name,
+        registry: false,
+        transport: transport || (url ? 'http' : 'stdio'),
+    }
+    if (command) dependency.command = command
+    if (url) dependency.url = url
+    if (Array.isArray(value.args) || isPlainRecord(value.args)) dependency.args = value.args
+    const env = stringRecord(value.env)
+    if (env) dependency.env = env
+    const headers = stringRecord(value.headers)
+    if (headers) dependency.headers = headers
+    return dependency
+}
+
 export function buildMcpManifest(repo: string, ref: string, sourcePath: string, raw: string): ImportCandidate | null {
     let parsed: unknown
     try {
@@ -185,6 +228,9 @@ export function buildMcpManifest(repo: string, ref: string, sourcePath: string, 
         ? Object.keys(serversRecord as Record<string, unknown>)
         : []
     if (names.length === 0) return null
+    const mcpDependencies = names.map((serverName) =>
+        mcpDependencyFromConfig(serverName, (serversRecord as Record<string, unknown>)[serverName]),
+    )
 
     const name = slugify(path.posix.basename(sourcePath, path.posix.extname(sourcePath)), 'mcp')
     const packageId = packageIdForSource(repo, ref, sourcePath, name, 'mcp-config')
@@ -199,7 +245,7 @@ export function buildMcpManifest(repo: string, ref: string, sourcePath: string, 
         marketplace: { source: githubSource(repo, ref, sourcePath, 'mcp-config') },
         dependencies: {
             apm: [],
-            mcp: names.map((serverName) => ({ name: serverName })),
+            mcp: mcpDependencies,
         },
         'x-apm': {
             schemaVersion: 1,
@@ -216,10 +262,16 @@ export function buildMcpManifest(repo: string, ref: string, sourcePath: string, 
         sourcePath,
         packageId,
         targets: ALL_TARGET_LABELS,
-        primitiveCounts: {},
+        primitiveCounts: { mcp: mcpDependencies.length },
         manifest,
         copyFiles: [{ sourcePath, targetPath }],
     }
+}
+
+function mcpDependencyCount(manifest: ApmPackageManifest) {
+    return Array.isArray(manifest.dependencies?.mcp)
+        ? manifest.dependencies.mcp.length
+        : 0
 }
 
 export function buildApmManifestCandidate(repo: string, ref: string, sourcePath: string, raw: string, tree: string[]): ImportCandidate | null {
@@ -242,10 +294,17 @@ export function buildApmManifestCandidate(repo: string, ref: string, sourcePath:
             sourcePath: entry,
             targetPath: `.apm/${entry.slice(apmPrefix.length)}`,
         }))
+    const promptCount = copyFiles.filter((entry) =>
+        entry.targetPath.startsWith('.apm/prompts/') && entry.targetPath.endsWith('.prompt.md'),
+    ).length
     const primitiveCounts = {
         agents: copyFiles.filter((entry) => entry.targetPath.startsWith('.apm/agents/')).length,
         instructions: copyFiles.filter((entry) => entry.targetPath.startsWith('.apm/instructions/')).length,
         skills: copyFiles.filter((entry) => entry.targetPath.endsWith('/SKILL.md')).length,
+        prompts: promptCount,
+        commands: promptCount,
+        hooks: copyFiles.filter((entry) => entry.targetPath.startsWith('.apm/hooks/') && entry.targetPath.endsWith('.json')).length,
+        ...(mcpDependencyCount(manifest) > 0 ? { mcp: mcpDependencyCount(manifest) } : {}),
     }
     return {
         id: candidateId(repo, ref, sourcePath, 'apm'),

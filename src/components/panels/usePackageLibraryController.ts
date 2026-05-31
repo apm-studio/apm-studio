@@ -10,11 +10,13 @@ import { useMcpCatalog } from './useMcpCatalog'
 import type { PackagePanelItem } from './package-panel-types'
 import {
     filterApmPackages,
+    packageMatchesPrimitiveSection,
     scopeApmPackages,
 } from './package-library-packages'
 import type {
     LocalSection,
     ModelProviderFilter,
+    PackagePrimitiveSection,
     SourceFilter,
 } from './package-library-utils'
 import {
@@ -22,6 +24,7 @@ import {
     getPackagePanelItemKey,
     groupModels,
     placeholderForLocalSection,
+    placeholderForPrimitiveSection,
     resolveSelectedPackagePanelItem,
 } from './package-library-utils'
 
@@ -30,6 +33,7 @@ export function usePackageLibraryController() {
 
     const [filter, setFilter] = useState('')
     const [localSection, setLocalSection] = useState<LocalSection>('packages')
+    const [primitiveSection, setPrimitiveSectionState] = useState<PackagePrimitiveSection>('agents')
     const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all')
     const [modelProviderFilter, setModelProviderFilter] = useState<ModelProviderFilter>(ALL_MODEL_PROVIDER_FILTER)
     const [selectedItem, setSelectedItem] = useState<PackagePanelItem | null>(null)
@@ -84,7 +88,23 @@ export function usePackageLibraryController() {
         setLocalSection(value)
         setSelectedItem(null)
         setAuthoringHint(null)
+        if (value === 'mcp') {
+            setPrimitiveSectionState('mcp')
+        }
+        if (value === 'packages') {
+            setPrimitiveSectionState((section) => section === 'mcp' ? 'agents' : section)
+        }
         if (value !== 'packages') {
+            setSourceFilter('all')
+        }
+    }, [])
+
+    const selectPrimitiveSection = useCallback((value: PackagePrimitiveSection) => {
+        setPrimitiveSectionState(value)
+        setLocalSection(value === 'mcp' ? 'mcp' : 'packages')
+        setSelectedItem(null)
+        setAuthoringHint(null)
+        if (value === 'mcp') {
             setSourceFilter('all')
         }
     }, [])
@@ -106,8 +126,9 @@ export function usePackageLibraryController() {
 
     const queryText = filter.trim().toLowerCase()
     const filteredApmPackages = useMemo(
-        () => filterApmPackages(scopedApmPackages, effectiveSourceFilter, queryText),
-        [effectiveSourceFilter, queryText, scopedApmPackages],
+        () => filterApmPackages(scopedApmPackages, effectiveSourceFilter, queryText)
+            .filter((pkg) => packageMatchesPrimitiveSection(pkg, primitiveSection)),
+        [effectiveSourceFilter, primitiveSection, queryText, scopedApmPackages],
     )
     const groupedModels = useMemo(
         () => groupModels(models, queryText, effectiveModelProviderFilter),
@@ -127,11 +148,15 @@ export function usePackageLibraryController() {
     )
 
     const selectedItemKey = resolvedSelectedItem ? getPackagePanelItemKey(resolvedSelectedItem) : null
-    const localPlaceholder = placeholderForLocalSection(localSection)
+    const localPlaceholder = showApmPackages
+        ? placeholderForPrimitiveSection(primitiveSection)
+        : placeholderForLocalSection(localSection)
 
     return {
         localSection,
         setLocalSection: selectLocalSection,
+        primitiveSection,
+        setPrimitiveSection: selectPrimitiveSection,
         sourceFilter: effectiveSourceFilter,
         setSourceFilter,
         modelProviderFilter: effectiveModelProviderFilter,

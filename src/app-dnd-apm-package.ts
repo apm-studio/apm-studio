@@ -69,6 +69,68 @@ function apmPackageMcpConfig(result: ApmPackageReadResponse, mcpServerNames: str
     return mcpServerNames.length > 0 ? { servers: mcpServerNames } : null
 }
 
+function packageUrn(scope: string, packageId: string) {
+    return `apm-package/${scope}/${packageId}`
+}
+
+function packageSupportsDropType(primitive: DragPrimitive, dropType: string | undefined) {
+    const packageKind = primitive.packageKind
+    const counts = primitive.primitiveCounts || {}
+
+    if (dropType === 'instruction') {
+        return packageKind === 'instruction'
+            || (packageKind !== 'agent' && Number(counts.instructions || 0) > 0)
+    }
+    if (dropType === 'skill') {
+        return packageKind === 'skill'
+            || (packageKind !== 'agent' && Number(counts.skills || 0) > 0)
+    }
+    if (dropType === 'mcp') {
+        return packageKind === 'mcp'
+    }
+    return false
+}
+
+function primitivePathName(value: unknown, kind: 'instruction' | 'skill') {
+    if (typeof value !== 'string' || !value.trim()) {
+        return null
+    }
+    const parts = value.split('/').filter(Boolean)
+    const last = parts.pop()
+    if (!last) return null
+    if (kind === 'skill' && last.toLowerCase() === 'skill.md') {
+        return parts.pop() || null
+    }
+    return last
+        .replace(/\.instructions\.md$/i, '')
+        .replace(/\.agent\.md$/i, '')
+        .replace(/\.md$/i, '')
+}
+
+function manifestEntryPath(entry: unknown) {
+    if (typeof entry === 'string') {
+        return entry
+    }
+    if (isRecord(entry) && typeof entry.path === 'string') {
+        return entry.path
+    }
+    return null
+}
+
+function manifestPrimitiveName(manifest: ApmPackageManifest, kind: 'instruction' | 'skill', fallback: string) {
+    const entries = kind === 'instruction' ? manifest.instructions : manifest.skills
+    const first = Array.isArray(entries) ? entries[0] : null
+    const directName = isRecord(first) && typeof first.name === 'string' && first.name.trim()
+        ? first.name.trim()
+        : null
+    if (directName) {
+        return directName
+    }
+
+    const pathName = primitivePathName(manifestEntryPath(first), kind)
+    return pathName || fallback
+}
+
 export async function resolveApmPackageAgentPrimitive(
     primitive: DragPrimitive,
     showDropWarning: (message: string) => void,
@@ -109,7 +171,7 @@ export async function resolveApmPackageAgentPrimitive(
 
     return {
         kind: 'agent',
-        urn: `apm-package/${scope}/${result.packageId || packageId}`,
+        urn: packageUrn(scope, result.packageId || packageId),
         source: scope,
         name: agentName,
         description: agent?.description
@@ -124,5 +186,68 @@ export async function resolveApmPackageAgentPrimitive(
         planMode: agent?.planMode === true,
         mcpServerNames,
         mcpConfig: apmPackageMcpConfig(result, mcpServerNames),
+    }
+}
+
+export async function resolveApmPackagePrimitiveForAgentDrop(
+    primitive: DragPrimitive,
+    dropType: string | undefined,
+    showDropWarning: (message: string) => void,
+): Promise<DragPrimitive | null> {
+    if (dropType !== 'instruction' && dropType !== 'skill' && dropType !== 'mcp') {
+        return null
+    }
+
+    if (!packageSupportsDropType(primitive, dropType)) {
+        return null
+    }
+
+    const packageId = primitive.packageId || primitive.name
+    if (!packageId) {
+        showDropWarning('This APM package is missing a package id.')
+        return null
+    }
+
+    const scope = primitive.scope === 'user' ? 'user' : 'workspace'
+    let result: ApmPackageReadResponse
+    try {
+        result = await apmApi.readPackage(packageId, scope)
+    } catch (error) {
+        console.error('Failed to read APM package for drop', error)
+        showDropWarning(`Could not read APM package "${packageId}" before dropping it.`)
+        return null
+    }
+
+    const manifest = result.manifest
+    const resolvedPackageId = result.packageId || packageId
+    const fallbackName = primitive.name || manifest.name || resolvedPackageId
+
+    if (dropType === 'mcp') {
+        const mcpServerNames = mcpServerNamesFromApmPackage(result, manifest['x-apm']?.agent || null)
+        const firstServerName = mcpServerNames[0]
+        if (!firstServerName) {
+            showDropWarning(`APM package "${fallbackName}" does not define MCP servers.`)
+            return null
+        }
+        return {
+            kind: 'mcp',
+            urn: packageUrn(scope, resolvedPackageId),
+            source: scope,
+            name: firstServerName,
+            description: typeof manifest.description === 'string' ? manifest.description : primitive.description,
+            mcpServerNames,
+            mcpConfig: apmPackageMcpConfig(result, mcpServerNames),
+        }
+    }
+
+    return {
+        kind: dropType,
+        urn: packageUrn(scope, resolvedPackageId),
+        source: scope,
+        name: manifestPrimitiveName(manifest, dropType, fallbackName),
+        description: typeof manifest.description === 'string' ? manifest.description : primitive.description,
+        author: typeof manifest.author === 'string' && manifest.author.trim()
+            ? manifest.author
+            : scope,
     }
 }

@@ -31,7 +31,7 @@ export async function getApmSyncTargets(workingDir?: string): Promise<ApmSyncTar
     return {
         tooling: {
             ...tooling,
-            deploymentNote: 'APM Studio syncs Studio agent packages and APM primitives with an APM CLI-first pipeline. Studio fallback handles supported agent and skill projections when the CLI path is unavailable.',
+            deploymentNote: 'APM Studio exports Studio Agents and APM primitives with an APM CLI-first pipeline. Studio fallback handles supported agent and skill projections when the CLI path is unavailable.',
         },
         targets: profiles.map((target) => ({
             id: target.id,

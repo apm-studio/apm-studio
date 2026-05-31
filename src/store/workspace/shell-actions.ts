@@ -27,7 +27,7 @@ export function createWorkspaceShellActions(set: WorkspaceSetState): WorkspaceSh
             : { isTrackingOpen: false }),
 
         setWorkspaceMode: (mode) => set(() => {
-            if (mode === 'import' || mode === 'inject' || mode === 'run') {
+            if (mode === 'import' || mode === 'manage') {
                 return {
                     workspaceMode: mode,
                     isTrackingOpen: false,

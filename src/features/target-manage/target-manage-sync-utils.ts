@@ -11,19 +11,30 @@ import type {
 import {
     apmPackageHasSyncUnit,
     apmPackageSyncPrimitiveCounts,
-    apmPackageSyncUnits,
     APM_SYNC_UNITS,
 } from '../../../shared/apm-sync-contracts'
 
-export type InjectSidebarSection = 'packages' | 'primitives'
+export type TargetManageSidebarSection = 'packages' | 'primitives'
+export type TargetManagePackageSyncState = 'synced' | 'unsynced' | 'blocked'
 export type TargetSyncChoice = 'push' | 'skip'
 
-export const PRIMITIVE_SYNC_UNITS: ApmPrimitiveSyncUnit[] = ['agents', 'instructions', 'skills', 'mcp']
+export const PRIMITIVE_SYNC_UNITS: ApmPrimitiveSyncUnit[] = [
+    'agents',
+    'instructions',
+    'skills',
+    'prompts',
+    'commands',
+    'hooks',
+    'mcp',
+]
 
 const PRIMITIVE_LABELS: Record<ApmPrimitiveSyncUnit, { one: string; many: string }> = {
     agents: { one: 'agent', many: 'agents' },
     instructions: { one: 'instruction', many: 'instructions' },
     skills: { one: 'skill', many: 'skills' },
+    prompts: { one: 'prompt', many: 'prompts' },
+    commands: { one: 'command', many: 'commands' },
+    hooks: { one: 'hook', many: 'hooks' },
     mcp: { one: 'MCP', many: 'MCP' },
 }
 
@@ -31,22 +42,22 @@ export function unitLabel(unit: ApmSyncUnit) {
     return APM_SYNC_UNITS.find((entry) => entry.id === unit)?.label || unit
 }
 
-export function sidebarSectionForUnit(unit: ApmSyncUnit): InjectSidebarSection {
-    return unit === 'agent-packages' ? 'packages' : 'primitives'
+export function sidebarSectionForUnit(unit: ApmSyncUnit): TargetManageSidebarSection {
+    return unit === 'studio-agent' ? 'packages' : 'primitives'
 }
 
 export function primitiveUnitForSidebar(unit: ApmSyncUnit): ApmPrimitiveSyncUnit {
-    return unit === 'agent-packages' ? 'agents' : unit
+    return unit === 'studio-agent' ? 'agents' : unit
 }
 
 export function primitiveCountParts(
     counts: ApmSyncPrimitiveCounts,
-    syncUnit: ApmSyncUnit = 'agent-packages',
+    syncUnit: ApmSyncUnit = 'studio-agent',
 ) {
-    const keys = syncUnit === 'agent-packages' ? PRIMITIVE_SYNC_UNITS : [syncUnit]
+    const keys: ApmPrimitiveSyncUnit[] = syncUnit === 'studio-agent' ? PRIMITIVE_SYNC_UNITS : [syncUnit]
     return keys
         .map((key) => {
-            const value = counts[key]
+            const value = counts[key] || 0
             if (value <= 0) return null
             const labels = PRIMITIVE_LABELS[key]
             return `${value} ${value === 1 ? labels.one : labels.many}`
@@ -56,7 +67,7 @@ export function primitiveCountParts(
 
 export function primitiveSummary(
     counts: ApmSyncPrimitiveCounts,
-    syncUnit: ApmSyncUnit = 'agent-packages',
+    syncUnit: ApmSyncUnit = 'studio-agent',
 ) {
     return primitiveCountParts(counts, syncUnit).join(', ') || `No ${unitLabel(syncUnit)}`
 }
@@ -72,7 +83,7 @@ export function packageSearchHaystack(pkg: ApmPackageSummary) {
         pkg.derivedFrom,
         pkg.manifestPath,
         pkg.microsoftApm?.packageRoot,
-        `${counts.agents} agents ${counts.instructions} instructions ${counts.skills} skills ${counts.mcp} mcp`,
+        `${counts.agents} agents ${counts.instructions} instructions ${counts.skills} skills ${counts.prompts} prompts ${counts.commands} commands ${counts.hooks} hooks ${counts.mcp} mcp`,
     ]
         .filter(Boolean)
         .join(' ')
@@ -85,7 +96,7 @@ export function packageHasSyncUnit(pkg: ApmPackageSummary, syncUnit: ApmSyncUnit
 
 export function unitSourcePath(syncUnit: ApmSyncUnit) {
     switch (syncUnit) {
-        case 'agent-packages':
+        case 'studio-agent':
             return 'packages/*'
         case 'agents':
             return 'packages/*/.apm/agents'
@@ -93,6 +104,12 @@ export function unitSourcePath(syncUnit: ApmSyncUnit) {
             return 'packages/*/.apm/instructions'
         case 'skills':
             return 'packages/*/.apm/skills'
+        case 'prompts':
+            return 'packages/*/.apm/prompts'
+        case 'commands':
+            return 'packages/*/.apm/prompts/*.prompt.md'
+        case 'hooks':
+            return 'packages/*/.apm/hooks'
         case 'mcp':
             return 'apm.yml dependencies.mcp'
         default:
@@ -118,7 +135,7 @@ export function targetAvailability(
     if (!target.available) {
         return { available: false, reason: target.disabledReason || 'Target unavailable.' }
     }
-    if (syncUnit !== 'agent-packages') {
+    if (syncUnit !== 'studio-agent') {
         const supported = target.supportedSyncUnits.includes(syncUnit)
         return {
             available: supported,
@@ -126,15 +143,14 @@ export function targetAvailability(
         }
     }
 
-    const unsupportedPackage = selectedPackages.find((pkg) => {
-        const units = apmPackageSyncUnits(pkg)
-        return units.length === 0 || units.some((unit) => !target.supportedSyncUnits.includes(unit))
-    })
+    const unsupportedPackage = selectedPackages.find((pkg) => !packageHasSyncUnit(pkg, syncUnit))
     return {
-        available: !unsupportedPackage,
+        available: target.supportedSyncUnits.includes(syncUnit) && !unsupportedPackage,
         reason: unsupportedPackage
-            ? `${target.label} cannot receive every primitive in ${unsupportedPackage.agentName || unsupportedPackage.name}.`
-            : null,
+            ? `${unsupportedPackage.agentName || unsupportedPackage.name} is not a Studio Agent package.`
+            : target.supportedSyncUnits.includes(syncUnit)
+                ? null
+                : `${target.label} does not support ${unitLabel(syncUnit)} export.`,
     }
 }
 
@@ -143,6 +159,12 @@ export function targetPackageAvailability(
     syncUnit: ApmSyncUnit,
     pkg: ApmPackageSummary,
 ) {
+    if (!packageHasSyncUnit(pkg, syncUnit)) {
+        return {
+            available: false,
+            reason: `${pkg.agentName || pkg.name} does not contain ${unitLabel(syncUnit)}.`,
+        }
+    }
     return targetAvailability(target, syncUnit, [pkg])
 }
 

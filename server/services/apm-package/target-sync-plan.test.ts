@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import type {
     ApmPackageSummary,
-    ApmSyncRunRequest,
 } from '../../../shared/apm-contracts.js'
+import type {
+    ApmSyncRunRequest,
+} from '../../../shared/apm-sync-contracts.js'
 import {
     normalizeRequestedSyncUnit,
     normalizeSyncTargets,
@@ -13,12 +15,16 @@ function packageSummary(input: {
     agents?: number
     instructions?: number
     skills?: number
+    prompts?: number
+    commands?: number
+    hooks?: number
     mcp?: number
+    kind?: ApmPackageSummary['kind']
 }): ApmPackageSummary {
     return {
         packageId: 'pkg-1',
         name: 'Package',
-        kind: 'agent',
+        kind: input.kind || 'agent',
         agentComponents: {
             instructions: 0,
             skills: 0,
@@ -35,6 +41,9 @@ function packageSummary(input: {
                 agents: input.agents || 0,
                 instructions: input.instructions || 0,
                 skills: input.skills || 0,
+                prompts: input.prompts || 0,
+                commands: input.commands || 0,
+                hooks: input.hooks || 0,
             },
             primitivePaths: [],
             warnings: [],
@@ -52,28 +61,39 @@ describe('target sync planning', () => {
     })
 
     it('normalizes sync units without silently accepting unsupported units', () => {
-        expect(normalizeRequestedSyncUnit(undefined)).toBe('agent-packages')
+        expect(normalizeRequestedSyncUnit(undefined)).toBe('studio-agent')
         expect(normalizeRequestedSyncUnit('skills')).toBe('skills')
-        expect(() => normalizeRequestedSyncUnit('commands' as ApmSyncRunRequest['syncUnit']))
-            .toThrow('Unsupported APM sync unit: commands')
+        expect(normalizeRequestedSyncUnit('commands')).toBe('commands')
+        expect(() => normalizeRequestedSyncUnit('unknown' as ApmSyncRunRequest['syncUnit']))
+            .toThrow('Unsupported APM sync unit: unknown')
     })
 
-    it('treats agent packages as composite units that require all contained primitives', () => {
-        const skillAndMcpPackage = packageSummary({ skills: 1, mcp: 1 })
+    it('treats Studio Agent export as an agent-scoped unit for Codex and Claude', () => {
+        const skillAndMcpPackage = packageSummary({ skills: 1, mcp: 1, kind: 'skill' })
         const agentAndSkillPackage = packageSummary({ agents: 1, skills: 1 })
 
-        expect(targetSupportsPackage('gemini', skillAndMcpPackage, 'agent-packages')).toBe(true)
+        expect(targetSupportsPackage('codex', agentAndSkillPackage, 'studio-agent')).toBe(true)
+        expect(targetSupportsPackage('claude', agentAndSkillPackage, 'studio-agent')).toBe(true)
+        expect(targetSupportsPackage('gemini', agentAndSkillPackage, 'studio-agent')).toBe(false)
+        expect(targetSupportsPackage('agent-skills', agentAndSkillPackage, 'studio-agent')).toBe(false)
+        expect(targetSupportsPackage('codex', skillAndMcpPackage, 'studio-agent')).toBe(false)
+
         expect(targetSupportsPackage('gemini', skillAndMcpPackage, 'skills')).toBe(true)
         expect(targetSupportsPackage('gemini', skillAndMcpPackage, 'mcp')).toBe(true)
         expect(targetSupportsPackage('gemini', skillAndMcpPackage, 'agents')).toBe(false)
         expect(targetSupportsPackage('gemini', skillAndMcpPackage, 'instructions')).toBe(false)
-
-        expect(targetSupportsPackage(
-            'gemini',
-            agentAndSkillPackage,
-            'agent-packages',
-        )).toBe(false)
-        expect(targetSupportsPackage('agent-skills', skillAndMcpPackage, 'agent-packages')).toBe(false)
         expect(targetSupportsPackage('agent-skills', skillAndMcpPackage, 'skills')).toBe(true)
+    })
+
+    it('uses target capability rules for CLI-first prompt, command, and hook units', () => {
+        const promptPackage = packageSummary({ prompts: 1, commands: 1 })
+        const hookPackage = packageSummary({ hooks: 1 })
+
+        expect(targetSupportsPackage('copilot', promptPackage, 'prompts')).toBe(true)
+        expect(targetSupportsPackage('claude', promptPackage, 'commands')).toBe(true)
+        expect(targetSupportsPackage('opencode', promptPackage, 'commands')).toBe(true)
+        expect(targetSupportsPackage('codex', promptPackage, 'commands')).toBe(false)
+        expect(targetSupportsPackage('codex', hookPackage, 'hooks')).toBe(true)
+        expect(targetSupportsPackage('opencode', hookPackage, 'hooks')).toBe(false)
     })
 })

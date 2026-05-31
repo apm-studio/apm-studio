@@ -1,7 +1,7 @@
 {
   "name": "apm-studio",
   "version": "0.2.13",
-  "description": "APM Studio packages agents, instructions, and skills for Codex, Claude, Gemini, and local AI coding assistants.",
+  "description": "APM Studio edits and runs Studio Agents, then manages APM target sync for coding assistants.",
   "license": "MIT",
   "author": "monarchjuno",
   "repository": {
@@ -18,7 +18,7 @@
   "keywords": [
     "apm-studio",
     "apm",
-    "agent-packages",
+    "studio-agents",
     "coding-agents",
     "opencode",
     "codex",

@@ -29,6 +29,12 @@ async function writePackageWithSkill(workingDir: string) {
     const skillDir = path.join(workingDir, 'packages', 'agent-1', '.apm', 'skills', 'review')
     await fs.mkdir(skillDir, { recursive: true })
     await fs.writeFile(path.join(skillDir, 'SKILL.md'), '# Review\n', 'utf-8')
+    const promptDir = path.join(workingDir, 'packages', 'agent-1', '.apm', 'prompts')
+    await fs.mkdir(promptDir, { recursive: true })
+    await fs.writeFile(path.join(promptDir, 'release.prompt.md'), '# Release\n', 'utf-8')
+    const hookDir = path.join(workingDir, 'packages', 'agent-1', '.apm', 'hooks')
+    await fs.mkdir(hookDir, { recursive: true })
+    await fs.writeFile(path.join(hookDir, 'codex-hooks.json'), '{"hooks":{}}\n', 'utf-8')
 }
 
 async function createTrackedTempPackage(workingDir: string, syncUnit: Parameters<typeof createSyncTempPackage>[2]) {
@@ -42,15 +48,18 @@ describe('sync temp package', () => {
         await Promise.all(tempPackages.splice(0).map(removeSyncTempPackage))
     })
 
-    it('copies the full package root for agent package sync', async () => {
+    it('composes a Studio Agent temp package without exporting the Studio Agent runtime model', async () => {
         const workingDir = await createWorkingDir()
         try {
             await writePackageWithSkill(workingDir)
 
-            const tempPackage = await createTrackedTempPackage(workingDir, 'agent-packages')
+            const tempPackage = await createTrackedTempPackage(workingDir, 'studio-agent')
 
             await expect(fs.readFile(path.join(tempPackage.packageRoot, 'apm.yml'), 'utf-8'))
                 .resolves.toContain('Planner')
+            const agentFile = await fs.readFile(path.join(tempPackage.packageRoot, '.apm', 'agents', 'planner.agent.md'), 'utf-8')
+            expect(agentFile).toContain('Plan carefully.')
+            expect(agentFile).not.toContain('gpt-5.4')
             await expect(fs.readFile(path.join(tempPackage.packageRoot, '.apm', 'skills', 'review', 'SKILL.md'), 'utf-8'))
                 .resolves.toContain('Review')
         } finally {
@@ -69,12 +78,49 @@ describe('sync temp package', () => {
                 .resolves.toContain('Review')
             await expect(fs.stat(path.join(tempPackage.packageRoot, '.apm', 'agents')))
                 .rejects.toMatchObject({ code: 'ENOENT' })
+            await expect(fs.stat(path.join(tempPackage.packageRoot, '.apm', 'prompts')))
+                .rejects.toMatchObject({ code: 'ENOENT' })
         } finally {
             await fs.rm(workingDir, { recursive: true, force: true }).catch(() => {})
         }
     })
 
-    it('keeps MCP dependencies only for package and MCP sync units', () => {
+    it('maps prompt source files to both prompt and command temp packages', async () => {
+        const workingDir = await createWorkingDir()
+        try {
+            await writePackageWithSkill(workingDir)
+
+            const promptsPackage = await createTrackedTempPackage(workingDir, 'prompts')
+            const commandsPackage = await createTrackedTempPackage(workingDir, 'commands')
+
+            await expect(fs.readFile(path.join(promptsPackage.packageRoot, '.apm', 'prompts', 'release.prompt.md'), 'utf-8'))
+                .resolves.toContain('Release')
+            await expect(fs.readFile(path.join(commandsPackage.packageRoot, '.apm', 'prompts', 'release.prompt.md'), 'utf-8'))
+                .resolves.toContain('Release')
+            await expect(fs.stat(path.join(commandsPackage.packageRoot, '.apm', 'skills')))
+                .rejects.toMatchObject({ code: 'ENOENT' })
+        } finally {
+            await fs.rm(workingDir, { recursive: true, force: true }).catch(() => {})
+        }
+    })
+
+    it('builds hook-scoped temp packages without unrelated primitive directories', async () => {
+        const workingDir = await createWorkingDir()
+        try {
+            await writePackageWithSkill(workingDir)
+
+            const tempPackage = await createTrackedTempPackage(workingDir, 'hooks')
+
+            await expect(fs.readFile(path.join(tempPackage.packageRoot, '.apm', 'hooks', 'codex-hooks.json'), 'utf-8'))
+                .resolves.toContain('"hooks"')
+            await expect(fs.stat(path.join(tempPackage.packageRoot, '.apm', 'skills')))
+                .rejects.toMatchObject({ code: 'ENOENT' })
+        } finally {
+            await fs.rm(workingDir, { recursive: true, force: true }).catch(() => {})
+        }
+    })
+
+    it('keeps MCP dependencies only for Studio Agent and MCP sync units', () => {
         const manifest = {
             name: 'Planner',
             dependencies: {
@@ -84,6 +130,9 @@ describe('sync temp package', () => {
 
         expect(filteredManifestForSync(manifest, 'skills').dependencies?.mcp).toEqual([])
         expect(filteredManifestForSync(manifest, 'mcp').dependencies?.mcp).toEqual([
+            { name: 'github', command: 'github-mcp' },
+        ])
+        expect(filteredManifestForSync(manifest, 'studio-agent').dependencies?.mcp).toEqual([
             { name: 'github', command: 'github-mcp' },
         ])
     })

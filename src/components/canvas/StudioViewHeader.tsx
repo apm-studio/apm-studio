@@ -1,6 +1,6 @@
 import type { WorkspaceAgentNode, WorkspaceTeamSnapshot } from '../../../shared/workspace-contracts'
-import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react'
-import { Columns2, Maximize2, PanelTop, Plus, Search, Users, Workflow, X } from 'lucide-react'
+import { Suspense, lazy, useMemo } from 'react'
+import { Columns2, Maximize2, PanelTop, Users, Workflow } from 'lucide-react'
 import { useDraggable } from '@dnd-kit/core'
 import { useShallow } from 'zustand/react/shallow'
 import { useStudioStore } from '../../store'
@@ -8,7 +8,6 @@ import {
     getCanvasViewportSize,
     resolveFocusTarget,
     resolveNodeBaselineHidden,
-    SPLIT_VIEW_MAX_PANES,
 } from '../../lib/focus-utils'
 import type { FullscreenNodeType, SplitViewPane } from '../../store/workspace/types'
 import CanvasControls from './CanvasControls'
@@ -16,17 +15,16 @@ import './StudioViewHeader.css'
 
 const WorkspaceToolbar = lazy(() => import('../toolbar/WorkspaceToolbar'))
 
-type PickerKind = FullscreenNodeType
 type ViewMode = 'canvas' | 'full' | 'split'
 type ViewModeTarget = { id: string; type: FullscreenNodeType }
-type HeaderModeOption = 'full' | 'split'
+type HeaderModeOption = 'canvas' | 'full' | 'split'
 
 function paneLabel(pane: SplitViewPane, teams: WorkspaceTeamSnapshot[], agents: WorkspaceAgentNode[]) {
     if (pane.type === 'team') {
         return teams.find((team) => team.id === pane.nodeId)?.name || 'Team'
     }
 
-    return agents.find((agent) => agent.id === pane.nodeId)?.name || 'Agent'
+    return agents.find((agent) => agent.id === pane.nodeId)?.name || 'Studio Agent'
 }
 
 function modeLabel(viewMode: ViewMode) {
@@ -41,7 +39,7 @@ function ModeIcon({ viewMode }: { viewMode: ViewMode }) {
     return <PanelTop size={13} />
 }
 
-const RUN_VIEW_MODE_OPTIONS: HeaderModeOption[] = ['full', 'split']
+const STUDIO_AGENT_VIEW_MODE_OPTIONS: HeaderModeOption[] = ['canvas', 'full', 'split']
 
 type SplitPanePillProps = {
     pane: SplitViewPane
@@ -82,12 +80,6 @@ function SplitPanePill({ pane, label, active, onActivate }: SplitPanePillProps) 
 }
 
 export default function StudioViewHeader() {
-    const [pickerOpen, setPickerOpen] = useState(false)
-    const [pickerKind, setPickerKind] = useState<PickerKind>('team')
-    const [query, setQuery] = useState('')
-    const headerRef = useRef<HTMLDivElement | null>(null)
-    const searchRef = useRef<HTMLInputElement | null>(null)
-
     const {
         teams,
         agents,
@@ -101,7 +93,6 @@ export default function StudioViewHeader() {
         enterEmptyFullView,
         enterEmptySplitView,
         enterSplitView,
-        addSplitViewPane,
         setSplitViewActivePane,
         exitFocusMode,
     } = useStudioStore(useShallow((state) => ({
@@ -117,35 +108,22 @@ export default function StudioViewHeader() {
         enterEmptyFullView: state.enterEmptyFullView,
         enterEmptySplitView: state.enterEmptySplitView,
         enterSplitView: state.enterSplitView,
-        addSplitViewPane: state.addSplitViewPane,
         setSplitViewActivePane: state.setSplitViewActivePane,
         exitFocusMode: state.exitFocusMode,
     })))
 
     const fullscreenTarget = resolveFocusTarget(focusSnapshot)
-    const queryText = query.trim().toLowerCase()
     const visibleTeams = useMemo(() => teams.filter((team) => (
         !resolveNodeBaselineHidden(focusSnapshot, team.id, 'team', !!team.hidden)
     )), [teams, focusSnapshot])
     const visibleAgents = useMemo(() => agents.filter((agent) => (
         !resolveNodeBaselineHidden(focusSnapshot, agent.id, 'agent', !!agent.hidden)
     )), [agents, focusSnapshot])
-    const shownKeys = useMemo(
-        () => new Set(splitView.panes.map((pane) => `${pane.type}:${pane.nodeId}`)),
-        [splitView.panes],
-    )
     const hasRestorableSplitView = useMemo(() => splitView.panes.some((pane) => (
         pane.type === 'team'
             ? teams.some((team) => team.id === pane.nodeId)
             : agents.some((agent) => agent.id === pane.nodeId)
     )), [teams, agents, splitView.panes])
-    const pickerItems = useMemo(() => {
-        const source = pickerKind === 'team'
-            ? visibleTeams.map((team) => ({ id: team.id, type: 'team' as const, name: team.name }))
-            : visibleAgents.map((agent) => ({ id: agent.id, type: 'agent' as const, name: agent.name }))
-
-        return source.filter((item) => !queryText || item.name.toLowerCase().includes(queryText))
-    }, [pickerKind, queryText, visibleTeams, visibleAgents])
 
     const modeTarget = useMemo<ViewModeTarget | null>(() => {
         if (viewMode === 'split') {
@@ -173,7 +151,6 @@ export default function StudioViewHeader() {
     const handleSelectViewMode = (nextMode: ViewMode) => {
         if (nextMode === viewMode) return
 
-        setPickerOpen(false)
         const viewportSize = getCanvasViewportSize()
 
         if (nextMode === 'canvas') {
@@ -204,23 +181,6 @@ export default function StudioViewHeader() {
         enterFocusMode(modeTarget.id, modeTarget.type, viewportSize)
     }
 
-    const togglePicker = () => {
-        if (splitView.panes.length >= SPLIT_VIEW_MAX_PANES) return
-        setPickerOpen((open) => !open)
-    }
-
-    const handlePick = (nodeId: string, nodeType: FullscreenNodeType) => {
-        const key = `${nodeType}:${nodeId}`
-        if (shownKeys.has(key)) {
-            setSplitViewActivePane(nodeId, nodeType)
-        } else {
-            addSplitViewPane(nodeId, nodeType, getCanvasViewportSize())
-        }
-        setPickerOpen(false)
-        setQuery('')
-    }
-
-    const showPicker = viewMode === 'split' && pickerOpen
     const fullViewPane = fullscreenTarget
         ? {
             paneId: `${fullscreenTarget.type}:${fullscreenTarget.id}`,
@@ -229,39 +189,12 @@ export default function StudioViewHeader() {
         } satisfies SplitViewPane
         : null
 
-    useEffect(() => {
-        if (!showPicker) return
-        searchRef.current?.focus()
-    }, [showPicker])
-
-    useEffect(() => {
-        if (!showPicker) return
-
-        const handlePointerDown = (event: PointerEvent) => {
-            if (headerRef.current?.contains(event.target as Node)) return
-            setPickerOpen(false)
-        }
-
-        const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.key === 'Escape') {
-                setPickerOpen(false)
-            }
-        }
-
-        document.addEventListener('pointerdown', handlePointerDown, true)
-        document.addEventListener('keydown', handleKeyDown)
-        return () => {
-            document.removeEventListener('pointerdown', handlePointerDown, true)
-            document.removeEventListener('keydown', handleKeyDown)
-        }
-    }, [showPicker])
-
     return (
-        <div ref={headerRef} className={`studio-view-header studio-view-header--${viewMode} studio-view-header--${workspaceMode}`}>
+        <div className={`studio-view-header studio-view-header--${viewMode} studio-view-header--${workspaceMode}`}>
             <div className="studio-view-header__context">
-                {workspaceMode === 'run' ? (
-                    <div className="studio-view-header__mode-switch" aria-label="Run view mode">
-                        {RUN_VIEW_MODE_OPTIONS.map((option) => {
+                {workspaceMode === 'studio-agent' ? (
+                    <div className="studio-view-header__mode-switch" aria-label="Studio Agent view mode">
+                        {STUDIO_AGENT_VIEW_MODE_OPTIONS.map((option) => {
                             return (
                                 <button
                                     type="button"
@@ -278,7 +211,7 @@ export default function StudioViewHeader() {
                         })}
                     </div>
                 ) : (
-                    <span className="studio-view-header__mode-pill">Manage canvas</span>
+                    <span className="studio-view-header__mode-pill">Studio Agent</span>
                 )}
                 {viewMode === 'full' && fullViewPane ? (
                     <span className="studio-view-header__target-pill" title={paneLabel(fullViewPane, teams, agents)}>
@@ -305,24 +238,7 @@ export default function StudioViewHeader() {
             </div>
 
             <div className="studio-view-header__tools">
-                {viewMode === 'split' ? (
-                    <div className="studio-view-header__split-tools" aria-label="Split View controls">
-                        <span className="studio-view-header__pane-count">{splitView.panes.length}/{SPLIT_VIEW_MAX_PANES}</span>
-                        <button
-                            type="button"
-                            className="icon-btn"
-                            onClick={togglePicker}
-                            aria-label="Add Split View pane"
-                            aria-expanded={pickerOpen}
-                            aria-controls="studio-view-pane-picker"
-                            title={splitView.panes.length >= SPLIT_VIEW_MAX_PANES ? `Split View supports up to ${SPLIT_VIEW_MAX_PANES} panes` : 'Add pane'}
-                            disabled={splitView.panes.length >= SPLIT_VIEW_MAX_PANES}
-                        >
-                            <Plus size={13} />
-                        </button>
-                    </div>
-                ) : null}
-                {workspaceMode === 'manage' && viewMode === 'canvas' ? (
+                {workspaceMode === 'studio-agent' && viewMode === 'canvas' ? (
                     <>
                         <div className="studio-view-header__control-group" aria-label="Canvas controls">
                             <CanvasControls />
@@ -333,70 +249,6 @@ export default function StudioViewHeader() {
                     </>
                 ) : null}
             </div>
-
-            {showPicker ? (
-                <div id="studio-view-pane-picker" className="studio-view-picker" role="dialog" aria-label="Add Split View pane">
-                    <div className="studio-view-picker__head">
-                        <div className="studio-view-picker__tabs">
-                            <button
-                                type="button"
-                                className={`tab ${pickerKind === 'team' ? 'active' : ''}`}
-                                onClick={() => setPickerKind('team')}
-                            >
-                                <Workflow size={11} />
-                                Teams
-                            </button>
-                            <button
-                                type="button"
-                                className={`tab ${pickerKind === 'agent' ? 'active' : ''}`}
-                                onClick={() => setPickerKind('agent')}
-                            >
-                                <Users size={11} />
-                                Agents
-                            </button>
-                        </div>
-                        <button
-                            type="button"
-                            className="icon-btn"
-                            onClick={() => setPickerOpen(false)}
-                            aria-label="Close Split View picker"
-                            title="Close picker"
-                        >
-                            <X size={12} />
-                        </button>
-                    </div>
-                    <label className="studio-view-picker__search">
-                        <Search size={12} />
-                        <input
-                            ref={searchRef}
-                            className="input"
-                            value={query}
-                            onChange={(event) => setQuery(event.target.value)}
-                            placeholder="Find pane"
-                        />
-                    </label>
-                    <div className="studio-view-picker__list">
-                        {pickerItems.map((item) => {
-                            const shown = shownKeys.has(`${item.type}:${item.id}`)
-                            return (
-                                <button
-                                    type="button"
-                                    key={`${item.type}:${item.id}`}
-                                    className={`studio-view-picker__row ${shown ? 'is-shown' : ''}`}
-                                    onClick={() => handlePick(item.id, item.type)}
-                                >
-                                    {item.type === 'team' ? <Workflow size={13} /> : <Users size={13} />}
-                                    <span>{item.name}</span>
-                                    <small>{shown ? 'Shown' : 'Add'}</small>
-                                </button>
-                            )
-                        })}
-                        {pickerItems.length === 0 ? (
-                            <div className="studio-view-picker__empty">No matches</div>
-                        ) : null}
-                    </div>
-                </div>
-            ) : null}
         </div>
     )
 }

@@ -2,9 +2,11 @@ import fs from 'fs/promises'
 import path from 'path'
 import type {
     ApmPackageManifest,
+    MicrosoftApmPrimitiveCounts,
     MicrosoftApmPackageSourceSummary,
 } from '../../../shared/apm-contracts.js'
 import type { SharedPrimitiveRef } from '../../../shared/chat-contracts.js'
+import { getApmUserScopeCwd } from '../../lib/apm-studio-paths.js'
 import { readDraft, readDraftTextContent } from '../drafts/service.js'
 import {
     skillBundleDir,
@@ -72,6 +74,12 @@ async function writeText(filePath: string, content: string) {
     await fs.writeFile(filePath, content, 'utf-8')
 }
 
+async function copyDirectory(source: string, target: string) {
+    await fs.mkdir(path.dirname(target), { recursive: true })
+    await fs.rm(target, { recursive: true, force: true })
+    await fs.cp(source, target, { recursive: true })
+}
+
 function workspaceRelative(workingDir: string, filePath: string) {
     return toPosixPath(path.relative(workingDir, filePath))
 }
@@ -98,10 +106,50 @@ async function resolveInstructionContent(
     ref: SharedPrimitiveRef | null | undefined,
 ) {
     if (!ref) return null
-    if (ref.kind !== 'draft') {
-        throw new Error('Registry instruction references are no longer supported. Import the source as an APM package primitive instead.')
+    if (ref.kind === 'draft') {
+        return readDraftTextContent(workingDir, 'instruction', ref.draftId)
     }
-    return readDraftTextContent(workingDir, 'instruction', ref.draftId)
+    const packageRef = parseApmPackageRef(ref)
+    if (packageRef) {
+        return resolvePackageInstructionContent(workingDir, packageRef)
+    }
+    throw new Error('Registry instruction references are no longer supported. Import the source as an APM package primitive instead.')
+}
+
+type ApmPackageRef = {
+    scope: 'workspace' | 'user'
+    packageId: string
+}
+
+function parseApmPackageRef(ref: SharedPrimitiveRef): ApmPackageRef | null {
+    if (ref.kind !== 'registry') return null
+    const match = ref.urn.match(/^apm-package\/(workspace|user)\/(.+)$/)
+    if (!match) return null
+    return {
+        scope: match[1] as ApmPackageRef['scope'],
+        packageId: match[2],
+    }
+}
+
+function packageRefWorkingDir(workingDir: string, ref: ApmPackageRef) {
+    return ref.scope === 'user' ? getApmUserScopeCwd() : workingDir
+}
+
+async function firstFileInDirectory(dir: string, predicate: (entryName: string) => boolean) {
+    const entries = await fs.readdir(dir, { withFileTypes: true }).catch(() => [])
+    return entries
+        .filter((entry) => entry.isFile() && predicate(entry.name))
+        .map((entry) => path.join(dir, entry.name))
+        .sort((left, right) => left.localeCompare(right))[0] || null
+}
+
+async function resolvePackageInstructionContent(workingDir: string, ref: ApmPackageRef) {
+    const instructionsDir = path.join(sourceDir(packageRefWorkingDir(workingDir, ref), ref.packageId), 'instructions')
+    const instructionFile = await firstFileInDirectory(instructionsDir, (name) => name.endsWith('.md'))
+    if (!instructionFile) {
+        throw new Error(`APM package '${ref.packageId}' has no instruction primitive.`)
+    }
+    return fs.readFile(instructionFile, 'utf-8')
 }
 
 async function materializeDraftSkill(
@@ -139,16 +187,53 @@ async function materializeDraftSkill(
     }
 }
 
-async function materializeSkill(
+async function materializePackageSkills(
+    workingDir: string,
+    ref: ApmPackageRef,
+    targetDir: string,
+    usedNames: Set<string>,
+): Promise<MaterializedSkill[]> {
+    const packageSkillsDir = path.join(sourceDir(packageRefWorkingDir(workingDir, ref), ref.packageId), 'skills')
+    const entries = await fs.readdir(packageSkillsDir, { withFileTypes: true }).catch(() => [])
+    const skillDirs = entries
+        .filter((entry) => entry.isDirectory())
+        .sort((left, right) => left.name.localeCompare(right.name))
+
+    if (skillDirs.length === 0) {
+        throw new Error(`APM package '${ref.packageId}' has no skill primitives.`)
+    }
+
+    const materialized: MaterializedSkill[] = []
+    for (const entry of skillDirs) {
+        const sourceSkillDir = path.join(packageSkillsDir, entry.name)
+        const sourceSkillFile = path.join(sourceSkillDir, 'SKILL.md')
+        await fs.access(sourceSkillFile)
+        const logicalName = uniqueSegment(entry.name, usedNames)
+        const targetSkillDir = path.join(targetDir, logicalName)
+        await copyDirectory(sourceSkillDir, targetSkillDir)
+        materialized.push({
+            logicalName,
+            relativePath: packageRelative(path.dirname(path.dirname(targetDir)), path.join(targetSkillDir, 'SKILL.md')),
+        })
+    }
+
+    return materialized
+}
+
+async function materializeSkills(
     workingDir: string,
     ref: SharedPrimitiveRef,
     targetDir: string,
     usedNames: Set<string>,
-) {
-    if (ref.kind !== 'draft') {
-        throw new Error('Registry skill references are no longer supported. Import the source as an APM package primitive instead.')
+): Promise<MaterializedSkill[]> {
+    if (ref.kind === 'draft') {
+        return [await materializeDraftSkill(workingDir, ref, targetDir, usedNames)]
     }
-    return materializeDraftSkill(workingDir, ref, targetDir, usedNames)
+    const packageRef = parseApmPackageRef(ref)
+    if (packageRef) {
+        return materializePackageSkills(workingDir, packageRef, targetDir, usedNames)
+    }
+    throw new Error('Registry skill references are no longer supported. Import the source as an APM package primitive instead.')
 }
 
 async function discoverPrimitivePaths(dir: string) {
@@ -169,11 +254,23 @@ async function discoverPrimitivePaths(dir: string) {
 }
 
 function countPrimitives(relativePaths: string[]) {
+    const promptCount = relativePaths.filter((entry) =>
+        entry.startsWith('.apm/prompts/') && entry.endsWith('.prompt.md'),
+    ).length
     return {
         agents: relativePaths.filter((entry) => entry.startsWith('.apm/agents/')).length,
         instructions: relativePaths.filter((entry) => entry.startsWith('.apm/instructions/')).length,
         skills: relativePaths.filter((entry) => entry.startsWith('.apm/skills/') && entry.endsWith('/SKILL.md')).length,
+        prompts: promptCount,
+        commands: promptCount,
+        hooks: relativePaths.filter((entry) => entry.startsWith('.apm/hooks/') && entry.endsWith('.json')).length,
     }
+}
+
+function countMcpDependencies(manifest: ApmPackageManifest) {
+    return Array.isArray(manifest.dependencies?.mcp)
+        ? manifest.dependencies.mcp.length
+        : 0
 }
 
 function agentName(agent: NonNullable<ApmPackageManifest['x-apm']>['agent']) {
@@ -195,7 +292,7 @@ function skillRefs(agent: NonNullable<ApmPackageManifest['x-apm']>['agent']) {
 
 function summaryWarnings(
     manifest: ApmPackageManifest,
-    primitiveCounts: ReturnType<typeof countPrimitives>,
+    primitiveCounts: MicrosoftApmPrimitiveCounts,
     generationWarnings: string[] = [],
 ) {
     const warnings = [...generationWarnings]
@@ -215,7 +312,13 @@ function summaryWarnings(
             warnings.push('No Microsoft APM agent primitive was materialized.')
         }
     }
-    if (primitiveCounts.agents + primitiveCounts.instructions + primitiveCounts.skills === 0) {
+    const primitiveTotal = primitiveCounts.agents
+        + primitiveCounts.instructions
+        + primitiveCounts.skills
+        + (primitiveCounts.prompts || 0)
+        + (primitiveCounts.hooks || 0)
+        + (primitiveCounts.mcp || 0)
+    if (primitiveTotal === 0) {
         warnings.push('No Microsoft APM source primitives were found under .apm/.')
     }
     return Array.from(new Set(warnings))
@@ -233,8 +336,11 @@ export async function summarizeMicrosoftApmPackageSource(
     const sourceRelative = workspaceRelative(workingDir, source)
     const primitivePaths = (await discoverPrimitivePaths(source))
         .map((filePath) => packageRelative(root, filePath))
-        .filter((filePath) => !filePath.startsWith('.apm/prompts/'))
-    const primitiveCounts = countPrimitives(primitivePaths)
+    const sourcePrimitiveCounts = countPrimitives(primitivePaths)
+    const mcpCount = countMcpDependencies(manifest)
+    const primitiveCounts = mcpCount > 0
+        ? { ...sourcePrimitiveCounts, mcp: mcpCount }
+        : sourcePrimitiveCounts
 
     return {
         packageRoot: rootRelative,
@@ -294,7 +400,7 @@ export async function syncMicrosoftApmSourceTree(
     const materializedSkills: MaterializedSkill[] = []
     for (const ref of skillRefs(agent)) {
         try {
-            materializedSkills.push(await materializeSkill(workingDir, ref, skillDir, usedSkillNames))
+            materializedSkills.push(...await materializeSkills(workingDir, ref, skillDir, usedSkillNames))
         } catch (error) {
             const label = ref.kind === 'registry' ? ref.urn : ref.draftId
             warnings.push(error instanceof Error

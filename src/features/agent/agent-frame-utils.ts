@@ -150,7 +150,7 @@ export function buildSkillSearchSections(
         },
         {
             key: 'agent',
-            title: 'Agent',
+            title: 'Studio Agent',
             items: agentItems.filter(byQuery),
         },
         {

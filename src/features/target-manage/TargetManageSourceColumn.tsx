@@ -3,18 +3,17 @@ import {
     primitiveSummary,
     PRIMITIVE_SYNC_UNITS,
     unitLabel,
-    unitSourcePath,
-} from './inject-sync-utils'
-import { InjectSourceRows } from './InjectSourceRows'
-import type { InjectControllerState } from './useInjectController'
+} from './target-manage-sync-utils'
+import { TargetManageSourceRows } from './TargetManageSourceRows'
+import type { TargetManageControllerState } from './useTargetManageController'
 
-interface InjectSourceColumnProps {
-    controller: InjectControllerState
+interface TargetManageSourceColumnProps {
+    controller: TargetManageControllerState
 }
 
-export function InjectSourceColumn({ controller }: InjectSourceColumnProps) {
+export function TargetManageSourceColumn({ controller }: TargetManageSourceColumnProps) {
     const {
-        allVisibleSelected,
+        activeTarget,
         apmPackages,
         apmPackagesLoading,
         filter,
@@ -23,62 +22,61 @@ export function InjectSourceColumn({ controller }: InjectSourceColumnProps) {
         primitiveUnit,
         running,
         selectSyncUnit,
-        selectedPackageIds,
-        selectedPackageSet,
-        selectedPrimitiveSummary,
         selectedSyncUnit,
         setFilter,
         sidebarSection,
-        togglePackage,
-        toggleVisiblePackages,
+        stagePackageForActiveTarget,
+        stagedPackageIds,
+        stagedPackageSet,
+        stagedPrimitiveSummary,
+        toggleStagedPackage,
+        unsyncedPackageIds,
         visiblePackageIds,
         workspaceCounts,
     } = controller
 
     return (
-        <section className="surface-card target-inject-source" aria-label="Studio source">
-            <div className="target-inject-section-header">
+        <section className="surface-card target-manage-source" aria-label="Studio source">
+            <div className="target-manage-section-header">
                 <div>
-                    <div className="target-inject-panel-title">
+                    <div className="target-manage-panel-title">
                         <PackageOpen size={15} />
                         <h2>APM Studio</h2>
                     </div>
-                    <p>{unitSourcePath(selectedSyncUnit)}</p>
                 </div>
-                <span className="badge badge--subtle">{unitLabel(selectedSyncUnit)}</span>
             </div>
 
-            <div className="target-inject-source-controls">
-                <div className="target-inject-source-scope" role="tablist" aria-label="Inject source unit">
+            <div className="target-manage-source-controls">
+                <div className="target-manage-source-scope" role="tablist" aria-label="Export source mode">
                     <button
-                        className={`target-inject-scope-btn ${sidebarSection === 'packages' ? 'is-active' : ''}`}
+                        className={`target-manage-scope-btn ${sidebarSection === 'packages' ? 'is-active' : ''}`}
                         type="button"
                         aria-selected={sidebarSection === 'packages'}
                         role="tab"
-                        onClick={() => selectSyncUnit('agent-packages')}
+                        onClick={() => selectSyncUnit('studio-agent')}
                     >
-                        <PackageOpen size={11} />
-                        Packages
+                        <Bot size={11} />
+                        Studio Agent
                     </button>
                     <button
-                        className={`target-inject-scope-btn ${sidebarSection === 'primitives' ? 'is-active' : ''}`}
+                        className={`target-manage-scope-btn ${sidebarSection === 'primitives' ? 'is-active' : ''}`}
                         type="button"
                         aria-selected={sidebarSection === 'primitives'}
                         role="tab"
                         onClick={() => selectSyncUnit(primitiveUnit)}
                     >
                         <Layers3 size={11} />
-                        Primitives
+                        APM Primitives
                     </button>
                 </div>
 
                 {sidebarSection === 'primitives' ? (
-                    <div className="target-inject-primitive-tabs" role="tablist" aria-label="Primitive unit">
+                    <div className="target-manage-primitive-tabs" role="tablist" aria-label="Primitive unit">
                         {PRIMITIVE_SYNC_UNITS.map((unit) => (
                             <button
                                 key={unit}
                                 type="button"
-                                className={`target-inject-primitive-tab ${selectedSyncUnit === unit ? 'is-active' : ''}`}
+                                className={`target-manage-primitive-tab ${selectedSyncUnit === unit ? 'is-active' : ''}`}
                                 aria-selected={selectedSyncUnit === unit}
                                 role="tab"
                                 onClick={() => selectSyncUnit(unit)}
@@ -86,6 +84,9 @@ export function InjectSourceColumn({ controller }: InjectSourceColumnProps) {
                                 {unit === 'agents' ? <Bot size={10} /> : null}
                                 {unit === 'instructions' ? <FileText size={10} /> : null}
                                 {unit === 'skills' ? <Zap size={10} /> : null}
+                                {unit === 'prompts' ? <FileText size={10} /> : null}
+                                {unit === 'commands' ? <FileText size={10} /> : null}
+                                {unit === 'hooks' ? <Zap size={10} /> : null}
                                 {unit === 'mcp' ? <Server size={10} /> : null}
                                 {unitLabel(unit)}
                             </button>
@@ -93,44 +94,41 @@ export function InjectSourceColumn({ controller }: InjectSourceColumnProps) {
                     </div>
                 ) : null}
 
-                <div className="target-inject-source-toolbar">
-                    <label className="target-inject-search">
+                <div className="target-manage-source-toolbar">
+                    <label className="target-manage-search">
                         <Search size={12} className="icon-muted" />
                         <input
                             className="text-input"
                             value={filter}
                             onChange={(event) => setFilter(event.target.value)}
-                            placeholder="package, primitive, apm.yml path..."
+                            placeholder="package, primitive, target path..."
                         />
                     </label>
-                    <button
-                        className="text-btn"
-                        type="button"
-                        onClick={toggleVisiblePackages}
-                        disabled={visiblePackageIds.length === 0 || running}
-                    >
-                        {allVisibleSelected ? (filter ? 'Clear visible' : 'Clear') : (filter ? 'Select visible' : 'Select all')}
-                    </button>
+                    <span className="badge badge--subtle">{visiblePackageIds.length} available</span>
                 </div>
             </div>
 
-            <div className="target-inject-source__summary">
-                <strong>{selectedPackageIds.length} selected</strong>
-                <span>{selectedPrimitiveSummary}</span>
+            <div className="target-manage-source__summary">
+                <strong>{stagedPackageIds.length} staged</strong>
+                {unsyncedPackageIds.length > 0 ? <span>{unsyncedPackageIds.length} unsynced</span> : null}
+                <span>{stagedPrimitiveSummary}</span>
                 <span>{apmPackages.length} packages · {primitiveSummary(workspaceCounts)}</span>
                 {packageWarnings > 0 ? <span>{packageWarnings} warnings</span> : null}
             </div>
 
-            <InjectSourceRows
+            <TargetManageSourceRows
                 packages={filteredSyncablePackages}
+                activeTarget={activeTarget}
+                packageSyncStateByPackage={controller.activeTargetPackageSyncStateByPackage}
                 running={running}
-                selectedPackageSet={selectedPackageSet}
                 selectedSyncUnit={selectedSyncUnit}
-                togglePackage={togglePackage}
+                stagePackageForActiveTarget={stagePackageForActiveTarget}
+                stagedPackageSet={stagedPackageSet}
+                toggleStagedPackage={toggleStagedPackage}
             />
 
             {filteredSyncablePackages.length === 0 && !apmPackagesLoading ? (
-                <div className="target-inject-empty">
+                <div className="target-manage-empty">
                     No local package contains {unitLabel(selectedSyncUnit)}.
                 </div>
             ) : null}

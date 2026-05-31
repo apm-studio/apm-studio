@@ -9,7 +9,10 @@ import {
 } from './lib/dnd-handlers'
 import type { DragPrimitive, DropTargetData } from './lib/dnd-handlers'
 import type { DragStartEvent, DragEndEvent } from '@dnd-kit/core'
-import { resolveApmPackageAgentPrimitive } from './app-dnd-apm-package'
+import {
+    resolveApmPackageAgentPrimitive,
+    resolveApmPackagePrimitiveForAgentDrop,
+} from './app-dnd-apm-package'
 import { resolveAgentPrimitiveForStudio } from './app-dnd-agent-resolver'
 import { handleMarkdownEditorDrop } from './app-dnd-markdown'
 import { handleSplitViewNodeDrop } from './app-dnd-split-view'
@@ -121,6 +124,19 @@ export function createDragEndHandler(
         // Standalone agent drops
         if (dropData.agentId) {
             if (primitive.kind === 'apm-package') {
+                const packagePrimitive = await resolveApmPackagePrimitiveForAgentDrop(primitive, dropData.type, showDropWarning)
+                if (packagePrimitive) {
+                    await applyPrimitiveToAgentTarget(
+                        store,
+                        dropData.agentId,
+                        dropData.type,
+                        packagePrimitive,
+                        showDropWarning,
+                        (a) => resolveAgentPrimitiveForStudio(a, showDropWarning),
+                    )
+                    return
+                }
+
                 const packageAgent = await resolveApmPackageAgentPrimitive(primitive, showDropWarning)
                 if (packageAgent) {
                     store.applyAgentPrimitive(dropData.agentId, await resolveAgentPrimitiveForStudio(packageAgent, showDropWarning))

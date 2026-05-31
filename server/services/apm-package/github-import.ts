@@ -10,8 +10,9 @@ import {
 import { getApmUserScopeCwd } from '../../lib/apm-studio-paths.js'
 import { packageDir, manifestPath, toPosixPath } from './paths.js'
 import { writeApmPackage } from './repository.js'
-import { parseSource } from './source-ref.js'
+import { parseSource, type ParsedSource } from './source-ref.js'
 import {
+    fetchTree,
     fetchGithubText,
     fetchRepoMetadata,
     normalizeRepoPath,
@@ -34,6 +35,69 @@ async function copyCandidateFiles(workingDir: string, repo: string, ref: string,
     }
 }
 
+async function canFetchTree(owner: string, repo: string, ref: string) {
+    try {
+        await fetchTree(owner, repo, ref)
+        return true
+    } catch {
+        return false
+    }
+}
+
+async function resolveRefAndSubpath(
+    parsed: ParsedSource,
+    request: ApmGitHubImportRequest,
+    defaultBranch: string,
+) {
+    const requestedRef = request.ref?.trim()
+    if (!parsed.refPath) {
+        return {
+            ref: requestedRef || parsed.ref?.trim() || defaultBranch,
+            subpath: normalizeRepoPath(parsed.subpath),
+        }
+    }
+
+    const refPath = normalizeRepoPath(parsed.refPath)
+    if (!refPath) {
+        return {
+            ref: requestedRef || parsed.ref?.trim() || defaultBranch,
+            subpath: normalizeRepoPath(parsed.subpath),
+        }
+    }
+
+    if (requestedRef) {
+        const prefix = `${requestedRef}/`
+        return {
+            ref: requestedRef,
+            subpath: normalizeRepoPath(refPath === requestedRef ? '' : refPath.startsWith(prefix) ? refPath.slice(prefix.length) : parsed.subpath),
+        }
+    }
+
+    const normalizedDefaultBranch = normalizeRepoPath(defaultBranch)
+    if (normalizedDefaultBranch && (refPath === normalizedDefaultBranch || refPath.startsWith(`${normalizedDefaultBranch}/`))) {
+        return {
+            ref: defaultBranch,
+            subpath: normalizeRepoPath(refPath.slice(normalizedDefaultBranch.length)),
+        }
+    }
+
+    const segments = refPath.split('/').filter(Boolean)
+    for (let count = segments.length; count >= 1; count -= 1) {
+        const candidateRef = segments.slice(0, count).join('/')
+        if (await canFetchTree(parsed.owner, parsed.repo, candidateRef)) {
+            return {
+                ref: candidateRef,
+                subpath: segments.slice(count).join('/'),
+            }
+        }
+    }
+
+    return {
+        ref: parsed.ref?.trim() || defaultBranch,
+        subpath: normalizeRepoPath(parsed.subpath),
+    }
+}
+
 export async function previewApmPackagesFromGitHub(
     request: ApmGitHubImportRequest,
 ): Promise<ApmGitHubImportPreviewResponse> {
@@ -44,8 +108,7 @@ export async function previewApmPackagesFromGitHub(
     const parsed = parseSource(request.source)
     const repo = `${parsed.owner}/${parsed.repo}`
     const metadata = await fetchRepoMetadata(parsed.owner, parsed.repo)
-    const ref = request.ref?.trim() || parsed.ref?.trim() || metadata.defaultBranch
-    const subpath = normalizeRepoPath(parsed.subpath)
+    const { ref, subpath } = await resolveRefAndSubpath(parsed, request, metadata.defaultBranch)
     const format = request.format || 'auto'
     const limit = importLimit(request.limit)
     const { candidates, totalMatched } = await buildImportCandidates(repo, ref, subpath, format, limit)
@@ -82,8 +145,7 @@ export async function importApmPackagesFromGitHub(
     const parsed = parseSource(request.source)
     const repo = `${parsed.owner}/${parsed.repo}`
     const metadata = await fetchRepoMetadata(parsed.owner, parsed.repo)
-    const ref = request.ref?.trim() || parsed.ref?.trim() || metadata.defaultBranch
-    const subpath = normalizeRepoPath(parsed.subpath)
+    const { ref, subpath } = await resolveRefAndSubpath(parsed, request, metadata.defaultBranch)
     const format = request.format || 'auto'
     const limit = importLimit(request.limit)
     const { candidates, totalMatched } = await buildImportCandidates(repo, ref, subpath, format, limit)

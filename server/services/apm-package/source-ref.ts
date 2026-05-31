@@ -1,13 +1,7 @@
-import { execFile } from 'child_process'
 import fsSync from 'fs'
 import fs from 'fs/promises'
-import os from 'os'
 import path from 'path'
-import { promisify } from 'util'
 import { parseSkillMarkdown } from '../../../shared/skill-markdown.js'
-
-const execFileAsync = promisify(execFile)
-const DEFAULT_CLONE_TIMEOUT_MS = 60_000
 
 export type ParsedSource = {
     type: 'github'
@@ -16,12 +10,9 @@ export type ParsedSource = {
     url: string
     ref?: string
     subpath?: string
+    refPath?: string
+    sourcePathKind?: 'tree' | 'blob' | 'raw'
     skillFilter?: string
-}
-
-export type CloneResult = {
-    tempDir: string
-    cleanup: () => Promise<void>
 }
 
 export type DiscoveredSkill = {
@@ -42,7 +33,7 @@ function toRepoPath(value: string) {
 }
 
 function sanitizeSubpath(subpath: string) {
-    const normalized = subpath.replace(/\\/g, '/')
+    const normalized = subpath.replace(/\\/g, '/').split('/').filter(Boolean).join('/')
     for (const segment of normalized.split('/')) {
         if (segment === '..') {
             throw new Error(`Unsafe subpath: "${subpath}" contains path traversal segments.`)
@@ -51,121 +42,155 @@ function sanitizeSubpath(subpath: string) {
     return normalized
 }
 
+function decodePathSegment(segment: string) {
+    try {
+        return decodeURIComponent(segment)
+    } catch {
+        return segment
+    }
+}
+
+function splitUrlPathname(pathname: string) {
+    return pathname
+        .split('/')
+        .filter(Boolean)
+        .map(decodePathSegment)
+}
+
+function cleanRepoName(repo: string) {
+    return repo.replace(/\.git$/, '')
+}
+
+function githubCloneUrl(owner: string, repo: string) {
+    return `https://github.com/${owner}/${repo}.git`
+}
+
+function parsedGitHubSource(input: {
+    owner: string
+    repo: string
+    ref?: string
+    subpath?: string
+    refPath?: string
+    sourcePathKind?: ParsedSource['sourcePathKind']
+}): ParsedSource {
+    const repo = cleanRepoName(input.repo)
+    return {
+        type: 'github',
+        owner: input.owner,
+        repo,
+        url: githubCloneUrl(input.owner, repo),
+        ...(input.ref ? { ref: input.ref } : {}),
+        ...(input.subpath ? { subpath: sanitizeSubpath(input.subpath) } : {}),
+        ...(input.refPath ? { refPath: sanitizeSubpath(input.refPath) } : {}),
+        ...(input.sourcePathKind ? { sourcePathKind: input.sourcePathKind } : {}),
+    }
+}
+
+function parseGitHubUrl(trimmed: string): ParsedSource | null {
+    let parsed: URL
+    try {
+        parsed = new URL(trimmed)
+    } catch {
+        return null
+    }
+
+    const host = parsed.hostname.toLowerCase()
+    const segments = splitUrlPathname(parsed.pathname)
+    if ((host === 'github.com' || host === 'www.github.com') && segments.length >= 2) {
+        const [owner, repo, marker, ...rest] = segments
+        if ((marker === 'tree' || marker === 'blob') && rest.length > 0) {
+            return parsedGitHubSource({
+                owner,
+                repo,
+                ref: rest[0],
+                subpath: rest.slice(1).join('/'),
+                refPath: rest.join('/'),
+                sourcePathKind: marker,
+            })
+        }
+        return parsedGitHubSource({ owner, repo })
+    }
+
+    if (host === 'raw.githubusercontent.com' && segments.length >= 3) {
+        const [owner, repo, ...rest] = segments
+        return parsedGitHubSource({
+            owner,
+            repo,
+            ref: rest[0],
+            subpath: rest.slice(1).join('/'),
+            refPath: rest.join('/'),
+            sourcePathKind: 'raw',
+        })
+    }
+
+    return null
+}
+
+function parseSshGitHubUrl(trimmed: string): ParsedSource | null {
+    const scpLike = trimmed.match(/^git@github\.com:([^/]+)\/(.+)$/)
+    if (scpLike) {
+        const [, owner, repo] = scpLike
+        return parsedGitHubSource({ owner, repo })
+    }
+
+    let parsed: URL
+    try {
+        parsed = new URL(trimmed)
+    } catch {
+        return null
+    }
+    if (parsed.protocol !== 'ssh:' || parsed.hostname.toLowerCase() !== 'github.com') {
+        return null
+    }
+    const segments = splitUrlPathname(parsed.pathname)
+    if (segments.length < 2) return null
+    const [owner, repo] = segments
+    return parsedGitHubSource({ owner, repo })
+}
+
+function splitHashRef(value: string) {
+    const index = value.indexOf('#')
+    if (index < 0) return { source: value, ref: undefined }
+    return {
+        source: value.slice(0, index),
+        ref: value.slice(index + 1),
+    }
+}
+
 export function parseSource(input: string): ParsedSource {
     const trimmed = input.trim()
-    const githubTreeWithPathMatch = trimmed.match(/github\.com\/([^/]+)\/([^/]+)\/tree\/([^/]+)\/(.+)/)
-    if (githubTreeWithPathMatch) {
-        const [, owner, repo, ref, subpath] = githubTreeWithPathMatch
-        const cleanRepo = repo.replace(/\.git$/, '')
-        return {
-            type: 'github',
-            owner,
-            repo: cleanRepo,
-            url: `https://github.com/${owner}/${cleanRepo}.git`,
-            ref,
-            subpath: subpath ? sanitizeSubpath(subpath) : undefined,
-        }
-    }
+    const urlSource = parseGitHubUrl(trimmed) || parseSshGitHubUrl(trimmed)
+    if (urlSource) return urlSource
 
-    const githubTreeMatch = trimmed.match(/github\.com\/([^/]+)\/([^/]+)\/tree\/([^/]+)$/)
-    if (githubTreeMatch) {
-        const [, owner, repo, ref] = githubTreeMatch
-        const cleanRepo = repo.replace(/\.git$/, '')
-        return {
-            type: 'github',
-            owner,
-            repo: cleanRepo,
-            url: `https://github.com/${owner}/${cleanRepo}.git`,
-            ref,
-        }
-    }
-
-    const githubRepoMatch = trimmed.match(/github\.com\/([^/]+)\/([^/]+)/)
-    if (githubRepoMatch) {
-        const [, owner, repo] = githubRepoMatch
-        const cleanRepo = repo.replace(/\.git$/, '')
-        return {
-            type: 'github',
-            owner,
-            repo: cleanRepo,
-            url: `https://github.com/${owner}/${cleanRepo}.git`,
-        }
-    }
-
-    const atSkillMatch = trimmed.match(/^([^/]+)\/([^/@]+)@(.+)$/)
-    if (atSkillMatch && !trimmed.includes(':') && !trimmed.startsWith('.') && !trimmed.startsWith('/')) {
-        const [, owner, repo, skillFilter] = atSkillMatch
-        return {
-            type: 'github',
+    const { source, ref } = splitHashRef(trimmed)
+    const atRefMatch = source.match(/^([^/]+)\/([^/@]+)@(.+)$/)
+    if (atRefMatch && !source.includes(':') && !source.startsWith('.') && !source.startsWith('/')) {
+        const [, owner, repo, parsedRef] = atRefMatch
+        return parsedGitHubSource({
             owner,
             repo,
-            url: `https://github.com/${owner}/${repo}.git`,
-            skillFilter,
-        }
+            ref: ref || parsedRef,
+        })
     }
 
-    const shorthandMatch = trimmed.match(/^([^/]+)\/([^/]+)(?:\/(.+))?$/)
-    if (shorthandMatch && !trimmed.includes(':') && !trimmed.startsWith('.') && !trimmed.startsWith('/')) {
+    const shorthandMatch = source.match(/^([^/]+)\/([^/]+)(?:\/(.+))?$/)
+    if (shorthandMatch && !source.includes(':') && !source.startsWith('.') && !source.startsWith('/')) {
         const [, owner, repo, subpath] = shorthandMatch
-        return {
-            type: 'github',
+        return parsedGitHubSource({
             owner,
             repo,
-            url: `https://github.com/${owner}/${repo}.git`,
-            subpath: subpath ? sanitizeSubpath(subpath) : undefined,
-        }
+            ref,
+            subpath,
+        })
     }
 
-    throw new Error(`Cannot parse source: '${trimmed}'. Expected owner/repo, owner/repo@skill-name, owner/repo/subpath, or GitHub URL.`)
+    throw new Error(`Cannot parse source: '${trimmed}'. Expected owner/repo, owner/repo#ref, owner/repo@ref, owner/repo/subpath, GitHub tree/blob/raw URL, or GitHub SSH URL.`)
 }
 
 export function getOwnerRepo(url: string) {
     const match = url.match(/github\.com\/([^/]+)\/([^/]+)/)
     if (!match) return null
     return `${match[1]}/${match[2].replace(/\.git$/, '')}`
-}
-
-export async function shallowClone(options: { url: string; ref?: string; timeoutMs?: number }): Promise<CloneResult> {
-    const { url, ref, timeoutMs = DEFAULT_CLONE_TIMEOUT_MS } = options
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'apm-studio-clone-'))
-    const args = ['clone', '--depth', '1', '--single-branch']
-    if (ref && ref !== 'HEAD') {
-        args.push('--branch', ref)
-    }
-    args.push(url, tempDir)
-
-    try {
-        await execFileAsync('git', args, { timeout: timeoutMs })
-    } catch (error) {
-        await cleanupTempDir(tempDir)
-        const message = error instanceof Error ? error.message : String(error)
-        const isTimeout = message.includes('timed out') || message.includes('ETIMEDOUT')
-        const isAuth = message.includes('Authentication failed')
-            || message.includes('could not read Username')
-            || message.includes('Permission denied')
-            || message.includes('Repository not found')
-        if (isTimeout) {
-            throw new Error(`Clone timed out after ${timeoutMs / 1000}s. Check repository access and network status.`)
-        }
-        if (isAuth) {
-            throw new Error(`Authentication failed for ${url}. Ensure your GitHub credentials can access the repository.`)
-        }
-        throw new Error(`Failed to clone '${url}': ${message}`)
-    }
-
-    return {
-        tempDir,
-        cleanup: () => cleanupTempDir(tempDir),
-    }
-}
-
-async function cleanupTempDir(dir: string) {
-    const normalizedDir = path.normalize(path.resolve(dir))
-    const normalizedTmp = path.normalize(path.resolve(os.tmpdir()))
-    if (!normalizedDir.startsWith(`${normalizedTmp}${path.sep}`) && normalizedDir !== normalizedTmp) {
-        throw new Error('Attempted to clean up directory outside of temp directory')
-    }
-    await fs.rm(dir, { recursive: true, force: true })
 }
 
 const PRIORITY_DIRS = [

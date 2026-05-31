@@ -1,10 +1,12 @@
 import type { Dispatch, SetStateAction } from 'react'
 import type { RuntimeModelCatalogEntry } from '../../../shared/model-variants'
 import type { McpServerSummary } from '../../../shared/opencode-contracts'
-import { Cpu, FolderOpen, HardDrive, PackageOpen, Search, Server } from 'lucide-react'
+import { Bot, Cpu, FileText, FolderOpen, HardDrive, Layers3, Search, Server, Zap } from 'lucide-react'
+import { PACKAGE_PRIMITIVE_SECTIONS } from './package-library-utils'
 import type {
     LocalSection,
     ModelProviderFilter,
+    PackagePrimitiveSection,
     SourceFilter,
 } from './package-library-utils'
 import PackageLibraryMcpManager from './PackageLibraryMcpManager'
@@ -16,6 +18,8 @@ import type { PackagePanelItem, PackagePanelHandler, ScopedApmPackageSummary } f
 type Props = {
     localSection: LocalSection
     setLocalSection: (value: LocalSection) => void
+    primitiveSection: PackagePrimitiveSection
+    setPrimitiveSection: (value: PackagePrimitiveSection) => void
     sourceFilter: SourceFilter
     setSourceFilter: (value: SourceFilter) => void
     modelProviderFilter: ModelProviderFilter
@@ -52,9 +56,25 @@ type Props = {
 
 const noopPackagePanelHandler: PackagePanelHandler = () => {}
 
+function primitiveSectionLabel(section: PackagePrimitiveSection) {
+    if (section === 'agents') return 'Studio Agents'
+    if (section === 'instructions') return 'Instructions'
+    if (section === 'skills') return 'Skills'
+    return 'MCP'
+}
+
+function primitiveSectionIcon(section: PackagePrimitiveSection) {
+    if (section === 'agents') return <Bot size={8} style={{ verticalAlign: -1, marginRight: 2 }} />
+    if (section === 'instructions') return <FileText size={8} style={{ verticalAlign: -1, marginRight: 2 }} />
+    if (section === 'skills') return <Zap size={8} style={{ verticalAlign: -1, marginRight: 2 }} />
+    return <Server size={8} style={{ verticalAlign: -1, marginRight: 2 }} />
+}
+
 export default function PackageLibraryLocalView({
     localSection,
     setLocalSection,
+    primitiveSection,
+    setPrimitiveSection,
     sourceFilter,
     setSourceFilter,
     modelProviderFilter,
@@ -88,22 +108,37 @@ export default function PackageLibraryLocalView({
     setExpandedModelProviders,
     modelProviderTabs,
 }: Props) {
+    const showPrimitives = localSection !== 'models'
+
     return (
         <div className="package-library-local-view">
             <div className="scope-selector package-scope-selector">
-                <button className={`scope-btn ${localSection === 'packages' ? 'active' : ''}`} onClick={() => setLocalSection('packages')}>
-                    <PackageOpen size={11} />
-                    <span>Packages</span>
-                </button>
-                <button className={`scope-btn ${localSection === 'mcp' ? 'active' : ''}`} onClick={() => setLocalSection('mcp')}>
-                    <Server size={11} />
-                    <span>MCP</span>
+                <button className={`scope-btn ${showPrimitives ? 'active' : ''}`} onClick={() => {
+                    if (!showPrimitives) setPrimitiveSection(primitiveSection)
+                }}>
+                    <Layers3 size={11} />
+                    <span>Primitives</span>
                 </button>
                 <button className={`scope-btn ${localSection === 'models' ? 'active' : ''}`} onClick={() => setLocalSection('models')}>
                     <Cpu size={11} />
                     <span>Models</span>
                 </button>
             </div>
+
+            {showPrimitives ? (
+                <div className="sub-scope-row">
+                    {PACKAGE_PRIMITIVE_SECTIONS.map((section) => (
+                        <button
+                            key={section}
+                            className={`sub-scope-tag ${primitiveSection === section ? 'active' : ''}`}
+                            onClick={() => setPrimitiveSection(section)}
+                        >
+                            {primitiveSectionIcon(section)}
+                            {primitiveSectionLabel(section)}
+                        </button>
+                    ))}
+                </div>
+            ) : null}
 
             {localSection === 'packages' ? (
                 <div className="sub-scope-row">
@@ -132,8 +167,9 @@ export default function PackageLibraryLocalView({
 
             {authoringHint ? <div className="package-authoring-hint">{authoringHint}</div> : null}
 
-            {localSection === 'packages' ? (
+            {localSection === 'packages' && primitiveSection !== 'mcp' ? (
                 <PackageLibraryPackageList
+                    primitiveSection={primitiveSection}
                     packages={filteredApmPackages}
                     loading={apmPackagesLoading}
                 />

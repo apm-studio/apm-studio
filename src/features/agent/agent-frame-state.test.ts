@@ -40,14 +40,14 @@ function splitView(): SplitViewState {
 }
 
 describe('agent frame state', () => {
-    it('resolves focused run surface and hides redundant focus control', () => {
+    it('resolves focused Studio Agent run surface and hides redundant focus control', () => {
         const state = buildAgentFrameSurfaceState({
             id: 'agent-1',
             selectedAgentId: 'agent-1',
             editingTarget: null,
             focusSnapshot: focusSnapshot(),
             viewMode: 'full',
-            workspaceMode: 'run',
+            workspaceMode: 'studio-agent',
             splitView: { ...splitView(), panes: [] },
         })
 
@@ -62,14 +62,14 @@ describe('agent frame state', () => {
         })
     })
 
-    it('uses manage mode as edit surface outside fullscreen layouts', () => {
+    it('uses Studio Agent canvas as edit surface outside fullscreen layouts', () => {
         const state = buildAgentFrameSurfaceState({
             id: 'agent-1',
             selectedAgentId: null,
             editingTarget: null,
             focusSnapshot: null,
             viewMode: 'canvas',
-            workspaceMode: 'manage',
+            workspaceMode: 'studio-agent',
             splitView: { ...splitView(), panes: [] },
         })
 
@@ -85,7 +85,7 @@ describe('agent frame state', () => {
             editingTarget: null,
             focusSnapshot: null,
             viewMode: 'split',
-            workspaceMode: 'run',
+            workspaceMode: 'studio-agent',
             splitView: splitView(),
         })
 

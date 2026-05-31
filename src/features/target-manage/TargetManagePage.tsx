@@ -1,13 +1,14 @@
 import { useMemo } from 'react'
 import { RefreshCcw, RotateCw } from 'lucide-react'
 import { useAppHeader } from '../../components/AppHeaderContext'
-import { InjectSourceColumn } from './InjectSourceColumn'
-import { InjectTargetsColumn } from './InjectTargetsColumn'
-import { useInjectController } from './useInjectController'
-import './InjectPage.css'
+import { TargetManageSourceColumn } from './TargetManageSourceColumn'
+import { TargetManageTargetsColumn } from './TargetManageTargetsColumn'
+import { useTargetManageController } from './useTargetManageController'
+import '../../components/panels/PackageLibrary.css'
+import './TargetManagePage.css'
 
-export function InjectPage() {
-    const controller = useInjectController()
+export function TargetManagePage() {
+    const controller = useTargetManageController()
     const {
         error,
         loadingTargets,
@@ -15,9 +16,6 @@ export function InjectPage() {
         running,
         runSync,
         syncDisabled,
-        targetsReady,
-        targetsResponse,
-        workingDir,
     } = controller
 
     const headerActions = useMemo(() => (
@@ -33,30 +31,23 @@ export function InjectPage() {
         </>
     ), [loadingTargets, refreshTargets, runSync, running, syncDisabled])
     const headerConfig = useMemo(() => ({
-        title: 'Sync to targets',
-        subtitle: workingDir || 'No workspace selected',
         actions: headerActions,
-    }), [headerActions, workingDir])
+        hideContext: true,
+    }), [headerActions])
 
     useAppHeader(headerConfig)
 
     return (
-        <main className="target-inject-page">
+        <main className="target-manage-page">
             {error ? (
-                <div className="alert alert--danger target-inject-page__alert" role="alert">
+                <div className="alert alert--danger target-manage-page__alert" role="alert">
                     {error}
                 </div>
             ) : null}
 
-            {!targetsReady && targetsResponse ? (
-                <div className="alert alert--muted target-inject-page__alert">
-                    Current target selection cannot receive the selected Studio unit.
-                </div>
-            ) : null}
-
-            <div className="target-inject-layout">
-                <InjectSourceColumn controller={controller} />
-                <InjectTargetsColumn controller={controller} />
+            <div className="target-manage-layout">
+                <TargetManageSourceColumn controller={controller} />
+                <TargetManageTargetsColumn controller={controller} />
             </div>
         </main>
     )

@@ -188,7 +188,7 @@ describe('team chat panel helpers', () => {
         })).toMatchObject({
             composerDisabled: true,
             sendDisabled: true,
-            inputPlaceholder: 'Add agents first...',
+            inputPlaceholder: 'Add Studio Agents first...',
         })
 
         expect(buildTeamChatComposerState({

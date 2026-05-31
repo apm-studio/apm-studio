@@ -20,7 +20,7 @@ import {
 import { loadStudioFallbackSyncPackage } from './studio-fallback-package.js'
 
 function injectCommand(packageId: string, target: ApmSyncTargetId) {
-    return `apm-studio inject ${packageId} --target ${target}`
+    return `apm-studio manage ${packageId} --target ${target}`
 }
 
 function skippedFallbackResult(input: {
@@ -44,6 +44,18 @@ function skippedFallbackResult(input: {
 }
 
 function fallbackProjectionParts(target: ApmSyncTargetId, syncUnit: ApmSyncUnit): StudioFallbackProjectionParts {
+    if (
+        syncUnit === 'instructions'
+        || syncUnit === 'prompts'
+        || syncUnit === 'commands'
+        || syncUnit === 'hooks'
+        || syncUnit === 'mcp'
+    ) {
+        return {
+            includeAgent: false,
+            includeSkills: false,
+        }
+    }
     return {
         includeAgent: syncUnit !== 'skills' && target !== 'agent-skills',
         includeSkills: syncUnit !== 'agents',
@@ -52,14 +64,21 @@ function fallbackProjectionParts(target: ApmSyncTargetId, syncUnit: ApmSyncUnit)
 
 function unsupportedPrimitiveWarnings(
     target: ApmSyncTargetId,
+    syncUnit: ApmSyncUnit,
     parts: StudioFallbackProjectionParts,
 ) {
     const targetProfile = syncTargetProfile(target)
+    if (syncUnit === 'studio-agent' && !targetSupportsSyncUnit(target, 'studio-agent')) {
+        return [`${targetProfile.label} does not support Studio Agent export.`]
+    }
     if (parts.includeAgent && !targetSupportsSyncUnit(target, 'agents')) {
         return [`${targetProfile.label} does not support APM agent primitives.`]
     }
     if (parts.includeSkills && !targetSupportsSyncUnit(target, 'skills')) {
         return [`${targetProfile.label} does not support APM skill primitives.`]
+    }
+    if (!parts.includeAgent && !parts.includeSkills) {
+        return [`Studio fallback does not sync ${syncUnit} yet.`]
     }
     return null
 }
@@ -70,7 +89,7 @@ function fallbackWarnings(input: {
 }) {
     const warnings: string[] = []
     if (input.hasModel) {
-        warnings.push('Model selection is Studio Run-only and was omitted from target artifacts.')
+        warnings.push('Model selection is Studio Agent runtime-only and was omitted from target artifacts.')
     }
     if (input.mcpServerCount > 0) {
         warnings.push('MCP server names are preserved in the package; target MCP config writing is deferred until Studio has concrete server configs.')
@@ -82,11 +101,11 @@ export async function syncPackageWithStudioFallback(
     workingDir: string,
     packageId: string,
     target: ApmSyncTargetId,
-    syncUnit: ApmSyncUnit = 'agent-packages',
+    syncUnit: ApmSyncUnit = 'studio-agent',
 ): Promise<ApmSyncPackageResult> {
     const projectedAs = fallbackProjectionLabel(target, syncUnit)
     const parts = fallbackProjectionParts(target, syncUnit)
-    const primitiveWarnings = unsupportedPrimitiveWarnings(target, parts)
+    const primitiveWarnings = unsupportedPrimitiveWarnings(target, syncUnit, parts)
 
     if (primitiveWarnings) {
         return skippedFallbackResult({

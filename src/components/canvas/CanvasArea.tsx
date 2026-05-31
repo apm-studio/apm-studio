@@ -354,14 +354,14 @@ export default function CanvasArea() {
                 {showFullEmptyState ? (
                     <div className="canvas-fullscreen-empty-state">
                         <div className="canvas-fullscreen-empty-state__copy">
-                            Select a Team or Agent from the left sidebar
+                            Select a Team or Studio Agent from the left sidebar
                         </div>
                     </div>
                 ) : null}
                 {showSplitEmptyState ? (
                     <div className="canvas-fullscreen-empty-state">
                         <div className="canvas-fullscreen-empty-state__copy">
-                            Drag a Team or Agent here from the left sidebar
+                            Drag a Team or Studio Agent here from the left sidebar
                         </div>
                     </div>
                 ) : null}

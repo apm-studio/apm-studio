@@ -1,7 +1,7 @@
-import type { WorkspaceMode } from '../store/workspace/types';
+import type { WorkspaceMode } from '../store/workspace/types'
 
-export type AppSidebarMode = 'workspace-primitives' | 'workspace-only';
-export type AppSurfaceMode = 'workspace' | 'import' | 'inject';
+export type AppSidebarMode = 'workspace-primitives' | 'workspace-only'
+export type AppSurfaceMode = 'workspace' | 'import' | 'target-manage'
 
 export type AppShellPolicy = {
     sidebarMode: AppSidebarMode
@@ -11,12 +11,16 @@ export type AppShellPolicy = {
 }
 
 export function getAppShellPolicy(workspaceMode: WorkspaceMode): AppShellPolicy {
-    const isWorkspaceCanvasMode = workspaceMode === 'manage' || workspaceMode === 'run';
+    const isWorkspaceCanvasMode = workspaceMode === 'studio-agent'
 
     return {
         sidebarMode: isWorkspaceCanvasMode ? 'workspace-primitives' : 'workspace-only',
-        sidebarShowsThreads: workspaceMode === 'run',
-        surfaceMode: workspaceMode === 'import' || workspaceMode === 'inject' ? workspaceMode : 'workspace',
+        sidebarShowsThreads: false,
+        surfaceMode: workspaceMode === 'import'
+            ? 'import'
+            : workspaceMode === 'manage'
+                ? 'target-manage'
+                : 'workspace',
         showsWorkspaceTerminal: isWorkspaceCanvasMode,
-    };
+    }
 }

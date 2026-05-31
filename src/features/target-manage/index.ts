@@ -1,0 +1,1 @@
+export { TargetManagePage } from './TargetManagePage'

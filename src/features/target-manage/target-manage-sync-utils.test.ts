@@ -1,15 +1,18 @@
 import { describe, expect, it } from 'vitest'
 import type {
     ApmPackageSummary,
+} from '../../../shared/apm-contracts'
+import type {
     ApmSyncTargetDefinitionSummary,
     ApmSyncTargetSummary,
-} from '../../../shared/apm-contracts'
+} from '../../../shared/apm-sync-contracts'
 import {
     findManagedDefinitionForPackage,
     packageSearchHaystack,
     primitiveSummary,
     targetAvailability,
-} from './inject-sync-utils'
+    targetPackageAvailability,
+} from './target-manage-sync-utils'
 
 function packageSummary(partial: Partial<ApmPackageSummary>): ApmPackageSummary {
     return {
@@ -29,7 +32,7 @@ function targetSummary(partial: Partial<ApmSyncTargetSummary>): ApmSyncTargetSum
         outputHint: '.codex',
         commandPreview: 'apm install <package> --target codex',
         available: true,
-        supportedSyncUnits: ['agent-packages', 'agents', 'skills'],
+        supportedSyncUnits: ['studio-agent', 'agents', 'skills'],
         strategy: 'cli-first',
         currentItems: [],
         definitions: [],
@@ -49,18 +52,18 @@ function definitionSummary(partial: Partial<ApmSyncTargetDefinitionSummary>): Ap
     }
 }
 
-describe('Inject sync utils', () => {
+describe('Target manage sync utils', () => {
     it('summarizes selected primitive counts without empty units', () => {
-        const counts = { agents: 1, instructions: 0, skills: 2, mcp: 0 }
+        const counts = { agents: 1, instructions: 0, skills: 2, prompts: 0, commands: 0, hooks: 0, mcp: 0 }
 
         expect(primitiveSummary(counts)).toBe('1 agent, 2 skills')
         expect(primitiveSummary(counts, 'mcp')).toBe('No MCP')
     })
 
-    it('blocks agent package sync when a target cannot receive every package primitive', () => {
+    it('blocks Studio Agent export when a target cannot receive Studio Agents', () => {
         const target = targetSummary({
             label: 'Gemini',
-            supportedSyncUnits: ['agent-packages', 'skills', 'mcp'],
+            supportedSyncUnits: ['skills', 'mcp'],
         })
         const pkg = packageSummary({
             microsoftApm: {
@@ -75,9 +78,33 @@ describe('Inject sync utils', () => {
             },
         })
 
-        expect(targetAvailability(target, 'agent-packages', [pkg])).toEqual({
+        expect(targetAvailability(target, 'studio-agent', [pkg])).toEqual({
             available: false,
-            reason: 'Gemini cannot receive every primitive in Planner.',
+            reason: 'Gemini does not support Studio Agent export.',
+        })
+    })
+
+    it('blocks package staging when the package lacks the selected primitive unit', () => {
+        const target = targetSummary({
+            supportedSyncUnits: ['skills'],
+        })
+        const pkg = packageSummary({
+            name: 'Planner',
+            microsoftApm: {
+                packageRoot: '/tmp/planner',
+                sourceDir: '/tmp/planner/.apm',
+                installCommand: 'apm install .',
+                validateCommand: 'apm validate .',
+                packCommand: 'apm pack .',
+                primitiveCounts: { agents: 1, instructions: 0, skills: 0 },
+                primitivePaths: [],
+                warnings: [],
+            },
+        })
+
+        expect(targetPackageAvailability(target, 'skills', pkg)).toEqual({
+            available: false,
+            reason: 'Planner does not contain Skills.',
         })
     })
 
@@ -121,6 +148,6 @@ describe('Inject sync utils', () => {
             },
         })
 
-        expect(packageSearchHaystack(pkg)).toContain('1 agents 2 instructions 3 skills 0 mcp')
+        expect(packageSearchHaystack(pkg)).toContain('1 agents 2 instructions 3 skills 0 prompts 0 commands 0 hooks 0 mcp')
     })
 })

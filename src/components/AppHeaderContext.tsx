@@ -5,6 +5,7 @@ export type AppHeaderConfig = {
     title?: ReactNode
     subtitle?: ReactNode
     actions?: ReactNode
+    hideContext?: boolean
 }
 
 export type AppHeaderSetter = Dispatch<SetStateAction<AppHeaderConfig | null>>

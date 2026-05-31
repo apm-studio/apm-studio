@@ -57,7 +57,7 @@ export function evaluateTeamReadiness(
             issues.push({
                 code: 'unresolved-agent',
                 severity: 'error',
-                message: `Participant "${participantLabel(key)}" has no matching agent on the canvas`,
+                message: `Participant "${participantLabel(key)}" has no matching Studio Agent on the canvas`,
                 focus: { mode: 'participant', participantKey: key },
             })
             continue // skip model check if agent not found
@@ -68,7 +68,7 @@ export function evaluateTeamReadiness(
             issues.push({
                 code: 'no-model-config',
                 severity: 'error',
-                message: `Participant "${participantLabel(key)}" has no model configured`,
+                message: `Participant "${participantLabel(key)}" has no Studio Agent model configured`,
                 focus: { mode: 'participant', participantKey: key },
             })
         }

@@ -40,7 +40,17 @@ export interface ApmAgentExtension {
 export interface ApmManifestExtension {
     schemaVersion: 1
     packageId: string
-    kind: 'agent' | 'team' | 'workspace' | 'skill' | 'instruction' | 'prompt' | 'mcp' | 'package'
+    kind:
+        | 'agent'
+        | 'team'
+        | 'workspace'
+        | 'skill'
+        | 'instruction'
+        | 'prompt'
+        | 'command'
+        | 'hook'
+        | 'mcp'
+        | 'package'
     agent?: ApmAgentExtension
     canvas?: Record<string, unknown>
     workflow?: Record<string, unknown>
@@ -53,7 +63,7 @@ export interface ApmPackageManifest extends Record<string, unknown> {
     author?: string
     license?: string
     target?: string | string[]
-    type?: 'instructions' | 'skill' | 'hybrid' | 'prompts' | string
+    type?: 'instructions' | 'skill' | 'hybrid' | 'prompts' | 'commands' | 'hooks' | string
     includes?: 'auto' | string[]
     dependencies?: {
         apm?: ApmDependency[]
@@ -100,6 +110,12 @@ export interface MicrosoftApmPrimitiveCounts {
     skills: number
     /** Prompt primitives are preserved as package files when imported but are not managed by Studio. */
     prompts?: number
+    /** Command sync uses APM prompt source files (`.apm/prompts/*.prompt.md`) for command-capable targets. */
+    commands?: number
+    /** Hook primitives are preserved and synced CLI-first, but are not managed by Studio. */
+    hooks?: number
+    /** MCP dependency entries live in apm.yml and are synced CLI-first as target MCP config. */
+    mcp?: number
 }
 
 export interface MicrosoftApmPackageSourceSummary {

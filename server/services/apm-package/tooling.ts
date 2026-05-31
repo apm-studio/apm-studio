@@ -123,6 +123,6 @@ export async function getApmToolingStatus(): Promise<ApmToolingStatus> {
             ...(pipx?.available ? ['Install the CLI outside Studio: pipx install apm-cli'] : []),
             'Studio can still fall back for supported agent and skill projections when the CLI path is unavailable.',
         ],
-        deploymentNote: 'APM Studio does not bundle microsoft/apm or require Python at npm install time; Inject prefers the external APM CLI and falls back to Studio projections where supported.',
+        deploymentNote: 'APM Studio does not bundle microsoft/apm or require Python at npm install time; target management prefers the external APM CLI and falls back to Studio projections where supported.',
     }
 }

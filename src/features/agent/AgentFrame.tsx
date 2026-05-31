@@ -205,7 +205,7 @@ export default function AgentFrame({ data, id }: AgentFrameProps) {
     }, [])
 
     const handleToggleFocus = useCallback(() => {
-        if (workspaceMode === 'run' && isFullView) return
+        if (workspaceMode === 'studio-agent' && isFullView) return
         if (isFullView) {
             exitFocusMode()
             return
@@ -237,8 +237,8 @@ export default function AgentFrame({ data, id }: AgentFrameProps) {
                 return
             }
             const displayName = primitiveUrnDisplayName(targetRef.urn)
-            showToast(`${displayName} is an imported package reference. Edit package primitives from Manage.`, 'info', {
-                title: 'Open package from Manage',
+            showToast(`${displayName} is an imported package reference. Edit package primitives from Studio Agent.`, 'info', {
+                title: 'Open package from Studio Agent',
                 dedupeKey: `agent-package-ref-open:${id}:${kind}:${targetRef.urn}`,
             })
         } catch (error) {

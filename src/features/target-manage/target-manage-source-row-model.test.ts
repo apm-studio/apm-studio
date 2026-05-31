@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import type { ApmPackageSummary } from '../../../shared/apm-contracts'
-import { buildInjectSourcePackageRowModel } from './inject-source-row-model'
+import {
+    buildTargetManagePackageDragPayload,
+    buildTargetManageSourcePackageRowModel,
+} from './target-manage-source-row-model'
 
 function packageSummary(partial: Partial<ApmPackageSummary> = {}): ApmPackageSummary {
     return {
@@ -22,9 +25,9 @@ function packageSummary(partial: Partial<ApmPackageSummary> = {}): ApmPackageSum
     }
 }
 
-describe('Inject source row model', () => {
-    it('marks selected source packages as ready and includes primitive/model badges', () => {
-        expect(buildInjectSourcePackageRowModel({
+describe('Target manage source row model', () => {
+    it('marks staged source packages as ready and includes primitive/model badges', () => {
+        expect(buildTargetManageSourcePackageRowModel({
             pkg: packageSummary({
                 agentName: 'Planner Agent',
                 description: 'Plans work.',
@@ -35,21 +38,44 @@ describe('Inject source row model', () => {
                     model: true,
                 },
             }),
-            selected: true,
-            syncUnit: 'agent-packages',
+            staged: true,
+            syncUnit: 'studio-agent',
+            targetState: 'unsynced',
         })).toEqual(expect.objectContaining({
-            badges: expect.arrayContaining(['1 agent', '1 skill', 'model: Run only']),
+            badges: expect.arrayContaining(['1 agent', '1 skill', 'model: Studio only']),
             detail: 'Plans work.',
             packageId: 'planner',
             packageName: 'Planner Agent',
-            selected: true,
+            staged: true,
             stateClass: 'is-ready',
-            status: 'Selected',
+            status: 'Staged',
         }))
     })
 
-    it('marks package warnings as check state when the source package is not selected', () => {
-        const row = buildInjectSourcePackageRowModel({
+    it('shows unsynced and synced target states before staging', () => {
+        expect(buildTargetManageSourcePackageRowModel({
+            pkg: packageSummary(),
+            staged: false,
+            syncUnit: 'agents',
+            targetState: 'unsynced',
+        })).toEqual(expect.objectContaining({
+            status: 'Unsynced',
+            stateClass: 'is-unsynced',
+        }))
+
+        expect(buildTargetManageSourcePackageRowModel({
+            pkg: packageSummary(),
+            staged: false,
+            syncUnit: 'agents',
+            targetState: 'synced',
+        })).toEqual(expect.objectContaining({
+            status: 'Synced',
+            stateClass: 'is-ready',
+        }))
+    })
+
+    it('marks package warnings as check state when the source package is not staged', () => {
+        const row = buildTargetManageSourcePackageRowModel({
             pkg: packageSummary({
                 microsoftApm: {
                     packageRoot: '/tmp/planner',
@@ -62,7 +88,7 @@ describe('Inject source row model', () => {
                     warnings: ['Review imported source.'],
                 },
             }),
-            selected: false,
+            staged: false,
             syncUnit: 'agents',
         })
 
@@ -72,7 +98,7 @@ describe('Inject source row model', () => {
     })
 
     it('uses an empty badge when a source package has no selected-unit primitives', () => {
-        const row = buildInjectSourcePackageRowModel({
+        const row = buildTargetManageSourcePackageRowModel({
             pkg: packageSummary({
                 microsoftApm: {
                     packageRoot: '/tmp/planner',
@@ -85,12 +111,24 @@ describe('Inject source row model', () => {
                     warnings: [],
                 },
             }),
-            selected: false,
+            staged: false,
             syncUnit: 'skills',
         })
 
         expect(row.badges).toEqual(['empty'])
         expect(row.status).toBe('No unit')
         expect(row.stateClass).toBe('is-warning')
+    })
+
+    it('includes the selected sync unit in drag payloads', () => {
+        expect(buildTargetManagePackageDragPayload(packageSummary({ agentName: 'Planner Agent' }), 'skills'))
+            .toEqual(expect.objectContaining({
+                kind: 'apm-package',
+                packageId: 'planner',
+                scope: 'workspace',
+                source: 'workspace',
+                syncUnit: 'skills',
+                label: 'Planner Agent',
+            }))
     })
 })

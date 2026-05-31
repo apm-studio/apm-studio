@@ -9,7 +9,6 @@ import type {
 } from '../../../shared/apm-sync-contracts.js'
 import {
     apmPackageHasSyncUnit,
-    apmPackageSyncUnits,
     DEFAULT_APM_SYNC_UNIT,
     normalizeApmSyncUnit,
 } from '../../../shared/apm-sync-contracts.js'
@@ -97,12 +96,11 @@ export function targetSupportsPackage(
     pkg: ApmPackageSummary,
     syncUnit: ApmSyncUnit,
 ) {
-    if (syncUnit !== 'agent-packages') {
+    if (syncUnit !== 'studio-agent') {
         return targetSupportsSyncUnit(target, syncUnit)
     }
-    const primitiveUnits = apmPackageSyncUnits(pkg)
-    return primitiveUnits.length > 0
-        && primitiveUnits.every((unit) => targetSupportsSyncUnit(target, unit))
+    return targetSupportsSyncUnit(target, syncUnit)
+        && apmPackageHasSyncUnit(pkg, syncUnit)
 }
 
 function planPackageTargetJob(
@@ -114,7 +112,7 @@ function planPackageTargetJob(
         return {
             kind: 'skip',
             result: skippedResult(pkg, target, syncUnit, [
-                `Package does not contain ${syncUnit === 'agent-packages' ? 'syncable primitives' : syncUnit}.`,
+                `Package does not contain ${syncUnit === 'studio-agent' ? 'a Studio Agent' : syncUnit}.`,
             ]),
         }
     }

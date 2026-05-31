@@ -118,6 +118,10 @@ describe('apm package storage', () => {
             agents: 1,
             instructions: 1,
             skills: 1,
+            prompts: 0,
+            commands: 0,
+            hooks: 0,
+            mcp: 1,
         })
         expect(pkg?.microsoftApm?.installCommand).toBe('apm install ./packages/agent-1 --target codex')
         expect(pkg?.microsoftApm?.warnings).toEqual([])
@@ -204,6 +208,36 @@ describe('apm package storage', () => {
         expect(packages.map((pkg) => pkg.packageId)).toEqual(['skill-1', 'agent-1'])
         await expect(fs.readFile(path.join(workingDir, '.apm-studio', 'workspace.json'), 'utf-8'))
             .resolves.toContain('"activePackageIds": [\n    "skill-1",\n    "agent-1"\n  ]')
+    })
+
+    it('materializes installed skill package references into saved agent packages', async () => {
+        await writeApmPackage(workingDir, 'skill-pack', {
+            name: 'review-skill-package',
+            version: '1.0.0',
+            type: 'skill',
+            includes: 'auto',
+            skills: [{ path: '.apm/skills/review/SKILL.md' }],
+            'x-apm': {
+                schemaVersion: 1,
+                packageId: 'skill-pack',
+                kind: 'skill',
+            },
+        })
+        const skillDir = path.join(workingDir, 'packages', 'skill-pack', '.apm', 'skills', 'review')
+        await fs.mkdir(skillDir, { recursive: true })
+        await fs.writeFile(path.join(skillDir, 'SKILL.md'), '# Review Skill\n\nCheck tests and edge cases.\n', 'utf-8')
+
+        await writeApmPackagesForWorkspace(workingDir, {
+            workingDir,
+            agents: [agent({
+                skillRefs: [{ kind: 'registry', urn: 'apm-package/workspace/skill-pack' }],
+            })],
+        })
+
+        await expect(fs.readFile(path.join(workingDir, 'packages', 'agent-1', '.apm', 'skills', 'review', 'SKILL.md'), 'utf-8'))
+            .resolves.toContain('Check tests and edge cases.')
+        const pkg = await readApmPackage(workingDir, 'agent-1')
+        expect(pkg?.microsoftApm?.warnings).toEqual([])
     })
 
     it('ignores workspace documents outside the current Studio schema', async () => {

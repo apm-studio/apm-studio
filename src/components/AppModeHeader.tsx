@@ -1,8 +1,7 @@
-import { PackagePlus, Play, Upload, Wrench } from 'lucide-react'
+import { Bot, PackagePlus, SlidersHorizontal } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useStudioStore } from '../store'
 import type { WorkspaceMode } from '../store/workspace/types'
-import { getCanvasViewportSize } from '../lib/focus-utils'
 import StudioViewHeader from './canvas/StudioViewHeader'
 import type { AppHeaderConfig } from './AppHeaderContext'
 import './AppModeHeader.css'
@@ -22,22 +21,16 @@ const APP_MODE_OPTIONS: AppModeOption[] = [
         title: 'Import packages and source primitives from GitHub',
     },
     {
+        mode: 'studio-agent',
+        label: 'Studio Agent',
+        icon: <Bot size={13} />,
+        title: 'Edit and run local Studio Agents',
+    },
+    {
         mode: 'manage',
         label: 'Manage',
-        icon: <Wrench size={13} />,
-        title: 'Edit and manage local APM packages on the canvas',
-    },
-    {
-        mode: 'run',
-        label: 'Run',
-        icon: <Play size={13} />,
-        title: 'Run local agents and teams in Full or Split view',
-    },
-    {
-        mode: 'inject',
-        label: 'Inject',
-        icon: <Upload size={13} />,
-        title: 'Sync local package units into external assistant targets',
+        icon: <SlidersHorizontal size={13} />,
+        title: 'Manage external assistant target sync',
     },
 ]
 
@@ -56,39 +49,19 @@ type AppModeHeaderProps = {
 
 function modeContextLabel(mode: WorkspaceMode) {
     if (mode === 'import') return 'Import packages and source primitives'
-    if (mode === 'inject') return 'Sync assistant targets'
-    if (mode === 'run') return 'Run workspace'
-    return 'Manage workspace'
+    if (mode === 'manage') return 'Manage assistant targets'
+    return 'Studio Agent workspace'
 }
 
 export default function AppModeHeader({ pageHeader }: AppModeHeaderProps) {
     const workspaceMode = useStudioStore((state) => state.workspaceMode)
     const setWorkspaceMode = useStudioStore((state) => state.setWorkspaceMode)
     const workingDir = useStudioStore((state) => state.workingDir)
-    const viewMode = useStudioStore((state) => state.viewMode)
-    const showCanvasChrome = workspaceMode === 'manage' || workspaceMode === 'run'
+    const showCanvasChrome = workspaceMode === 'studio-agent'
+    const shouldRenderPageHeader = !pageHeader?.hideContext || pageHeader?.actions
 
     const selectMode = (mode: WorkspaceMode) => {
         setWorkspaceMode(mode)
-        const state = useStudioStore.getState()
-        if (mode === 'manage') {
-            state.exitFocusMode()
-            return
-        }
-        if (mode !== 'run' || viewMode !== 'canvas') {
-            return
-        }
-
-        const viewportSize = getCanvasViewportSize()
-        if (state.selectedTeamId) {
-            state.enterFocusMode(state.selectedTeamId, 'team', viewportSize)
-            return
-        }
-        if (state.selectedAgentId) {
-            state.enterFocusMode(state.selectedAgentId, 'agent', viewportSize)
-            return
-        }
-        state.enterEmptyFullView()
     }
 
     return (
@@ -119,19 +92,21 @@ export default function AppModeHeader({ pageHeader }: AppModeHeaderProps) {
             </div>
             {showCanvasChrome ? (
                 <StudioViewHeader />
-            ) : (
-                <div className="app-mode-header__page">
-                    <div className="app-mode-header__page-context">
-                        <span className="app-mode-header__page-title">{pageHeader?.title || modeContextLabel(workspaceMode)}</span>
-                        {pageHeader?.subtitle ? (
-                            <span className="app-mode-header__page-subtitle">{pageHeader.subtitle}</span>
-                        ) : null}
-                    </div>
+            ) : shouldRenderPageHeader ? (
+                <div className={`app-mode-header__page ${pageHeader?.hideContext ? 'app-mode-header__page--actions-only' : ''}`}>
+                    {!pageHeader?.hideContext ? (
+                        <div className="app-mode-header__page-context">
+                            <span className="app-mode-header__page-title">{pageHeader?.title || modeContextLabel(workspaceMode)}</span>
+                            {pageHeader?.subtitle ? (
+                                <span className="app-mode-header__page-subtitle">{pageHeader.subtitle}</span>
+                            ) : null}
+                        </div>
+                    ) : null}
                     {pageHeader?.actions ? (
                         <div className="app-mode-header__page-actions">{pageHeader.actions}</div>
                     ) : null}
                 </div>
-            )}
+            ) : null}
         </header>
     )
 }

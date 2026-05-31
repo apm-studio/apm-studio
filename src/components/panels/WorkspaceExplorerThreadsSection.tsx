@@ -169,12 +169,12 @@ export default function WorkspaceExplorerThreadsSection({
 
     return (
         <section className="explorer-section explorer-section--threads" ref={containerRef}>
-            {/* ── Agents Pane ── */}
+            {/* ── Studio Agents Pane ── */}
             <div className="explorer__pane" style={{ flex: agentsFlex }}>
                 <div className="explorer__subheader explorer__subheader--inline">
-                    <span className="explorer__title">Agents</span>
+                    <span className="explorer__title">Studio Agents</span>
                     <div className="explorer__actions">
-                        <button className="icon-btn" onClick={onAddAgent} title="Add agent" disabled={!workspaceId}>
+                        <button className="icon-btn" onClick={onAddAgent} title="Add Studio Agent" disabled={!workspaceId}>
                             <MessageSquare size={12} />
                         </button>
                     </div>

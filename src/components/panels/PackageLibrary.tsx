@@ -21,6 +21,8 @@ export default function PackageLibrary({ onClose }: { onClose?: () => void }) {
             <PackageLibraryLocalView
                 localSection={controller.localSection}
                 setLocalSection={controller.setLocalSection}
+                primitiveSection={controller.primitiveSection}
+                setPrimitiveSection={controller.setPrimitiveSection}
                 sourceFilter={controller.sourceFilter}
                 setSourceFilter={controller.setSourceFilter}
                 modelProviderFilter={controller.modelProviderFilter}

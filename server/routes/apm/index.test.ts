@@ -45,7 +45,7 @@ describe('APM routes', () => {
             headers: { 'content-type': 'application/json' },
             body: JSON.stringify({
                 targets: ['codex'],
-                syncUnit: 'commands',
+                syncUnit: 'unknown',
                 packageIds: ['agent-1'],
             }),
         })

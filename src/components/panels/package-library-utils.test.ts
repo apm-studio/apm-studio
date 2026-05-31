@@ -12,6 +12,7 @@ import {
     classifyModelProvider,
     scoreModel,
     placeholderForLocalSection,
+    placeholderForPrimitiveSection,
     buildDraftPackageCards,
     buildPackagePrimitiveDragPayload,
     resolveSelectedPackagePanelItem,
@@ -191,6 +192,15 @@ describe('placeholderForLocalSection', () => {
 
     it('returns model placeholder for model lists', () => {
         expect(placeholderForLocalSection('models')).toBe('model, provider, capability...')
+    })
+})
+
+describe('placeholderForPrimitiveSection', () => {
+    it('returns Studio Agent component placeholders', () => {
+        expect(placeholderForPrimitiveSection('agents')).toBe('studio agent package, apm.yml path...')
+        expect(placeholderForPrimitiveSection('instructions')).toBe('instruction package, apm.yml path...')
+        expect(placeholderForPrimitiveSection('skills')).toBe('skill package, apm.yml path...')
+        expect(placeholderForPrimitiveSection('mcp')).toBe('mcp server, tool, status...')
     })
 })
 

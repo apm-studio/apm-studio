@@ -1,7 +1,15 @@
 import type { ApmPackageSummary, ApmToolingStatus } from './apm-contracts.js'
 
-export type ApmSyncUnit = 'agent-packages' | 'agents' | 'instructions' | 'skills' | 'mcp'
-export type ApmPrimitiveSyncUnit = Exclude<ApmSyncUnit, 'agent-packages'>
+export type ApmSyncUnit =
+    | 'studio-agent'
+    | 'agents'
+    | 'instructions'
+    | 'skills'
+    | 'prompts'
+    | 'commands'
+    | 'hooks'
+    | 'mcp'
+export type ApmPrimitiveSyncUnit = Exclude<ApmSyncUnit, 'studio-agent'>
 
 export type ApmSyncUnitDefinition = {
     id: ApmSyncUnit
@@ -11,17 +19,17 @@ export type ApmSyncUnitDefinition = {
 
 export type ApmSyncPrimitiveCounts = Record<ApmPrimitiveSyncUnit, number>
 
-export const DEFAULT_APM_SYNC_UNIT: ApmSyncUnit = 'agent-packages'
+export const DEFAULT_APM_SYNC_UNIT: ApmSyncUnit = 'studio-agent'
 
 export const APM_SYNC_UNITS: ApmSyncUnitDefinition[] = [
     {
-        id: 'agent-packages',
-        label: 'Agent Packages',
-        description: 'Sync Studio agent packages as composite APM packages.',
+        id: 'studio-agent',
+        label: 'Studio Agent',
+        description: 'Export a Studio Agent as an agent-scoped composed artifact.',
     },
     {
         id: 'agents',
-        label: 'Agents',
+        label: 'APM Agents',
         description: 'Sync only APM agent primitives.',
     },
     {
@@ -33,6 +41,21 @@ export const APM_SYNC_UNITS: ApmSyncUnitDefinition[] = [
         id: 'skills',
         label: 'Skills',
         description: 'Sync only APM skill primitives.',
+    },
+    {
+        id: 'prompts',
+        label: 'Prompts',
+        description: 'Sync APM prompt primitives to prompt-capable targets.',
+    },
+    {
+        id: 'commands',
+        label: 'Commands',
+        description: 'Sync APM prompt source files as target command primitives.',
+    },
+    {
+        id: 'hooks',
+        label: 'Hooks',
+        description: 'Sync only APM hook primitives.',
     },
     {
         id: 'mcp',
@@ -57,7 +80,10 @@ export function apmPackageSyncPrimitiveCounts(
         agents: counts?.agents || 0,
         instructions: counts?.instructions || 0,
         skills: counts?.skills || 0,
-        mcp: pkg.kind === 'mcp' ? 1 : pkg.agentComponents?.mcp || 0,
+        prompts: counts?.prompts || 0,
+        commands: counts?.commands || 0,
+        hooks: counts?.hooks || 0,
+        mcp: counts?.mcp || (pkg.kind === 'mcp' ? 1 : pkg.agentComponents?.mcp || 0),
     }
 }
 
@@ -69,9 +95,12 @@ export function sumApmPackageSyncPrimitiveCounts(
         total.agents += counts.agents
         total.instructions += counts.instructions
         total.skills += counts.skills
+        total.prompts += counts.prompts
+        total.commands += counts.commands
+        total.hooks += counts.hooks
         total.mcp += counts.mcp
         return total
-    }, { agents: 0, instructions: 0, skills: 0, mcp: 0 })
+    }, { agents: 0, instructions: 0, skills: 0, prompts: 0, commands: 0, hooks: 0, mcp: 0 })
 }
 
 export function apmPackageSyncUnits(
@@ -82,6 +111,9 @@ export function apmPackageSyncUnits(
     if (counts.agents > 0) units.push('agents')
     if (counts.instructions > 0) units.push('instructions')
     if (counts.skills > 0) units.push('skills')
+    if (counts.prompts > 0) units.push('prompts')
+    if (counts.commands > 0) units.push('commands')
+    if (counts.hooks > 0) units.push('hooks')
     if (counts.mcp > 0) units.push('mcp')
     return units
 }
@@ -91,8 +123,8 @@ export function apmPackageHasSyncUnit(
     syncUnit: ApmSyncUnit,
 ) {
     const units = apmPackageSyncUnits(pkg)
-    return syncUnit === 'agent-packages'
-        ? units.length > 0
+    return syncUnit === 'studio-agent'
+        ? units.includes('agents') || pkg.kind === 'agent'
         : units.includes(syncUnit)
 }
 
@@ -108,7 +140,16 @@ export type ApmSyncTargetId =
 
 export type ApmSyncStrategy = 'cli-first'
 
-export type ApmSyncTargetDefinitionKind = 'agent' | 'instruction' | 'skill' | 'mcp' | 'config' | 'unknown'
+export type ApmSyncTargetDefinitionKind =
+    | 'agent'
+    | 'instruction'
+    | 'skill'
+    | 'prompt'
+    | 'command'
+    | 'hook'
+    | 'mcp'
+    | 'config'
+    | 'unknown'
 
 export interface ApmSyncTargetItemSummary {
     packageId: string

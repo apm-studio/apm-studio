@@ -16,7 +16,7 @@ import type {
 } from '../../../shared/workspace-contracts'
 import type { ProjectionDirtyState, RuntimeChangeClass, StudioChangeDescriptor } from '../runtime/change-policy'
 
-export type WorkspaceMode = 'import' | 'manage' | 'run' | 'inject'
+export type WorkspaceMode = 'import' | 'studio-agent' | 'manage'
 export type WorkspaceViewMode = 'canvas' | 'full' | 'split'
 export type FullscreenNodeType = 'agent' | 'team'
 

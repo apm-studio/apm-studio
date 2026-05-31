@@ -16,24 +16,27 @@ import {
 } from '../../../shared/apm-sync-contracts'
 import {
     type TargetSyncChoice,
-} from './inject-sync-utils'
+    targetPackageAvailability,
+    unitLabel,
+} from './target-manage-sync-utils'
 import {
-    buildInjectControllerModel,
-    normalizeInjectPackageSelection,
-    normalizeInjectTargetSelection,
-} from './inject-controller-model'
+    buildTargetManageControllerModel,
+    normalizeTargetManageStagedPackages,
+    normalizeTargetManageTargetSelection,
+} from './target-manage-controller-model'
 
 const EMPTY_APM_PACKAGES: ApmPackageSummary[] = []
 
-export function useInjectController() {
+export function useTargetManageController() {
     const workingDir = useStudioStore((state) => state.workingDir)
     const [targetsResponse, setTargetsResponse] = useState<ApmSyncTargetsResponse | null>(null)
     const [selectedSyncUnit, setSelectedSyncUnit] = useState<ApmSyncUnit>(DEFAULT_APM_SYNC_UNIT)
     const [selectedTargets, setSelectedTargets] = useState<ApmSyncTargetId[]>(['codex'])
-    const [selectedPackageIds, setSelectedPackageIds] = useState<string[]>([])
+    const [stagedPackageIds, setStagedPackageIds] = useState<string[]>([])
     const [loadingTargets, setLoadingTargets] = useState(false)
     const [running, setRunning] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const [targetMessage, setTargetMessage] = useState<string | null>(null)
     const [lastResult, setLastResult] = useState<ApmSyncRunResponse | null>(null)
     const [filter, setFilter] = useState('')
     const [syncChoices, setSyncChoices] = useState<Record<string, TargetSyncChoice>>({})
@@ -49,7 +52,7 @@ export function useInjectController() {
         try {
             setTargetsResponse(await apmApi.listSyncTargets())
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Unable to load inject targets.')
+            setError(err instanceof Error ? err.message : 'Unable to load target definitions.')
         } finally {
             setLoadingTargets(false)
         }
@@ -59,12 +62,12 @@ export function useInjectController() {
         void refreshTargets()
     }, [refreshTargets, workingDir])
 
-    const model = useMemo(() => buildInjectControllerModel({
+    const model = useMemo(() => buildTargetManageControllerModel({
         apmPackages,
         targetsResponse,
         selectedSyncUnit,
         selectedTargets,
-        selectedPackageIds,
+        stagedPackageIds,
         filter,
         syncChoices,
         loadingTargets,
@@ -76,29 +79,30 @@ export function useInjectController() {
         lastResult,
         loadingTargets,
         running,
-        selectedPackageIds,
         selectedSyncUnit,
         selectedTargets,
+        stagedPackageIds,
         syncChoices,
         targetsResponse,
     ])
 
     useEffect(() => {
-        setSelectedPackageIds((current) => {
-            return normalizeInjectPackageSelection(current, model.syncablePackageIds)
+        setStagedPackageIds((current) => {
+            return normalizeTargetManageStagedPackages(current, model.syncablePackageIds)
         })
     }, [model.syncablePackageIds, model.syncablePackageIdsKey])
 
     useEffect(() => {
         setSelectedTargets((current) => {
-            return normalizeInjectTargetSelection(current, model.availableTargetIds)
+            return normalizeTargetManageTargetSelection(current, model.selectableTargetIds)
         })
-    }, [model.availableTargetIds, model.availableTargetIdsKey])
+    }, [model.selectableTargetIds, model.selectableTargetIdsKey])
 
     const runSync = useCallback(async () => {
         if (selectedTargets.length === 0 || model.activePushPackageIds.length === 0) return
         setRunning(true)
         setError(null)
+        setTargetMessage(null)
         setLastResult(null)
         try {
             const response = await apmApi.runTargetSync({
@@ -116,9 +120,14 @@ export function useInjectController() {
     }, [model.activePushPackageIds, refetchPackages, selectedSyncUnit, selectedTargets])
 
     const selectSyncUnit = useCallback((syncUnit: ApmSyncUnit) => {
+        if (syncUnit !== selectedSyncUnit) {
+            setStagedPackageIds([])
+            setSyncChoices({})
+            setTargetMessage(null)
+        }
         setSelectedSyncUnit(syncUnit)
         setLastResult(null)
-    }, [])
+    }, [selectedSyncUnit])
 
     const setPackageSyncChoice = useCallback((packageId: string, choice: TargetSyncChoice) => {
         const activeTargetId = model.activeTarget?.id
@@ -130,26 +139,61 @@ export function useInjectController() {
     }, [model.activeTarget?.id])
 
     const selectTarget = useCallback((targetId: ApmSyncTargetId) => {
-        if (!model.targetStates.get(targetId)?.available) return
+        const target = model.targets.find((candidate) => candidate.id === targetId)
+        if (!target?.available) return
+        if (selectedTargets[0] !== targetId) {
+            setStagedPackageIds([])
+            setSyncChoices({})
+            setTargetMessage(null)
+            setLastResult(null)
+        }
         setSelectedTargets([targetId])
-    }, [model.targetStates])
+    }, [model.targets, selectedTargets])
 
-    const togglePackage = useCallback((packageId: string) => {
-        setSelectedPackageIds((current) => {
-            if (current.includes(packageId)) {
-                return current.filter((id) => id !== packageId)
-            }
-            return [...current, packageId]
-        })
-    }, [])
+    const stagePackageForActiveTarget = useCallback((packageId: string, syncUnit: ApmSyncUnit = selectedSyncUnit) => {
+        const target = model.activeTarget
+        const pkg = apmPackages.find((candidate) => candidate.packageId === packageId)
+        if (!pkg) {
+            setTargetMessage('Package is no longer available in this workspace.')
+            return false
+        }
+        if (!target) {
+            setTargetMessage('Select a target first.')
+            return false
+        }
+        const availability = targetPackageAvailability(target, syncUnit, pkg)
+        if (!availability.available) {
+            setTargetMessage(availability.reason || `${target.label} cannot receive ${unitLabel(syncUnit)}.`)
+            return false
+        }
 
-    const toggleVisiblePackages = useCallback(() => {
-        setSelectedPackageIds((current) => (
-            model.allVisibleSelected
-                ? current.filter((packageId) => !model.visiblePackageIds.includes(packageId))
-                : Array.from(new Set([...current, ...model.visiblePackageIds]))
-        ))
-    }, [model.allVisibleSelected, model.visiblePackageIds])
+        if (syncUnit !== selectedSyncUnit) {
+            setSelectedSyncUnit(syncUnit)
+            setStagedPackageIds([packageId])
+            setSyncChoices({ [`${target.id}:${packageId}`]: 'push' })
+        } else {
+            setStagedPackageIds((current) => (
+                current.includes(packageId) ? current : [...current, packageId]
+            ))
+            setSyncChoices((current) => ({
+                ...current,
+                [`${target.id}:${packageId}`]: 'push',
+            }))
+        }
+        setTargetMessage(`${pkg.agentName || pkg.name} staged for ${target.label}.`)
+        setLastResult(null)
+        return true
+    }, [apmPackages, model.activeTarget, selectedSyncUnit])
+
+    const toggleStagedPackage = useCallback((packageId: string) => {
+        if (stagedPackageIds.includes(packageId)) {
+            setStagedPackageIds((current) => current.filter((id) => id !== packageId))
+            setTargetMessage('Removed from Push queue.')
+            setLastResult(null)
+            return
+        }
+        void stagePackageForActiveTarget(packageId)
+    }, [stagePackageForActiveTarget, stagedPackageIds])
 
     return {
         ...model,
@@ -163,16 +207,17 @@ export function useInjectController() {
         runSync,
         selectSyncUnit,
         selectTarget,
-        selectedPackageIds,
         selectedSyncUnit,
         setFilter,
         setPackageSyncChoice,
+        stagePackageForActiveTarget,
+        stagedPackageIds,
         syncChoices,
+        targetMessage,
         targetsResponse,
-        togglePackage,
-        toggleVisiblePackages,
+        toggleStagedPackage,
         workingDir,
     }
 }
 
-export type InjectControllerState = ReturnType<typeof useInjectController>
+export type TargetManageControllerState = ReturnType<typeof useTargetManageController>

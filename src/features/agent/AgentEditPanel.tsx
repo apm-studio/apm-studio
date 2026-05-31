@@ -168,16 +168,16 @@ export default function AgentEditPanel({
                                 className="text-input nodrag nowheel"
                                 value={agent?.meta?.authoring?.description || ''}
                                 onChange={(event) => onDescriptionChange(event.target.value)}
-                                placeholder="Describe this agent"
+                                placeholder="Describe this Studio Agent"
                             />
                         </label>
                         <label className="adv-field">
-                            <span className="adv-field__label">Agent Body</span>
+                            <span className="adv-field__label">Studio Agent Body</span>
                             <textarea
                                 className="text-input adv-field__textarea nodrag nowheel"
                                 value={agent?.agentBody || ''}
                                 onChange={(event) => onAgentBodyChange(event.target.value)}
-                                placeholder="Write the target-agnostic body for this agent."
+                                placeholder="Write the target-agnostic body for this Studio Agent."
                                 rows={5}
                             />
                         </label>

@@ -1,3 +1,4 @@
+import fs from 'fs/promises'
 import path from 'path'
 import type {
     ApmSyncPackageResult,
@@ -32,6 +33,10 @@ async function runCliFirstSync(
         job.syncUnit,
     )
     try {
+        const targetProfile = syncTargetProfile(job.target)
+        await Promise.all(targetProfile.artifactRoots.map((root) =>
+            fs.mkdir(path.join(tempPackage.workspaceDir, root), { recursive: true }),
+        ))
         const result = await runApmCliInstall(runner, tempPackage.packageRoot, job.target, {
             cwd: tempPackage.workspaceDir,
             env: {
@@ -72,7 +77,13 @@ async function runStudioFallback(
     job: RunnableApmSyncJob,
     reason: string,
 ): Promise<ApmSyncPackageResult> {
-    if (job.syncUnit === 'instructions' || job.syncUnit === 'mcp') {
+    if (
+        job.syncUnit === 'instructions'
+        || job.syncUnit === 'prompts'
+        || job.syncUnit === 'commands'
+        || job.syncUnit === 'hooks'
+        || job.syncUnit === 'mcp'
+    ) {
         return {
             packageId: job.package.packageId,
             name: packageDisplayName(job),
@@ -85,8 +96,8 @@ async function runStudioFallback(
         }
     }
 
-    const fallbackUnit: ApmSyncUnit = job.syncUnit === 'agent-packages'
-        ? 'agent-packages'
+    const fallbackUnit: ApmSyncUnit = job.syncUnit === 'studio-agent'
+        ? 'studio-agent'
         : job.syncUnit
     const result = await syncPackageWithStudioFallback(
         workingDir,

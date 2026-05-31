@@ -27,7 +27,7 @@ function nodeLabel(nodeId: string, nodeType: FullscreenNodeType, teams: Workspac
         return teams.find((team) => team.id === nodeId)?.name || 'Team'
     }
 
-    return agents.find((agent) => agent.id === nodeId)?.name || 'Agent'
+    return agents.find((agent) => agent.id === nodeId)?.name || 'Studio Agent'
 }
 
 function nodeIcon(nodeType: FullscreenNodeType) {

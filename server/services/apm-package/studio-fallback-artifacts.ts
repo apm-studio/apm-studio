@@ -155,8 +155,17 @@ export function fallbackProjectionLabel(target: ApmSyncTargetId, syncUnit: ApmSy
     if (target === 'agent-skills') {
         return 'Agent skills'
     }
+    if (syncUnit === 'studio-agent' && target === 'codex') {
+        return 'Codex subagent'
+    }
+    if (syncUnit === 'studio-agent') {
+        return `${profile.label} Studio Agent`
+    }
     if (syncUnit === 'skills') {
         return `${profile.label} skills`
+    }
+    if (syncUnit === 'instructions' || syncUnit === 'prompts' || syncUnit === 'commands' || syncUnit === 'hooks' || syncUnit === 'mcp') {
+        return `${profile.label} ${syncUnit}`
     }
     if (target === 'codex') {
         return 'Codex subagent'

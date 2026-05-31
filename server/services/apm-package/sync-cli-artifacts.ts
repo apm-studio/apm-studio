@@ -3,7 +3,7 @@ import path from 'path'
 import type {
     ApmSyncTargetId,
     ApmSyncUnit,
-} from '../../../shared/apm-contracts.js'
+} from '../../../shared/apm-sync-contracts.js'
 import { toPosixPath } from './paths.js'
 import {
     readSyncOwnershipManifest,

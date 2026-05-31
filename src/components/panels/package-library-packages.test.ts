@@ -3,6 +3,7 @@ import {
     apmPackagePrimitiveSummary,
     apmPackageTitle,
     filterApmPackages,
+    packageMatchesPrimitiveSection,
     scopeApmPackages,
 } from './package-library-packages'
 import { buildApmPackageDragPayload } from './package-library-utils'
@@ -33,6 +34,16 @@ const userPackage: ApmPackageSummary = {
     name: 'planning-skill',
     kind: 'skill',
     source: 'apm',
+    microsoftApm: {
+        packageRoot: 'packages/skill-plan',
+        sourceDir: 'packages/skill-plan/.apm',
+        installCommand: 'apm install ./packages/skill-plan',
+        validateCommand: 'apm validate packages/skill-plan',
+        packCommand: 'apm pack packages/skill-plan',
+        primitiveCounts: { agents: 0, instructions: 0, skills: 1 },
+        primitivePaths: [],
+        warnings: [],
+    },
 }
 
 describe('package-library-packages', () => {
@@ -56,7 +67,16 @@ describe('package-library-packages', () => {
         const [pkg] = scopeApmPackages([workspacePackage], [])
 
         expect(apmPackageTitle(pkg)).toBe('Reviewer')
-        expect(apmPackagePrimitiveSummary(pkg)).toBe('1 agent · 2 skills')
+        expect(apmPackagePrimitiveSummary(pkg)).toBe('1 APM agent · 2 skills')
+    })
+
+    it('matches package cards to Studio Agent primitive sections', () => {
+        const [agentPackage, skillPackage] = scopeApmPackages([workspacePackage], [userPackage])
+
+        expect(packageMatchesPrimitiveSection(agentPackage, 'agents')).toBe(true)
+        expect(packageMatchesPrimitiveSection(agentPackage, 'skills')).toBe(false)
+        expect(packageMatchesPrimitiveSection(skillPackage, 'skills')).toBe(true)
+        expect(packageMatchesPrimitiveSection(skillPackage, 'agents')).toBe(false)
     })
 
     it('builds draggable package payloads with scope and primitive metadata', () => {

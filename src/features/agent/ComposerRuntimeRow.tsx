@@ -55,7 +55,7 @@ export default function ComposerRuntimeRow({
                 onChange={(value) => onSetModelVariant(agentId, value)}
                 className="chat-input__variant"
                 compact
-                titlePrefix="Agent variant"
+                titlePrefix="Studio Agent variant"
                 popoverPlacement="top"
             />
         </div>

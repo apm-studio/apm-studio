@@ -149,13 +149,13 @@ export function buildTeamChatComposerState(params: {
 
     let inputPlaceholder = `Message ${activeParticipantLabel ?? activeParticipantKey ?? 'participant'}...`
     if (noParticipants) {
-        inputPlaceholder = 'Add agents first...'
+        inputPlaceholder = 'Add Studio Agents first...'
     } else if (!readinessRunnable) {
         inputPlaceholder = 'Resolve readiness issues first...'
     } else if (!hasCurrentThread) {
         inputPlaceholder = 'Create a thread to start...'
     } else if (!modelConfigured) {
-        inputPlaceholder = 'Configure a model for this agent...'
+        inputPlaceholder = 'Configure a model for this Studio Agent...'
     }
 
     return {

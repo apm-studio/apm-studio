@@ -158,7 +158,7 @@ export function AgentModelDetail({
                             model={agent.model}
                             value={agent.modelVariant || null}
                             onChange={onModelVariantChange}
-                            titlePrefix="Agent variant"
+                            titlePrefix="Studio Agent variant"
                         />
                     </div>
                 </div>

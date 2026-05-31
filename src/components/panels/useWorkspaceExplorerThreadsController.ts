@@ -400,7 +400,7 @@ export function useWorkspaceExplorerThreadsController({
         onOpenAgent: openAgent,
         onOpenAgentSession: openAgentSession,
         onDeleteSession: deleteSession,
-        onAddAgent: () => addAgent(`Agent ${sharedAgents.length + 1}`),
+        onAddAgent: () => addAgent(`Studio Agent ${sharedAgents.length + 1}`),
         onAddTeam: () => useStudioStore.getState().addTeam(`Team ${teams.length + 1}`),
         onToggleAgentVisibility: toggleAgentVisibility,
         onOpenAgentEditor: openAgentEditor,

@@ -44,7 +44,9 @@ describe('APM sync unit helpers', () => {
                     agents: 1,
                     instructions: 1,
                     skills: 2,
-                    prompts: 0,
+                    prompts: 1,
+                    commands: 1,
+                    hooks: 1,
                 },
             }),
         })
@@ -53,10 +55,13 @@ describe('APM sync unit helpers', () => {
             agents: 1,
             instructions: 1,
             skills: 2,
+            prompts: 1,
+            commands: 1,
+            hooks: 1,
             mcp: 0,
         })
-        expect(apmPackageSyncUnits(pkg)).toEqual(['agents', 'instructions', 'skills'])
-        expect(apmPackageHasSyncUnit(pkg, 'agent-packages')).toBe(true)
+        expect(apmPackageSyncUnits(pkg)).toEqual(['agents', 'instructions', 'skills', 'prompts', 'commands', 'hooks'])
+        expect(apmPackageHasSyncUnit(pkg, 'studio-agent')).toBe(true)
         expect(apmPackageHasSyncUnit(pkg, 'mcp')).toBe(false)
     })
 
@@ -90,9 +95,13 @@ describe('APM sync unit helpers', () => {
             agents: 1,
             instructions: 0,
             skills: 1,
+            prompts: 0,
+            commands: 0,
+            hooks: 0,
             mcp: 1,
         })
         expect(normalizeApmSyncUnit('skills')).toBe('skills')
+        expect(normalizeApmSyncUnit('commands')).toBe('commands')
         expect(normalizeApmSyncUnit('unknown')).toBeNull()
     })
 })

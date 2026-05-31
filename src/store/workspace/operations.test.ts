@@ -35,7 +35,7 @@ function createWorkspaceState(): StudioState {
         selectedAgentId: null,
         selectedAgentSessionId: null,
         selectedMarkdownEditorId: null,
-        workspaceMode: 'inject',
+        workspaceMode: 'manage',
         focusSnapshot: null,
         canvasRevealTarget: null,
         inspectorFocus: null,
@@ -108,7 +108,7 @@ describe('workspace operations', () => {
         expect(harness.read().workingDir).toBe('/tmp/new-workspace')
         expect(harness.read().canvasTerminals).toEqual([])
         expect(harness.read().isTrackingOpen).toBe(false)
-        expect(harness.read().workspaceMode).toBe('inject')
+        expect(harness.read().workspaceMode).toBe('manage')
         expect(harness.read().workspaceDirty).toBe(true)
     })
 
@@ -181,6 +181,6 @@ describe('workspace operations', () => {
         expect(harness.read().assistantModel).toEqual({ provider: 'openai', modelId: 'gpt-5.4' })
         expect(harness.read().appliedAssistantActionMessageIds).toEqual({ 'msg-2': true })
         expect(harness.read().assistantActionResults).toEqual({ 'msg-2': { applied: 2, failed: 0 } })
-        expect(harness.read().workspaceMode).toBe('inject')
+        expect(harness.read().workspaceMode).toBe('manage')
     })
 })

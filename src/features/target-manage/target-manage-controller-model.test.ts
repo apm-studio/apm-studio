@@ -1,16 +1,18 @@
 import { describe, expect, it } from 'vitest'
 import type {
     ApmPackageSummary,
+} from '../../../shared/apm-contracts'
+import type {
     ApmSyncRunResponse,
     ApmSyncTargetDefinitionSummary,
     ApmSyncTargetSummary,
     ApmSyncTargetsResponse,
-} from '../../../shared/apm-contracts'
+} from '../../../shared/apm-sync-contracts'
 import {
-    buildInjectControllerModel,
-    normalizeInjectPackageSelection,
-    normalizeInjectTargetSelection,
-} from './inject-controller-model'
+    buildTargetManageControllerModel,
+    normalizeTargetManageStagedPackages,
+    normalizeTargetManageTargetSelection,
+} from './target-manage-controller-model'
 
 function packageSummary(partial: Partial<ApmPackageSummary>): ApmPackageSummary {
     return {
@@ -53,7 +55,7 @@ function targetSummary(partial: Partial<ApmSyncTargetSummary>): ApmSyncTargetSum
         outputHint: '.codex',
         commandPreview: 'apm install <package> --target codex',
         available: true,
-        supportedSyncUnits: ['agent-packages', 'agents', 'skills'],
+        supportedSyncUnits: ['studio-agent', 'agents', 'skills'],
         strategy: 'cli-first',
         currentItems: [],
         definitions: [],
@@ -85,13 +87,13 @@ function syncResult(rows: ApmSyncRunResponse['results']): ApmSyncRunResponse {
     }
 }
 
-describe('Inject controller model', () => {
-    it('normalizes package and target selection against available model ids', () => {
-        expect(normalizeInjectPackageSelection([], ['a', 'b'])).toEqual(['a', 'b'])
-        expect(normalizeInjectPackageSelection(['a', 'stale'], ['a', 'b'])).toEqual(['a'])
-        expect(normalizeInjectPackageSelection(['stale'], ['a', 'b'])).toEqual(['a', 'b'])
-        expect(normalizeInjectTargetSelection(['gemini', 'codex'], ['codex'])).toEqual(['codex'])
-        expect(normalizeInjectTargetSelection(['gemini'], [])).toEqual([])
+describe('Target manage controller model', () => {
+    it('normalizes staged package and target selection against available model ids', () => {
+        expect(normalizeTargetManageStagedPackages([], ['a', 'b'])).toEqual([])
+        expect(normalizeTargetManageStagedPackages(['a', 'stale'], ['a', 'b'])).toEqual(['a'])
+        expect(normalizeTargetManageStagedPackages(['stale'], ['a', 'b'])).toEqual([])
+        expect(normalizeTargetManageTargetSelection(['gemini', 'codex'], ['codex'])).toEqual(['codex'])
+        expect(normalizeTargetManageTargetSelection(['gemini'], [])).toEqual([])
     })
 
     it('builds the active target comparison model from Studio packages, target definitions, and last sync results', () => {
@@ -117,7 +119,7 @@ describe('Inject controller model', () => {
             path: '.codex/agents/manual-agent.toml',
         })
 
-        const model = buildInjectControllerModel({
+        const model = buildTargetManageControllerModel({
             apmPackages: [pkg],
             targetsResponse: targetsResponse([
                 targetSummary({
@@ -134,7 +136,7 @@ describe('Inject controller model', () => {
             ]),
             selectedSyncUnit: 'agents',
             selectedTargets: ['codex'],
-            selectedPackageIds: ['planner'],
+            stagedPackageIds: ['planner'],
             filter: '',
             syncChoices: {},
             loadingTargets: false,
@@ -156,20 +158,66 @@ describe('Inject controller model', () => {
         expect(model.targetOnlyDefinitions.map((definition) => definition.id)).toEqual(['target-only'])
         expect(model.activeTargetCurrentByPackage.get('planner')?.artifactCount).toBe(1)
         expect(model.activeTargetResultByPackage.get('planner')?.status).toBe('synced')
+        expect(model.activeTargetPackageSyncStateByPackage.get('planner')).toBe('synced')
+        expect(model.unsyncedPackageIds).toEqual([])
         expect(model.activeTargetPlanSteps).toEqual(expect.arrayContaining([
-            'Build a temp package from Agents.',
-            'Keep model settings inside Studio Run.',
+            'Build a temp package from APM Agents.',
+            'Keep model settings inside Studio Agent runtime.',
         ]))
         expect(model.syncDisabled).toBe(false)
     })
 
+    it('marks local packages without target ownership as unsynced and excludes managed local definitions from target-only rows', () => {
+        const syncedPkg = packageSummary({
+            packageId: 'synced',
+            name: 'Synced',
+        })
+        const unsyncedPkg = packageSummary({
+            packageId: 'unsynced',
+            name: 'Unsynced',
+        })
+
+        const model = buildTargetManageControllerModel({
+            apmPackages: [syncedPkg, unsyncedPkg],
+            targetsResponse: targetsResponse([
+                targetSummary({
+                    definitions: [
+                        definitionSummary({
+                            id: 'managed-synced',
+                            managed: true,
+                            managedPackageId: 'synced',
+                        }),
+                        definitionSummary({
+                            id: 'manual-target-only',
+                            managed: false,
+                            name: 'manual-target-only',
+                        }),
+                    ],
+                }),
+            ]),
+            selectedSyncUnit: 'agents',
+            selectedTargets: ['codex'],
+            stagedPackageIds: [],
+            filter: '',
+            syncChoices: {},
+            loadingTargets: false,
+            running: false,
+            lastResult: null,
+        })
+
+        expect(model.activeTargetPackageSyncStateByPackage.get('synced')).toBe('synced')
+        expect(model.activeTargetPackageSyncStateByPackage.get('unsynced')).toBe('unsynced')
+        expect(model.unsyncedPackageIds).toEqual(['unsynced'])
+        expect(model.targetOnlyDefinitions.map((definition) => definition.id)).toEqual(['manual-target-only'])
+    })
+
     it('disables sync when every active source item is marked skip', () => {
-        const model = buildInjectControllerModel({
+        const model = buildTargetManageControllerModel({
             apmPackages: [packageSummary({ packageId: 'planner' })],
             targetsResponse: targetsResponse([targetSummary({})]),
             selectedSyncUnit: 'agents',
             selectedTargets: ['codex'],
-            selectedPackageIds: ['planner'],
+            stagedPackageIds: ['planner'],
             filter: '',
             syncChoices: {
                 'codex:planner': 'skip',
@@ -179,6 +227,52 @@ describe('Inject controller model', () => {
             lastResult: null,
         })
 
+        expect(model.activePushPackageIds).toEqual([])
+        expect(model.syncDisabled).toBe(true)
+    })
+
+    it('keeps unsupported but installed targets selectable while blocking sync', () => {
+        const model = buildTargetManageControllerModel({
+            apmPackages: [packageSummary({ packageId: 'planner' })],
+            targetsResponse: targetsResponse([
+                targetSummary({
+                    id: 'gemini',
+                    label: 'Gemini',
+                    supportedSyncUnits: ['skills'],
+                }),
+            ]),
+            selectedSyncUnit: 'studio-agent',
+            selectedTargets: ['gemini'],
+            stagedPackageIds: ['planner'],
+            filter: '',
+            syncChoices: {},
+            loadingTargets: false,
+            running: false,
+            lastResult: null,
+        })
+
+        expect(model.activeTarget?.id).toBe('gemini')
+        expect(model.selectableTargetIds).toEqual(['gemini'])
+        expect(model.availableTargetIds).toEqual([])
+        expect(model.syncDisabled).toBe(true)
+        expect(model.activeTargetAvailability?.reason).toBe('Gemini does not support Studio Agent export.')
+    })
+
+    it('keeps sync disabled until packages are staged', () => {
+        const model = buildTargetManageControllerModel({
+            apmPackages: [packageSummary({ packageId: 'planner' })],
+            targetsResponse: targetsResponse([targetSummary({})]),
+            selectedSyncUnit: 'agents',
+            selectedTargets: ['codex'],
+            stagedPackageIds: [],
+            filter: '',
+            syncChoices: {},
+            loadingTargets: false,
+            running: false,
+            lastResult: null,
+        })
+
+        expect(model.stagedPackages).toEqual([])
         expect(model.activePushPackageIds).toEqual([])
         expect(model.syncDisabled).toBe(true)
     })

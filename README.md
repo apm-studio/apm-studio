@@ -1,6 +1,6 @@
 # APM Studio
 
-**Package agents, instructions, MCP, skills, and Studio-run models once, then inject them into Codex, Claude, OpenCode, and local assistant workflows.**
+**Package Studio Agents, instructions, MCP, skills, and Studio runtime models once, then manage target sync for Codex, Claude, and APM-compatible assistant files.**
 
 [![npm version](https://img.shields.io/npm/v/apm-studio?style=flat-square)](https://www.npmjs.com/package/apm-studio)
 ![Node.js >=20.19.0](https://img.shields.io/badge/Node.js-%3E%3D20.19.0-3c873a?style=flat-square)
@@ -10,7 +10,7 @@
 
 ![APM Studio canvas](.github/screenshot.png)
 
-APM Studio is a local workspace for importing, managing, running, and injecting reusable coding-agent packages. It gives you a visual canvas for composing instructions, skills, MCP requirements, Studio Run model settings, and multi-agent workflows, then projects agent packages into the assistant runtime you choose.
+APM Studio is a local workspace for importing reusable coding-agent packages, editing/running Studio Agents, and managing external assistant target sync. It gives you a visual canvas for composing instructions, skills, MCP requirements, Studio Agent model settings, and multi-agent workflows, then projects selected units into the assistant target you choose.
 
 The core idea is simple: build an APM-style agent package, keep it versionable and inspectable, and sync it into the coding assistants you already use.
 
@@ -36,16 +36,16 @@ npm run dev
 
 ## Why APM Studio
 
-AI coding assistants are powerful, but their reusable behavior often ends up scattered across prompts, skill folders, project docs, model settings, and app-specific config. APM Studio turns those pieces into APM-backed packages you can import, manage, run, and inject into target assistants.
+AI coding assistants are powerful, but their reusable behavior often ends up scattered across prompts, skill folders, project docs, model settings, and app-specific config. APM Studio turns those pieces into APM-backed packages you can import, edit/run as Studio Agents, and sync into target assistants.
 
 | Capability | What it gives you |
 | --- | --- |
-| Agent packages | Compose instructions, skills, MCP requirements, and Studio-run model settings as reusable packages. |
+| Studio Agents | Compose instructions, skills, MCP requirements, and Studio runtime model settings as reusable agents. |
 | Visual editing | Arrange agents and team workflows on a local canvas. |
-| Inject | Sync Studio agent packages and APM primitives to external coding assistants through a CLI-first target pipeline with Studio fallback where supported. |
+| Manage targets | Export Studio Agents or sync APM primitives to external coding assistants through a CLI-first target pipeline with Studio fallback where supported. |
 | Runtime chat | Test standalone agents and multi-agent workflows through the local runtime. |
 | APM-first state | Keep canonical package state in `packages/<packageId>/apm.yml` plus the package `.apm/` source tree while `.apm-studio/` stores Studio UI metadata, drafts, and cache. |
-| Import, Manage, Run, Inject | Import source-reference presets, manage packages locally, run agents/teams in Studio, then sync selected package units to assistant apps. |
+| Import, Studio Agent, Manage | Import source-reference presets, edit and run agents/teams in Studio, then manage selected target sync. |
 | GitHub-backed registry | Preview and import community repos as APM packages without copying package content into the registry. |
 
 ## Concepts
@@ -54,13 +54,13 @@ AI coding assistants are powerful, but their reusable behavior often ends up sca
 | --- | --- |
 | Instruction | The always-on instruction layer for an agent. |
 | Skill | A reusable capability bundle, usually backed by `SKILL.md`. |
-| Agent Package | A runnable agent built from instruction, MCP, skills, and a Studio-only model setting. |
+| Studio Agent | A runnable agent built from instruction, MCP, skills, and a Studio-only model setting. |
 | Team Workflow | A multi-agent workflow with participants, relationships, and collaboration rules. |
-| Inject | A management mode for syncing agent packages, agents, instructions, skills, and MCP configuration to external assistant apps. |
+| Manage | A target-sync mode for exporting Studio Agents and syncing APM agents, instructions, skills, and MCP configuration to external assistant apps. |
 
 ```text
-Instruction + MCP + Skills + Studio Run model = Agent Package
-Agent Packages + rules = Team Workflow
+Instruction + MCP + Skills + Studio runtime model = Studio Agent
+Studio Agents + rules = Team Workflow
 GitHub repo -> APM Studio -> APM CLI-first target sync -> assistant app
 ```
 

@@ -15,8 +15,10 @@ export type PackagePrimitiveKind = 'agent' | 'instruction' | 'skill' | 'team'
 export type PrimitiveKind = PackagePrimitiveKind | 'mcp'
 export type SourceFilter = 'all' | 'user' | 'workspace'
 export type LocalSection = 'packages' | 'mcp' | 'models'
+export type PackagePrimitiveSection = 'agents' | 'instructions' | 'skills' | 'mcp'
 
 export const PACKAGE_PRIMITIVE_KIND_ORDER: PackagePrimitiveKind[] = ['agent', 'instruction', 'skill', 'team']
+export const PACKAGE_PRIMITIVE_SECTIONS: PackagePrimitiveSection[] = ['agents', 'instructions', 'skills', 'mcp']
 
 export function displayUrn(urn: string) {
     return primitiveUrnDisplayName(urn)
@@ -122,6 +124,7 @@ export {
     buildModelHaystack,
     buildMcpHaystack,
     placeholderForLocalSection,
+    placeholderForPrimitiveSection,
 } from './package-library-search'
 
 export {

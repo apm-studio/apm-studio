@@ -42,7 +42,7 @@ Use this skill for navigation, feature-discovery, and product-usage questions.
 - Models and MCPs: `Packages -> Local -> Models` and `Packages -> Local -> MCP`.
 - Import search: `Import`.
 - GitHub Skill import: `Import -> Import as Skill`.
-- Skill target sync: save the Skill as an APM package, then use `Inject`.
+- Skill target sync: save the Skill as an APM package, then use `Manage`.
 
 ## Packages Notes
 - Local scope has `Packages`, `MCP`, and `Models`.

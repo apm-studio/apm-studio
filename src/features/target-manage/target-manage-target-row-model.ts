@@ -1,44 +1,46 @@
 import type {
     ApmPackageSummary,
+} from '../../../shared/apm-contracts'
+import type {
     ApmSyncPackageResult,
     ApmSyncTargetDefinitionSummary,
     ApmSyncTargetItemSummary,
     ApmSyncTargetSummary,
     ApmSyncUnit,
-} from '../../../shared/apm-contracts'
+} from '../../../shared/apm-sync-contracts'
 import {
     apmPackageSyncPrimitiveCounts,
-} from '../../../shared/apm-contracts'
+} from '../../../shared/apm-sync-contracts'
 import {
     primitiveCountParts,
     targetPackageAvailability,
     type TargetSyncChoice,
     unitLabel,
-} from './inject-sync-utils'
+} from './target-manage-sync-utils'
 
-export type InjectTargetStateClass = 'is-ready' | 'is-warning'
+export type TargetManageTargetStateClass = 'is-ready' | 'is-warning'
 
-export interface InjectTargetPackageRowModel {
+export interface TargetManageTargetPackageRowModel {
     availability: ReturnType<typeof targetPackageAvailability>
     badges: string[]
     detail: string
     packageId: string
     packageName: string
-    stateClass: InjectTargetStateClass
+    stateClass: TargetManageTargetStateClass
     status: string
     syncChoice: TargetSyncChoice
 }
 
-export interface InjectTargetOnlyDefinitionRowModel {
+export interface TargetManageTargetOnlyDefinitionRowModel {
     badges: string[]
     detail: string
     id: string
     name: string
-    stateClass: InjectTargetStateClass
+    stateClass: TargetManageTargetStateClass
     status: string
 }
 
-export function buildInjectTargetPackageRowModel(input: {
+export function buildTargetManageTargetPackageRowModel(input: {
     currentItem?: ApmSyncTargetItemSummary
     definition?: ApmSyncTargetDefinitionSummary
     pkg: ApmPackageSummary
@@ -46,7 +48,7 @@ export function buildInjectTargetPackageRowModel(input: {
     syncChoice: TargetSyncChoice
     syncUnit: ApmSyncUnit
     target: ApmSyncTargetSummary
-}): InjectTargetPackageRowModel {
+}): TargetManageTargetPackageRowModel {
     const {
         currentItem,
         definition,
@@ -59,7 +61,7 @@ export function buildInjectTargetPackageRowModel(input: {
     const counts = apmPackageSyncPrimitiveCounts(pkg)
     const parts = primitiveCountParts(counts)
     const availability = targetPackageAvailability(target, syncUnit, pkg)
-    const status = result?.status || (definition ? 'Matched' : currentItem ? 'Current' : availability.available ? 'New' : 'Blocked')
+    const status = result?.status || (syncChoice === 'skip' ? 'Skip' : availability.available ? 'Push' : 'Blocked')
     const stateClass = result?.status === 'failed' || result?.status === 'skipped' || !availability.available
         ? 'is-warning'
         : 'is-ready'
@@ -73,10 +75,11 @@ export function buildInjectTargetPackageRowModel(input: {
     const badges = [
         ...(parts.length > 0 ? parts : ['empty']),
         definition?.kind,
-        definition?.managed ? 'managed' : null,
+        definition?.managed ? 'Managed' : null,
+        currentItem ? 'Current' : null,
         result?.projectedAs,
-        currentItem ? `${currentItem.artifactCount} current` : null,
-        result?.modelOmitted || pkg.agentComponents?.model ? 'model: Run only' : null,
+        currentItem ? `${currentItem.artifactCount} artifact${currentItem.artifactCount === 1 ? '' : 's'}` : null,
+        result?.modelOmitted || pkg.agentComponents?.model ? 'model: Studio only' : null,
     ].filter((badge): badge is string => Boolean(badge))
 
     return {
@@ -91,14 +94,15 @@ export function buildInjectTargetPackageRowModel(input: {
     }
 }
 
-export function buildInjectTargetOnlyDefinitionRowModel(
+export function buildTargetManageTargetOnlyDefinitionRowModel(
     definition: ApmSyncTargetDefinitionSummary,
-): InjectTargetOnlyDefinitionRowModel {
+): TargetManageTargetOnlyDefinitionRowModel {
     return {
         badges: [
+            'Target only',
             definition.kind,
             definition.syncUnit ? unitLabel(definition.syncUnit) : null,
-            definition.managed ? 'managed' : null,
+            definition.managed ? 'Managed' : null,
         ].filter((badge): badge is string => Boolean(badge)),
         detail: definition.path,
         id: definition.id,

@@ -69,7 +69,7 @@ export default function AgentFrameHeaderActions({
                 <button
                     className="icon-btn agent-frame__header-action"
                     onClick={(event) => stopAndRun(event, onOpenEditor)}
-                    title="Edit agent"
+                    title="Edit Studio Agent"
                 >
                     <Pencil size={11} />
                 </button>

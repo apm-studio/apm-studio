@@ -114,7 +114,7 @@ describe('evaluateTeamReadiness', () => {
         expect(result.runnable).toBe(false)
         const issue = result.issues.find((i) => i.code === 'no-model-config')
         expect(issue).toBeDefined()
-        expect(issue?.message).toBe('Participant "CEO" has no model configured')
+        expect(issue?.message).toBe('Participant "CEO" has no Studio Agent model configured')
     })
 
     it('returns warning for disconnected participant', () => {

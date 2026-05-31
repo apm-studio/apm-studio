@@ -12,6 +12,7 @@ import type { SharedPrimitiveRef } from '../../shared/chat-contracts'
 import type { StudioState } from '../store/types'
 import type { FullscreenNodeType } from '../store/workspace/types'
 import type { ApmPackageScope } from '../../shared/apm-contracts'
+import type { ApmSyncTargetId, ApmSyncUnit } from '../../shared/apm-sync-contracts'
 import { primitiveUrnPath } from './primitive-urn'
 
 // ── Types ───────────────────────────────────────────────
@@ -30,11 +31,15 @@ export type DragPrimitive = Omit<Partial<PrimitiveCard>, 'kind' | 'source'> & {
     packageKind?: string;
     manifestPath?: string;
     packageRoot?: string;
+    syncUnit?: ApmSyncUnit;
     primitiveCounts?: {
         agents?: number;
         instructions?: number;
         skills?: number;
+        mcp?: number;
         prompts?: number;
+        commands?: number;
+        hooks?: number;
     };
     agentName?: string;
     paneId?: string;
@@ -61,6 +66,7 @@ export type DropTargetData = {
     type?: string;
     agentId?: string | null;
     teamId?: string | null;
+    targetId?: ApmSyncTargetId | null;
     editorId?: string;
     splitPaneId?: string | null;
 };
@@ -168,7 +174,12 @@ export function applyModelToAgent(
 }
 
 export function applyMcpToAgent(store: StudioState, agentId: string, primitive: DragPrimitive) {
-    store.addAgentMcp(agentId, primitive as Parameters<StudioState['addAgentMcp']>[1]);
+    const serverNames = Array.isArray(primitive.mcpServerNames) && primitive.mcpServerNames.length > 0
+        ? primitive.mcpServerNames
+        : primitive.name ? [primitive.name] : []
+    for (const name of serverNames) {
+        store.addAgentMcp(agentId, { ...(primitive as Parameters<StudioState['addAgentMcp']>[1]), name });
+    }
 }
 
 export async function applyPrimitiveToAgentTarget(

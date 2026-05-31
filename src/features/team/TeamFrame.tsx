@@ -79,7 +79,7 @@ export default function TeamFrame({ data, id }: NodeProps<Node<TeamFrameData, 't
     const splitPane = splitView.panes.find((pane) => pane.type === 'team' && pane.nodeId === id) || null
     const isSplitPane = isSplitViewTarget(viewMode, splitView, id, 'team')
     const isFullscreenSurface = isFocused || isSplitPane
-    const isManageMode = workspaceMode === 'manage' && !isFullscreenSurface
+    const isManageMode = workspaceMode === 'studio-agent' && !isFullscreenSurface
     const isExplicitEditing = teamEditorState?.teamId === id
     const isEditing = isManageMode || isExplicitEditing
     const width = data.width || team?.width || TEAM_DEFAULT_WIDTH
@@ -112,7 +112,7 @@ export default function TeamFrame({ data, id }: NodeProps<Node<TeamFrameData, 't
         openTeamEditor(id, 'team')
     }
     const handleToggleFocus = useCallback(() => {
-        if (workspaceMode === 'run' && isFocused) return
+        if (workspaceMode === 'studio-agent' && isFocused) return
         if (isFocused) {
             exitFocusMode()
             return
@@ -172,7 +172,7 @@ export default function TeamFrame({ data, id }: NodeProps<Node<TeamFrameData, 't
                         focused={isFocused}
                         splitPane={isSplitPane}
                         editing={isEditing}
-                        hideFocusControl={isManageMode || (workspaceMode === 'run' && isFocused)}
+                        hideFocusControl={isManageMode || (workspaceMode === 'studio-agent' && isFocused)}
                         hideEditControl={isManageMode}
                         readiness={readiness}
                         onToggleFocus={handleToggleFocus}

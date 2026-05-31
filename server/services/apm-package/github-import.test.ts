@@ -128,6 +128,9 @@ describe('APM GitHub source import', () => {
             agents: 1,
             instructions: 0,
             skills: 0,
+            prompts: 0,
+            commands: 0,
+            hooks: 0,
         })
     })
 
@@ -263,6 +266,8 @@ describe('APM GitHub source import', () => {
                     tree: [
                         { type: 'blob', path: 'apm.yml' },
                         { type: 'blob', path: '.apm/agents/reviewer.agent.md' },
+                        { type: 'blob', path: '.apm/prompts/release.prompt.md' },
+                        { type: 'blob', path: '.apm/hooks/codex-hooks.json' },
                         { type: 'blob', path: 'skills/research/SKILL.md' },
                         { type: 'blob', path: 'instructions/security.md' },
                         { type: 'blob', path: 'prompts/release.prompt.md' },
@@ -304,10 +309,61 @@ describe('APM GitHub source import', () => {
         expect(result.candidates[0]).toMatchObject({
             kind: 'package',
             name: 'agent-kit',
-            primitiveCounts: { agents: 1, instructions: 0, skills: 0 },
+            primitiveCounts: {
+                agents: 1,
+                instructions: 0,
+                skills: 0,
+                prompts: 1,
+                commands: 1,
+                hooks: 1,
+            },
         })
         expect(result.candidates.map((candidate) => candidate.sourcePath)).not.toContain('prompts/release.prompt.md')
         expect(await readApmPackage(workingDir, result.candidates[0].packageId)).toBeNull()
+    })
+
+    it('previews only the selected candidate for GitHub blob URLs', async () => {
+        const fetchMock = vi.fn(async (url: string | URL) => {
+            const href = url.toString()
+            if (href === 'https://api.github.com/repos/acme/agent-kit') {
+                return jsonResponse({ default_branch: 'main' })
+            }
+            if (href === 'https://api.github.com/repos/acme/agent-kit/git/trees/main?recursive=1') {
+                return jsonResponse({
+                    tree: [
+                        { type: 'blob', path: 'skills/research/SKILL.md' },
+                        { type: 'blob', path: 'skills/review/SKILL.md' },
+                    ],
+                })
+            }
+            if (href === 'https://raw.githubusercontent.com/acme/agent-kit/main/skills/research/SKILL.md') {
+                return new Response('---\nname: research\ndescription: Research skill\n---\n\nResearch deeply.')
+            }
+            if (href === 'https://raw.githubusercontent.com/acme/agent-kit/main/skills/review/SKILL.md') {
+                throw new Error('The preview should not fetch unrelated skill files.')
+            }
+            return new Response('not found', { status: 404 })
+        })
+        vi.stubGlobal('fetch', fetchMock)
+
+        const result = await previewApmPackagesFromGitHub({
+            source: 'https://github.com/acme/agent-kit/blob/main/skills/research/SKILL.md',
+            format: 'auto',
+            limit: 10,
+        })
+
+        expect(result.source).toMatchObject({
+            repo: 'acme/agent-kit',
+            ref: 'main',
+            subpath: 'skills/research/SKILL.md',
+        })
+        expect(result.candidates).toEqual([
+            expect.objectContaining({
+                kind: 'skill',
+                name: 'research',
+                sourcePath: 'skills/research/SKILL.md',
+            }),
+        ])
     })
 
     it('falls back to codeload tarballs when GitHub tree API is rate-limited', async () => {

@@ -46,7 +46,7 @@ export default function ImportPage() {
         ? '~/.apm'
         : workspacePath || 'No workspace selected'
     const headerConfig = useMemo(() => ({
-        title: 'Search',
+        hideContext: true,
     }), [])
     useAppHeader(headerConfig)
 
@@ -140,8 +140,8 @@ export default function ImportPage() {
             showToast(`Imported ${result.packages.length} APM package${result.packages.length === 1 ? '' : 's'} to ${scopeLabel(installScope)}.`, 'success', {
                 title: 'APM import complete',
                 ...(installScope === 'workspace' ? {
-                    actionLabel: 'Go to Inject',
-                    onAction: () => setWorkspaceMode('inject'),
+                    actionLabel: 'Open Studio Agent',
+                    onAction: () => setWorkspaceMode('studio-agent'),
                 } : {}),
             })
         } catch (caught) {

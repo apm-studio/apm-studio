@@ -12,7 +12,8 @@ export default function TeamSurfacePanel({
 }: TeamSurfacePanelProps) {
     const isEditing = useStudioStore((state) => state.teamEditorState?.teamId === teamId)
     const workspaceMode = useStudioStore((state) => state.workspaceMode)
-    const isManageMode = workspaceMode === 'manage'
+    const viewMode = useStudioStore((state) => state.viewMode)
+    const isManageMode = workspaceMode === 'studio-agent' && viewMode === 'canvas'
 
     if (isManageMode) {
         return (

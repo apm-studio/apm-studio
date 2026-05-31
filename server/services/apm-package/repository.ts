@@ -149,7 +149,10 @@ async function packageSummaryFromManifest(
 function inferManifestKind(manifest: ApmPackageManifest): NonNullable<ApmPackageManifest['x-apm']>['kind'] {
     if (manifest['x-apm']?.kind) return manifest['x-apm'].kind
     if (manifest.type === 'skill') return 'skill'
-    if (manifest.type === 'instructions' || manifest.type === 'prompts') return 'instruction'
+    if (manifest.type === 'instructions') return 'instruction'
+    if (manifest.type === 'prompts') return 'prompt'
+    if (manifest.type === 'commands') return 'command'
+    if (manifest.type === 'hooks') return 'hook'
     if (Array.isArray(manifest.dependencies?.mcp) && manifest.dependencies.mcp.length > 0) return 'mcp'
     if (Array.isArray(manifest.agents) && manifest.agents.length > 0) return 'agent'
     return 'package'

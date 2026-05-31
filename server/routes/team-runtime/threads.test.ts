@@ -23,7 +23,7 @@ describe('Team runtime thread routes', () => {
         expect(body).toEqual({
             ok: false,
             status: 400,
-            error: 'Team must have at least one agent',
+            error: 'Team must have at least one Studio Agent',
         })
     })
 

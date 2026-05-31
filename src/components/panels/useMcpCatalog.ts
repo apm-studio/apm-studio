@@ -196,9 +196,9 @@ export function useMcpCatalog(workingDir: string, showMcps: boolean): McpCatalog
             setMcpEntries(buildMcpDrafts(savedCatalog, entries))
             if (impact && hasMcpCatalogImpact(impact)) {
                 applyCatalogImpactToStudio(impact)
-                setMcpCatalogStatus(`Saved Studio MCP library and updated ${impact.affectedAgentIds.length} agent reference${impact.affectedAgentIds.length === 1 ? '' : 's'}.`)
+                setMcpCatalogStatus(`Saved Studio MCP library and updated ${impact.affectedAgentIds.length} Studio Agent reference${impact.affectedAgentIds.length === 1 ? '' : 's'}.`)
             } else {
-                setMcpCatalogStatus('Saved Studio MCP library. Agents enable servers individually.')
+                setMcpCatalogStatus('Saved Studio MCP library. Studio Agents enable servers individually.')
             }
             recordStudioChange({ kind: 'runtime_config' })
             await invalidateMcpQueries(true)

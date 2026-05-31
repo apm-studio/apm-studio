@@ -47,8 +47,8 @@ export function buildAgentFrameSurfaceState(input: {
     const splitPane = input.splitView.panes.find((pane) => pane.type === 'agent' && pane.nodeId === input.id) || null
     const isSplitPane = isSplitViewTarget(input.viewMode, input.splitView, input.id, 'agent')
     const isFullscreenSurface = isFullView || isSplitPane
-    const isManageMode = input.workspaceMode === 'manage' && !isFullscreenSurface
-    const hideFocusControl = isManageMode || (input.workspaceMode === 'run' && isFullView)
+    const isManageMode = input.workspaceMode === 'studio-agent' && !isFullscreenSurface
+    const hideFocusControl = isManageMode || (input.workspaceMode === 'studio-agent' && isFullView)
     const isEditMode = input.editingTarget?.type === 'agent' && input.editingTarget.id === input.id
     const isTeamEditMode = !!input.teamEditConnectVisible
 

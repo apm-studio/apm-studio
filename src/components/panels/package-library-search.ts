@@ -1,6 +1,6 @@
 // Search and haystack utilities for the Packages drawer
 
-import type { LocalSection } from './package-library-utils'
+import type { LocalSection, PackagePrimitiveSection } from './package-library-utils'
 
 type SearchablePrimitive = {
     name?: string
@@ -73,4 +73,22 @@ export function placeholderForLocalSection(
     }
 
     return 'model, provider, capability...'
+}
+
+export function placeholderForPrimitiveSection(
+    primitiveSection: PackagePrimitiveSection,
+) {
+    if (primitiveSection === 'agents') {
+        return 'studio agent package, apm.yml path...'
+    }
+
+    if (primitiveSection === 'instructions') {
+        return 'instruction package, apm.yml path...'
+    }
+
+    if (primitiveSection === 'skills') {
+        return 'skill package, apm.yml path...'
+    }
+
+    return 'mcp server, tool, status...'
 }

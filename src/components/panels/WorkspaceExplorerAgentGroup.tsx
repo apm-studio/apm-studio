@@ -198,7 +198,7 @@ export default function WorkspaceExplorerAgentGroup({
                             <button
                                 className={`icon-btn ${row.hidden ? 'visibility-off' : 'visibility-on'}`}
                                 onClick={() => onToggleAgentVisibility(row.id)}
-                                title={row.hidden ? 'Show agent' : 'Hide agent'}
+                                title={row.hidden ? 'Show Studio Agent' : 'Hide Studio Agent'}
                             >
                                 {row.hidden ? <EyeOff size={11} /> : <Eye size={11} />}
                             </button>
@@ -217,7 +217,7 @@ export default function WorkspaceExplorerAgentGroup({
                                     onOpenAgentEditor(row.id, 'agent-runtime')
                                     onSetActiveChatAgent(row.id)
                                 }}
-                                title="Edit agent"
+                                title="Edit Studio Agent"
                             >
                                 <Pencil size={11} />
                             </button>
@@ -230,14 +230,14 @@ export default function WorkspaceExplorerAgentGroup({
                                         dedupeKey: `draft:save:${row.id}`,
                                     })
                                 }}
-                                title="Save agent as draft"
+                                title="Save Studio Agent as draft"
                             >
                                 <Archive size={11} />
                             </button>
                             <button
                                 className="icon-btn remove-btn"
                                 onClick={() => onSetPendingDelete(rowKey)}
-                                title="Delete agent"
+                                title="Delete Studio Agent"
                             >
                                 <Trash2 size={11} />
                             </button>

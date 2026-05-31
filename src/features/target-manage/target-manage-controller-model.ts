@@ -20,18 +20,20 @@ import {
     primitiveUnitForSidebar,
     sidebarSectionForUnit,
     targetAvailability,
+    targetPackageAvailability,
+    type TargetManagePackageSyncState,
     type TargetSyncChoice,
     unitLabel,
-} from './inject-sync-utils'
+} from './target-manage-sync-utils'
 
 const EMPTY_TARGETS: ApmSyncTargetSummary[] = []
 
-export interface InjectControllerModelInput {
+export interface TargetManageControllerModelInput {
     apmPackages: ApmPackageSummary[]
     targetsResponse: ApmSyncTargetsResponse | null
     selectedSyncUnit: ApmSyncUnit
     selectedTargets: ApmSyncTargetId[]
-    selectedPackageIds: string[]
+    stagedPackageIds: string[]
     filter: string
     syncChoices: Record<string, TargetSyncChoice>
     loadingTargets: boolean
@@ -44,7 +46,7 @@ function sameOrderedValues(left: string[], right: string[]) {
         && left.every((value, index) => value === right[index])
 }
 
-export function normalizeInjectPackageSelection(
+export function normalizeTargetManageStagedPackages(
     current: string[],
     syncablePackageIds: string[],
 ) {
@@ -53,19 +55,13 @@ export function normalizeInjectPackageSelection(
     }
 
     const valid = current.filter((packageId) => syncablePackageIds.includes(packageId))
-    if (current.length === 0) {
-        return syncablePackageIds
-    }
     if (sameOrderedValues(valid, current)) {
         return current
     }
-    if (valid.length > 0) {
-        return valid
-    }
-    return syncablePackageIds
+    return valid
 }
 
-export function normalizeInjectTargetSelection(
+export function normalizeTargetManageTargetSelection(
     current: ApmSyncTargetId[],
     availableTargetIds: ApmSyncTargetId[],
 ) {
@@ -78,14 +74,14 @@ export function normalizeInjectTargetSelection(
     return sameOrderedValues(next, current) ? current : next
 }
 
-export function buildInjectControllerModel(input: InjectControllerModelInput) {
+export function buildTargetManageControllerModel(input: TargetManageControllerModelInput) {
     const {
         apmPackages,
         filter,
         lastResult,
         loadingTargets,
         running,
-        selectedPackageIds,
+        stagedPackageIds,
         selectedSyncUnit,
         selectedTargets,
         syncChoices,
@@ -94,7 +90,7 @@ export function buildInjectControllerModel(input: InjectControllerModelInput) {
 
     const targets = targetsResponse?.targets || EMPTY_TARGETS
     const selectedTargetSet = new Set(selectedTargets)
-    const selectedPackageSet = new Set(selectedPackageIds)
+    const stagedPackageSet = new Set(stagedPackageIds)
     const workspaceCounts = sumApmPackageSyncPrimitiveCounts(apmPackages)
     const sidebarSection = sidebarSectionForUnit(selectedSyncUnit)
     const primitiveUnit = primitiveUnitForSidebar(selectedSyncUnit)
@@ -105,17 +101,18 @@ export function buildInjectControllerModel(input: InjectControllerModelInput) {
         !queryText || packageSearchHaystack(pkg).includes(queryText),
     )
     const visiblePackageIds = filteredSyncablePackages.map((pkg) => pkg.packageId)
-    const allVisibleSelected = visiblePackageIds.length > 0
-        && visiblePackageIds.every((packageId) => selectedPackageSet.has(packageId))
-    const selectedPackages = syncablePackages.filter((pkg) => selectedPackageSet.has(pkg.packageId))
-    const selectedCounts = sumApmPackageSyncPrimitiveCounts(selectedPackages)
-    const selectedPrimitiveSummary = primitiveSummary(selectedCounts, selectedSyncUnit)
+    const stagedPackages = syncablePackages.filter((pkg) => stagedPackageSet.has(pkg.packageId))
+    const stagedCounts = sumApmPackageSyncPrimitiveCounts(stagedPackages)
+    const stagedPrimitiveSummary = primitiveSummary(stagedCounts, selectedSyncUnit)
     const targetStates = new Map(targets.map((target) => [
         target.id,
-        targetAvailability(target, selectedSyncUnit, selectedPackages),
+        targetAvailability(target, selectedSyncUnit, stagedPackages),
     ]))
     const availableTargetIds = targets
         .filter((target) => targetStates.get(target.id)?.available)
+        .map((target) => target.id)
+    const selectableTargetIds = targets
+        .filter((target) => target.available)
         .map((target) => target.id)
     const activeTargets = targets.filter((target) => selectedTargetSet.has(target.id))
     const activeTarget = activeTargets[0] || targets.find((target) => targetStates.get(target.id)?.available) || targets[0] || null
@@ -125,7 +122,7 @@ export function buildInjectControllerModel(input: InjectControllerModelInput) {
     const targetsReady = activeTargets.length > 0
         && activeTargets.every((target) => targetStates.get(target.id)?.available)
     const packageWarnings = syncablePackages.reduce((total, pkg) => total + (pkg.microsoftApm?.warnings.length || 0), 0)
-    const modelOmitted = selectedPackages.some((pkg) => pkg.agentComponents?.model)
+    const modelOmitted = stagedPackages.some((pkg) => pkg.agentComponents?.model)
     const toolingCommand = targetsResponse?.tooling.recommendedCommand
     const toolingStatusLabel = loadingTargets || !targetsResponse
         ? 'Checking'
@@ -144,38 +141,63 @@ export function buildInjectControllerModel(input: InjectControllerModelInput) {
     const activeTargetResultByPackage = new Map(activeTargetResultRows.map((row) => [row.packageId, row]))
     const currentItems = activeTarget?.currentItems || []
     const matchingCurrentItems = currentItems.filter((item) => (
-        selectedSyncUnit === 'agent-packages' || item.syncUnit === selectedSyncUnit
+        item.syncUnit === selectedSyncUnit
     ))
     const activeTargetCurrentByPackage = new Map(matchingCurrentItems.map((item) => [item.packageId, item]))
     const definitions = activeTarget?.definitions || []
-    const activeTargetDefinitions = definitions.filter((definition) => (
-        selectedSyncUnit === 'agent-packages'
-        || !definition.syncUnit
-        || definition.syncUnit === selectedSyncUnit
-    ))
-    const activeTargetDefinitionByPackage = new Map<string, ApmSyncTargetDefinitionSummary>()
-    for (const pkg of selectedPackages) {
+    const activeTargetDefinitions = definitions.filter((definition) => {
+        if (selectedSyncUnit === 'studio-agent') {
+            return definition.managedSyncUnit === 'studio-agent'
+                || definition.kind === 'agent'
+                || definition.kind === 'skill'
+                || definition.kind === 'mcp'
+        }
+        return !definition.syncUnit || definition.syncUnit === selectedSyncUnit
+    })
+    const activeTargetManagedDefinitionByPackage = new Map<string, ApmSyncTargetDefinitionSummary>()
+    for (const pkg of syncablePackages) {
         const definition = findManagedDefinitionForPackage(activeTargetDefinitions, pkg)
+        if (definition) activeTargetManagedDefinitionByPackage.set(pkg.packageId, definition)
+    }
+    const activeTargetDefinitionByPackage = new Map<string, ApmSyncTargetDefinitionSummary>()
+    for (const pkg of stagedPackages) {
+        const definition = activeTargetManagedDefinitionByPackage.get(pkg.packageId)
         if (definition) activeTargetDefinitionByPackage.set(pkg.packageId, definition)
     }
-    const matchedDefinitionIds = new Set(Array.from(activeTargetDefinitionByPackage.values()).map((definition) => definition.id))
+    const matchedDefinitionIds = new Set(Array.from(activeTargetManagedDefinitionByPackage.values()).map((definition) => definition.id))
     const targetOnlyDefinitions = activeTargetDefinitions.filter((definition) => !matchedDefinitionIds.has(definition.id))
+    const activeTargetPackageSyncStateByPackage = new Map<string, TargetManagePackageSyncState>()
+    for (const pkg of syncablePackages) {
+        if (!activeTarget || !targetPackageAvailability(activeTarget, selectedSyncUnit, pkg).available) {
+            activeTargetPackageSyncStateByPackage.set(pkg.packageId, 'blocked')
+            continue
+        }
+        activeTargetPackageSyncStateByPackage.set(
+            pkg.packageId,
+            activeTargetCurrentByPackage.has(pkg.packageId) || activeTargetManagedDefinitionByPackage.has(pkg.packageId)
+                ? 'synced'
+                : 'unsynced',
+        )
+    }
+    const unsyncedPackageIds = syncablePackages
+        .filter((pkg) => activeTargetPackageSyncStateByPackage.get(pkg.packageId) === 'unsynced')
+        .map((pkg) => pkg.packageId)
     const activePushPackageIds = !activeTarget
         ? []
-        : selectedPackages
+        : stagedPackages
             .filter((pkg) => syncChoices[`${activeTarget.id}:${pkg.packageId}`] !== 'skip')
             .map((pkg) => pkg.packageId)
     const syncDisabled = running || selectedTargets.length === 0 || !targetsReady || activePushPackageIds.length === 0
     const activeTargetPlanSteps = !activeTarget
         ? []
         : [
-            selectedSyncUnit === 'agent-packages'
-                ? 'Use the selected package root.'
+            selectedSyncUnit === 'studio-agent'
+                ? 'Compose each Studio Agent into one target agent artifact.'
                 : `Build a temp package from ${unitLabel(selectedSyncUnit)}.`,
             `${activePushPackageIds.length} Studio item${activePushPackageIds.length === 1 ? '' : 's'} marked Push.`,
             `${toolingStatusLabel} install --target ${activeTarget.id}.`,
             `Write managed project files into ${activeTarget.outputHint}.`,
-            modelOmitted ? 'Keep model settings inside Studio Run.' : null,
+            modelOmitted ? 'Keep model settings inside Studio Agent runtime.' : null,
         ].filter((step): step is string => Boolean(step))
 
     return {
@@ -187,16 +209,19 @@ export function buildInjectControllerModel(input: InjectControllerModelInput) {
         activeTargetDefinitions,
         activeTargetPlanSteps,
         activeTargetResultByPackage,
-        allVisibleSelected,
+        activeTargetPackageSyncStateByPackage,
         availableTargetIds,
         availableTargetIdsKey: availableTargetIds.join('|'),
         filteredSyncablePackages,
         packageWarnings,
         primitiveUnit,
-        selectedPackageSet,
-        selectedPackages,
-        selectedPrimitiveSummary,
         sidebarSection,
+        selectableTargetIds,
+        selectableTargetIdsKey: selectableTargetIds.join('|'),
+        stagedPackageIdsKey: stagedPackageIds.join('|'),
+        stagedPackageSet,
+        stagedPackages,
+        stagedPrimitiveSummary,
         syncablePackageIds,
         syncablePackageIdsKey: syncablePackageIds.join('|'),
         syncDisabled,
@@ -205,9 +230,11 @@ export function buildInjectControllerModel(input: InjectControllerModelInput) {
         targets,
         targetsReady,
         toolingStatusLabel,
+        unsyncedPackageIds,
+        unsyncedPackageIdsKey: unsyncedPackageIds.join('|'),
         visiblePackageIds,
         workspaceCounts,
     }
 }
 
-export type InjectControllerModel = ReturnType<typeof buildInjectControllerModel>
+export type TargetManageControllerModel = ReturnType<typeof buildTargetManageControllerModel>

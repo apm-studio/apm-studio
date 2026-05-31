@@ -36,7 +36,7 @@ describe('Team definition validation', () => {
         expect(issues).toEqual([
             expect.objectContaining({
                 code: 'no-participants',
-                message: 'Team must have at least one agent',
+                message: 'Team must have at least one Studio Agent',
                 focus: { mode: 'team' },
             }),
         ])
