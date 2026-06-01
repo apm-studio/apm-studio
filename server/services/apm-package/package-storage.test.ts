@@ -7,6 +7,7 @@ import {
     validateApmPackageManifest,
 } from './manifest.js'
 import {
+    copyApmPackage,
     importApmPackage,
     listApmAgentProjectionSnapshots,
     listApmPackages,
@@ -38,7 +39,6 @@ describe('apm package storage', () => {
             model: { provider: 'openai', modelId: 'gpt-5.4' },
             modelVariant: null,
             agentBody: 'Serve as a careful reviewer.',
-            instructionRef: { kind: 'draft', draftId: 'instruction-1' },
             skillRefs: [{ kind: 'registry', urn: '/@acme/prod/review' }],
             mcpServerNames: ['github'],
             runtimeAgentId: null,
@@ -79,12 +79,6 @@ describe('apm package storage', () => {
 
     it('materializes Microsoft APM source primitives for saved agents', async () => {
         await createDraft(workingDir, {
-            id: 'instruction-1',
-            kind: 'instruction',
-            name: 'Review Instruction',
-            content: 'Review code with care.',
-        })
-        await createDraft(workingDir, {
             id: 'skill-1',
             kind: 'skill',
             name: 'Review Skill',
@@ -101,7 +95,6 @@ describe('apm package storage', () => {
 
         const packageRoot = path.join(workingDir, 'packages', 'agent-1')
         const agentPath = path.join(packageRoot, '.apm', 'agents', 'review-agent.agent.md')
-        const instructionPath = path.join(packageRoot, '.apm', 'instructions', 'review-agent.instructions.md')
         const skillPath = path.join(packageRoot, '.apm', 'skills', 'review-skill', 'SKILL.md')
 
         const agentContent = await fs.readFile(agentPath, 'utf-8')
@@ -109,14 +102,14 @@ describe('apm package storage', () => {
         expect(agentContent).toContain('Serve as a careful reviewer.')
         expect(agentContent).not.toContain('Review code with care.')
         expect(agentContent).not.toContain('skills:')
-        await expect(fs.readFile(instructionPath, 'utf-8')).resolves.toContain('Review code with care.')
+        await expect(fs.access(path.join(packageRoot, '.apm', 'instructions'))).rejects.toMatchObject({ code: 'ENOENT' })
         await expect(fs.readFile(skillPath, 'utf-8')).resolves.toContain('Check tests and edge cases.')
         await expect(fs.access(path.join(packageRoot, '.apm', 'skills', 'review-skill', 'draft.json'))).rejects.toMatchObject({ code: 'ENOENT' })
 
         const pkg = await readApmPackage(workingDir, 'agent-1')
         expect(pkg?.microsoftApm?.primitiveCounts).toEqual({
             agents: 1,
-            instructions: 1,
+            instructions: 0,
             skills: 1,
             prompts: 0,
             commands: 0,
@@ -265,7 +258,6 @@ describe('apm package storage', () => {
                     id: 'agent-1',
                     name: 'Review Agent',
                     model: { provider: 'openai', modelId: 'gpt-5.4' },
-                    instructionRef: { kind: 'draft', draftId: 'instruction-1' },
                     skillRefs: [{ kind: 'registry', urn: '/@acme/prod/review' }],
                     mcpServerNames: ['github'],
                     unknownInstructionField: '/old/instruction',
@@ -364,6 +356,36 @@ describe('apm package storage', () => {
         expect(imported.manifest.customField).toEqual({ kept: true })
         expect(imported.manifest['x-apm']?.packageId).toBe('custom')
         expect(validateApmPackageManifest(imported.manifest).valid).toBe(true)
+    })
+
+    it('copies a package directory between APM scopes and keeps source primitives intact', async () => {
+        const userDir = await fs.mkdtemp(path.join(os.tmpdir(), 'apm-user-'))
+        try {
+            await writeApmPackage(userDir, 'skill-pack', {
+                name: 'review-skill-package',
+                version: '1.0.0',
+                type: 'skill',
+                skills: [{ path: '.apm/skills/review/SKILL.md' }],
+                'x-apm': {
+                    schemaVersion: 1,
+                    packageId: 'skill-pack',
+                    kind: 'skill',
+                },
+            })
+            const skillDir = path.join(userDir, 'packages', 'skill-pack', '.apm', 'skills', 'review')
+            await fs.mkdir(skillDir, { recursive: true })
+            await fs.writeFile(path.join(skillDir, 'SKILL.md'), '# Review Skill\n\nCheck tests.\n', 'utf-8')
+
+            const copied = await copyApmPackage(userDir, workingDir, 'skill-pack')
+
+            expect(copied.packageId).toBe('skill-pack')
+            await expect(fs.readFile(path.join(workingDir, 'packages', 'skill-pack', '.apm', 'skills', 'review', 'SKILL.md'), 'utf-8'))
+                .resolves.toContain('Check tests.')
+            await expect(fs.readFile(path.join(workingDir, 'apm.yml'), 'utf-8'))
+                .resolves.toContain('./packages/skill-pack')
+        } finally {
+            await fs.rm(userDir, { recursive: true, force: true }).catch(() => {})
+        }
     })
 
     it('generates deterministic lock hashes for identical manifests', () => {

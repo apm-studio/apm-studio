@@ -8,7 +8,6 @@ function makeAgent(overrides: Partial<WorkspaceAgentNode> = {}): WorkspaceAgentN
         position: { x: 0, y: 0 },
         scope: 'shared',
         model: { provider: 'openai', modelId: 'gpt-4o' },
-        instructionRef: null,
         skillRefs: [],
         mcpServerNames: [],
         ...overrides,

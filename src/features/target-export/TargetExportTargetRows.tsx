@@ -1,48 +1,48 @@
 import { PackageOpen } from 'lucide-react'
 import type { ApmPackageSummary } from '../../../shared/apm-contracts'
 import type { ApmSyncTargetDefinitionSummary } from '../../../shared/apm-sync-contracts'
-import { TargetManagePackageIcon } from './TargetManagePackageIcon'
+import { TargetExportPackageIcon } from './TargetExportPackageIcon'
 import {
-    buildTargetManageTargetOnlyDefinitionRowModel,
-    buildTargetManageTargetPackageRowModel,
-} from './target-manage-target-row-model'
-import type { TargetManageControllerState } from './useTargetManageController'
-import type { TargetSyncChoice } from './target-manage-sync-utils'
+    buildTargetExportTargetOnlyDefinitionRowModel,
+    buildTargetExportTargetPackageRowModel,
+} from './target-export-target-row-model'
+import type { TargetExportControllerState } from './useTargetExportController'
+import type { TargetExportChoice } from './target-export-sync-utils'
 
-interface TargetManageTargetRowsProps {
-    activeTarget: NonNullable<TargetManageControllerState['activeTarget']>
-    activeTargetCurrentByPackage: TargetManageControllerState['activeTargetCurrentByPackage']
-    activeTargetDefinitionByPackage: TargetManageControllerState['activeTargetDefinitionByPackage']
-    activeTargetResultByPackage: TargetManageControllerState['activeTargetResultByPackage']
+interface TargetExportTargetRowsProps {
+    activeTarget: NonNullable<TargetExportControllerState['activeTarget']>
+    activeTargetCurrentByPackage: TargetExportControllerState['activeTargetCurrentByPackage']
+    activeTargetDefinitionByPackage: TargetExportControllerState['activeTargetDefinitionByPackage']
+    activeTargetResultByPackage: TargetExportControllerState['activeTargetResultByPackage']
     running: boolean
-    selectedSyncUnit: TargetManageControllerState['selectedSyncUnit']
-    setPackageSyncChoice: (packageId: string, choice: TargetSyncChoice) => void
+    selectedSyncUnit: TargetExportControllerState['selectedSyncUnit']
+    setPackageExportChoice: (packageId: string, choice: TargetExportChoice) => void
     stagedPackages: ApmPackageSummary[]
-    syncChoices: TargetManageControllerState['syncChoices']
+    exportChoices: TargetExportControllerState['exportChoices']
     targetOnlyDefinitions: ApmSyncTargetDefinitionSummary[]
 }
 
-export function TargetManageTargetRows({
+export function TargetExportTargetRows({
     activeTarget,
     activeTargetCurrentByPackage,
     activeTargetDefinitionByPackage,
     activeTargetResultByPackage,
     running,
     selectedSyncUnit,
-    setPackageSyncChoice,
+    setPackageExportChoice,
     stagedPackages,
-    syncChoices,
+    exportChoices,
     targetOnlyDefinitions,
-}: TargetManageTargetRowsProps) {
+}: TargetExportTargetRowsProps) {
     return (
-        <div className="target-manage-selected-list target-manage-target-list">
+        <div className="target-export-selected-list target-export-target-list">
             {stagedPackages.map((pkg) => {
-                const row = buildTargetManageTargetPackageRowModel({
+                const row = buildTargetExportTargetPackageRowModel({
                     currentItem: activeTargetCurrentByPackage.get(pkg.packageId),
                     definition: activeTargetDefinitionByPackage.get(pkg.packageId),
                     pkg,
                     result: activeTargetResultByPackage.get(pkg.packageId),
-                    syncChoice: syncChoices[`${activeTarget.id}:${pkg.packageId}`] || 'push',
+                    exportChoice: exportChoices[`${activeTarget.id}:${pkg.packageId}`] || 'save',
                     syncUnit: selectedSyncUnit,
                     target: activeTarget,
                 })
@@ -50,13 +50,13 @@ export function TargetManageTargetRows({
                 return (
                     <article
                         key={`${activeTarget.id}:${row.packageId}`}
-                        className="target-manage-selected-chip target-manage-target-item"
+                        className="target-export-selected-chip target-export-target-item"
                         title={row.detail}
                     >
-                        <span className="target-manage-selected-chip__title">
-                            <TargetManagePackageIcon pkg={pkg} syncUnit={selectedSyncUnit} />
+                        <span className="target-export-selected-chip__title">
+                            <TargetExportPackageIcon pkg={pkg} syncUnit={selectedSyncUnit} />
                             <strong>{row.packageName}</strong>
-                            <span className={`target-manage-state-pill ${row.stateClass}`}>
+                            <span className={`target-export-state-pill ${row.stateClass}`}>
                                 {row.status}
                             </span>
                         </span>
@@ -66,19 +66,19 @@ export function TargetManageTargetRows({
                             ))}
                         </span>
                         <small>{row.detail}</small>
-                        <span className="target-manage-sync-choice" aria-label={`${row.packageName} sync action`}>
+                        <span className="target-export-action-choice" aria-label={`${row.packageName} export action`}>
                             <button
                                 type="button"
-                                className={`target-manage-choice-btn ${row.syncChoice === 'push' ? 'is-active' : ''}`}
-                                onClick={() => setPackageSyncChoice(row.packageId, 'push')}
+                                className={`target-export-choice-btn ${row.exportChoice === 'save' ? 'is-active' : ''}`}
+                                onClick={() => setPackageExportChoice(row.packageId, 'save')}
                                 disabled={!row.availability.available || running}
                             >
-                                Push
+                                Save
                             </button>
                             <button
                                 type="button"
-                                className={`target-manage-choice-btn ${row.syncChoice === 'skip' ? 'is-active' : ''}`}
-                                onClick={() => setPackageSyncChoice(row.packageId, 'skip')}
+                                className={`target-export-choice-btn ${row.exportChoice === 'skip' ? 'is-active' : ''}`}
+                                onClick={() => setPackageExportChoice(row.packageId, 'skip')}
                                 disabled={running}
                             >
                                 Skip
@@ -88,17 +88,17 @@ export function TargetManageTargetRows({
                 )
             })}
             {targetOnlyDefinitions.map((definition) => {
-                const row = buildTargetManageTargetOnlyDefinitionRowModel(definition)
+                const row = buildTargetExportTargetOnlyDefinitionRowModel(definition)
                 return (
                     <article
                         key={row.id}
-                        className="target-manage-selected-chip target-manage-target-item"
+                        className="target-export-selected-chip target-export-target-item"
                         title={row.detail}
                     >
-                        <span className="target-manage-selected-chip__title">
+                        <span className="target-export-selected-chip__title">
                             <PackageOpen size={12} className="primitive-icon combo" />
                             <strong>{row.name}</strong>
-                            <span className={`target-manage-state-pill ${row.stateClass}`}>
+                            <span className={`target-export-state-pill ${row.stateClass}`}>
                                 {row.status}
                             </span>
                         </span>
@@ -108,8 +108,8 @@ export function TargetManageTargetRows({
                             ))}
                         </span>
                         <small>{row.detail}</small>
-                        <span className="target-manage-sync-choice">
-                            <button type="button" className="target-manage-choice-btn is-active" disabled>
+                        <span className="target-export-action-choice">
+                            <button type="button" className="target-export-choice-btn is-active" disabled>
                                 Keep
                             </button>
                         </span>

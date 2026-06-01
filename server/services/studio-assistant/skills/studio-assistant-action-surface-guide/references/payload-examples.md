@@ -1,15 +1,15 @@
 # Payload Examples
 
-## Create Agent With Inline Instruction
+## Create Agent
 
 ```json
-{"version":1,"actions":[{"type":"createAgent","ref":"coder","name":"Coder","instructionDraft":{"name":"Coder Instruction","content":"You write code carefully."}}]}
+{"version":1,"actions":[{"type":"createAgent","ref":"coder","name":"Coder","description":"Writes code carefully and keeps implementation changes scoped."}]}
 ```
 
-## Create Agent With Inline Instruction And Skill
+## Create Agent With Skill
 
 ```json
-{"version":1,"actions":[{"type":"createAgent","ref":"researcher","name":"Researcher","instructionDraft":{"name":"Researcher Instruction","content":"You research carefully."},"addSkillDrafts":[{"name":"Source Validation","content":"# Source Validation\n\nUse this skill to validate sources."}]}]}
+{"version":1,"actions":[{"type":"createAgent","ref":"researcher","name":"Researcher","description":"Researches carefully, tracks uncertainty, and hands off sourced findings.","addSkillDrafts":[{"name":"Source Validation","content":"# Source Validation\n\nUse this skill to validate sources."}]}]}
 ```
 
 ## Create Connected Team

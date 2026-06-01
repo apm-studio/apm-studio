@@ -5,12 +5,8 @@ function unique(values: Array<string | null | undefined>) {
     return Array.from(new Set(values.filter((value): value is string => !!value && value.trim().length > 0)))
 }
 
-function draftIdsFromRuntimeRefs(
-    instructionRef: SharedPrimitiveRef | null | undefined,
-    skillRefs: SharedPrimitiveRef[] | null | undefined,
-) {
+function draftIdsFromRuntimeRefs(skillRefs: SharedPrimitiveRef[] | null | undefined) {
     return unique([
-        instructionRef?.kind === 'draft' ? instructionRef.draftId : null,
         ...((skillRefs || []).map((ref) => ref.kind === 'draft' ? ref.draftId : null)),
     ])
 }
@@ -18,12 +14,11 @@ function draftIdsFromRuntimeRefs(
 export function buildProjectionDirtyPatch(input: {
     agentId?: string | null
     teamId?: string | null
-    instructionRef: SharedPrimitiveRef | null | undefined
     skillRefs: SharedPrimitiveRef[] | null | undefined
 }): ProjectionDirtyPatch {
     return normalizeProjectionDirtyPatch({
         agentIds: unique([input.agentId]),
         teamIds: unique([input.teamId]),
-        draftIds: draftIdsFromRuntimeRefs(input.instructionRef, input.skillRefs),
+        draftIds: draftIdsFromRuntimeRefs(input.skillRefs),
     })
 }

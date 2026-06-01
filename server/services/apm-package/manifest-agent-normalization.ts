@@ -26,20 +26,7 @@ function agentBodyFromManifest(manifest: ApmPackageManifest): string | null {
 }
 
 function agentBodyFromManifestSource(manifest: ApmPackageManifest): string | null {
-    const agentBody = agentBodyFromManifest(manifest)
-    if (agentBody) {
-        return agentBody
-    }
-
-    const instruction = Array.isArray(manifest.instructions) ? manifest.instructions[0] : null
-    if (typeof instruction === 'string' && instruction.trim()) {
-        return instruction
-    }
-    if (isRecord(instruction) && typeof instruction.content === 'string' && instruction.content.trim()) {
-        return instruction.content
-    }
-
-    return null
+    return agentBodyFromManifest(manifest)
 }
 
 function extensionAgentNodeId(extension: ApmAgentExtension) {
@@ -56,10 +43,6 @@ function extensionAgentBody(extension: ApmAgentExtension, manifest?: ApmPackageM
         return body
     }
     return manifest ? agentBodyFromManifestSource(manifest) : null
-}
-
-function extensionInstructionRef(extension: ApmAgentExtension) {
-    return extension.instructionRef || null
 }
 
 function extensionSkillRefs(extension: ApmAgentExtension) {
@@ -172,7 +155,6 @@ export function normalizeAgent(value: unknown): WorkspaceAgentSnapshot | null {
     const modelPlaceholder = normalizeRecord(value.modelPlaceholder) === null
         ? null
         : normalizeModel(value.modelPlaceholder)
-    const instructionRef = normalizePrimitiveRef(value.instructionRef)
     const declaredMcpConfig = normalizeRecord(value.declaredMcpConfig)
     const mcpBindingMap = normalizeStringMap(value.mcpBindingMap)
     const meta = normalizeAgentMeta(value.meta)
@@ -196,7 +178,6 @@ export function normalizeAgent(value: unknown): WorkspaceAgentSnapshot | null {
     if (modelPlaceholder !== undefined) normalized.modelPlaceholder = modelPlaceholder
     const modelVariant = stringOrNull(value.modelVariant)
     normalized.modelVariant = modelVariant
-    normalized.instructionRef = instructionRef
     if (mcpBindingMap) normalized.mcpBindingMap = mcpBindingMap
     if (declaredMcpConfig !== undefined) normalized.declaredMcpConfig = declaredMcpConfig
     const runtimeAgentId = stringOrNull(value.runtimeAgentId)
@@ -224,7 +205,6 @@ export function agentFromExtension(
         model: extension.model,
         modelVariant: extension.modelVariant || null,
         agentBody: extensionAgentBody(extension, manifest),
-        instructionRef: extensionInstructionRef(extension),
         skillRefs: extensionSkillRefs(extension),
         mcpServerNames: extension.mcpServerNames || [],
         runtimeAgentId: extension.runtimeAgentId || null,

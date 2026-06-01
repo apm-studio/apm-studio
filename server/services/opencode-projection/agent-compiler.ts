@@ -9,14 +9,12 @@ import type { CompiledSkill } from './skill-compiler.js'
 import type { ModelSelection } from '../../../shared/model-types.js'
 import { COLLABORATION_TOOL_NAMES } from '../team-runtime/team-tools.js'
 import { ASSISTANT_TOOL_NAMES } from '../studio-assistant/assistant-tools.js'
-import type { SharedPrimitiveRef } from '../../../shared/chat-contracts.js'
 
 
 
 export interface AgentCompileInput {
     agentId: string
     agentName: string
-    instructionRef: SharedPrimitiveRef | null
     agentBody?: string | null
     model: ModelSelection
     modelVariant?: string | null
@@ -50,11 +48,7 @@ export interface CompiledAgent {
 
 
 
-async function resolveAgentBody(
-    _cwd: string,
-    _ref: SharedPrimitiveRef | null,
-    agentBody?: string | null,
-): Promise<string | null> {
+function resolveAgentBody(agentBody?: string | null): string | null {
     if (typeof agentBody === 'string' && agentBody.trim()) {
         return agentBody
     }
@@ -197,7 +191,7 @@ export async function compileAgent(
     input: AgentCompileInput,
     skills: CompiledSkill[],
 ): Promise<CompiledAgent> {
-    const agentBody = await resolveAgentBody(cwd, input.instructionRef, input.agentBody)
+    const agentBody = resolveAgentBody(input.agentBody)
 
     let resolvedVariantId: string | null = null
     if (input.model) {

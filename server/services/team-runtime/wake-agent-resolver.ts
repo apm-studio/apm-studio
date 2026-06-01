@@ -2,7 +2,7 @@
  * wake-agent-resolver.ts — Resolve agent config for wake cascade
  *
  * When the wake cascade auto-wakes a participant, it needs the agent's
- * model, Instruction, Skills, and MCP configuration to properly project into OpenCode.
+ * model, Agent Body, Skills, and MCP configuration to properly project into OpenCode.
  * This module reads workspace.json to find the matching agent node.
  */
 
@@ -16,7 +16,6 @@ export interface ResolvedAgentConfig {
     agentName: string
     model: { provider: string; modelId: string } | null
     modelVariant: string | null
-    instructionRef: SharedPrimitiveRef | null
     skillRefs: SharedPrimitiveRef[]
     mcpServerNames: string[]
     runtimeAgentId: string | null
@@ -64,7 +63,6 @@ export async function resolveAgentForWake(
         agentName: agent.name,
         model: agent.model,
         modelVariant: agent.modelVariant ?? null,
-        instructionRef: agent.instructionRef || null,
         skillRefs: agent.skillRefs || [],
         mcpServerNames: agent.mcpServerNames || [],
         runtimeAgentId: agent.runtimeAgentId ?? null,

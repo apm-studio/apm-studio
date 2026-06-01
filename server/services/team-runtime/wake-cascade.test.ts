@@ -321,7 +321,6 @@ describe('wake-cascade participant scheduling', () => {
         resolveAgentForWake.mockResolvedValue({
             agentId: 'researcher-v1',
             agentName: 'Researcher',
-            instructionRef: null,
             skillRefs: [],
             model: { provider: 'openai', modelId: 'gpt-5.4' },
             modelVariant: null,
@@ -427,7 +426,6 @@ describe('wake-cascade participant scheduling', () => {
         resolveAgentForWake.mockResolvedValue({
             agentId: 'researcher-v1',
             agentName: 'Researcher',
-            instructionRef: null,
             skillRefs: [],
             model: { provider: 'openai', modelId: 'gpt-5.4' },
             modelVariant: null,
@@ -494,7 +492,6 @@ describe('wake-cascade participant scheduling', () => {
         resolveAgentForWake.mockResolvedValue({
             agentId: 'researcher-v1',
             agentName: 'Researcher',
-            instructionRef: null,
             skillRefs: [],
             model: { provider: 'openai', modelId: 'gpt-5.5-pro' },
             modelVariant: null,
@@ -569,7 +566,6 @@ describe('wake-cascade participant scheduling', () => {
         resolveAgentForWake.mockResolvedValue({
             agentId: 'researcher-v1',
             agentName: 'Researcher',
-            instructionRef: null,
             skillRefs: [],
             model: { provider: 'openai', modelId: 'gpt-5.4' },
             modelVariant: null,

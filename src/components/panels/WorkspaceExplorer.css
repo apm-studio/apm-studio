@@ -36,6 +36,11 @@
     flex: 0 0 190px;
 }
 
+.explorer-section--apm-user {
+    flex: 0 0 auto;
+    border-bottom: 1px solid var(--border-light);
+}
+
 .explorer-section--fill {
     flex: 1 1 auto;
 }
@@ -125,6 +130,21 @@
     flex-direction: column;
     gap: 2px;
     padding: 8px 12px;
+}
+
+.explorer__context-button {
+    width: 100%;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    text-align: left;
+}
+
+.explorer__context-button:hover,
+.explorer__context-button.is-active {
+    background: var(--bg-selected);
 }
 
 .explorer__context--selected {

@@ -30,7 +30,6 @@ export function workspaceAgentNodeFromSnapshot(
         position: agent.position || fallback?.position || { x: 0, y: 0 },
         scope: agent.scope || fallback?.scope || 'shared',
         model: agent.model ?? null,
-        instructionRef: agent.instructionRef || null,
         skillRefs: agent.skillRefs || [],
         mcpServerNames: agent.mcpServerNames || [],
     }

@@ -21,9 +21,6 @@ function extractReferencedDrafts(draft: DraftFile): DraftRef[] {
 
     if (isAgentDraftFile(draft)) {
         const content: AgentDraftContent = draft.content
-        if (content.instructionRef?.kind === 'draft' && typeof content.instructionRef.draftId === 'string') {
-            refs.push({ kind: 'instruction', draftId: content.instructionRef.draftId })
-        }
         if (Array.isArray(content.skillRefs)) {
             for (const ref of content.skillRefs) {
                 if (ref?.kind === 'draft' && typeof ref.draftId === 'string') {

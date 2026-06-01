@@ -1,7 +1,7 @@
 import type { WorkspaceMode } from '../store/workspace/types'
 
 export type AppSidebarMode = 'workspace-primitives' | 'workspace-only'
-export type AppSurfaceMode = 'workspace' | 'import' | 'target-manage'
+export type AppSurfaceMode = 'workspace' | 'import' | 'target-export'
 
 export type AppShellPolicy = {
     sidebarMode: AppSidebarMode
@@ -18,8 +18,8 @@ export function getAppShellPolicy(workspaceMode: WorkspaceMode): AppShellPolicy 
         sidebarShowsThreads: false,
         surfaceMode: workspaceMode === 'import'
             ? 'import'
-            : workspaceMode === 'manage'
-                ? 'target-manage'
+            : workspaceMode === 'export'
+                ? 'target-export'
                 : 'workspace',
         showsWorkspaceTerminal: isWorkspaceCanvasMode,
     }

@@ -1,10 +1,16 @@
 import type {
     RegistryCatalogResponse,
+    RegistryDownloadEventRequest,
+    RegistryDownloadEventResponse,
     RegistryListingKind,
     RegistryTargetId,
 } from '../../../shared/registry-contracts.js'
+import type {
+    ApmGitHubImportRequest,
+    ApmGitHubImportResponse,
+} from '../../../shared/apm-contracts.js'
 
-const DEFAULT_REGISTRY_URL = 'https://registry.apm.studio'
+const DEFAULT_REGISTRY_URL = 'https://apm-registry.dance-of-tal.workers.dev'
 
 type CatalogQuery = {
     q?: string
@@ -46,4 +52,47 @@ export async function searchImportCatalog(query: CatalogQuery): Promise<Registry
         limit: query.limit || 20,
         cursor: query.cursor,
     }))
+}
+
+function registryEventHeaders() {
+    const token = process.env.APM_STUDIO_REGISTRY_EVENT_TOKEN?.trim()
+    return {
+        'content-type': 'application/json',
+        ...(token ? { authorization: `Bearer ${token}` } : {}),
+    }
+}
+
+async function postRegistryJson<T>(pathname: string, body: unknown): Promise<T> {
+    const response = await fetch(registryUrl(pathname), {
+        method: 'POST',
+        headers: registryEventHeaders(),
+        body: JSON.stringify(body),
+    })
+    if (!response.ok) {
+        throw new Error(`APM Registry request failed with HTTP ${response.status}.`)
+    }
+    return await response.json() as T
+}
+
+export async function recordImportCatalogDownload(
+    request: ApmGitHubImportRequest,
+    response: ApmGitHubImportResponse,
+): Promise<void> {
+    if (!request.registryListingId) return
+    const event: RegistryDownloadEventRequest = {
+        listingId: request.registryListingId,
+        source: {
+            type: 'github',
+            repo: response.source.repo,
+            ref: response.source.ref,
+            ...(response.source.subpath ? { path: response.source.subpath } : {}),
+        },
+        ...(request.format && request.format !== 'auto' ? {
+            importRecipe: {
+                format: request.format,
+                adapter: `${request.format}@studio-import`,
+            },
+        } : {}),
+    }
+    await postRegistryJson<RegistryDownloadEventResponse>('/v1/downloads', event)
 }

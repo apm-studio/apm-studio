@@ -75,9 +75,9 @@ describe('markdown editor state', () => {
     it('plans saved draft attachment by target mode', () => {
         expect(buildSavedDraftAttachPlan({
             agentId: 'agent-1',
-            mode: 'instruction',
+            mode: 'skill-new',
         }, 'draft-1')).toEqual({
-            kind: 'instruction',
+            kind: 'skill-add',
             agentId: 'agent-1',
             draftId: 'draft-1',
         })

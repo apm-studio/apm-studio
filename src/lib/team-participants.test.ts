@@ -17,7 +17,6 @@ const agents: WorkspaceAgentNode[] = [
         position: { x: 0, y: 0 },
         scope: 'shared',
         model: null,
-        instructionRef: null,
         skillRefs: [],
         mcpServerNames: [],
     },
@@ -27,7 +26,6 @@ const agents: WorkspaceAgentNode[] = [
         position: { x: 0, y: 0 },
         scope: 'shared',
         model: null,
-        instructionRef: null,
         skillRefs: [],
         mcpServerNames: [],
         meta: {

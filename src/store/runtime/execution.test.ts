@@ -29,7 +29,7 @@ describe('preparePendingRuntimeExecution', () => {
 
         const result = await preparePendingRuntimeExecution(() => state, {
             agentId: 'agent-1',
-            runtimeConfig: { instructionRef: null, skillRefs: [] },
+            runtimeConfig: { skillRefs: [] },
         })
 
         expect(result.blocked).toBe(true)
@@ -52,7 +52,6 @@ describe('preparePendingRuntimeExecution', () => {
                 {
                     id: 'agent-1',
                     name: 'Agent 1',
-                    instructionRef: null,
                     skillRefs: [],
                     model: null,
                     mcpServerNames: [],
@@ -66,7 +65,7 @@ describe('preparePendingRuntimeExecution', () => {
 
         const result = await preparePendingRuntimeExecution(() => state, {
             agentId: 'agent-1',
-            runtimeConfig: { instructionRef: null, skillRefs: [] },
+            runtimeConfig: { skillRefs: [] },
         })
 
         expect(saveWorkspace).toHaveBeenCalledTimes(1)
@@ -90,7 +89,7 @@ describe('preparePendingRuntimeExecution', () => {
 
         const result = await preparePendingRuntimeExecution(() => state, {
             agentId: 'agent-1',
-            runtimeConfig: { instructionRef: null, skillRefs: [] },
+            runtimeConfig: { skillRefs: [] },
         })
 
         expect(saveWorkspace).toHaveBeenCalledTimes(1)
@@ -112,7 +111,6 @@ describe('preparePendingRuntimeExecution', () => {
                 {
                     id: 'agent-1',
                     name: 'Agent 1',
-                    instructionRef: null,
                     skillRefs: [],
                     model: null,
                     mcpServerNames: [],
@@ -125,7 +123,7 @@ describe('preparePendingRuntimeExecution', () => {
 
         const result = await preparePendingRuntimeExecution(() => state, {
             agentId: 'agent-2',
-            runtimeConfig: { instructionRef: null, skillRefs: [] },
+            runtimeConfig: { skillRefs: [] },
         })
 
         expect(result.blocked).toBe(false)
@@ -148,7 +146,6 @@ describe('preparePendingRuntimeExecution', () => {
                 {
                     id: 'agent-2',
                     name: 'Agent 2',
-                    instructionRef: null,
                     skillRefs: [],
                     model: null,
                     mcpServerNames: [],
@@ -161,7 +158,7 @@ describe('preparePendingRuntimeExecution', () => {
 
         const result = await preparePendingRuntimeExecution(() => state, {
             agentId: 'agent-2',
-            runtimeConfig: { instructionRef: null, skillRefs: [] },
+            runtimeConfig: { skillRefs: [] },
         })
 
         expect(result.blocked).toBe(false)
@@ -194,7 +191,6 @@ describe('preparePendingRuntimeExecution', () => {
                 {
                     id: 'agent-2',
                     name: 'Agent 2',
-                    instructionRef: null,
                     skillRefs: [],
                     model: null,
                     mcpServerNames: [],
@@ -207,7 +203,7 @@ describe('preparePendingRuntimeExecution', () => {
 
         const result = await preparePendingRuntimeExecution(() => state, {
             agentId: 'agent-2',
-            runtimeConfig: { instructionRef: null, skillRefs: [] },
+            runtimeConfig: { skillRefs: [] },
         })
 
         expect(result.blocked).toBe(false)
@@ -229,7 +225,6 @@ describe('preparePendingRuntimeExecution', () => {
                 {
                     id: 'agent-1',
                     name: 'Agent 1',
-                    instructionRef: { kind: 'draft', draftId: 'draft-shared' },
                     skillRefs: [],
                     model: null,
                     mcpServerNames: [],
@@ -242,7 +237,7 @@ describe('preparePendingRuntimeExecution', () => {
 
         const result = await preparePendingRuntimeExecution(() => state, {
             agentId: 'agent-2',
-            runtimeConfig: { instructionRef: { kind: 'draft', draftId: 'draft-shared' }, skillRefs: [] },
+            runtimeConfig: { skillRefs: [{ kind: 'draft', draftId: 'draft-shared' }] },
         })
 
         expect(result.blocked).toBe(false)
@@ -281,7 +276,6 @@ describe('preparePendingRuntimeExecution', () => {
                 {
                     id: 'agent-2',
                     name: 'Agent 2',
-                    instructionRef: null,
                     skillRefs: [],
                     model: null,
                     mcpServerNames: [],
@@ -294,7 +288,7 @@ describe('preparePendingRuntimeExecution', () => {
 
         const result = await preparePendingRuntimeExecution(() => state, {
             agentId: 'agent-2',
-            runtimeConfig: { instructionRef: null, skillRefs: [] },
+            runtimeConfig: { skillRefs: [] },
         })
 
         expect(result.blocked).toBe(false)

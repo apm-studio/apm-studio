@@ -22,7 +22,6 @@ export function hydrateWorkspaceAgents(data: PersistedWorkspaceSnapshot) {
             x: agent.position?.x || 0,
             y: agent.position?.y || 0,
             scope: agent.scope || 'shared',
-            instructionRef: agent.instructionRef || null,
             agentBody: agent.agentBody || null,
             skillRefs: agent.skillRefs || [],
             model: agent.model || null,

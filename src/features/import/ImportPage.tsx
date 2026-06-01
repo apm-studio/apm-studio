@@ -10,12 +10,14 @@ import type {
     ApmGitHubImportRequest,
     ApmGitHubImportPreviewResponse,
 } from '../../../shared/apm-contracts'
+import type { RegistryListing } from '../../../shared/registry-contracts'
 import { ImportResultsPanel } from './ImportResultsPanel'
 import { ImportSearchPanel } from './ImportSearchPanel'
 import {
     candidateInstallKey,
     filterImportCandidates,
-    type ImportScope,
+    registryListingSource,
+    registryListingToGitHubImportRequest,
     type ResultKindFilter,
     scopeLabel,
 } from './import-catalog-model'
@@ -31,7 +33,10 @@ export default function ImportPage() {
     const [manualPreviewLoading, setManualPreviewLoading] = useState(false)
     const [manualPreviewError, setManualPreviewError] = useState<string | null>(null)
     const [manualImporting, setManualImporting] = useState(false)
-    const [installScope, setInstallScope] = useState<ImportScope>('workspace')
+    const [registryListings, setRegistryListings] = useState<RegistryListing[]>([])
+    const [registryLoading, setRegistryLoading] = useState(false)
+    const [registryError, setRegistryError] = useState<string | null>(null)
+    const [registryPreviewingId, setRegistryPreviewingId] = useState<string | null>(null)
     const [resultQuery, setResultQuery] = useState('')
     const [resultKind, setResultKind] = useState<ResultKindFilter>('all')
     const [candidateInstallingId, setCandidateInstallingId] = useState<string | null>(null)
@@ -39,6 +44,7 @@ export default function ImportPage() {
     const queryClient = useQueryClient()
     const workingDir = useStudioStore((state) => state.workingDir)
     const setWorkspaceMode = useStudioStore((state) => state.setWorkspaceMode)
+    const installScope = useStudioStore((state) => state.apmPackageScope)
 
     const selectedParsedCount = manualSelectedCandidateIds.size
     const workspacePath = workingDir
@@ -51,7 +57,14 @@ export default function ImportPage() {
     useAppHeader(headerConfig)
 
     const workspaceInstallDisabled = installScope === 'workspace' && !workspacePath
-    const shouldShowResults = Boolean(manualPreviewLoading || manualPreviewError || manualPreviewResponse)
+    const shouldShowResults = Boolean(
+        manualPreviewLoading
+        || manualPreviewError
+        || manualPreviewResponse
+        || registryLoading
+        || registryError
+        || registryListings.length > 0,
+    )
     const resultCandidates = useMemo(
         () => manualPreviewResponse?.candidates || [],
         [manualPreviewResponse?.candidates],
@@ -61,7 +74,38 @@ export default function ImportPage() {
         [resultCandidates, resultKind, resultQuery],
     )
 
-    const parseManualImportSource = async (sourceOverride?: string, formatOverride?: ApmGitHubImportFormat) => {
+    const looksLikeGitHubSource = (source: string) => (
+        source.includes('/')
+        || source.includes('github.com')
+        || source.includes('raw.githubusercontent.com')
+        || source.startsWith('git@github.com:')
+    )
+
+    const searchRegistryCatalog = async (queryOverride?: string) => {
+        const query = (queryOverride ?? manualSource).trim()
+        if (!query) {
+            setRegistryListings([])
+            setRegistryError(null)
+            return
+        }
+        setRegistryLoading(true)
+        setRegistryError(null)
+        try {
+            const response = await apmApi.registryCatalog({ q: query, limit: 12 })
+            setRegistryListings(response.listings)
+        } catch (caught) {
+            setRegistryError(caught instanceof Error ? caught.message : 'Unable to search APM Registry.')
+            setRegistryListings([])
+        } finally {
+            setRegistryLoading(false)
+        }
+    }
+
+    const parseManualImportSource = async (
+        sourceOverride?: string,
+        formatOverride?: ApmGitHubImportFormat,
+        requestOverride?: Partial<ApmGitHubImportRequest>,
+    ) => {
         const source = (sourceOverride ?? manualSource).trim()
         if (!source) {
             setManualPreviewError('Enter a GitHub repository or URL first.')
@@ -78,6 +122,7 @@ export default function ImportPage() {
             source,
             format,
             limit: 24,
+            ...requestOverride,
         }
         setManualPreviewLoading(true)
         setManualPreviewError(null)
@@ -95,6 +140,40 @@ export default function ImportPage() {
             setManualSelectedCandidateIds(new Set())
         } finally {
             setManualPreviewLoading(false)
+        }
+    }
+
+    const handleSearch = async () => {
+        const source = manualSource.trim()
+        if (!source) {
+            setManualPreviewError('Enter a registry search term or GitHub repository first.')
+            return
+        }
+        setManualPreviewResponse(null)
+        setManualPreviewRequest(null)
+        setManualPreviewError(null)
+        await Promise.all([
+            searchRegistryCatalog(source),
+            looksLikeGitHubSource(source)
+                ? parseManualImportSource(source)
+                : Promise.resolve(),
+        ])
+    }
+
+    const previewRegistryListing = async (listing: RegistryListing) => {
+        const request = registryListingToGitHubImportRequest(listing)
+        if (!request) {
+            showToast(`The ${listing.importRecipe.format} import recipe is not supported by Studio preview yet.`, 'error', {
+                title: 'Unsupported registry listing',
+                dedupeKey: `registry-preview:${listing.id}`,
+            })
+            return
+        }
+        setRegistryPreviewingId(listing.id)
+        try {
+            await parseManualImportSource(registryListingSource(listing), request.format, request)
+        } finally {
+            setRegistryPreviewingId(null)
         }
     }
 
@@ -126,9 +205,11 @@ export default function ImportPage() {
             })
             if (workingDir) {
                 await Promise.all([
-                    queryClient.invalidateQueries({ queryKey: ['apm-packages', workingDir] }),
+                    queryClient.invalidateQueries({ queryKey: ['apm-packages'] }),
                     queryClient.invalidateQueries({ queryKey: [...queryKeys.agents, workingDir] }),
                 ])
+            } else {
+                await queryClient.invalidateQueries({ queryKey: ['apm-packages'] })
             }
             setInstalledCandidateKeys((current) => {
                 const next = new Set(current)
@@ -175,8 +256,10 @@ export default function ImportPage() {
                 loading={manualPreviewLoading}
                 onSourceChange={setManualSource}
                 onFormatChange={setManualFormat}
-                onSearch={() => void parseManualImportSource()}
+                onSearch={() => void handleSearch()}
                 onCuratedSearch={(source, format) => void parseManualImportSource(source, format)}
+                installScope={installScope}
+                installTargetPath={installTargetPath}
             />
 
             {shouldShowResults ? (
@@ -184,6 +267,10 @@ export default function ImportPage() {
                     previewLoading={manualPreviewLoading}
                     previewError={manualPreviewError}
                     previewResponse={manualPreviewResponse}
+                    registryListings={registryListings}
+                    registryLoading={registryLoading}
+                    registryError={registryError}
+                    registryPreviewingId={registryPreviewingId}
                     resultCandidates={resultCandidates}
                     filteredCandidates={filteredCandidates}
                     resultQuery={resultQuery}
@@ -199,9 +286,9 @@ export default function ImportPage() {
                     onImportSelected={() => void handleManualImport()}
                     onImportCandidate={(candidateId) => void handleManualImport([candidateId])}
                     onToggleCandidate={toggleManualCandidate}
+                    onPreviewRegistryListing={(listing) => void previewRegistryListing(listing)}
                     onQueryChange={setResultQuery}
                     onKindChange={setResultKind}
-                    onScopeChange={setInstallScope}
                 />
             ) : null}
         </main>

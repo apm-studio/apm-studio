@@ -47,18 +47,6 @@ export function buildPrimitiveDeleteCascade(
     agents: WorkspaceAgentNode[],
     teams: WorkspaceTeamSnapshot[],
 ): { agents?: WorkspaceAgentNode[]; teams?: WorkspaceTeamSnapshot[]; workspaceDirty?: boolean } {
-    if (primitiveKind === 'instruction') {
-        const updated = agents.map((p) =>
-            p.instructionRef && matchesDeleteTarget(p.instructionRef, target)
-                ? { ...p, instructionRef: null }
-                : p,
-        )
-        if (updated.some((p, i) => p !== agents[i])) {
-            return { agents: updated, workspaceDirty: true }
-        }
-        return {}
-    }
-
     if (primitiveKind === 'skill') {
         const updated = agents.map((p) => {
             const filtered = p.skillRefs.filter(

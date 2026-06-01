@@ -4,6 +4,8 @@ import type {
     ApmGitHubImportPreviewResponse,
     ApmGitHubSourceCatalogRequest,
     ApmGitHubSourceCatalogResponse,
+    ApmPackageCopyRequest,
+    ApmPackageCopyResponse,
     ApmPackageImportResponse,
     ApmPackageImportRequest,
     ApmPackageListResponse,
@@ -20,10 +22,35 @@ import type {
     ApmSyncRunResponse,
     ApmSyncTargetsResponse,
 } from '../../../shared/apm-sync-contracts'
+import type {
+    RegistryCatalogResponse,
+    RegistryListingKind,
+    RegistryTargetId,
+} from '../../../shared/registry-contracts'
 import { fetchJSON, postJSON, putJSON } from '../../api-core'
 
 function scopeQuery(scope?: ApmPackageScope) {
     return scope ? `?scope=${scope}` : ''
+}
+
+type RegistryCatalogQuery = {
+    q?: string
+    kind?: RegistryListingKind | 'all'
+    target?: RegistryTargetId | 'all'
+    tag?: string
+    limit?: number
+    cursor?: string
+}
+
+function registryCatalogQuery(query: RegistryCatalogQuery = {}) {
+    const params = new URLSearchParams()
+    Object.entries(query).forEach(([key, value]) => {
+        if (value !== undefined && `${value}`.trim()) {
+            params.set(key, `${value}`)
+        }
+    })
+    const serialized = params.toString()
+    return serialized ? `?${serialized}` : ''
 }
 
 export const apmApi = {
@@ -39,6 +66,9 @@ export const apmApi = {
     writePackage: (packageId: string, body: ApmPackageWriteRequest, scope?: ApmPackageScope) =>
         putJSON<ApmPackageWriteResponse>(`/api/apm/packages/${encodeURIComponent(packageId)}${scopeQuery(scope)}`, body),
 
+    copyPackage: (body: ApmPackageCopyRequest) =>
+        postJSON<ApmPackageCopyResponse>('/api/apm/packages/copy', body),
+
     importPackage: (body: ApmPackageImportRequest) =>
         postJSON<ApmPackageImportResponse>('/api/apm/import', body),
 
@@ -50,6 +80,9 @@ export const apmApi = {
 
     githubCatalog: (body: ApmGitHubSourceCatalogRequest = {}) =>
         postJSON<ApmGitHubSourceCatalogResponse>('/api/apm/github-catalog', body),
+
+    registryCatalog: (query: RegistryCatalogQuery = {}) =>
+        fetchJSON<RegistryCatalogResponse>(`/api/apm/import/catalog${registryCatalogQuery(query)}`),
 
     listSyncTargets: () =>
         fetchJSON<ApmSyncTargetsResponse>('/api/apm/targets'),

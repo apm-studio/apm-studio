@@ -67,7 +67,7 @@ describe('package-library-packages', () => {
         const [pkg] = scopeApmPackages([workspacePackage], [])
 
         expect(apmPackageTitle(pkg)).toBe('Reviewer')
-        expect(apmPackagePrimitiveSummary(pkg)).toBe('1 APM agent · 2 skills')
+        expect(apmPackagePrimitiveSummary(pkg)).toBe('1 agent · 2 skills')
     })
 
     it('matches package cards to Studio Agent primitive sections', () => {

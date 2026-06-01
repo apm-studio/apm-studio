@@ -1,5 +1,6 @@
-import type { DraftPrimitive, PrimitiveCard } from '../../lib/primitive-types'
+import type { DraftPrimitive, PackageLibraryItem } from '../../lib/primitive-types'
 
+import type { ApmPackageScope } from '../../../shared/apm-contracts'
 import type {
     AgentDraftContent,
     TeamDraftContent,
@@ -16,7 +17,7 @@ import type {
 } from '../../../shared/workspace-contracts'
 import type { ProjectionDirtyState, RuntimeChangeClass, StudioChangeDescriptor } from '../runtime/change-policy'
 
-export type WorkspaceMode = 'import' | 'studio-agent' | 'manage'
+export type WorkspaceMode = 'import' | 'studio-agent' | 'export'
 export type WorkspaceViewMode = 'canvas' | 'full' | 'split'
 export type FullscreenNodeType = 'agent' | 'team'
 
@@ -81,6 +82,7 @@ export interface WorkspaceSlice {
     selectedAgentSessionId: string | null
     selectedMarkdownEditorId: string | null
     workspaceMode: WorkspaceMode
+    apmPackageScope: ApmPackageScope
     viewMode: WorkspaceViewMode
     splitView: SplitViewState
     focusSnapshot: FocusSnapshot | null
@@ -102,13 +104,13 @@ export interface WorkspaceSlice {
     setTerminalOpen: (open: boolean) => void
     setTrackingOpen: (open: boolean) => void
     setWorkspaceMode: (mode: WorkspaceMode) => void
+    setApmPackageScope: (scope: ApmPackageScope) => void
     setPackageLibraryOpen: (open: boolean) => void
     toggleTheme: () => void
     setCanvasCenter: (x: number, y: number) => void
     addAgent: (name: string, x?: number, y?: number) => string
     addAgentFromPrimitive: (primitive: {
         name: string
-        instructionUrn?: string | null
         skillUrns?: string[]
         model?: WorkspaceModelConfig | string | null
         modelVariant?: string | null
@@ -123,7 +125,6 @@ export interface WorkspaceSlice {
     }, x?: number, y?: number) => void
     applyAgentPrimitive: (agentId: string, primitive: {
         name: string
-        instructionUrn?: string | null
         skillUrns?: string[]
         model?: WorkspaceModelConfig | string | null
         modelVariant?: string | null
@@ -182,10 +183,8 @@ export interface WorkspaceSlice {
     clearRuntimeReloadPending: () => void
     applyPendingRuntimeReload: () => Promise<boolean>
 
-    setAgentInstruction: (agentId: string, instruction: PrimitiveCard | null) => void
-    setAgentInstructionRef: (agentId: string, instructionRef: SharedPrimitiveRef | null) => void
     setAgentBody: (agentId: string, agentBody: string | null) => void
-    addAgentSkill: (agentId: string, skill: PrimitiveCard) => void
+    addAgentSkill: (agentId: string, skill: PackageLibraryItem) => void
     addAgentSkillRef: (agentId: string, skillRef: SharedPrimitiveRef) => void
     replaceAgentSkillRef: (agentId: string, currentRef: SharedPrimitiveRef, nextRef: SharedPrimitiveRef) => void
     removeAgentSkill: (agentId: string, skillKey: string) => void

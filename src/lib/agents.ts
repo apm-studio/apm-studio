@@ -5,18 +5,15 @@ import type { DraftPrimitive } from './primitive-types'
 
 
 export {
-    primitiveCardFromUrn,
+    packageLibraryItemFromUrn,
     primitiveRefKey,
     primitiveRefKeys,
     buildTeamPrimitivePayload,
-    buildPrimitiveCardMap,
+    buildPackageLibraryItemMap,
     buildAutoMcpBindingMap,
     buildMcpServerMap,
-    getAgentDependencyPackageIssues,
-    buildAgentPrimitivePayload,
     isSamePrimitiveRef,
     normalizeAgentPrimitiveInput,
-    agentMcpConfigForPrimitive,
     registryPrimitiveRef,
     registryPrimitiveRefs,
     registryUrnFromRef,

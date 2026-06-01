@@ -6,7 +6,9 @@ type Props = {
     workspacesHeight: number
     workspaceRows: ReactNode[]
     workingDir: string
+    workspaceScopeActive?: boolean
     onOpenWorkspace: () => void
+    onSelectWorkspaceScope?: () => void
     fill?: boolean
 }
 
@@ -14,7 +16,9 @@ export default function WorkspaceExplorerWorkspacesSection({
     workspacesHeight,
     workspaceRows,
     workingDir,
+    workspaceScopeActive = false,
     onOpenWorkspace,
+    onSelectWorkspaceScope,
     fill = false,
 }: Props) {
     return (
@@ -28,7 +32,12 @@ export default function WorkspaceExplorerWorkspacesSection({
                     <Plus size={12} />
                 </button>
             </div>
-            <div className="explorer__context explorer__context--workspaces">
+            <button
+                type="button"
+                className={`explorer__context explorer__context--workspaces explorer__context-button ${workspaceScopeActive ? 'is-active' : ''}`}
+                onClick={onSelectWorkspaceScope}
+                title={workingDir || 'Use workspace package scope'}
+            >
                 <span className="explorer__context-label">Current</span>
                 <strong>{workingDir ? workspaceLabel(workingDir) : 'No workspace open'}</strong>
                 {workingDir ? (
@@ -36,7 +45,7 @@ export default function WorkspaceExplorerWorkspacesSection({
                         {workingDir}
                     </span>
                 ) : null}
-            </div>
+            </button>
             <div className="explorer__tree explorer__tree--workspaces scroll-area">
                 {workspaceRows.length > 0 ? workspaceRows : <div className="empty-state">No saved workspaces</div>}
             </div>

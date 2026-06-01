@@ -1,4 +1,4 @@
-import { Bot, PackagePlus, SlidersHorizontal } from 'lucide-react'
+import { Bot, PackagePlus, Upload } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useStudioStore } from '../store'
 import type { WorkspaceMode } from '../store/workspace/types'
@@ -27,10 +27,10 @@ const APP_MODE_OPTIONS: AppModeOption[] = [
         title: 'Edit and run local Studio Agents',
     },
     {
-        mode: 'manage',
-        label: 'Manage',
-        icon: <SlidersHorizontal size={13} />,
-        title: 'Manage external assistant target sync',
+        mode: 'export',
+        label: 'Export',
+        icon: <Upload size={13} />,
+        title: 'Export APM primitives to assistant targets',
     },
 ]
 
@@ -49,7 +49,7 @@ type AppModeHeaderProps = {
 
 function modeContextLabel(mode: WorkspaceMode) {
     if (mode === 'import') return 'Import packages and source primitives'
-    if (mode === 'manage') return 'Manage assistant targets'
+    if (mode === 'export') return 'Export assistant targets'
     return 'Studio Agent workspace'
 }
 

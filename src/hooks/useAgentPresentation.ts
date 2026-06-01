@@ -1,8 +1,8 @@
-import type { DraftPrimitive, PrimitiveCard } from '../lib/primitive-types'
+import type { DraftPrimitive, PackageLibraryItem } from '../lib/primitive-types'
 import type { WorkspaceAgentNode } from '../../shared/workspace-contracts'
 import { useMemo } from 'react'
 import {
-    buildPrimitiveCardMap,
+    buildPackageLibraryItemMap,
     buildMcpServerMap,
     resolveAgentPresentation,
     resolveAgentRuntimeConfig,
@@ -12,7 +12,6 @@ import { useRuntimeTools } from './queries/opencode'
 import type { McpServerSummary } from '../../shared/opencode-contracts'
 
 const EMPTY_PRESENTATION = {
-    instructionPrimitive: null,
     skillPrimitives: [] as ReturnType<typeof resolveAgentPresentation>['skillPrimitives'],
     mcpServers: [] as ReturnType<typeof resolveAgentPresentation>['mcpServers'],
     mcpPlaceholders: [] as string[],
@@ -27,7 +26,7 @@ const EMPTY_PRESENTATION = {
  */
 export function useAgentPresentation(
     agent: WorkspaceAgentNode | null,
-    primitives: PrimitiveCard[],
+    primitives: PackageLibraryItem[],
     mcpServers: McpServerSummary[],
     drafts: Record<string, DraftPrimitive>,
     opts?: { enableTools?: boolean },
@@ -36,7 +35,7 @@ export function useAgentPresentation(
         agent
             ? resolveAgentPresentation(
                 agent,
-                buildPrimitiveCardMap(primitives),
+                buildPackageLibraryItemMap(primitives),
                 buildMcpServerMap(mcpServers),
                 drafts,
             )

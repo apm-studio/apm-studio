@@ -37,14 +37,13 @@ Use this skill when you need to produce, inspect, or verify an `apply_studio_act
 - `description`
 - `model`
 - `modelVariant`
-- one Instruction source: `instructionUrn`, `instructionDraftId`, `instructionDraftRef`, or inline `instructionDraft`
 - Skill additions: `addSkillUrns`, `addSkillDraftIds`, `addSkillDraftRefs`, inline `addSkillDrafts`
 - Skill removals: `removeSkillUrns`, `removeSkillDraftIds`
 - MCP changes: `addMcpServerNames`, `removeMcpServerNames`
 
 Rules:
-- Choose at most one Instruction source.
-- Use inline `instructionDraft` or `addSkillDrafts` when the dependency is new and known.
+- Do not include Instruction fields on Agent actions. Instruction drafts are standalone primitives.
+- Use inline `addSkillDrafts` when the Skill dependency is new and known.
 - Use only available model and variant ids from the snapshot.
 - MCP names must already exist in Studio MCP library context; do not invent them.
 
@@ -69,11 +68,12 @@ Rules:
 - For brand-new Teams with known participants, prefer participants and relations directly on `createTeam`.
 
 ## Draft And Bundle Fields
-- Instruction/Skill CRUD teams on local drafts only.
+- Instruction/Skill CRUD acts on local drafts only.
 - Skill file actions target saved Skill drafts only.
 - Bundle paths are relative to the Skill root.
 - Bundle paths must not target `SKILL.md` or `draft.json`.
 - Use bundle files for `references/*`, `scripts/*`, `assets/*`, and `agents/openai.yaml`.
+- Bundle filenames should be stable and human-readable; do not append random strings, hashes, timestamps, or cache-busting suffixes unless the user explicitly wants versioned files.
 
 ## Participant Subscriptions
 `updateParticipantSubscriptions` targets a participant by:

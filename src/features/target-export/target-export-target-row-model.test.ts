@@ -9,9 +9,9 @@ import type {
     ApmSyncTargetSummary,
 } from '../../../shared/apm-sync-contracts'
 import {
-    buildTargetManageTargetOnlyDefinitionRowModel,
-    buildTargetManageTargetPackageRowModel,
-} from './target-manage-target-row-model'
+    buildTargetExportTargetOnlyDefinitionRowModel,
+    buildTargetExportTargetPackageRowModel,
+} from './target-export-target-row-model'
 
 function packageSummary(partial: Partial<ApmPackageSummary> = {}): ApmPackageSummary {
     return {
@@ -41,7 +41,7 @@ function targetSummary(partial: Partial<ApmSyncTargetSummary> = {}): ApmSyncTarg
         outputHint: '.codex',
         commandPreview: 'apm install <package> --target codex',
         available: true,
-        supportedSyncUnits: ['studio-agent', 'agents', 'skills'],
+        supportedSyncUnits: ['agents', 'skills'],
         strategy: 'cli-first',
         currentItems: [],
         definitions: [],
@@ -88,9 +88,9 @@ function syncResult(partial: Partial<ApmSyncPackageResult> = {}): ApmSyncPackage
     }
 }
 
-describe('Target manage target row model', () => {
+describe('Target export target row model', () => {
     it('builds a package row from result, managed definition, current item, and model metadata', () => {
-        const row = buildTargetManageTargetPackageRowModel({
+        const row = buildTargetExportTargetPackageRowModel({
             currentItem: currentItem(),
             definition: definitionSummary(),
             pkg: packageSummary({
@@ -106,7 +106,7 @@ describe('Target manage target row model', () => {
                 projectedAs: 'Codex subagent',
                 modelOmitted: true,
             }),
-            syncChoice: 'push',
+            exportChoice: 'save',
             syncUnit: 'agents',
             target: targetSummary(),
         })
@@ -116,7 +116,7 @@ describe('Target manage target row model', () => {
             packageName: 'Planner Agent',
             stateClass: 'is-ready',
             status: 'synced',
-            syncChoice: 'push',
+            exportChoice: 'save',
         }))
         expect(row.badges).toEqual(expect.arrayContaining([
             '1 agent',
@@ -129,10 +129,10 @@ describe('Target manage target row model', () => {
         ]))
     })
 
-    it('marks unsupported package rows as blocked and disables push through availability', () => {
-        const row = buildTargetManageTargetPackageRowModel({
+    it('marks unsupported package rows as blocked and disables save through availability', () => {
+        const row = buildTargetExportTargetPackageRowModel({
             pkg: packageSummary(),
-            syncChoice: 'push',
+            exportChoice: 'save',
             syncUnit: 'agents',
             target: targetSummary({
                 label: 'Gemini',
@@ -143,32 +143,32 @@ describe('Target manage target row model', () => {
         expect(row.status).toBe('Blocked')
         expect(row.stateClass).toBe('is-warning')
         expect(row.availability.available).toBe(false)
-        expect(row.detail).toBe('Gemini does not support APM Agents.')
+        expect(row.detail).toBe('Gemini does not support Agents.')
     })
 
-    it('makes staged push and skip choices visible before sync results exist', () => {
-        expect(buildTargetManageTargetPackageRowModel({
+    it('makes staged save and skip choices visible before sync results exist', () => {
+        expect(buildTargetExportTargetPackageRowModel({
             pkg: packageSummary(),
-            syncChoice: 'push',
+            exportChoice: 'save',
             syncUnit: 'agents',
             target: targetSummary(),
-        }).status).toBe('Push')
+        }).status).toBe('Save')
 
-        expect(buildTargetManageTargetPackageRowModel({
+        expect(buildTargetExportTargetPackageRowModel({
             pkg: packageSummary(),
-            syncChoice: 'skip',
+            exportChoice: 'skip',
             syncUnit: 'agents',
             target: targetSummary(),
         }).status).toBe('Skip')
     })
 
     it('builds target-only rows without package matching assumptions', () => {
-        expect(buildTargetManageTargetOnlyDefinitionRowModel(definitionSummary({
+        expect(buildTargetExportTargetOnlyDefinitionRowModel(definitionSummary({
             id: 'manual',
             name: 'manual-agent',
             managed: false,
         }))).toEqual({
-            badges: ['Target only', 'agent', 'APM Agents'],
+            badges: ['Target only', 'agent', 'Agents'],
             detail: '.codex/agents/planner.toml',
             id: 'manual',
             name: 'manual-agent',

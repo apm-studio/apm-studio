@@ -14,6 +14,7 @@ Use this skill when the user wants to build a Skill through APM Assistant.
 - Use `deleteSkillBundleEntry` only for non-core bundle entries.
 - Never target `SKILL.md` or `draft.json` with bundle file actions.
 - Bundle file actions only work on saved Skill drafts.
+- Use stable, human-readable bundle paths. Do not add random, hash, timestamp, or cache-busting suffixes to `assets/*`, `references/*`, or `scripts/*` filenames unless the user explicitly asks for versioned files.
 
 ## Recommended Skill Shape
 - Keep `SKILL.md` concise and procedural.
@@ -29,6 +30,7 @@ Use this skill when the user wants to build a Skill through APM Assistant.
 - Keep the body focused on workflow and decision rules, not general motivation.
 - If the skill supports multiple variants, keep selection guidance in `SKILL.md` and move variant details into separate `references/` files.
 - Prefer a few high-signal files over a wide scaffold.
+- When improving an existing Skill, update the same stable bundle files instead of creating suffixed variants.
 - Read `references/bundle-authoring.md` when you need a quick reminder of what belongs in `SKILL.md` vs sibling files.
 
 ## Assistant behavior

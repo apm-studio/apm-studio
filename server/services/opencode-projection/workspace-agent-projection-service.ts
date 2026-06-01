@@ -65,7 +65,6 @@ export async function ensureAgentProjection(input: AgentProjectionInput): Promis
         {
             agentId: input.agentId,
             agentName: input.agentName,
-            instructionRef: input.instructionRef,
             agentBody: input.agentBody || null,
             model: input.model,
             modelVariant: input.modelVariant || null,

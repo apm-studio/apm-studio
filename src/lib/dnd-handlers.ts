@@ -1,4 +1,4 @@
-import type { PrimitiveCard } from './primitive-types'
+import type { PackageLibraryItem } from './primitive-types'
 /**
  * DnD mapping logic extracted from App.tsx.
  *
@@ -22,8 +22,8 @@ export type DragPreview = {
     label: string;
 };
 
-export type DragPrimitive = Omit<Partial<PrimitiveCard>, 'kind' | 'source'> & {
-    kind?: PrimitiveCard['kind'] | 'apm-package';
+export type DragPrimitive = Omit<Partial<PackageLibraryItem>, 'kind' | 'source'> & {
+    kind?: PackageLibraryItem['kind'] | 'apm-package';
     label?: string;
     source?: string;
     scope?: ApmPackageScope;
@@ -67,6 +67,7 @@ export type DropTargetData = {
     agentId?: string | null;
     teamId?: string | null;
     targetId?: ApmSyncTargetId | null;
+    scope?: ApmPackageScope;
     editorId?: string;
     splitPaneId?: string | null;
 };
@@ -140,22 +141,13 @@ export function getPrimitiveSlug(primitive: DragPrimitive) {
 
 // ── Primitive → Agent applicators ───────────────────────
 
-export function applyInstructionToAgent(store: StudioState, agentId: string, primitive: DragPrimitive) {
-    const ref = primitiveRefFromDragPrimitive(primitive);
-    if (ref) {
-        store.setAgentInstructionRef(agentId, ref);
-        return;
-    }
-    store.setAgentInstruction(agentId, primitive as PrimitiveCard);
-}
-
 export function applySkillToAgent(store: StudioState, agentId: string, primitive: DragPrimitive) {
     const ref = primitiveRefFromDragPrimitive(primitive);
     if (ref) {
         store.addAgentSkillRef(agentId, ref);
         return;
     }
-    store.addAgentSkill(agentId, primitive as PrimitiveCard);
+    store.addAgentSkill(agentId, primitive as PackageLibraryItem);
 }
 
 export function applyModelToAgent(
@@ -192,11 +184,6 @@ export async function applyPrimitiveToAgentTarget(
 ) {
     if (primitive.kind === 'agent') {
         store.applyAgentPrimitive(agentId, await resolveAgentPrimitiveForStudio(primitive));
-        return true;
-    }
-
-    if (dropType === 'instruction' && primitive.kind === 'instruction') {
-        applyInstructionToAgent(store, agentId, primitive);
         return true;
     }
 

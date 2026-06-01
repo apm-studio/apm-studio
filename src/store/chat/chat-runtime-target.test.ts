@@ -109,7 +109,6 @@ describe('chat-runtime-target', () => {
                     description: 'Drafts polished answers for the team.',
                 },
             },
-            instructionRef: { kind: 'draft', draftId: 'instruction-unsaved' },
             skillRefs: [
                 { kind: 'draft', draftId: 'skill-unsaved' },
                 { kind: 'registry', urn: 'skill/@dot/skill-packs/review' },
@@ -175,8 +174,6 @@ describe('chat-runtime-target', () => {
                     modelId: 'gpt-5.4',
                 },
                 modelVariant: 'reasoning-high',
-                instructionUrn: null,
-                instructionDraftId: 'instruction-unsaved',
                 skillUrns: ['skill/@dot/skill-packs/review'],
                 skillDraftIds: ['skill-unsaved'],
             },

@@ -18,7 +18,6 @@ export default function MarkdownEditorFrame({ id, data, selected }: NodeProps<No
     const upsertDraft = useStudioStore((state) => state.upsertDraft)
     const saveMarkdownDraft = useStudioStore((state) => state.saveMarkdownDraft)
     const removeMarkdownEditor = useStudioStore((state) => state.removeMarkdownEditor)
-    const setAgentInstructionRef = useStudioStore((state) => state.setAgentInstructionRef)
     const addAgentSkillRef = useStudioStore((state) => state.addAgentSkillRef)
     const replaceAgentSkillRef = useStudioStore((state) => state.replaceAgentSkillRef)
 
@@ -43,10 +42,6 @@ export default function MarkdownEditorFrame({ id, data, selected }: NodeProps<No
         const plan = buildSavedDraftAttachPlan(data.attachTarget, draftId)
         if (!plan) return
         const nextRef = { kind: 'draft' as const, draftId }
-        if (plan.kind === 'instruction') {
-            setAgentInstructionRef(plan.agentId, nextRef)
-            return
-        }
         if (plan.kind === 'skill-add') {
             addAgentSkillRef(plan.agentId, nextRef)
             return

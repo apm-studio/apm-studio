@@ -1,4 +1,4 @@
-import { Hexagon, Zap, Pencil, X, Server } from 'lucide-react'
+import { Zap, Pencil, X, Server } from 'lucide-react'
 import type {
     SharedPrimitiveRef } from '../../../shared/chat-contracts'
 import type { WorkspaceModelConfig,
@@ -13,50 +13,58 @@ function primitiveRefLabel(ref: SharedPrimitiveRef) {
         : primitiveUrnDisplayName(ref.urn)
 }
 
-export function AgentInstructionDetail({
+export function AgentBodyDetail({
     agent,
-    instructionPrimitive,
-    onOpenPrimitiveEditor,
-    onInstructionRefChange,
+    onNameChange,
+    onDescriptionChange,
+    onAgentBodyChange,
 }: {
     agent: WorkspaceAgentNode | null
-    instructionPrimitive: { urn: string; name: string; description?: string } | null
-    onOpenPrimitiveEditor: (kind: 'instruction' | 'skill', targetRef: SharedPrimitiveRef | null, attachMode: 'instruction' | 'skill-new' | 'skill-replace') => void
-    onInstructionRefChange: (ref: SharedPrimitiveRef | null) => void
+    onNameChange: (value: string) => void
+    onDescriptionChange: (value: string) => void
+    onAgentBodyChange: (value: string) => void
 }) {
     return (
-        <div className="edit-advanced nodrag nowheel">
+        <div className="edit-advanced edit-advanced--body nodrag nowheel">
             <div className="adv-section">
                 <div className="adv-section__head">
-                    <span className="section-title">Instruction</span>
-                    {agent?.instructionRef && (
-                        <button type="button" className="btn btn--sm" onClick={() => void onOpenPrimitiveEditor('instruction', agent.instructionRef, 'instruction')}>
-                            Edit
-                        </button>
-                    )}
+                    <span className="section-title">Identity</span>
                 </div>
                 <div className="adv-section__body">
-                    {instructionPrimitive ? (
-                        <div className="adv-list">
-                            <div className="adv-list__item">
-                                <Hexagon size={10} className="adv-list__icon" />
-                                <span className="adv-list__label">{instructionPrimitive.name}</span>
-                                {instructionPrimitive.description ? (
-                                    <span className="adv-section__summary">{instructionPrimitive.description}</span>
-                                ) : null}
-                                <div className="adv-list__actions">
-                                    <button type="button" className="icon-btn" onClick={() => void onOpenPrimitiveEditor('instruction', agent?.instructionRef || null, 'instruction')} title="Edit Instruction">
-                                        <Pencil size={10} />
-                                    </button>
-                                    <button type="button" className="icon-btn" onClick={() => onInstructionRefChange(null)} title="Remove Instruction">
-                                        <X size={10} />
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    ) : (
-                        <span className="adv-section__summary">No Instruction connected. Drag & drop from the Packages.</span>
-                    )}
+                    <label className="adv-field">
+                        <span className="adv-field__label">Name</span>
+                        <input
+                            className="text-input nodrag nowheel"
+                            value={agent?.name || ''}
+                            onChange={(event) => onNameChange(event.target.value)}
+                        />
+                    </label>
+                    <label className="adv-field">
+                        <span className="adv-field__label">Description</span>
+                        <input
+                            className="text-input nodrag nowheel"
+                            value={agent?.meta?.authoring?.description || ''}
+                            onChange={(event) => onDescriptionChange(event.target.value)}
+                            placeholder="Describe this Agent package"
+                        />
+                    </label>
+                </div>
+            </div>
+            <div className="adv-section adv-section--body-editor">
+                <div className="adv-section__head">
+                    <span className="section-title">Agent Body</span>
+                </div>
+                <div className="adv-section__body adv-section__body--fill">
+                    <label className="adv-field adv-field--fill">
+                        <textarea
+                            className="input adv-field__textarea adv-field__textarea--body nodrag nowheel"
+                            aria-label="Agent Body"
+                            value={agent?.agentBody || ''}
+                            onChange={(event) => onAgentBodyChange(event.target.value)}
+                            placeholder="Write the target-agnostic body for this Agent package."
+                            rows={10}
+                        />
+                    </label>
                 </div>
             </div>
         </div>
@@ -71,7 +79,7 @@ export function AgentSkillsDetail({
 }: {
     agent: WorkspaceAgentNode | null
     agentId: string
-    onOpenPrimitiveEditor: (kind: 'instruction' | 'skill', targetRef: SharedPrimitiveRef | null, attachMode: 'instruction' | 'skill-new' | 'skill-replace') => void
+    onOpenPrimitiveEditor: (kind: 'skill', targetRef: SharedPrimitiveRef | null, attachMode: 'skill-new' | 'skill-replace') => void
     onRemoveSkill: (id: string, key: string) => void
 }) {
     return (
@@ -126,7 +134,7 @@ export function AgentModelDetail({
         <div className="edit-advanced nodrag nowheel">
             <div className="adv-section">
                 <div className="adv-section__head">
-                    <span className="section-title">Model</span>
+                    <span className="section-title">Studio-only Model</span>
                     {agent?.model ? (
                         <button type="button" className="btn btn--sm" onClick={() => onModelChange(null)}>
                             Clear
@@ -158,7 +166,7 @@ export function AgentModelDetail({
                             model={agent.model}
                             value={agent.modelVariant || null}
                             onChange={onModelVariantChange}
-                            titlePrefix="Studio Agent variant"
+                            titlePrefix="Studio-only variant"
                         />
                     </div>
                 </div>

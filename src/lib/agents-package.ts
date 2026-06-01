@@ -1,4 +1,4 @@
-import type { PrimitiveCard, DraftPrimitive } from './primitive-types'
+import type { PackageLibraryItem, DraftPrimitive } from './primitive-types'
 import type { SharedPrimitiveRef } from '../../shared/chat-contracts'
 import { extractMcpServerNamesFromConfig } from '../../shared/mcp-config'
 import type { McpServerSummary } from '../../shared/opencode-contracts'
@@ -62,22 +62,6 @@ export function registryUrnsFromRefs(refs: SharedPrimitiveRef[] | undefined | nu
         .filter((urn): urn is string => !!urn)
 }
 
-export function getAgentDependencyPackageIssues(
-    agent: Pick<WorkspaceAgentNode, 'instructionRef' | 'skillRefs'>,
-): string[] {
-    const issues: string[] = []
-
-    if (agent.instructionRef?.kind === 'draft') {
-        issues.push('Instruction is still attached as a draft. Save the instruction locally, then re-apply it before saving this agent.')
-    }
-
-    if ((agent.skillRefs || []).some((ref) => ref.kind === 'draft')) {
-        issues.push('Draft Skills are still attached. Save them as local Skill packages, then re-apply them from Packages before saving this agent package.')
-    }
-
-    return issues
-}
-
 function declaredMcpServerNames(declaredMcpConfig: Record<string, unknown> | null | undefined) {
     return extractMcpServerNamesFromConfig(declaredMcpConfig)
 }
@@ -122,17 +106,6 @@ export function unresolvedDeclaredMcpServerNames(
     })
 }
 
-export function agentMcpConfigForPrimitive(
-    agent: Pick<WorkspaceAgentNode, 'mcpServerNames' | 'mcpBindingMap' | 'declaredMcpConfig'>,
-): Record<string, unknown> | undefined {
-    const serverNames = resolveMappedMcpServerNames(agent)
-    if (agent.declaredMcpConfig && typeof agent.declaredMcpConfig === 'object') {
-        return agent.declaredMcpConfig
-    }
-    if (serverNames.length === 0) return undefined
-    return { servers: serverNames }
-}
-
 function modelConfigFromPrimitiveValue(value: unknown): WorkspaceModelConfig | null {
     if (typeof value !== 'string') return null
     const normalized = value.trim()
@@ -149,52 +122,6 @@ function modelConfigFromPrimitiveValue(value: unknown): WorkspaceModelConfig | n
 
 function normalizeModelValue(model: WorkspaceModelConfig | string | null | undefined) {
     return typeof model === 'object' && model ? model : modelConfigFromPrimitiveValue(model)
-}
-
-export function buildAgentPrimitivePayload(
-    agent: Pick<WorkspaceAgentNode, 'instructionRef' | 'skillRefs' | 'model' | 'modelVariant' | 'mcpServerNames' | 'mcpBindingMap' | 'declaredMcpConfig'>,
-    options: {
-        name: string
-        description?: string
-        tags?: string[]
-    },
-) {
-    const instructionUrn = registryUrnFromRef(agent.instructionRef)
-    const skillUrns = registryUrnsFromRefs(agent.skillRefs)
-    const unresolvedRefs = [
-        ...(agent.instructionRef && !instructionUrn ? [agent.instructionRef] : []),
-        ...(agent.skillRefs || []).filter((ref) => ref.kind !== 'registry'),
-    ]
-
-    if (unresolvedRefs.length > 0) {
-        const dependencyIssues = getAgentDependencyPackageIssues(agent)
-        if (dependencyIssues.length > 0) {
-            throw new Error(dependencyIssues.join(' '))
-        }
-        throw new Error('Agent primitives require installable Instruction and Skill references. Reconnect them from Packages before saving this agent package.')
-    }
-    if (!instructionUrn && skillUrns.length === 0) {
-        throw new Error('An agent package requires at least one Instruction or Skill reference.')
-    }
-
-    const mcpConfig = agentMcpConfigForPrimitive(agent)
-
-    const description = options.description?.trim() || options.name.trim()
-    const tags = (options.tags || []).filter((tag) => tag.trim().length > 0)
-
-    return {
-        kind: 'agent' as const,
-        urn: `agent/@pending/${slugifyPrimitiveName(options.name.trim() || 'untitled-agent')}`,
-        description,
-        tags,
-        payload: {
-            ...(instructionUrn ? { instruction: instructionUrn } : {}),
-            ...(skillUrns.length > 0 ? { skills: skillUrns } : {}),
-            ...(agent.model ? { model: { provider: agent.model.provider, modelId: agent.model.modelId } } : {}),
-            ...(agent.modelVariant ? { modelVariant: agent.modelVariant } : {}),
-            ...(mcpConfig && Object.keys(mcpConfig).length > 0 ? { mcp_config: mcpConfig } : {}),
-        },
-    }
 }
 
 export function buildTeamPrimitivePayload(
@@ -258,10 +185,10 @@ export function buildTeamPrimitivePayload(
     }
 }
 
-function parseUrn(urn: string): PrimitiveCard {
+function parseUrn(urn: string): PackageLibraryItem {
     const parsed = parseStudioPrimitiveUrn(urn)
     return {
-        kind: (parsed?.kind || urn.split('/')[0]) as PrimitiveCard['kind'],
+        kind: (parsed?.kind || urn.split('/')[0]) as PackageLibraryItem['kind'],
         urn,
         name: primitiveUrnDisplayName(urn),
         author: primitiveUrnAuthor(urn) || '@unknown',
@@ -269,20 +196,20 @@ function parseUrn(urn: string): PrimitiveCard {
     }
 }
 
-function draftPrimitiveCardFromRef(ref: SharedPrimitiveRef, draftMap: Record<string, DraftPrimitive>): PrimitiveCard | null {
+function draftPackageLibraryItemFromRef(ref: SharedPrimitiveRef, draftMap: Record<string, DraftPrimitive>): PackageLibraryItem | null {
     if (ref.kind !== 'draft') return null
     const draft = draftMap[ref.draftId]
     if (!draft) {
         return {
-            kind: 'instruction',
+            kind: 'skill',
             urn: `draft/${ref.draftId}`,
             name: ref.draftId,
             author: '@draft',
-            description: 'Missing draft primitive',
+            description: 'Missing draft Skill',
         }
     }
     return {
-        kind: draft.kind as PrimitiveCard['kind'],
+        kind: draft.kind as PackageLibraryItem['kind'],
         urn: `draft/${draft.id}`,
         name: draft.name,
         author: '@draft',
@@ -294,7 +221,6 @@ function draftPrimitiveCardFromRef(ref: SharedPrimitiveRef, draftMap: Record<str
 export function normalizeAgentPrimitiveInput(primitive: {
     name: string
     urn?: string | null
-    instructionUrn?: string | null
     skillUrns?: string[]
     model?: WorkspaceModelConfig | string | null
     modelVariant?: string | null
@@ -323,7 +249,6 @@ export function normalizeAgentPrimitiveInput(primitive: {
 
     return {
         name: primitive.name,
-        instructionRef: registryPrimitiveRef(primitive.instructionUrn),
         skillRefs: registryPrimitiveRefs(primitive.skillUrns),
         model: normalizeModelValue(primitive.model),
         modelVariant: primitive.modelVariant || null,
@@ -341,13 +266,13 @@ export function normalizeAgentPrimitiveInput(primitive: {
     }
 }
 
-export function primitiveCardFromUrn(urn: string | null): PrimitiveCard | null {
+export function packageLibraryItemFromUrn(urn: string | null): PackageLibraryItem | null {
     if (!urn) return null
     return parseUrn(urn)
 }
 
-export function buildPrimitiveCardMap(primitives: PrimitiveCard[]): Record<string, PrimitiveCard> {
-    return primitives.reduce<Record<string, PrimitiveCard>>((acc, primitive) => {
+export function buildPackageLibraryItemMap(primitives: PackageLibraryItem[]): Record<string, PackageLibraryItem> {
+    return primitives.reduce<Record<string, PackageLibraryItem>>((acc, primitive) => {
         acc[primitive.urn] = primitive
         return acc
     }, {})
@@ -360,30 +285,29 @@ export function buildMcpServerMap(servers: McpServerSummary[]): Record<string, M
     }, {})
 }
 
-function resolvePrimitiveCard(
+function resolvePackageLibraryItem(
     ref: SharedPrimitiveRef | null | undefined,
-    primitiveMap: Record<string, PrimitiveCard>,
+    primitiveMap: Record<string, PackageLibraryItem>,
     draftMap: Record<string, DraftPrimitive>,
-): PrimitiveCard | null {
+): PackageLibraryItem | null {
     if (!ref) return null
     if (ref.kind === 'registry') {
         return primitiveMap[ref.urn] || parseUrn(ref.urn)
     }
-    return draftPrimitiveCardFromRef(ref, draftMap)
+    return draftPackageLibraryItemFromRef(ref, draftMap)
 }
 
 export function resolveAgentPresentation(
-    agent: Pick<WorkspaceAgentNode, 'instructionRef' | 'skillRefs' | 'mcpServerNames' | 'mcpBindingMap' | 'declaredMcpConfig'>,
-    primitiveMap: Record<string, PrimitiveCard>,
+    agent: Pick<WorkspaceAgentNode, 'skillRefs' | 'mcpServerNames' | 'mcpBindingMap' | 'declaredMcpConfig'>,
+    primitiveMap: Record<string, PackageLibraryItem>,
     mcpMap: Record<string, McpServerSummary>,
     draftMap: Record<string, DraftPrimitive> = {},
 ) {
     const declaredMcpNames = extractMcpServerNamesFromConfig(agent.declaredMcpConfig)
     return {
-        instructionPrimitive: resolvePrimitiveCard(agent.instructionRef, primitiveMap, draftMap),
         skillPrimitives: (agent.skillRefs || [])
-            .map((ref) => resolvePrimitiveCard(ref, primitiveMap, draftMap))
-            .filter((primitive): primitive is PrimitiveCard => primitive !== null),
+            .map((ref) => resolvePackageLibraryItem(ref, primitiveMap, draftMap))
+            .filter((primitive): primitive is PackageLibraryItem => primitive !== null),
         mcpServers: resolveMappedMcpServerNames(agent).map((name) => (
             mcpMap[name] || { name, status: 'unknown', tools: [], resources: [] }
         )),

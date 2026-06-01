@@ -22,7 +22,6 @@ const agentFixture: WorkspaceAgentNode = {
     position: { x: 0, y: 0 },
     scope: 'shared',
     model: null,
-    instructionRef: null,
     skillRefs: [],
     mcpServerNames: [],
     meta: { sourceBindingUrn: 'urn:test' },
@@ -131,7 +130,7 @@ describe('applyAgentPatch', () => {
     })
 
     it('resets sourceBindingUrn when source-identity fields change', () => {
-        const result = applyAgentPatch(agentFixture, { instructionRef: { kind: 'draft', draftId: 'instruction-draft-1' } })
+        const result = applyAgentPatch(agentFixture, { skillRefs: [{ kind: 'draft', draftId: 'skill-draft-1' }] })
         expect(result.meta?.sourceBindingUrn).toBeNull()
     })
 

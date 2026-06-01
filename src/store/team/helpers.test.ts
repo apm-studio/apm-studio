@@ -113,7 +113,6 @@ describe('participant binding helpers', () => {
             position: { x: 0, y: 0 },
             scope: 'shared',
             model: null,
-            instructionRef: null,
             skillRefs: [],
             mcpServerNames: [],
         },
@@ -123,7 +122,6 @@ describe('participant binding helpers', () => {
             position: { x: 0, y: 0 },
             scope: 'shared',
             model: null,
-            instructionRef: null,
             skillRefs: [],
             mcpServerNames: [],
             meta: {

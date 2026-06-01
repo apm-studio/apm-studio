@@ -25,7 +25,6 @@ function makeAgent(id: string, name: string, derivedFrom?: string): WorkspaceAge
         height: 400,
         scope: 'shared',
         model: null,
-        instructionRef: null,
         skillRefs: [],
         mcpServerNames: [],
         mcpBindingMap: {},

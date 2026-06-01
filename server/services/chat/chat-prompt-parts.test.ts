@@ -20,7 +20,6 @@ function chatRequest(overrides: Partial<ChatSendRequest> = {}): ChatSendRequest 
         agent: {
             agentId: 'agent-1',
             agentName: 'Agent',
-            instructionRef: null,
             skillRefs: [],
             model: {
                 provider: 'openai',

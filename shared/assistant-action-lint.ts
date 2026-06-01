@@ -1,9 +1,7 @@
 import type { AssistantActionEnvelope } from './assistant-actions.js'
 import {
-    hasMeaningfulDraftBlueprint,
     isNonEmptyString,
     isRecord,
-    normalizeDraftBlueprintCandidate,
     type ActionRecord,
 } from './assistant-action-record.js'
 
@@ -20,6 +18,8 @@ type RefState = {
     teams: Set<string>
     drafts: Map<string, DraftRefKind>
 }
+
+const BUNDLE_STABLE_PATH_ROOTS = new Set(['assets', 'references', 'scripts'])
 
 function makeRefState(): RefState {
     return {
@@ -123,18 +123,6 @@ function lintAgentFields(
     refState: RefState,
     issues: AssistantActionLintIssue[],
 ) {
-    const instructionSelectorCount = [
-        isNonEmptyString(fields.instructionUrn) || fields.instructionUrn === null,
-        isNonEmptyString(fields.instructionDraftId),
-        isNonEmptyString(fields.instructionDraftRef),
-        hasMeaningfulDraftBlueprint(fields.instructionDraft),
-    ].filter(Boolean).length
-    if (instructionSelectorCount > 1) {
-        pushIssue(issues, 'error', actionIndex, 'Agent actions must choose only one Instruction source among instructionUrn, instructionDraftId, instructionDraftRef, or instructionDraft.')
-    }
-
-    requireDraftRef(issues, actionIndex, refState.drafts, 'instruction', fields.instructionDraftRef)
-
     if (Array.isArray(fields.addSkillDraftRefs)) {
         for (const draftRef of fields.addSkillDraftRefs) {
             requireDraftRef(issues, actionIndex, refState.drafts, 'skill', draftRef)
@@ -158,10 +146,6 @@ function registerInlineDraftRefs(
     refState: RefState,
     issues: AssistantActionLintIssue[],
 ) {
-    const instructionDraft = normalizeDraftBlueprintCandidate(fields.instructionDraft)
-    if (isRecord(instructionDraft)) {
-        registerDraftRef(issues, actionIndex, refState.drafts, 'instruction', instructionDraft.ref)
-    }
     if (Array.isArray(fields.addSkillDrafts)) {
         for (const draft of fields.addSkillDrafts) {
             if (isRecord(draft)) {
@@ -169,6 +153,20 @@ function registerInlineDraftRefs(
             }
         }
     }
+}
+
+function hasRandomLookingFilenameSuffix(filePath: unknown) {
+    if (!isNonEmptyString(filePath)) return false
+    const parts = filePath.replace(/\\/g, '/').split('/').filter(Boolean)
+    if (parts.length < 2 || !BUNDLE_STABLE_PATH_ROOTS.has(parts[0])) return false
+    const basename = parts[parts.length - 1]
+    const stem = basename.replace(/\.[^.]+$/, '')
+    const match = stem.match(/[-_]([a-z0-9]{5,12})$/i)
+    if (!match) return false
+    const suffix = match[1]
+    if (/^\d+$/.test(suffix)) return false
+    if (/^v\d+$/i.test(suffix)) return false
+    return /[a-z]/i.test(suffix) && (/\d/.test(suffix) || /^[a-f0-9]{7,12}$/i.test(suffix))
 }
 
 export function lintAssistantActionEnvelope(envelope: AssistantActionEnvelope): AssistantActionLintIssue[] {
@@ -191,9 +189,14 @@ export function lintAssistantActionEnvelope(envelope: AssistantActionEnvelope): 
                 break
             case 'updateSkillDraft':
             case 'deleteSkillDraft':
-            case 'upsertSkillBundleFile':
             case 'deleteSkillBundleEntry':
                 requireDraftRef(issues, actionIndex, refState.drafts, 'skill', action.draftRef)
+                break
+            case 'upsertSkillBundleFile':
+                requireDraftRef(issues, actionIndex, refState.drafts, 'skill', action.draftRef)
+                if (hasRandomLookingFilenameSuffix((action as ActionRecord).path)) {
+                    pushIssue(issues, 'error', actionIndex, 'Skill bundle paths must use stable filenames. Remove random, hash, timestamp, or cache-busting suffixes from assets, references, and scripts unless the user explicitly asked for versioned files.')
+                }
                 break
             case 'createAgent':
                 lintAgentFields(actionIndex, record, refState, issues)

@@ -1,5 +1,5 @@
 import { nanoid } from 'nanoid'
-import type { PrimitiveCard } from '../../lib/primitive-types'
+import type { PackageLibraryItem } from '../../lib/primitive-types'
 import { primitiveUrnDisplayName } from '../../lib/primitive-urn'
 import type { WorkspaceTeamParticipantBinding } from '../../../shared/workspace-contracts'
 import type {
@@ -107,7 +107,7 @@ function parseTeamRelation(input: unknown, index: number): TeamRelationV1 {
     }
 }
 
-function parseTeamCardPayload(primitive: PrimitiveCard) {
+function parseTeamCardPayload(primitive: PackageLibraryItem) {
     if (!Array.isArray(primitive.participants)) {
         throw new Error('participants must be an array')
     }
@@ -184,7 +184,7 @@ async function buildMaterializedRegistryAgents(
 export async function importTeamFromPrimitiveImpl(
     get: GetState,
     set: SetState,
-    primitive: PrimitiveCard,
+    primitive: PackageLibraryItem,
     dimensions: { width: number; height: number },
 ) {
     const id = nanoid(12)

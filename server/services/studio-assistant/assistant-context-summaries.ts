@@ -37,8 +37,6 @@ export function summarizeAgent(
         } : {}),
         model: agent.model,
         modelVariant: agent.modelVariant,
-        instructionUrn: agent.instructionUrn,
-        instructionDraftId: agent.instructionDraftId,
         skillUrns: agent.skillUrns,
         skillDraftIds: agent.skillDraftIds,
     }

@@ -1,4 +1,4 @@
-import type { PrimitiveCard } from '../../lib/primitive-types'
+import type { PackageLibraryItem } from '../../lib/primitive-types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 
@@ -40,7 +40,7 @@ describe('importTeamFromPrimitiveImpl', () => {
         const harness = createHarness()
         const agentUrn = 'agent/@monarchjuno/moneymaker/ceo'
 
-        const primitive: PrimitiveCard = {
+        const primitive: PackageLibraryItem = {
             kind: 'team',
             urn: 'team/@monarchjuno/moneymaker/fullteam',
             name: 'fullteam',
@@ -64,7 +64,6 @@ describe('importTeamFromPrimitiveImpl', () => {
             name: 'CEO',
             hidden: true,
             model: null,
-            instructionRef: null,
             skillRefs: [],
             meta: {
                 derivedFrom: agentUrn,

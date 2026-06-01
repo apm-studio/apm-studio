@@ -24,7 +24,6 @@ function workspaceAgent(overrides: Partial<WorkspaceAgentNode> & { id: string })
         position: overrides.position || { x: 0, y: 0 },
         scope: overrides.scope || 'shared',
         model: overrides.model === undefined ? null : overrides.model,
-        instructionRef: overrides.instructionRef || null,
         skillRefs: overrides.skillRefs || [],
         mcpServerNames: overrides.mcpServerNames || [],
     }

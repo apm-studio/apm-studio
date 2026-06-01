@@ -1,10 +1,9 @@
-import type { SharedPrimitiveRef } from '../../../shared/chat-contracts.js'
 import type { ModelSelection } from '../../../shared/model-types.js'
+import type { SharedPrimitiveRef } from '../../../shared/chat-contracts.js'
 
 export interface AgentProjectionInput {
     agentId: string
     agentName: string
-    instructionRef: SharedPrimitiveRef | null
     agentBody?: string | null
     skillRefs: SharedPrimitiveRef[]
     model: ModelSelection
@@ -29,7 +28,6 @@ export type CodexProjectionAgentSnapshot = {
     name?: string
     model?: ModelSelection | null
     modelVariant?: string | null
-    instructionRef?: SharedPrimitiveRef | null
     agentBody?: string | null
     skillRefs?: SharedPrimitiveRef[]
     mcpServerNames?: string[]

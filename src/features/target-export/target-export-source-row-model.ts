@@ -1,4 +1,5 @@
 import type {
+    ApmPackageScope,
     ApmPackageSummary,
 } from '../../../shared/apm-contracts'
 import type { ApmSyncUnit } from '../../../shared/apm-sync-contracts'
@@ -9,27 +10,27 @@ import {
 import {
     packageReadiness,
     primitiveCountParts,
-    type TargetManagePackageSyncState,
-} from './target-manage-sync-utils'
+    type TargetExportPackageState,
+} from './target-export-sync-utils'
 
-export type TargetManageSourceStateClass = 'is-ready' | 'is-warning' | 'is-unsynced' | 'is-blocked'
+export type TargetExportSourceStateClass = 'is-ready' | 'is-warning' | 'is-unsynced' | 'is-blocked'
 
-export interface TargetManageSourcePackageRowModel {
+export interface TargetExportSourcePackageRowModel {
     badges: string[]
     detail?: string
     packageId: string
     packageName: string
     staged: boolean
-    stateClass: TargetManageSourceStateClass
+    stateClass: TargetExportSourceStateClass
     status: string
 }
 
-export function buildTargetManageSourcePackageRowModel(input: {
+export function buildTargetExportSourcePackageRowModel(input: {
     pkg: ApmPackageSummary
     staged: boolean
     syncUnit: ApmSyncUnit
-    targetState?: TargetManagePackageSyncState
-}): TargetManageSourcePackageRowModel {
+    targetState?: TargetExportPackageState
+}): TargetExportSourcePackageRowModel {
     const {
         pkg,
         staged,
@@ -40,7 +41,7 @@ export function buildTargetManageSourcePackageRowModel(input: {
     const parts = primitiveCountParts(counts)
     const readiness = packageReadiness(pkg, syncUnit)
     let status = readiness.label
-    let stateClass: TargetManageSourceStateClass = readiness.label === 'Ready' ? 'is-ready' : 'is-warning'
+    let stateClass: TargetExportSourceStateClass = readiness.label === 'Ready' ? 'is-ready' : 'is-warning'
     if (targetState === 'blocked') {
         status = 'Blocked'
         stateClass = 'is-blocked'
@@ -70,18 +71,19 @@ export function buildTargetManageSourcePackageRowModel(input: {
     }
 }
 
-export function buildTargetManagePackageDragPayload(
-    pkg: ApmPackageSummary,
+export function buildTargetExportPackageDragPayload(
+    pkg: ApmPackageSummary & { scope?: ApmPackageScope },
     syncUnit: ApmSyncUnit,
 ): DragPrimitive {
     const title = pkg.agentName || pkg.name || pkg.packageId
+    const scope = pkg.scope || 'workspace'
     return {
         kind: 'apm-package',
-        urn: `apm-package/workspace/${pkg.packageId}`,
+        urn: `apm-package/${scope}/${pkg.packageId}`,
         packageId: pkg.packageId,
         packageKind: pkg.kind,
-        scope: 'workspace',
-        source: 'workspace',
+        scope,
+        source: scope,
         name: title,
         label: title,
         description: pkg.description || '',

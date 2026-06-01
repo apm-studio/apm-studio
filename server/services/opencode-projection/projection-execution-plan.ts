@@ -1,4 +1,3 @@
-import type { SharedPrimitiveRef } from '../../../shared/chat-contracts.js'
 import {
     mergeProjectionDirtyPatches,
     type ProjectionDirtyPatch,
@@ -13,9 +12,8 @@ import type { AgentProjectionInput } from './agent-projection-types.js'
 type ProjectionTargetInput = {
     agentId: string
     agentName: string
-    instructionRef: SharedPrimitiveRef | null
     agentBody?: string | null
-    skillRefs: SharedPrimitiveRef[]
+    skillRefs: AgentProjectionInput['skillRefs']
     model: ModelSelection
     modelVariant?: string | null
     mcpServerNames: string[]
@@ -38,7 +36,6 @@ function agentToProjectionInput(
     return {
         agentId: agent.id,
         agentName: agent.name,
-        instructionRef: agent.instructionRef || null,
         agentBody: agent.agentBody || null,
         skillRefs: agent.skillRefs || [],
         model: agent.model,

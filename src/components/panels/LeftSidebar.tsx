@@ -18,6 +18,7 @@ export default function LeftSidebar({ mode = 'workspace-primitives', showThreads
     const isPackageLibraryOpen = useStudioStore((s) => s.isPackageLibraryOpen);
     const setPackageLibraryOpen = useStudioStore((s) => s.setPackageLibraryOpen);
     const focusSnapshot = useStudioStore((s) => s.focusSnapshot);
+    const workspaceMode = useStudioStore((s) => s.workspaceMode);
     const [sidebarWidth, setSidebarWidth] = useState(240);
     const [drawerWidth, setDrawerWidth] = useState(320);
 
@@ -78,6 +79,7 @@ export default function LeftSidebar({ mode = 'workspace-primitives', showThreads
     const workspaceOnly = mode === 'workspace-only';
     const canUsePackageLibrary = !isFocusActive && mode === 'workspace-primitives';
     const isPackageDrawerOpen = canUsePackageLibrary && isPackageLibraryOpen;
+    const showApmUserScope = workspaceMode === 'import' || workspaceMode === 'export';
 
     useEffect(() => {
         if (!canUsePackageLibrary && isPackageLibraryOpen) {
@@ -89,7 +91,11 @@ export default function LeftSidebar({ mode = 'workspace-primitives', showThreads
         <div className={`sidebar-container ${isPackageDrawerOpen ? 'sidebar-container--drawer-open' : ''}`}>
             <div className="sidebar" style={{ width: sidebarWidth }}>
                 <div className="sidebar-main-top" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                    <WorkspaceExplorer workspaceOnly={workspaceOnly} showThreads={showThreads} />
+                    <WorkspaceExplorer
+                        workspaceOnly={workspaceOnly}
+                        showThreads={showThreads}
+                        showApmUserScope={showApmUserScope}
+                    />
                 </div>
                 {canUsePackageLibrary && (
                     <div className="sidebar-main-bottom sidebar-main-bottom--package-drawer">

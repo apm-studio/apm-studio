@@ -9,10 +9,12 @@ import type {
     ApmSyncTargetsResponse,
 } from '../../../shared/apm-sync-contracts'
 import {
-    buildTargetManageControllerModel,
-    normalizeTargetManageStagedPackages,
-    normalizeTargetManageTargetSelection,
-} from './target-manage-controller-model'
+    buildTargetExportControllerModel,
+    normalizeTargetExportStagedPackages,
+    normalizeTargetExportStagedScopeCopies,
+    normalizeTargetExportTargetSelection,
+} from './target-export-controller-model'
+import type { TargetExportScopedPackage } from './target-export-sync-utils'
 
 function packageSummary(partial: Partial<ApmPackageSummary>): ApmPackageSummary {
     return {
@@ -31,6 +33,20 @@ function packageSummary(partial: Partial<ApmPackageSummary>): ApmPackageSummary 
             warnings: [],
         },
         ...partial,
+    }
+}
+
+function projectPackage(partial: Partial<ApmPackageSummary> = {}): TargetExportScopedPackage {
+    return {
+        ...packageSummary(partial),
+        scope: 'workspace',
+    }
+}
+
+function userPackage(partial: Partial<ApmPackageSummary> = {}): TargetExportScopedPackage {
+    return {
+        ...packageSummary(partial),
+        scope: 'user',
     }
 }
 
@@ -55,7 +71,7 @@ function targetSummary(partial: Partial<ApmSyncTargetSummary>): ApmSyncTargetSum
         outputHint: '.codex',
         commandPreview: 'apm install <package> --target codex',
         available: true,
-        supportedSyncUnits: ['studio-agent', 'agents', 'skills'],
+        supportedSyncUnits: ['agents', 'skills'],
         strategy: 'cli-first',
         currentItems: [],
         definitions: [],
@@ -87,17 +103,26 @@ function syncResult(rows: ApmSyncRunResponse['results']): ApmSyncRunResponse {
     }
 }
 
-describe('Target manage controller model', () => {
+describe('Target export controller model', () => {
     it('normalizes staged package and target selection against available model ids', () => {
-        expect(normalizeTargetManageStagedPackages([], ['a', 'b'])).toEqual([])
-        expect(normalizeTargetManageStagedPackages(['a', 'stale'], ['a', 'b'])).toEqual(['a'])
-        expect(normalizeTargetManageStagedPackages(['stale'], ['a', 'b'])).toEqual([])
-        expect(normalizeTargetManageTargetSelection(['gemini', 'codex'], ['codex'])).toEqual(['codex'])
-        expect(normalizeTargetManageTargetSelection(['gemini'], [])).toEqual([])
+        expect(normalizeTargetExportStagedPackages([], ['a', 'b'])).toEqual([])
+        expect(normalizeTargetExportStagedPackages(['a', 'stale'], ['a', 'b'])).toEqual(['a'])
+        expect(normalizeTargetExportStagedPackages(['stale'], ['a', 'b'])).toEqual([])
+        expect(normalizeTargetExportTargetSelection(['gemini', 'codex'], ['codex'])).toEqual(['codex'])
+        expect(normalizeTargetExportTargetSelection(['gemini'], [])).toEqual([])
+        expect(normalizeTargetExportStagedScopeCopies([
+            { packageId: 'skill-1', fromScope: 'user', toScope: 'workspace' },
+            { packageId: 'missing', fromScope: 'user', toScope: 'workspace' },
+        ], {
+            user: ['skill-1'],
+            workspace: [],
+        })).toEqual([
+            { packageId: 'skill-1', fromScope: 'user', toScope: 'workspace' },
+        ])
     })
 
     it('builds the active target comparison model from Studio packages, target definitions, and last sync results', () => {
-        const pkg = packageSummary({
+        const pkg = projectPackage({
             packageId: 'planner',
             agentName: 'Planner',
             agentComponents: {
@@ -119,8 +144,9 @@ describe('Target manage controller model', () => {
             path: '.codex/agents/manual-agent.toml',
         })
 
-        const model = buildTargetManageControllerModel({
-            apmPackages: [pkg],
+        const model = buildTargetExportControllerModel({
+            projectPackages: [pkg],
+            userPackages: [],
             targetsResponse: targetsResponse([
                 targetSummary({
                     definitions: [managedDefinition, targetOnlyDefinition],
@@ -137,8 +163,9 @@ describe('Target manage controller model', () => {
             selectedSyncUnit: 'agents',
             selectedTargets: ['codex'],
             stagedPackageIds: ['planner'],
+            stagedScopeCopies: [],
             filter: '',
-            syncChoices: {},
+            exportChoices: {},
             loadingTargets: false,
             running: false,
             lastResult: syncResult([{
@@ -153,32 +180,33 @@ describe('Target manage controller model', () => {
         })
 
         expect(model.activeTarget?.id).toBe('codex')
-        expect(model.activePushPackageIds).toEqual(['planner'])
+        expect(model.activeSavePackageIds).toEqual(['planner'])
         expect(model.activeTargetDefinitionByPackage.get('planner')?.id).toBe('managed-planner')
         expect(model.targetOnlyDefinitions.map((definition) => definition.id)).toEqual(['target-only'])
         expect(model.activeTargetCurrentByPackage.get('planner')?.artifactCount).toBe(1)
         expect(model.activeTargetResultByPackage.get('planner')?.status).toBe('synced')
-        expect(model.activeTargetPackageSyncStateByPackage.get('planner')).toBe('synced')
+        expect(model.activeTargetPackageExportStateByPackage.get('planner')).toBe('synced')
         expect(model.unsyncedPackageIds).toEqual([])
         expect(model.activeTargetPlanSteps).toEqual(expect.arrayContaining([
-            'Build a temp package from APM Agents.',
-            'Keep model settings inside Studio Agent runtime.',
+            'Build a temp package from Agents.',
+            'Keep model settings inside Studio runtime.',
         ]))
-        expect(model.syncDisabled).toBe(false)
+        expect(model.saveDisabled).toBe(false)
     })
 
     it('marks local packages without target ownership as unsynced and excludes managed local definitions from target-only rows', () => {
-        const syncedPkg = packageSummary({
+        const syncedPkg = projectPackage({
             packageId: 'synced',
             name: 'Synced',
         })
-        const unsyncedPkg = packageSummary({
+        const unsyncedPkg = projectPackage({
             packageId: 'unsynced',
             name: 'Unsynced',
         })
 
-        const model = buildTargetManageControllerModel({
-            apmPackages: [syncedPkg, unsyncedPkg],
+        const model = buildTargetExportControllerModel({
+            projectPackages: [syncedPkg, unsyncedPkg],
+            userPackages: [],
             targetsResponse: targetsResponse([
                 targetSummary({
                     definitions: [
@@ -198,28 +226,31 @@ describe('Target manage controller model', () => {
             selectedSyncUnit: 'agents',
             selectedTargets: ['codex'],
             stagedPackageIds: [],
+            stagedScopeCopies: [],
             filter: '',
-            syncChoices: {},
+            exportChoices: {},
             loadingTargets: false,
             running: false,
             lastResult: null,
         })
 
-        expect(model.activeTargetPackageSyncStateByPackage.get('synced')).toBe('synced')
-        expect(model.activeTargetPackageSyncStateByPackage.get('unsynced')).toBe('unsynced')
+        expect(model.activeTargetPackageExportStateByPackage.get('synced')).toBe('synced')
+        expect(model.activeTargetPackageExportStateByPackage.get('unsynced')).toBe('unsynced')
         expect(model.unsyncedPackageIds).toEqual(['unsynced'])
         expect(model.targetOnlyDefinitions.map((definition) => definition.id)).toEqual(['manual-target-only'])
     })
 
-    it('disables sync when every active source item is marked skip', () => {
-        const model = buildTargetManageControllerModel({
-            apmPackages: [packageSummary({ packageId: 'planner' })],
+    it('disables save when every active source item is marked skip', () => {
+        const model = buildTargetExportControllerModel({
+            projectPackages: [projectPackage({ packageId: 'planner' })],
+            userPackages: [],
             targetsResponse: targetsResponse([targetSummary({})]),
             selectedSyncUnit: 'agents',
             selectedTargets: ['codex'],
             stagedPackageIds: ['planner'],
+            stagedScopeCopies: [],
             filter: '',
-            syncChoices: {
+            exportChoices: {
                 'codex:planner': 'skip',
             },
             loadingTargets: false,
@@ -227,13 +258,14 @@ describe('Target manage controller model', () => {
             lastResult: null,
         })
 
-        expect(model.activePushPackageIds).toEqual([])
-        expect(model.syncDisabled).toBe(true)
+        expect(model.activeSavePackageIds).toEqual([])
+        expect(model.saveDisabled).toBe(true)
     })
 
-    it('keeps unsupported but installed targets selectable while blocking sync', () => {
-        const model = buildTargetManageControllerModel({
-            apmPackages: [packageSummary({ packageId: 'planner' })],
+    it('keeps unsupported but installed targets selectable while blocking save', () => {
+        const model = buildTargetExportControllerModel({
+            projectPackages: [projectPackage({ packageId: 'planner' })],
+            userPackages: [],
             targetsResponse: targetsResponse([
                 targetSummary({
                     id: 'gemini',
@@ -241,11 +273,12 @@ describe('Target manage controller model', () => {
                     supportedSyncUnits: ['skills'],
                 }),
             ]),
-            selectedSyncUnit: 'studio-agent',
+            selectedSyncUnit: 'agents',
             selectedTargets: ['gemini'],
             stagedPackageIds: ['planner'],
+            stagedScopeCopies: [],
             filter: '',
-            syncChoices: {},
+            exportChoices: {},
             loadingTargets: false,
             running: false,
             lastResult: null,
@@ -254,26 +287,56 @@ describe('Target manage controller model', () => {
         expect(model.activeTarget?.id).toBe('gemini')
         expect(model.selectableTargetIds).toEqual(['gemini'])
         expect(model.availableTargetIds).toEqual([])
-        expect(model.syncDisabled).toBe(true)
-        expect(model.activeTargetAvailability?.reason).toBe('Gemini does not support Studio Agent export.')
+        expect(model.saveDisabled).toBe(true)
+        expect(model.activeTargetAvailability?.reason).toBe('Gemini does not support Agents.')
     })
 
-    it('keeps sync disabled until packages are staged', () => {
-        const model = buildTargetManageControllerModel({
-            apmPackages: [packageSummary({ packageId: 'planner' })],
+    it('keeps save disabled until packages are staged', () => {
+        const model = buildTargetExportControllerModel({
+            projectPackages: [projectPackage({ packageId: 'planner' })],
+            userPackages: [],
             targetsResponse: targetsResponse([targetSummary({})]),
             selectedSyncUnit: 'agents',
             selectedTargets: ['codex'],
             stagedPackageIds: [],
+            stagedScopeCopies: [],
             filter: '',
-            syncChoices: {},
+            exportChoices: {},
             loadingTargets: false,
             running: false,
             lastResult: null,
         })
 
         expect(model.stagedPackages).toEqual([])
-        expect(model.activePushPackageIds).toEqual([])
-        expect(model.syncDisabled).toBe(true)
+        expect(model.activeSavePackageIds).toEqual([])
+        expect(model.saveDisabled).toBe(true)
+    })
+
+    it('enables save for staged user/workspace package copies without target export rows', () => {
+        const model = buildTargetExportControllerModel({
+            projectPackages: [],
+            userPackages: [userPackage({ packageId: 'review-skill', kind: 'skill' })],
+            targetsResponse: targetsResponse([targetSummary({})]),
+            selectedSyncUnit: 'skills',
+            selectedTargets: ['codex'],
+            stagedPackageIds: [],
+            stagedScopeCopies: [{
+                packageId: 'review-skill',
+                fromScope: 'user',
+                toScope: 'workspace',
+            }],
+            filter: '',
+            exportChoices: {},
+            loadingTargets: false,
+            running: false,
+            lastResult: null,
+        })
+
+        expect(model.activeSavePackageIds).toEqual([])
+        expect(model.filteredUserPackages.map((pkg) => pkg.packageId)).toEqual(['review-skill'])
+        expect(model.saveDisabled).toBe(false)
+        expect(model.activeTargetPlanSteps).toEqual(expect.arrayContaining([
+            'Copy 1 package between User and Workspace.',
+        ]))
     })
 })

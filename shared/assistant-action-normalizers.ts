@@ -1,6 +1,5 @@
 import {
     cleanUndefinedFields,
-    hasMeaningfulDraftBlueprint,
     isNonEmptyString,
     isRecord,
     normalizeDraftBlueprintCandidate,
@@ -140,25 +139,10 @@ function normalizeDeleteSkillBundleEntryActionCandidate(action: ActionRecord) {
 }
 
 function normalizeAgentFieldsCandidate(action: ActionRecord) {
-    const normalizedInstructionDraftId = normalizeOptionalString(action.instructionDraftId)
-    const normalizedInstructionDraftRef = normalizeOptionalString(action.instructionDraftRef)
-    const normalizedInstructionDraft = normalizeDraftBlueprintCandidate(action.instructionDraft)
-    const normalizedInstructionUrn = normalizeOptionalString(action.instructionUrn, { allowNull: true })
-
     return cleanUndefinedFields({
         model: normalizeModelBlueprintCandidate(action.model),
         modelVariant: normalizeOptionalString(action.modelVariant, { allowNull: true }),
         description: normalizeOptionalString(action.description, { allowNull: true }),
-        instructionUrn: normalizedInstructionUrn === null && (
-            isNonEmptyString(normalizedInstructionDraftId)
-            || isNonEmptyString(normalizedInstructionDraftRef)
-            || hasMeaningfulDraftBlueprint(normalizedInstructionDraft)
-        )
-            ? undefined
-            : normalizedInstructionUrn,
-        instructionDraftId: normalizedInstructionDraftId,
-        instructionDraftRef: normalizedInstructionDraftRef,
-        instructionDraft: normalizedInstructionDraft,
         addSkillUrns: normalizeOptionalStringArray(action.addSkillUrns),
         addSkillDraftIds: normalizeOptionalStringArray(action.addSkillDraftIds),
         addSkillDraftRefs: normalizeOptionalStringArray(action.addSkillDraftRefs),

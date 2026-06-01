@@ -1,4 +1,5 @@
 import type {
+    ApmPackageScope,
     ApmPackageSummary,
 } from '../../../shared/apm-contracts'
 import type {
@@ -14,9 +15,10 @@ import {
     APM_SYNC_UNITS,
 } from '../../../shared/apm-sync-contracts'
 
-export type TargetManageSidebarSection = 'packages' | 'primitives'
-export type TargetManagePackageSyncState = 'synced' | 'unsynced' | 'blocked'
-export type TargetSyncChoice = 'push' | 'skip'
+export type TargetExportSidebarSection = 'packages' | 'primitives'
+export type TargetExportPackageState = 'synced' | 'unsynced' | 'blocked'
+export type TargetExportChoice = 'save' | 'skip'
+export type TargetExportScopedPackage = ApmPackageSummary & { scope: ApmPackageScope }
 
 export const PRIMITIVE_SYNC_UNITS: ApmPrimitiveSyncUnit[] = [
     'agents',
@@ -42,19 +44,19 @@ export function unitLabel(unit: ApmSyncUnit) {
     return APM_SYNC_UNITS.find((entry) => entry.id === unit)?.label || unit
 }
 
-export function sidebarSectionForUnit(unit: ApmSyncUnit): TargetManageSidebarSection {
-    return unit === 'studio-agent' ? 'packages' : 'primitives'
+export function sidebarSectionForUnit(_unit: ApmSyncUnit): TargetExportSidebarSection {
+    return 'primitives'
 }
 
 export function primitiveUnitForSidebar(unit: ApmSyncUnit): ApmPrimitiveSyncUnit {
-    return unit === 'studio-agent' ? 'agents' : unit
+    return unit
 }
 
 export function primitiveCountParts(
     counts: ApmSyncPrimitiveCounts,
-    syncUnit: ApmSyncUnit = 'studio-agent',
+    syncUnit: ApmSyncUnit = 'agents',
 ) {
-    const keys: ApmPrimitiveSyncUnit[] = syncUnit === 'studio-agent' ? PRIMITIVE_SYNC_UNITS : [syncUnit]
+    const keys: ApmPrimitiveSyncUnit[] = [syncUnit]
     return keys
         .map((key) => {
             const value = counts[key] || 0
@@ -67,9 +69,20 @@ export function primitiveCountParts(
 
 export function primitiveSummary(
     counts: ApmSyncPrimitiveCounts,
-    syncUnit: ApmSyncUnit = 'studio-agent',
+    syncUnit: ApmSyncUnit = 'agents',
 ) {
     return primitiveCountParts(counts, syncUnit).join(', ') || `No ${unitLabel(syncUnit)}`
+}
+
+export function packageScopeLabel(scope: ApmPackageScope) {
+    return scope === 'user' ? 'User' : 'Workspace'
+}
+
+export function scopeTargetExportPackages(
+    packages: ApmPackageSummary[],
+    scope: ApmPackageScope,
+): TargetExportScopedPackage[] {
+    return packages.map((pkg) => ({ ...pkg, scope }))
 }
 
 export function packageSearchHaystack(pkg: ApmPackageSummary) {
@@ -96,8 +109,6 @@ export function packageHasSyncUnit(pkg: ApmPackageSummary, syncUnit: ApmSyncUnit
 
 export function unitSourcePath(syncUnit: ApmSyncUnit) {
     switch (syncUnit) {
-        case 'studio-agent':
-            return 'packages/*'
         case 'agents':
             return 'packages/*/.apm/agents'
         case 'instructions':
@@ -124,33 +135,21 @@ export function packageReadiness(pkg: ApmPackageSummary, syncUnit: ApmSyncUnit) 
     const warnings = pkg.microsoftApm?.warnings || []
     return warnings.length > 0
         ? { label: 'Check', title: warnings.join('\n') }
-        : { label: 'Ready', title: `${unitLabel(syncUnit)} can be synced from this package.` }
+        : { label: 'Ready', title: `${unitLabel(syncUnit)} can be exported from this package.` }
 }
 
 export function targetAvailability(
     target: ApmSyncTargetSummary,
     syncUnit: ApmSyncUnit,
-    selectedPackages: ApmPackageSummary[],
+    _selectedPackages: ApmPackageSummary[],
 ) {
     if (!target.available) {
         return { available: false, reason: target.disabledReason || 'Target unavailable.' }
     }
-    if (syncUnit !== 'studio-agent') {
-        const supported = target.supportedSyncUnits.includes(syncUnit)
-        return {
-            available: supported,
-            reason: supported ? null : `${target.label} does not support ${unitLabel(syncUnit)}.`,
-        }
-    }
-
-    const unsupportedPackage = selectedPackages.find((pkg) => !packageHasSyncUnit(pkg, syncUnit))
+    const supported = target.supportedSyncUnits.includes(syncUnit)
     return {
-        available: target.supportedSyncUnits.includes(syncUnit) && !unsupportedPackage,
-        reason: unsupportedPackage
-            ? `${unsupportedPackage.agentName || unsupportedPackage.name} is not a Studio Agent package.`
-            : target.supportedSyncUnits.includes(syncUnit)
-                ? null
-                : `${target.label} does not support ${unitLabel(syncUnit)} export.`,
+        available: supported,
+        reason: supported ? null : `${target.label} does not support ${unitLabel(syncUnit)}.`,
     }
 }
 

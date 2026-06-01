@@ -3,27 +3,6 @@ import { store, type AssistantRefState } from './assistant-action-state'
 import { resolveDraftId } from './assistant-action-resolvers'
 import { createDraft } from './assistant-action-draft-context'
 
-async function resolveInstructionRef(
-    fields: AssistantAgentFields,
-    refs: AssistantRefState,
-): Promise<{ kind: 'registry'; urn: string } | { kind: 'draft'; draftId: string } | null | undefined> {
-    if (fields.instructionUrn !== undefined) {
-        return fields.instructionUrn ? { kind: 'registry', urn: fields.instructionUrn } : null
-    }
-    if (fields.instructionDraftId) {
-        return { kind: 'draft', draftId: fields.instructionDraftId }
-    }
-    if (fields.instructionDraftRef) {
-        const draftId = resolveDraftId(refs, 'instruction', { draftRef: fields.instructionDraftRef })
-        return draftId ? { kind: 'draft', draftId } : null
-    }
-    if (fields.instructionDraft) {
-        const draftId = await createDraft('instruction', fields.instructionDraft, refs)
-        return { kind: 'draft', draftId }
-    }
-    return undefined
-}
-
 async function applySkillAdditions(
     agentId: string,
     fields: AssistantAgentFields,
@@ -66,10 +45,6 @@ export async function applyAgentFields(
         s.updateAgentAuthoringMeta(agentId, {
             description: fields.description || '',
         })
-    }
-    const instructionRef = await resolveInstructionRef(fields, refs)
-    if (instructionRef !== undefined) {
-        s.setAgentInstructionRef(agentId, instructionRef)
     }
     await applySkillAdditions(agentId, fields, refs)
     applySkillRemovals(agentId, fields)

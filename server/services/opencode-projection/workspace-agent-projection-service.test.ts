@@ -85,7 +85,6 @@ describe('ensureAgentProjection source boundaries', () => {
         const result = await ensureAgentProjection({
             agentId: 'agent-1',
             agentName: 'Agent',
-            instructionRef: { kind: 'draft', draftId: 'instruction-draft-1' },
             skillRefs: [{ kind: 'draft', draftId: 'skill-draft-1' }],
             model: { provider: 'openai', modelId: 'gpt-5.4' },
             modelVariant: null,
@@ -107,7 +106,6 @@ describe('ensureAgentProjection source boundaries', () => {
             workingDir,
             expect.objectContaining({
                 agentId: 'agent-1',
-                instructionRef: { kind: 'draft', draftId: 'instruction-draft-1' },
                 executionDir: workingDir,
             }),
             expect.any(Array),
@@ -133,7 +131,6 @@ describe('ensureAgentProjection source boundaries', () => {
         const result = await ensureAgentProjection({
             agentId: 'agent-1',
             agentName: 'Agent',
-            instructionRef: null,
             skillRefs: [],
             model: { provider: 'openai', modelId: 'gpt-5.4' },
             modelVariant: null,
@@ -159,7 +156,6 @@ describe('ensureAgentProjection source boundaries', () => {
         const first = await ensureAgentProjection({
             agentId: 'Lead',
             agentName: 'Lead',
-            instructionRef: null,
             skillRefs: [],
             model: { provider: 'openai', modelId: 'gpt-5.4' },
             modelVariant: null,
@@ -171,7 +167,6 @@ describe('ensureAgentProjection source boundaries', () => {
         const second = await ensureAgentProjection({
             agentId: 'Lead',
             agentName: 'Lead',
-            instructionRef: null,
             skillRefs: [],
             model: { provider: 'openai', modelId: 'gpt-5.4' },
             modelVariant: null,

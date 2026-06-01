@@ -1,4 +1,4 @@
-import type { PrimitiveCard } from './lib/primitive-types'
+import type { PackageLibraryItem } from './lib/primitive-types'
 import { Hexagon, Zap, Cpu, Server, Package, MessageSquare, Workflow } from 'lucide-react'
 import { useStudioStore } from './store'
 import type { AgentDraftContent, TeamDraftContent } from '../shared/draft-contracts'
@@ -106,7 +106,7 @@ export function createDragEndHandler(
                     store.importTeamFromDraft(primitive.name || 'Draft Team', cfg)
                     return true
                 }
-                await store.importTeamFromPrimitive(primitive as PrimitiveCard)
+                await store.importTeamFromPrimitive(primitive as PackageLibraryItem)
                 return true
             }
 
@@ -124,6 +124,10 @@ export function createDragEndHandler(
         // Standalone agent drops
         if (dropData.agentId) {
             if (primitive.kind === 'apm-package') {
+                if (primitive.packageKind === 'instruction') {
+                    showDropWarning('Instruction packages are standalone project/file rules. Open them from Packages or export them through Export.')
+                    return
+                }
                 const packagePrimitive = await resolveApmPackagePrimitiveForAgentDrop(primitive, dropData.type, showDropWarning)
                 if (packagePrimitive) {
                     await applyPrimitiveToAgentTarget(

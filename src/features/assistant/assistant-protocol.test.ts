@@ -60,7 +60,7 @@ describe('assistant-protocol', () => {
         expect(envelope?.actions[0]).toMatchObject({ type: 'createAgent', name: 'Writer' })
     })
 
-    it('normalizes empty agent Instruction placeholders before linting', () => {
+    it('drops unknown agent fields before linting', () => {
         const envelope = parseAssistantActionEnvelope({
             version: 1,
             actions: [{
@@ -68,18 +68,7 @@ describe('assistant-protocol', () => {
                 ref: 'brand',
                 name: 'Brand Strategist',
                 model: { provider: 'openai', modelId: 'gpt-5.3-codex' },
-                instructionUrn: null,
-                instructionDraftId: '',
-                instructionDraftRef: '',
-                instructionDraft: {
-                    ref: '',
-                    name: '',
-                    content: '',
-                    slug: '',
-                    description: '',
-                    tags: [],
-                    openEditor: false,
-                },
+                unknownAgentField: true,
             }],
         })
 
@@ -90,9 +79,7 @@ describe('assistant-protocol', () => {
             name: 'Brand Strategist',
             model: { provider: 'openai', modelId: 'gpt-5.3-codex' },
         })
-        expect((envelope?.actions[0] as { instructionDraft?: unknown }).instructionDraft).toBeUndefined()
-        expect((envelope?.actions[0] as { instructionDraftId?: unknown }).instructionDraftId).toBeUndefined()
-        expect((envelope?.actions[0] as { instructionDraftRef?: unknown }).instructionDraftRef).toBeUndefined()
+        expect((envelope?.actions[0] as Record<string, unknown>).unknownAgentField).toBeUndefined()
         expect(lintAssistantActionEnvelope(envelope!)).toEqual([])
     })
 
@@ -101,16 +88,10 @@ describe('assistant-protocol', () => {
             version: 1,
             actions: [
                 {
-                    type: 'createAgent',
-                    ref: 'writer',
-                    name: 'Writer',
-                    model: { provider: 'openai', modelId: 'gpt-5', extra: 'drop-me' },
-                    instructionDraft: {
-                        ref: 'writer-instruction',
-                        name: 'Writer Instruction',
-                        content: '# Role',
-                        extra: 'drop-me',
-                    },
+                type: 'createAgent',
+                ref: 'writer',
+                name: 'Writer',
+                model: { provider: 'openai', modelId: 'gpt-5', extra: 'drop-me' },
                     unknownTopLevel: true,
                 },
                 {
@@ -148,11 +129,6 @@ describe('assistant-protocol', () => {
                 ref: 'writer',
                 name: 'Writer',
                 model: { provider: 'openai', modelId: 'gpt-5' },
-                instructionDraft: {
-                    ref: 'writer-instruction',
-                    name: 'Writer Instruction',
-                    content: '# Role',
-                },
             },
             {
                 type: 'createTeam',
@@ -175,6 +151,36 @@ describe('assistant-protocol', () => {
                     messagesFromAgentRefs: ['writer'],
                     messageTags: ['handoff'],
                 },
+            },
+        ])
+    })
+
+    it('rejects random-looking suffixes in skill bundle filenames', () => {
+        const envelope = parseAssistantActionEnvelope({
+            version: 1,
+            actions: [
+                { type: 'createSkillDraft', ref: 'skill', name: 'Research Skill', content: '# Research' },
+                {
+                    type: 'upsertSkillBundleFile',
+                    draftRef: 'skill',
+                    path: 'assets/report-template-a1b2c3.md',
+                    content: 'template',
+                },
+                {
+                    type: 'upsertSkillBundleFile',
+                    draftRef: 'skill',
+                    path: 'assets/report-template-v2.md',
+                    content: 'versioned template',
+                },
+            ],
+        })
+
+        expect(envelope).not.toBeNull()
+        expect(lintAssistantActionEnvelope(envelope!)).toEqual([
+            {
+                level: 'error',
+                actionIndex: 1,
+                message: 'Skill bundle paths must use stable filenames. Remove random, hash, timestamp, or cache-busting suffixes from assets, references, and scripts unless the user explicitly asked for versioned files.',
             },
         ])
     })

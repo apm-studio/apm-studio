@@ -13,7 +13,7 @@ export type AgentComposeCard = {
     key: string
     title: string
     description: string
-    hint?: string
+    hint?: string | null
     icon: ReactNode
     items?: AgentComposeCardItem[]
     isOver?: boolean

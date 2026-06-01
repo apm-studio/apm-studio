@@ -303,7 +303,6 @@ export function createChatSendActions(
                 agent: {
                     agentId: target.requestTarget.agentId,
                     agentName: target.requestTarget.agentName,
-                    instructionRef: runtimeConfig.instructionRef,
                     agentBody: runtimeConfig.agentBody,
                     skillRefs: runtimeConfig.skillRefs,
                     extraSkillRefs,

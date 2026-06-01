@@ -4,11 +4,11 @@
  *
  * Drill-down pattern:
  *   Main view: Compose cards (DnD + "Drag & drop or click to configure")
- *   Click a card → detail view for that category (Instruction, Skills, Model, MCP)
+ *   Click a card → detail view for that category (Agent Body, Skills, Model, MCP)
  *   Back button returns to main card view.
  */
 import { useState } from 'react'
-import { ArrowLeft, ChevronLeft, Cpu, Hexagon, Server, Zap } from 'lucide-react'
+import { ArrowLeft, ChevronLeft, Cpu, FileText, Server, Zap } from 'lucide-react'
 
 import { unresolvedDeclaredMcpServerNames } from '../../lib/agents'
 import type {
@@ -20,19 +20,18 @@ import type { WorkspaceModelConfig,
 
 import AgentComposeCards from './AgentComposeCards'
 import {
+    AgentBodyDetail,
     AgentSkillsDetail,
     AgentMcpDetail,
     AgentModelDetail,
-    AgentInstructionDetail,
 } from './agent-edit-sections'
 
-type DetailView = 'instruction' | 'skills' | 'model' | 'mcp' | null
+type DetailView = 'body' | 'skills' | 'model' | 'mcp' | null
 
 type AgentEditPanelProps = {
     agentId: string
     agent: WorkspaceAgentNode | null
     presentation: {
-        instructionPrimitive: { urn: string; name: string; description?: string } | null
         skillPrimitives: Array<{ urn: string; name: string; description?: string }>
         mcpServers: McpServerSummary[]
         mcpPlaceholders: string[]
@@ -47,7 +46,6 @@ type AgentEditPanelProps = {
     mcpBindingRows: Array<{ placeholderName: string; serverName: string | null }>
     mcpBindingOptions: Array<{ name: string; disabled: boolean }>
     dropRefs: {
-        instruction: { isOver: boolean; setNodeRef: (node: HTMLElement | null) => void }
         skill: { isOver: boolean; setNodeRef: (node: HTMLElement | null) => void }
         model: { isOver: boolean; setNodeRef: (node: HTMLElement | null) => void }
         mcp: { isOver: boolean; setNodeRef: (node: HTMLElement | null) => void }
@@ -58,14 +56,13 @@ type AgentEditPanelProps = {
     onNameChange: (value: string) => void
     onDescriptionChange: (value: string) => void
     onAgentBodyChange: (value: string) => void
-    onInstructionRefChange: (ref: SharedPrimitiveRef | null) => void
     onModelChange: (model: WorkspaceModelConfig | null) => void
     onModelVariantChange: (variant: string | null) => void
     onRemoveSkill: (id: string, key: string) => void
     onRemoveMcp: (id: string, serverName: string) => void
     onSetMcpBinding: (id: string, placeholderName: string, serverName: string | null) => void
 
-    onOpenPrimitiveEditor: (kind: 'instruction' | 'skill', targetRef: SharedPrimitiveRef | null, attachMode: 'instruction' | 'skill-new' | 'skill-replace') => void
+    onOpenPrimitiveEditor: (kind: 'skill', targetRef: SharedPrimitiveRef | null, attachMode: 'skill-new' | 'skill-replace') => void
 }
 
 export default function AgentEditPanel({
@@ -82,7 +79,6 @@ export default function AgentEditPanel({
     onNameChange,
     onDescriptionChange,
     onAgentBodyChange,
-    onInstructionRefChange,
     onModelChange,
     onModelVariantChange,
     onRemoveSkill,
@@ -96,14 +92,16 @@ export default function AgentEditPanel({
 
     // ── Detail view titles ──
     const detailTitles: Record<string, string> = {
-        instruction: 'Instruction',
+        body: 'Agent Body',
         skills: 'Skills',
-        model: 'Model & Runtime',
-        mcp: 'MCP & Relations',
+        model: 'Runtime',
+        mcp: 'MCP Servers',
     }
 
     // ── Compose card descriptions (with counts) ──
-    const instructionDesc = presentation.instructionPrimitive ? presentation.instructionPrimitive.name : 'Drag & drop or click to add'
+    const bodyDesc = agent?.agentBody?.trim()
+        ? `${agent.agentBody.trim().length} character${agent.agentBody.trim().length === 1 ? '' : 's'}`
+        : 'Write the Agent role and durable behavior'
     const skillDesc = presentation.skillPrimitives.length > 0
         ? `${presentation.skillPrimitives.length} Skill${presentation.skillPrimitives.length !== 1 ? 's' : ''}`
         : 'Drag & drop or click to add'
@@ -150,94 +148,68 @@ export default function AgentEditPanel({
             </div>
             )}
 
-            {/* ── Name (always visible in both views) ── */}
+            {/* ── Main View: Compose Cards ── */}
             {!detailView && (
-                <div className="adv-section">
-                    <div className="adv-section__body">
-                        <label className="adv-field">
-                            <span className="adv-field__label">Name</span>
-                            <input
-                                className="text-input nodrag nowheel"
-                                value={agent?.name || ''}
-                                onChange={(event) => onNameChange(event.target.value)}
-                            />
-                        </label>
-                        <label className="adv-field">
-                            <span className="adv-field__label">Description</span>
-                            <input
-                                className="text-input nodrag nowheel"
-                                value={agent?.meta?.authoring?.description || ''}
-                                onChange={(event) => onDescriptionChange(event.target.value)}
-                                placeholder="Describe this Studio Agent"
-                            />
-                        </label>
-                        <label className="adv-field">
-                            <span className="adv-field__label">Studio Agent Body</span>
-                            <textarea
-                                className="text-input adv-field__textarea nodrag nowheel"
-                                value={agent?.agentBody || ''}
-                                onChange={(event) => onAgentBodyChange(event.target.value)}
-                                placeholder="Write the target-agnostic body for this Studio Agent."
-                                rows={5}
-                            />
-                        </label>
+                <div className="edit-overview">
+                    <div className="edit-overview__group">
+                        <span className="section-title">APM Package</span>
+                        <AgentComposeCards
+                            cards={[
+                                {
+                                    key: 'body',
+                                    title: 'Agent Body',
+                                    description: bodyDesc,
+                                    hint: agent?.meta?.authoring?.description || agent?.name || null,
+                                    icon: <FileText size={12} />,
+                                    onClick: () => setDetailView('body'),
+                                },
+                                {
+                                    key: 'skills',
+                                    title: 'Skills',
+                                    description: skillDesc,
+                                    icon: <Zap size={12} />,
+                                    isOver: dropRefs.skill.isOver,
+                                    setNodeRef: dropRefs.skill.setNodeRef,
+                                    onClick: () => setDetailView('skills'),
+                                },
+                                {
+                                    key: 'mcp',
+                                    title: 'MCP',
+                                    description: mcpDesc,
+                                    icon: <Server size={12} />,
+                                    isOver: dropRefs.mcp.isOver,
+                                    setNodeRef: dropRefs.mcp.setNodeRef,
+                                    onClick: () => setDetailView('mcp'),
+                                },
+                            ]}
+                        />
+                    </div>
+                    <div className="edit-overview__group">
+                        <span className="section-title">Runtime Settings</span>
+                        <AgentComposeCards
+                            cards={[
+                                {
+                                    key: 'model',
+                                    title: 'Model',
+                                    description: modelDesc,
+                                    icon: <Cpu size={12} />,
+                                    isOver: dropRefs.model.isOver,
+                                    setNodeRef: dropRefs.model.setNodeRef,
+                                    onClick: () => setDetailView('model'),
+                                },
+                            ]}
+                        />
                     </div>
                 </div>
             )}
 
-            {/* ── Main View: Compose Cards ── */}
-            {!detailView && (
-                <>
-                    <AgentComposeCards
-                        cards={[
-                            {
-                                key: 'instruction',
-                                title: 'Instruction',
-                                description: instructionDesc,
-                                icon: <Hexagon size={12} />,
-                                isOver: dropRefs.instruction.isOver,
-                                setNodeRef: dropRefs.instruction.setNodeRef,
-                                onClick: () => setDetailView('instruction'),
-                            },
-                            {
-                                key: 'skills',
-                                title: 'Skills',
-                                description: skillDesc,
-                                icon: <Zap size={12} />,
-                                isOver: dropRefs.skill.isOver,
-                                setNodeRef: dropRefs.skill.setNodeRef,
-                                onClick: () => setDetailView('skills'),
-                            },
-                            {
-                                key: 'model',
-                                title: 'Model',
-                                description: modelDesc,
-                                icon: <Cpu size={12} />,
-                                isOver: dropRefs.model.isOver,
-                                setNodeRef: dropRefs.model.setNodeRef,
-                                onClick: () => setDetailView('model'),
-                            },
-                            {
-                                key: 'mcp',
-                                title: 'MCP',
-                                description: mcpDesc,
-                                icon: <Server size={12} />,
-                                isOver: dropRefs.mcp.isOver,
-                                setNodeRef: dropRefs.mcp.setNodeRef,
-                                onClick: () => setDetailView('mcp'),
-                            },
-                        ]}
-                    />
-                </>
-            )}
-
             {/* ── Detail Views ── */}
-            {detailView === 'instruction' && (
-                <AgentInstructionDetail
+            {detailView === 'body' && (
+                <AgentBodyDetail
                     agent={agent}
-                    instructionPrimitive={presentation.instructionPrimitive}
-                    onOpenPrimitiveEditor={onOpenPrimitiveEditor}
-                    onInstructionRefChange={onInstructionRefChange}
+                    onNameChange={onNameChange}
+                    onDescriptionChange={onDescriptionChange}
+                    onAgentBodyChange={onAgentBodyChange}
                 />
             )}
             {detailView === 'skills' && (

@@ -13,8 +13,6 @@ function agent(index: number, name = `Agent ${index}`): AssistantWorkspaceContex
         hidden: index === 20,
         model: index === 1 ? { provider: 'openai', modelId: 'gpt-5-nano' } : null,
         modelVariant: null,
-        instructionUrn: null,
-        instructionDraftId: null,
         skillUrns: [],
         skillDraftIds: [],
     }

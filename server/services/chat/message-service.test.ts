@@ -141,7 +141,6 @@ describe('sendStudioChatMessage', () => {
                 agent: {
                     agentId: 'agent-1',
                     agentName: 'Agent',
-                    instructionRef: null,
                     skillRefs: [],
                     model: {
                         provider: 'ollama-cloud',
@@ -176,7 +175,6 @@ describe('sendStudioChatMessage', () => {
                 agent: {
                     agentId: 'agent-1',
                     agentName: 'Agent',
-                    instructionRef: null,
                     skillRefs: [],
                     model: {
                         provider: 'openai',
@@ -221,7 +219,6 @@ describe('sendStudioChatMessage', () => {
                 agent: {
                     agentId: 'agent-1',
                     agentName: 'Agent',
-                    instructionRef: null,
                     skillRefs: [],
                     model: {
                         provider: 'openai',
@@ -243,7 +240,6 @@ describe('sendStudioChatMessage', () => {
                 id: 'agent-1',
                 name: 'Agent 1',
                 model: { provider: 'openai', modelId: 'gpt-5' },
-                instructionRef: null,
                 skillRefs: [],
                 mcpServerNames: [],
             },
@@ -251,7 +247,6 @@ describe('sendStudioChatMessage', () => {
                 id: 'agent-2',
                 name: 'Agent 2',
                 model: { provider: 'openai', modelId: 'gpt-5' },
-                instructionRef: null,
                 skillRefs: [],
                 mcpServerNames: [],
             },
@@ -288,7 +283,6 @@ describe('sendStudioChatMessage', () => {
                 agent: {
                     agentId: 'agent-1',
                     agentName: 'Agent 1',
-                    instructionRef: null,
                     skillRefs: [],
                     model: {
                         provider: 'openai',
@@ -327,7 +321,6 @@ describe('sendStudioChatMessage', () => {
                 agent: {
                     agentId: 'agent-1',
                     agentName: 'Planner',
-                    instructionRef: null,
                     skillRefs: [],
                     model: {
                         provider: 'openai',
@@ -373,7 +366,6 @@ describe('sendStudioChatMessage', () => {
                 agent: {
                     agentId: 'team:team-1:thread:thread-1:participant:Lead',
                     agentName: 'Lead',
-                    instructionRef: null,
                     skillRefs: [],
                     model: {
                         provider: 'openai',
@@ -412,7 +404,6 @@ describe('sendStudioChatMessage', () => {
                 id: 'agent-1',
                 name: 'Agent 1',
                 model: { provider: 'openai', modelId: 'gpt-5' },
-                instructionRef: null,
                 skillRefs: [],
                 mcpServerNames: [],
             },
@@ -420,7 +411,6 @@ describe('sendStudioChatMessage', () => {
                 id: 'agent-2',
                 name: 'Agent 2',
                 model: { provider: 'openai', modelId: 'gpt-5' },
-                instructionRef: null,
                 skillRefs: [],
                 mcpServerNames: [],
             },
@@ -468,7 +458,6 @@ describe('sendStudioChatMessage', () => {
                 agent: {
                     agentId: 'team:team-1:thread:thread-1:participant:Lead',
                     agentName: 'Lead',
-                    instructionRef: null,
                     skillRefs: [],
                     model: {
                         provider: 'openai',
@@ -515,7 +504,6 @@ describe('sendStudioChatMessage', () => {
                 agent: {
                     agentId: 'team:team-1:thread:thread-1:participant:Lead',
                     agentName: 'Lead',
-                    instructionRef: null,
                     skillRefs: [],
                     model: {
                         provider: 'openai',
@@ -549,7 +537,6 @@ describe('sendStudioChatMessage', () => {
                 agent: {
                     agentId: 'studio-assistant',
                     agentName: 'APM Assistant',
-                    instructionRef: null,
                     skillRefs: [],
                     model: {
                         provider: 'openai',
@@ -609,7 +596,6 @@ describe('sendStudioChatMessage', () => {
                 agent: {
                     agentId: 'team:team-1:thread:thread-1:participant:Lead',
                     agentName: 'Lead',
-                    instructionRef: null,
                     skillRefs: [],
                     model: {
                         provider: 'openai',

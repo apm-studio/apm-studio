@@ -144,5 +144,4 @@ export {
 
 export {
     buildDraftPackageCards,
-    buildAuthoringPayloadFromPrimitive,
 } from './package-library-authoring'

@@ -79,7 +79,7 @@ export function placeholderForPrimitiveSection(
     primitiveSection: PackagePrimitiveSection,
 ) {
     if (primitiveSection === 'agents') {
-        return 'studio agent package, apm.yml path...'
+        return 'agent package, apm.yml path...'
     }
 
     if (primitiveSection === 'instructions') {

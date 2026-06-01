@@ -120,7 +120,6 @@ export async function saveAgentAsDraftImpl(get: GetState, set: SetState, agentId
     const description = agent.meta?.authoring?.description || agent.name
 
     const draftContent = {
-        instructionRef: agent.instructionRef || null,
         agentBody: agent.agentBody || null,
         skillRefs: agent.skillRefs || [],
         model: agent.model || null,

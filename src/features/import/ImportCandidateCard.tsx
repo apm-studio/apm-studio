@@ -46,7 +46,7 @@ export function ImportCandidateCard({
     onInstall,
 }: ImportCandidateCardProps) {
     return (
-        <article className={`primitive-card import-source-item ${selected ? 'is-selected' : ''}`}>
+        <article className={`package-card import-source-item ${selected ? 'is-selected' : ''}`}>
             <label className="import-source-item__select" aria-label={`Select ${candidate.name}`}>
                 <input
                     type="checkbox"
@@ -55,14 +55,14 @@ export function ImportCandidateCard({
                 />
             </label>
             <div className="import-source-item__body">
-                <div className="primitive-card__header">
+                <div className="package-card__header">
                     {candidateIcon(candidate.kind)}
-                    <span className="primitive-card__name">{candidate.name}</span>
+                    <span className="package-card__name">{candidate.name}</span>
                 </div>
-                <div className="primitive-card__author" title={candidate.sourcePath}>
+                <div className="package-card__author" title={candidate.sourcePath}>
                     {candidate.kind} / {candidate.sourcePath}
                 </div>
-                <div className="primitive-card__desc">
+                <div className="package-card__desc">
                     {candidate.description || 'No description provided.'}
                 </div>
             </div>

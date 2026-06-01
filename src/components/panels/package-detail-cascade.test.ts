@@ -32,19 +32,17 @@ describe('summarizeMarkdown', () => {
 })
 
 describe('getAgentCascadeReferences', () => {
-    it('extracts instruction and skill references from agent primitives', () => {
+    it('extracts skill references from agent primitives', () => {
         const agent = {
             kind: 'agent',
             name: 'reviewer',
             author: '@user',
             source: 'workspace',
             urn: 'agent/@user/agent-presets/reviewer',
-            instructionUrn: 'instruction/@user/agent-presets/reviewer-instruction',
             skillUrns: ['skill/@user/agent-presets/review-flow'],
         } as PackagePrimitive
 
         expect(getAgentCascadeReferences(agent)).toEqual([
-            expect.objectContaining({ kind: 'instruction', label: 'reviewer-instruction' }),
             expect.objectContaining({ kind: 'skill', label: 'review-flow' }),
         ])
     })

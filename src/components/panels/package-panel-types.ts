@@ -1,4 +1,4 @@
-import type { PrimitiveCard } from '../../lib/primitive-types'
+import type { PackageLibraryItem } from '../../lib/primitive-types'
 import type { PackageSource, GitHubSkillSourceInfo } from '../../../shared/package-source-contracts'
 import type { RuntimeModelCatalogEntry } from '../../../shared/model-variants'
 import type { ModelConfigV1 } from '../../../shared/model-types'
@@ -20,7 +20,6 @@ type PanelItemSharedFields = {
     content?: string
     body?: string
     instructions?: string
-    instructionUrn?: string | null
     skillUrns?: string[]
     teamUrn?: string | null
     model?: ModelConfigV1 | null
@@ -65,7 +64,7 @@ type PanelItemSharedFields = {
     github?: GitHubSkillSourceInfo
 }
 
-export type PackagePrimitive = PrimitiveCard & { kind: PackagePrimitiveKind } & PanelItemSharedFields
+export type PackagePrimitive = PackageLibraryItem & { kind: PackagePrimitiveKind } & PanelItemSharedFields
 
 export type ScopedApmPackageSummary = ApmPackageSummary & {
     scope: ApmPackageScope

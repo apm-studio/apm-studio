@@ -17,14 +17,14 @@ Use this skill for navigation, feature-discovery, and product-usage questions.
 - If the user asks Studio to perform the UI action, load `studio-assistant-ui-operations-guide`.
 
 ## Core Vocabulary
-- `Instruction`: always-on instruction layer for an Agent.
+- `Instruction`: standalone APM project/file rule primitive.
 - `Skill`: optional reusable capability.
-- `Agent`: an agent package on the canvas built from Instruction, Skills, model, and MCP.
+- `Agent`: an agent package on the canvas edited from Agent Body, Skills, MCP, and Studio-only model settings.
 - `Team`: a workflow that connects Agents as participants.
 - `Workspace`: the current project folder plus saved Studio state and visible Studio objects.
 - `Working directory`: the actual filesystem folder.
 - `Draft`: local authoring state for an Instruction or Skill.
-- `Package`: locally available APM package containing Agent, Instruction, Skill, or MCP primitives.
+- `Package`: locally available APM package containing Agent, Instruction, Skill, Prompt, Command, Hook, or MCP primitives.
 - `Session`: one Agent chat history.
 - `Team thread`: one runtime execution/history of a Team.
 
@@ -42,14 +42,15 @@ Use this skill for navigation, feature-discovery, and product-usage questions.
 - Models and MCPs: `Packages -> Local -> Models` and `Packages -> Local -> MCP`.
 - Import search: `Import`.
 - GitHub Skill import: `Import -> Import as Skill`.
-- Skill target sync: save the Skill as an APM package, then use `Manage`.
+- Skill target sync: save the Skill as an APM package, then use `Export`.
 
 ## Packages Notes
 - Local scope has `Packages`, `MCP`, and `Models`.
 - Package source filters include `All`, `User`, and `Workspace`.
 - Runtime `Models` lists available model providers.
-- Runtime `MCPs` manages Studio MCP server definitions.
+- `MCP` lists APM MCP primitives and Studio-known server definitions.
 - An Agent uses an MCP only after the MCP card is attached to that Agent.
+- Instruction is edited and synced as a standalone package/file rule primitive, not attached to Agents.
 - Import search is discovery/import, not direct canvas mutation by itself.
 
 ## Team Window Notes

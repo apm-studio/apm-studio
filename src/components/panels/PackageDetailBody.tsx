@@ -51,10 +51,8 @@ export default function PackageDetailBody({
     const participantCount = item.participantCount || (Array.isArray(item.participants) ? item.participants.length : 0)
     const relationCount = Array.isArray(item.relations) ? item.relations.length : 0
     const skillSync = item.kind === 'skill' ? item.github?.sync : null
-    const instructionUrn = item.instructionUrn
     const skillUrns = item.skillUrns
     const hasStructuredDetail = !!inlineContent
-        || !!instructionUrn
         || (Array.isArray(skillUrns) && skillUrns.length > 0)
         || !!item.model
         || participantCount > 0
@@ -146,12 +144,9 @@ export default function PackageDetailBody({
                         <div className="section-title">Cascade</div>
                         <AgentCascadePreview item={item} />
                     </div>
-                    {(instructionUrn || (Array.isArray(skillUrns) && skillUrns.length > 0)) && (
+                    {Array.isArray(skillUrns) && skillUrns.length > 0 && (
                         <div className="package-popover__section">
                             <div className="section-title">References</div>
-                            {instructionUrn ? (
-                                <div className="package-popover__section-item">Instruction: {displayUrn(instructionUrn)}</div>
-                            ) : null}
                             {Array.isArray(skillUrns) && skillUrns.map((skillUrn: string) => (
                                 <div key={skillUrn} className="package-popover__section-item">Skill: {displayUrn(skillUrn)}</div>
                             ))}
@@ -159,7 +154,7 @@ export default function PackageDetailBody({
                     )}
                     {item.model && (
                         <div className="package-popover__section">
-                            <div className="section-title">Model</div>
+                            <div className="section-title">Studio-only Model</div>
                             <div className="package-popover__section-item">
                                 {item.model.provider}/{item.model.modelId}
                             </div>

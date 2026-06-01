@@ -32,7 +32,7 @@ export function buildAssistantActionPrompt(
         '- Reuse existing Studio objects when they fit. Create new objects only when the user asked for new or tailored primitives.',
         '- Instruction and Skill actions are draft-only; Agent and Team actions mutate the current Studio workspace only; package import and target sync are outside this tool surface.',
         '- UI actions are hot state changes. Use `showAgent`, `showTeam`, `showDraft`, `setStudioPanel`, `setStudioNodeVisibility`, or `setStudioNodeFrame` for open/show/focus/reveal/hide/move/resize/panel requests.',
-        '- For clear Agent or workflow creation, missing Instruction/Skill/model details alone should not block mutation. Use compact role-appropriate inline Instruction when role intent is clear.',
+        '- For clear Agent or workflow creation, missing Skill/MCP/model details alone should not block mutation. Do not create or attach Instruction drafts as part of Agent creation; Instruction is standalone.',
         '- For new workflow Teams, create missing Agents first, then create/update the Team with participants and at least one meaningful relation when there are multiple workflow participants.',
         '- Relation payloads use `source...` and `target...` fields only; every new relation needs non-empty `name` and `description`.',
         '- `teamRules` is always an array of strings. Participant subscriptions are wake filters and use canonical `callboardKeys`; `eventTypes` supports only `runtime.idle`.',

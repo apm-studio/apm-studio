@@ -39,7 +39,7 @@ describe('loadStudioFallbackSyncPackage', () => {
                 name: 'Planning Agent',
                 slug: 'planning-agent',
                 description: 'Plans work in clear steps.',
-                instruction: 'Plan carefully.',
+                agentBody: 'Plan carefully.',
                 model: {
                     provider: 'openai',
                     modelId: 'gpt-5',

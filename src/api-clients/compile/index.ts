@@ -6,7 +6,6 @@ export const compileApi = {
     compile: (
         agentId: string | null,
         agentName: string | null,
-        instructionRef: SharedPrimitiveRef | null,
         skillRefs: SharedPrimitiveRef[],
         model: ModelSelection,
         modelVariant: string | null,
@@ -22,7 +21,6 @@ export const compileApi = {
         postJSON<PromptPreview>('/api/compile', {
             agentId: agentId || undefined,
             agentName: agentName || undefined,
-            instructionRef,
             skillRefs,
             model,
             modelVariant,

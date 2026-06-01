@@ -116,9 +116,6 @@ function normalizeAgentDraftContent(value: unknown): AgentDraftContent {
         throw new Error('Agent draft content requires mcpServerNames.')
     }
 
-    const instructionRef = value.instructionRef === null
-        ? null
-        : normalizePrimitiveRef(value.instructionRef, 'Agent draft instructionRef')
     const agentBody = stringOrNullOrUndefined(value.agentBody)
     const modelVariant = stringOrNullOrUndefined(value.modelVariant)
     const runtimeAgentId = stringOrNullOrUndefined(value.runtimeAgentId)
@@ -128,7 +125,6 @@ function normalizeAgentDraftContent(value: unknown): AgentDraftContent {
     const planMode = booleanOrUndefined(value.planMode)
 
     return {
-        instructionRef,
         ...(agentBody !== undefined ? { agentBody } : {}),
         skillRefs: value.skillRefs.map((entry, index) => normalizePrimitiveRef(entry, `Agent draft skillRefs[${index}]`)),
         model: normalizeModel(value.model, 'Agent draft model'),

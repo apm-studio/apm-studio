@@ -406,16 +406,34 @@ describe('APM GitHub source import', () => {
     it('lists high-star preset repos as package import entrypoints', async () => {
         const fetchMock = vi.fn(async (url: string | URL) => {
             const href = url.toString()
-            if (href === 'https://api.github.com/repos/github/awesome-copilot') {
-                return jsonResponse({ default_branch: 'main' })
-            }
             if (href === 'https://api.github.com/repos/addyosmani/agent-skills') {
                 return jsonResponse({ default_branch: 'main' })
             }
-            if (href === 'https://api.github.com/repos/vercel-labs/skills') {
+            if (href === 'https://api.github.com/repos/wshobson/agents') {
+                return jsonResponse({ default_branch: 'main' })
+            }
+            if (href === 'https://api.github.com/repos/github/awesome-copilot') {
+                return jsonResponse({ default_branch: 'main' })
+            }
+            if (href === 'https://api.github.com/repos/vercel-labs/agent-skills') {
+                return jsonResponse({ default_branch: 'main' })
+            }
+            if (href === 'https://api.github.com/repos/alirezarezvani/claude-skills') {
+                return jsonResponse({ default_branch: 'main' })
+            }
+            if (href === 'https://api.github.com/repos/ComposioHQ/agent-orchestrator') {
+                return jsonResponse({ default_branch: 'main' })
+            }
+            if (href === 'https://api.github.com/repos/KhazP/vibe-coding-prompt-template') {
                 return jsonResponse({ default_branch: 'main' })
             }
             if (href === 'https://api.github.com/repos/microsoft/skills') {
+                return jsonResponse({ default_branch: 'main' })
+            }
+            if (href === 'https://api.github.com/repos/lst97/claude-code-sub-agents') {
+                return jsonResponse({ default_branch: 'main' })
+            }
+            if (href === 'https://api.github.com/repos/hesreallyhim/awesome-claude-code-agents') {
                 return jsonResponse({ default_branch: 'main' })
             }
             return new Response('not found', { status: 404 })
@@ -423,36 +441,84 @@ describe('APM GitHub source import', () => {
         vi.stubGlobal('fetch', fetchMock)
 
         const result = await listApmGitHubSourceItems({
-            sources: ['awesome-copilot', 'addy-agent-skills', 'vercel-skills', 'microsoft-skills'],
+            sources: [
+                'addy-agent-skills',
+                'wshobson-agents',
+                'awesome-copilot',
+                'vercel-agent-skills',
+                'alireza-claude-skills',
+                'composio-agent-orchestrator',
+                'khazp-vibe-coding-prompt-template',
+                'microsoft-skills',
+                'lst97-claude-code-sub-agents',
+                'awesome-claude-code-agents',
+            ],
             limitPerSource: 2,
         })
 
         expect(result.primitives).toEqual(expect.arrayContaining([
             expect.objectContaining({
                 kind: 'package',
-                repo: 'github/awesome-copilot',
-                stars: 33901,
-                importRequest: expect.objectContaining({ format: 'auto' }),
-            }),
-            expect.objectContaining({
-                kind: 'package',
                 repo: 'addyosmani/agent-skills',
-                stars: 46358,
+                stars: 47489,
                 importRequest: expect.objectContaining({ source: 'addyosmani/agent-skills' }),
             }),
             expect.objectContaining({
                 kind: 'package',
-                repo: 'vercel-labs/skills',
-                stars: 20238,
-                importRequest: expect.objectContaining({ source: 'vercel-labs/skills' }),
+                repo: 'wshobson/agents',
+                stars: 36212,
+                importRequest: expect.objectContaining({ source: 'wshobson/agents' }),
+            }),
+            expect.objectContaining({
+                kind: 'package',
+                repo: 'github/awesome-copilot',
+                stars: 34222,
+                importRequest: expect.objectContaining({ format: 'auto' }),
+            }),
+            expect.objectContaining({
+                kind: 'package',
+                repo: 'vercel-labs/agent-skills',
+                stars: 27391,
+                importRequest: expect.objectContaining({ source: 'vercel-labs/agent-skills' }),
+            }),
+            expect.objectContaining({
+                kind: 'package',
+                repo: 'alirezarezvani/claude-skills',
+                stars: 16759,
+                importRequest: expect.objectContaining({ source: 'alirezarezvani/claude-skills' }),
+            }),
+            expect.objectContaining({
+                kind: 'package',
+                repo: 'ComposioHQ/agent-orchestrator',
+                stars: 7354,
+                importRequest: expect.objectContaining({ source: 'ComposioHQ/agent-orchestrator' }),
+            }),
+            expect.objectContaining({
+                kind: 'package',
+                repo: 'KhazP/vibe-coding-prompt-template',
+                stars: 2434,
+                importRequest: expect.objectContaining({ source: 'KhazP/vibe-coding-prompt-template' }),
             }),
             expect.objectContaining({
                 kind: 'package',
                 repo: 'microsoft/skills',
-                stars: 2399,
+                stars: 2425,
                 importRequest: expect.objectContaining({ source: 'microsoft/skills' }),
             }),
+            expect.objectContaining({
+                kind: 'package',
+                repo: 'lst97/claude-code-sub-agents',
+                stars: 1578,
+                importRequest: expect.objectContaining({ source: 'lst97/claude-code-sub-agents' }),
+            }),
+            expect.objectContaining({
+                kind: 'package',
+                repo: 'hesreallyhim/awesome-claude-code-agents',
+                stars: 1263,
+                importRequest: expect.objectContaining({ source: 'hesreallyhim/awesome-claude-code-agents' }),
+            }),
         ]))
-        expect(result.primitives).toHaveLength(4)
+        expect(result.primitives).toHaveLength(10)
+        expect(result.primitives.every((item) => (item.stars || 0) >= 1000)).toBe(true)
     })
 })

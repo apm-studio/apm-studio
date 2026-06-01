@@ -1,4 +1,4 @@
-import type { PrimitiveCard, DraftPrimitive } from '../../lib/primitive-types'
+import type { PackageLibraryItem, DraftPrimitive } from '../../lib/primitive-types'
 import type { SharedPrimitiveRef } from '../../../shared/chat-contracts'
 
 import { primitiveUrnDisplayName } from '../../lib/primitive-urn'
@@ -53,7 +53,7 @@ export function buildAttachedDraftSkillItems(
     return (agent?.skillRefs || [])
         .filter((ref): ref is Extract<SharedPrimitiveRef, { kind: 'draft' }> => ref.kind === 'draft')
         .map((ref) => ({
-            key: `draft:${primitiveRefKey(ref) || Math.random().toString(36).slice(2)}`,
+            key: `draft:${primitiveRefKey(ref)}`,
             ref,
             label: primitiveRefDisplayLabel(ref, drafts),
             scope: 'draft' as const,
@@ -89,7 +89,7 @@ export function buildAgentSkillItems(
     return (agent?.skillRefs || [])
         .filter((ref): ref is Extract<SharedPrimitiveRef, { kind: 'registry' }> => ref.kind === 'registry')
         .map((ref) => ({
-            key: `agent:${primitiveRefKey(ref) || Math.random().toString(36).slice(2)}`,
+            key: `agent:${primitiveRefKey(ref)}`,
             ref,
             label: primitiveRefDisplayLabel(ref, drafts),
             scope: 'agent' as const,
@@ -98,7 +98,7 @@ export function buildAgentSkillItems(
 }
 
 export function buildAvailableSkillItems(
-    skillPrimitives: PrimitiveCard[],
+    skillPrimitives: PackageLibraryItem[],
     drafts: Record<string, DraftPrimitive>,
     agent: { skillRefs?: SharedPrimitiveRef[] } | null,
 ): SkillSearchItem[] {
@@ -114,7 +114,7 @@ export function buildAvailableSkillItems(
     )
 
     return skillPrimitives
-        .filter((primitive): primitive is PrimitiveCard => primitive.kind === 'skill')
+        .filter((primitive): primitive is PackageLibraryItem => primitive.kind === 'skill')
         .map((primitive) => ({
             key: `${primitive.source || 'local'}:${primitive.urn}`,
             ref: { kind: 'registry', urn: primitive.urn } as const,
@@ -126,7 +126,7 @@ export function buildAvailableSkillItems(
 }
 
 export function buildSkillSearchSections(
-    skillPrimitives: PrimitiveCard[],
+    skillPrimitives: PackageLibraryItem[],
     skillSlashMatch: string | null,
     drafts: Record<string, DraftPrimitive>,
     agent: { skillRefs?: SharedPrimitiveRef[] } | null,

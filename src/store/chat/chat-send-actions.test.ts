@@ -52,7 +52,6 @@ vi.mock('./chat-runtime-target', async () => {
 
 function createRuntimeConfig(): ChatRuntimeConfig {
     return {
-        instructionRef: null,
         skillRefs: [],
         model: { provider: 'openai', modelId: 'gpt-5.4' },
         modelVariant: null,

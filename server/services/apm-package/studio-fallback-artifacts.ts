@@ -86,7 +86,7 @@ function codexAgentToml(syncPackage: StudioFallbackSyncPackage) {
     return [
         `name = ${tomlString(syncPackage.slug)}`,
         `description = ${tomlString(syncPackage.description)}`,
-        `developer_instructions = ${tomlString(syncPackage.instruction)}`,
+        `developer_instructions = ${tomlString(syncPackage.agentBody)}`,
         '',
     ].join('\n')
 }
@@ -95,7 +95,7 @@ function markdownAgent(syncPackage: StudioFallbackSyncPackage) {
     return `${markdownFrontmatter({
         name: syncPackage.slug,
         description: syncPackage.description,
-    })}\n\n${syncPackage.instruction.trimEnd()}\n`
+    })}\n\n${syncPackage.agentBody.trimEnd()}\n`
 }
 
 async function projectAgentArtifact(
@@ -154,12 +154,6 @@ export function fallbackProjectionLabel(target: ApmSyncTargetId, syncUnit: ApmSy
     const profile = syncTargetProfile(target)
     if (target === 'agent-skills') {
         return 'Agent skills'
-    }
-    if (syncUnit === 'studio-agent' && target === 'codex') {
-        return 'Codex subagent'
-    }
-    if (syncUnit === 'studio-agent') {
-        return `${profile.label} Studio Agent`
     }
     if (syncUnit === 'skills') {
         return `${profile.label} skills`

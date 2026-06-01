@@ -23,7 +23,7 @@ export type StudioFallbackSyncPackage = {
     name: string
     slug: string
     description: string
-    instruction: string
+    agentBody: string
     model: ModelSelection
     mcpServerNames: string[]
     skills: StudioFallbackSkillSource[]
@@ -56,7 +56,7 @@ function agentExtension(manifest: ApmPackageManifest) {
     return manifest['x-apm']?.agent || null
 }
 
-function agentInstructionFromManifest(manifest: ApmPackageManifest) {
+function agentBodyFromManifest(manifest: ApmPackageManifest) {
     const agent = agentExtension(manifest)
     const body = agent?.agentBody
     if (typeof body === 'string' && body.trim()) {
@@ -130,9 +130,8 @@ export async function loadStudioFallbackSyncPackage(
     const description = agent?.description?.trim()
         || (typeof manifest.description === 'string' && manifest.description.trim() ? manifest.description.trim() : null)
         || `${name} agent package for APM Studio.`
-    const instruction = agentInstructionFromManifest(manifest)
+    const agentBody = agentBodyFromManifest(manifest)
         || await firstMarkdownBody(path.join(sourceDir, 'agents'), '.agent.md')
-        || await firstMarkdownBody(path.join(sourceDir, 'instructions'), '.instructions.md')
         || `You are ${name}.`
 
     return {
@@ -141,7 +140,7 @@ export async function loadStudioFallbackSyncPackage(
         name,
         slug,
         description,
-        instruction,
+        agentBody,
         model: agent?.model || null,
         mcpServerNames: agent?.mcpServerNames || mcpNamesFromDependencies(manifest.dependencies?.mcp),
         skills: await discoverSkills(sourceDir),

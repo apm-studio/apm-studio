@@ -5,7 +5,6 @@ import AgentFrameHeaderMeta from './AgentFrameHeaderMeta'
 type AgentFrameHeaderActionsProps = {
     modelLabel: string | null
     modelTitle: string | null
-    instructionLabel: string | null
     skillSummary: string | null
     isFullscreenSurface: boolean
     shouldShowEditPanel: boolean
@@ -26,7 +25,6 @@ function stopAndRun(event: MouseEvent<HTMLButtonElement>, action: () => void) {
 export default function AgentFrameHeaderActions({
     modelLabel,
     modelTitle,
-    instructionLabel,
     skillSummary,
     isFullscreenSurface,
     shouldShowEditPanel,
@@ -44,7 +42,6 @@ export default function AgentFrameHeaderActions({
                 <AgentFrameHeaderMeta
                     modelLabel={modelLabel}
                     modelTitle={modelTitle}
-                    instructionLabel={instructionLabel}
                     skillSummary={skillSummary}
                 />
             )}

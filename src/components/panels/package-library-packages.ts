@@ -35,7 +35,7 @@ export function apmPackagePrimitiveEntries(pkg: ScopedApmPackageSummary) {
     if (!counts) return []
 
     return [
-        { key: 'agents', label: 'APM Agents', singular: 'APM agent', plural: 'APM agents', count: counts.agents },
+        { key: 'agents', label: 'Agents', singular: 'agent', plural: 'agents', count: counts.agents },
         { key: 'instructions', label: 'Instructions', singular: 'instruction', plural: 'instructions', count: counts.instructions },
         { key: 'skills', label: 'Skills', singular: 'skill', plural: 'skills', count: counts.skills },
         { key: 'prompts', label: 'Prompts', singular: 'prompt', plural: 'prompts', count: counts.prompts || 0 },

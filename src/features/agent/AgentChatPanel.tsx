@@ -1,4 +1,4 @@
-import type { PrimitiveCard, DraftPrimitive } from '../../lib/primitive-types'
+import type { PackageLibraryItem, DraftPrimitive } from '../../lib/primitive-types'
 import type { ChatMessage } from '../../store/session/chat-message-types'
 import type { WorkspaceAgentNode } from '../../../shared/workspace-contracts'
 /**
@@ -37,7 +37,7 @@ type AgentChatPanelProps = {
         selectedMcpServers: string[]
         unavailableDetails: Array<{ serverName: string; reason: string }>
     } | null
-    skillPrimitives: PrimitiveCard[]
+    skillPrimitives: PackageLibraryItem[]
     drafts: Record<string, DraftPrimitive>
     onSetAgentId: (id: string, agentId: string | null) => void
     onSetModelVariant: (id: string, variant: string | null) => void

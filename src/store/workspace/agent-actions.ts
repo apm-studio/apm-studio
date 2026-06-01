@@ -17,8 +17,6 @@ import {
     removeAgentSkill as removeAgentSkillImpl,
     replaceAgentSkillRef as replaceAgentSkillRefImpl,
     setAgentBody as setAgentBodyImpl,
-    setAgentInstruction as setAgentInstructionImpl,
-    setAgentInstructionRef as setAgentInstructionRefImpl,
     setAgentMcpBinding as setAgentMcpBindingImpl,
     setAgentModel as setAgentModelImpl,
     setAgentModelVariant as setAgentModelVariantImpl,
@@ -40,8 +38,6 @@ type WorkspaceAgentActions = Pick<WorkspaceSlice,
     | 'updateAgentName'
     | 'selectAgent'
     | 'selectAgentSession'
-    | 'setAgentInstruction'
-    | 'setAgentInstructionRef'
     | 'setAgentBody'
     | 'addAgentSkill'
     | 'addAgentSkillRef'
@@ -68,8 +64,6 @@ export function createWorkspaceAgentActions(set: WorkspaceSetState, get: Workspa
         updateAgentName: (id, name) => updateAgentNameImpl(get, set, id, name),
         selectAgent: (id) => selectAgentImpl(set, id),
         selectAgentSession: (sessionId) => selectAgentSessionImpl(set, sessionId),
-        setAgentInstruction: (agentId, instruction) => setAgentInstructionImpl(set, get, agentId, instruction),
-        setAgentInstructionRef: (agentId, instructionRef) => setAgentInstructionRefImpl(set, get, agentId, instructionRef),
         setAgentBody: (agentId, agentBody) => setAgentBodyImpl(set, get, agentId, agentBody),
         addAgentSkill: (agentId, skill) => addAgentSkillImpl(set, get, agentId, skill),
         addAgentSkillRef: (agentId, skillRef) => addAgentSkillRefImpl(set, get, agentId, skillRef),

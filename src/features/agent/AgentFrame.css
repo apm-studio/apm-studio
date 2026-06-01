@@ -84,7 +84,7 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
-    padding: 12px 14px;
+    padding: 0;
 }
 
 .edit-grid--hidden {
@@ -97,6 +97,22 @@
 
 .edit-workbench__header {
     padding: 10px 14px;
+}
+
+.edit-overview {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    gap: 14px;
+    min-height: 0;
+    padding: 12px 14px 14px;
+    overflow: auto;
+}
+
+.edit-overview__group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .edit-card-shell {
@@ -239,21 +255,18 @@
     margin-left: auto;
 }
 
-
-
-
-
-
-
-
-
-
 .edit-advanced {
     display: flex;
     flex-direction: column;
+    flex: 1;
     gap: 8px;
+    min-height: 0;
     padding: 4px 14px 14px;
     overflow: auto;
+}
+
+.edit-advanced--body {
+    padding-top: 8px;
 }
 
 /* Advanced Section Card */
@@ -266,6 +279,11 @@
     overflow: hidden;
 }
 
+.adv-section--body-editor {
+    flex: 1;
+    min-height: 160px;
+}
+
 .adv-section__head {
     display: flex;
     align-items: center;
@@ -275,13 +293,16 @@
     border-bottom: 1px solid var(--border-light);
 }
 
-
-
 .adv-section__body {
     display: flex;
     flex-direction: column;
     gap: 8px;
     padding: 10px 12px;
+}
+
+.adv-section__body--fill {
+    flex: 1;
+    min-height: 0;
 }
 
 .adv-section__summary {
@@ -304,6 +325,11 @@
     gap: 4px;
 }
 
+.adv-field--fill {
+    flex: 1;
+    min-height: 0;
+}
+
 .adv-field__label {
     font-size: var(--font-sm);
     font-weight: 600;
@@ -316,6 +342,14 @@
     min-height: 96px;
     resize: vertical;
     line-height: 1.45;
+}
+
+.adv-field__textarea--body {
+    flex: 1;
+    min-height: 150px;
+    resize: none;
+    font-family: var(--font-mono);
+    line-height: 1.5;
 }
 
 /* Advanced List */

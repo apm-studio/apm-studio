@@ -17,7 +17,6 @@ describe('compileAgent scope boundaries', () => {
         const compiled = await compileAgent('/tmp/workspace', {
             agentId: 'solo-agent',
             agentName: 'Solo Agent',
-            instructionRef: null,
             model: { provider: 'openai', modelId: 'gpt-5.4' },
             modelVariant: null,
             workspaceHash: 'workspace-hash',
@@ -46,7 +45,6 @@ describe('compileAgent scope boundaries', () => {
         const compiled = await compileAgent('/tmp/workspace', {
             agentId: 'Review Agent',
             agentName: 'Review Agent',
-            instructionRef: null,
             agentBody: agentBodyContent,
             model: { provider: 'openai', modelId: 'gpt-5.4' },
             modelVariant: null,
@@ -80,7 +78,6 @@ describe('compileAgent scope boundaries', () => {
         const compiled = await compileAgent('/tmp/workspace', {
             agentId: 'participant-reviewer',
             agentName: 'Reviewer',
-            instructionRef: null,
             model: { provider: 'openai', modelId: 'gpt-5.4' },
             modelVariant: null,
             workspaceHash: 'workspace-hash',

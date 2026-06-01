@@ -269,7 +269,6 @@ describe('workspace runtime reload', () => {
                 position: { x: 0, y: 0 },
                 scope: 'shared',
                 model: null,
-                instructionRef: null,
                 skillRefs: [],
                 mcpServerNames: [],
             }],
@@ -330,7 +329,6 @@ describe('workspace visibility toggles', () => {
                     hidden: false,
                     scope: 'shared',
                     model: null,
-                    instructionRef: null,
                     skillRefs: [],
                     mcpServerNames: [],
                 },
@@ -343,7 +341,6 @@ describe('workspace visibility toggles', () => {
                     hidden: true,
                     scope: 'shared',
                     model: null,
-                    instructionRef: null,
                     skillRefs: [],
                     mcpServerNames: [],
                 },
@@ -412,9 +409,9 @@ describe('workspace side panels', () => {
             workspaceDirty: false,
         } as StudioState)
 
-        harness.get().setWorkspaceMode('manage')
+        harness.get().setWorkspaceMode('export')
 
-        expect(harness.get().workspaceMode).toBe('manage')
+        expect(harness.get().workspaceMode).toBe('export')
         expect(harness.get().isTrackingOpen).toBe(false)
         expect(harness.get().isAssistantOpen).toBe(false)
         expect(harness.get().isTerminalOpen).toBe(false)
@@ -435,8 +432,8 @@ describe('workspace side panels', () => {
         expect(harness.get().isTerminalOpen).toBe(false)
         expect(harness.get().workspaceDirty).toBe(false)
 
-        harness.get().setWorkspaceMode('manage')
+        harness.get().setWorkspaceMode('export')
 
-        expect(harness.get().workspaceMode).toBe('manage')
+        expect(harness.get().workspaceMode).toBe('export')
     })
 })

@@ -51,7 +51,6 @@ type AgentFrameData = {
     model?: WorkspaceModelConfig | null
     modelLabel?: string | null
     modelTitle?: string | null
-    instructionLabel?: string | null
     skillSummary?: string | null
     runtimeAgentId?: string | null
     planMode?: boolean
@@ -79,7 +78,6 @@ export default function AgentFrame({ data, id }: AgentFrameProps) {
         openAgentEditor,
         updateAgentName,
         updateAgentAuthoringMeta,
-        setAgentInstructionRef,
         setAgentBody,
         setAgentModel, setAgentModelVariant,
         removeAgentMcp, setAgentMcpBinding, removeAgentSkill,
@@ -101,7 +99,6 @@ export default function AgentFrame({ data, id }: AgentFrameProps) {
         openAgentEditor: state.openAgentEditor,
         updateAgentName: state.updateAgentName,
         updateAgentAuthoringMeta: state.updateAgentAuthoringMeta,
-        setAgentInstructionRef: state.setAgentInstructionRef,
         setAgentBody: state.setAgentBody,
         setAgentModel: state.setAgentModel,
         setAgentModelVariant: state.setAgentModelVariant,
@@ -157,7 +154,6 @@ export default function AgentFrame({ data, id }: AgentFrameProps) {
     const { data: mcpServers = [] } = useMcpServers(isSelected || shouldShowEditPanel)
 
     // DnD
-    const instructionDrop = useDroppable({ id: `agent-edit-instruction-${id}`, data: { agentId: id, type: 'instruction' } })
     const skillDrop = useDroppable({ id: `agent-edit-skill-${id}`, data: { agentId: id, type: 'skill' } })
     const modelDrop = useDroppable({ id: `agent-edit-model-${id}`, data: { agentId: id, type: 'model' } })
     const mcpDrop = useDroppable({ id: `agent-edit-mcp-${id}`, data: { agentId: id, type: 'mcp' } })
@@ -224,9 +220,9 @@ export default function AgentFrame({ data, id }: AgentFrameProps) {
     }, [id, openAgentEditor])
 
     const openPrimitiveEditor = useCallback(async (
-        kind: 'instruction' | 'skill',
+        kind: 'skill',
         targetRef: SharedPrimitiveRef | null,
-        _attachMode: 'instruction' | 'skill-new' | 'skill-replace',
+        _attachMode: 'skill-new' | 'skill-replace',
     ) => {
         if (!targetRef) return
         try {
@@ -237,14 +233,14 @@ export default function AgentFrame({ data, id }: AgentFrameProps) {
                 return
             }
             const displayName = primitiveUrnDisplayName(targetRef.urn)
-            showToast(`${displayName} is an imported package reference. Edit package primitives from Studio Agent.`, 'info', {
-                title: 'Open package from Studio Agent',
+            showToast(`${displayName} is an imported package reference. Edit its APM primitives from the Agent editor.`, 'info', {
+                title: 'Open Agent package',
                 dedupeKey: `agent-package-ref-open:${id}:${kind}:${targetRef.urn}`,
             })
         } catch (error) {
             console.error('Failed to open markdown editor', error)
-            showToast(`Studio could not open the ${kind === 'instruction' ? 'Instruction' : 'Skill'} editor for this agent.`, 'error', {
-                title: `${kind === 'instruction' ? 'Instruction' : 'Skill'} editor failed`,
+            showToast('Studio could not open the Skill editor for this agent.', 'error', {
+                title: 'Skill editor failed',
                 dedupeKey: `agent-editor-open:${id}:${kind}:${targetRef?.kind}:${targetRef?.kind === 'registry' ? targetRef.urn : targetRef?.draftId}`,
                 actionLabel: 'Retry',
                 onAction: () => { void openPrimitiveEditor(kind, targetRef, _attachMode) },
@@ -284,7 +280,6 @@ export default function AgentFrame({ data, id }: AgentFrameProps) {
                     <AgentFrameHeaderActions
                         modelLabel={data.modelLabel || null}
                         modelTitle={data.modelTitle || null}
-                        instructionLabel={data.instructionLabel || null}
                         skillSummary={data.skillSummary || null}
                         isFullscreenSurface={isFullscreenSurface}
                         shouldShowEditPanel={shouldShowEditPanel}
@@ -311,7 +306,6 @@ export default function AgentFrame({ data, id }: AgentFrameProps) {
                         mcpBindingRows={mcpBindingRows}
                         mcpBindingOptions={mcpBindingOptions}
                         dropRefs={{
-                            instruction: { isOver: instructionDrop.isOver, setNodeRef: instructionDrop.setNodeRef },
                             skill: { isOver: skillDrop.isOver, setNodeRef: skillDrop.setNodeRef },
                             model: { isOver: modelDrop.isOver, setNodeRef: modelDrop.setNodeRef },
                             mcp: { isOver: mcpDrop.isOver, setNodeRef: mcpDrop.setNodeRef },
@@ -320,7 +314,6 @@ export default function AgentFrame({ data, id }: AgentFrameProps) {
                         onNameChange={(value) => updateAgentName(id, value)}
                         onDescriptionChange={(value) => updateAgentAuthoringMeta(id, { description: value })}
                         onAgentBodyChange={(value) => setAgentBody(id, value)}
-                        onInstructionRefChange={(ref) => setAgentInstructionRef(id, ref)}
                         onModelChange={(model) => setAgentModel(id, model)}
                         onModelVariantChange={(variant) => setAgentModelVariant(id, variant)}
                         onRemoveSkill={removeAgentSkill}

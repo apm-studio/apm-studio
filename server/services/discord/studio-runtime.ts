@@ -164,7 +164,6 @@ export async function sendAgentDiscordMessage(params: {
         agent: {
             agentId: params.agent.id,
             agentName: params.agent.name,
-            instructionRef: runtimeConfig.instructionRef,
             skillRefs: runtimeConfig.skillRefs,
             model: runtimeConfig.model,
             modelVariant: runtimeConfig.modelVariant,
@@ -192,7 +191,6 @@ export async function sendTeamParticipantDiscordMessage(params: {
         agent: {
             agentId: chatKey,
             agentName: params.agent.name,
-            instructionRef: runtimeConfig.instructionRef,
             skillRefs: runtimeConfig.skillRefs,
             model: runtimeConfig.model,
             modelVariant: runtimeConfig.modelVariant,

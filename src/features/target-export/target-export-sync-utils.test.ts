@@ -12,7 +12,7 @@ import {
     primitiveSummary,
     targetAvailability,
     targetPackageAvailability,
-} from './target-manage-sync-utils'
+} from './target-export-sync-utils'
 
 function packageSummary(partial: Partial<ApmPackageSummary>): ApmPackageSummary {
     return {
@@ -32,7 +32,7 @@ function targetSummary(partial: Partial<ApmSyncTargetSummary>): ApmSyncTargetSum
         outputHint: '.codex',
         commandPreview: 'apm install <package> --target codex',
         available: true,
-        supportedSyncUnits: ['studio-agent', 'agents', 'skills'],
+        supportedSyncUnits: ['agents', 'skills'],
         strategy: 'cli-first',
         currentItems: [],
         definitions: [],
@@ -52,15 +52,16 @@ function definitionSummary(partial: Partial<ApmSyncTargetDefinitionSummary>): Ap
     }
 }
 
-describe('Target manage sync utils', () => {
+describe('Target export utils', () => {
     it('summarizes selected primitive counts without empty units', () => {
         const counts = { agents: 1, instructions: 0, skills: 2, prompts: 0, commands: 0, hooks: 0, mcp: 0 }
 
-        expect(primitiveSummary(counts)).toBe('1 agent, 2 skills')
+        expect(primitiveSummary(counts, 'agents')).toBe('1 agent')
+        expect(primitiveSummary(counts, 'skills')).toBe('2 skills')
         expect(primitiveSummary(counts, 'mcp')).toBe('No MCP')
     })
 
-    it('blocks Studio Agent export when a target cannot receive Studio Agents', () => {
+    it('blocks primitive export when a target cannot receive the selected primitive', () => {
         const target = targetSummary({
             label: 'Gemini',
             supportedSyncUnits: ['skills', 'mcp'],
@@ -78,9 +79,9 @@ describe('Target manage sync utils', () => {
             },
         })
 
-        expect(targetAvailability(target, 'studio-agent', [pkg])).toEqual({
+        expect(targetAvailability(target, 'agents', [pkg])).toEqual({
             available: false,
-            reason: 'Gemini does not support Studio Agent export.',
+            reason: 'Gemini does not support Agents.',
         })
     })
 

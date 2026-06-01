@@ -54,11 +54,6 @@ export interface AssistantAgentFields {
     model?: AssistantModelBlueprint | null
     modelVariant?: string | null
     description?: string | null
-    // Instruction — specify at most one
-    instructionUrn?: string | null          // registry URN  (null = clear Instruction)
-    instructionDraftId?: string             // existing draft id
-    instructionDraftRef?: string            // ref created in same block
-    instructionDraft?: AssistantDraftBlueprint  // create + attach inline
     // Skills to add
     addSkillUrns?: string[]
     addSkillDraftIds?: string[]
@@ -115,8 +110,6 @@ export interface AssistantWorkspaceAgentSummary {
     hidden?: boolean
     model: { provider: string; modelId: string } | null
     modelVariant: string | null
-    instructionUrn: string | null
-    instructionDraftId: string | null
     skillUrns: string[]
     skillDraftIds: string[]
 }

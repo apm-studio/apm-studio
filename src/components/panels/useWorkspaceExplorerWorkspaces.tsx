@@ -12,6 +12,8 @@ export function useWorkspaceExplorerWorkspaces() {
         workspaceId,
         workingDir,
         workspaceList,
+        apmPackageScope,
+        setApmPackageScope,
         newWorkspace,
         closeWorkspace,
         loadWorkspace,
@@ -21,6 +23,8 @@ export function useWorkspaceExplorerWorkspaces() {
         workspaceId: state.workspaceId,
         workingDir: state.workingDir,
         workspaceList: state.workspaceList,
+        apmPackageScope: state.apmPackageScope,
+        setApmPackageScope: state.setApmPackageScope,
         newWorkspace: state.newWorkspace,
         closeWorkspace: state.closeWorkspace,
         loadWorkspace: state.loadWorkspace,
@@ -40,6 +44,10 @@ export function useWorkspaceExplorerWorkspaces() {
         }
     }, [])
 
+    const selectWorkspaceScope = useCallback(() => {
+        setApmPackageScope('workspace')
+    }, [setApmPackageScope])
+
     useEffect(() => {
         listWorkspaces()
     }, [listWorkspaces, workingDir])
@@ -50,8 +58,11 @@ export function useWorkspaceExplorerWorkspaces() {
             icon={<Folder size={12} className={entry.id === workspaceId ? 'icon-active' : 'icon-muted'} />}
             label={workspaceLabel(entry.workingDir)}
             meta={workspaceShortPath(entry.workingDir)}
-            active={entry.id === workspaceId}
-            onClick={() => loadWorkspace(entry.id)}
+            active={entry.id === workspaceId && apmPackageScope === 'workspace'}
+            onClick={() => {
+                setApmPackageScope('workspace')
+                loadWorkspace(entry.id)
+            }}
             actions={
                 <DropdownMenu
                     align="right"
@@ -82,12 +93,14 @@ export function useWorkspaceExplorerWorkspaces() {
                 />
             }
         />
-    )), [closeWorkspace, deleteWorkspace, loadWorkspace, openWorkspacePath, workspaceId, workspaceList])
+    )), [apmPackageScope, closeWorkspace, deleteWorkspace, loadWorkspace, openWorkspacePath, setApmPackageScope, workspaceId, workspaceList])
 
     return {
+        apmPackageScope,
         workspaceId,
         workingDir,
         workspaceRows,
         newWorkspace,
+        selectWorkspaceScope,
     }
 }

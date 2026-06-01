@@ -1,7 +1,6 @@
 import type { ApmPackageSummary, ApmToolingStatus } from './apm-contracts.js'
 
 export type ApmSyncUnit =
-    | 'studio-agent'
     | 'agents'
     | 'instructions'
     | 'skills'
@@ -9,7 +8,7 @@ export type ApmSyncUnit =
     | 'commands'
     | 'hooks'
     | 'mcp'
-export type ApmPrimitiveSyncUnit = Exclude<ApmSyncUnit, 'studio-agent'>
+export type ApmPrimitiveSyncUnit = ApmSyncUnit
 
 export type ApmSyncUnitDefinition = {
     id: ApmSyncUnit
@@ -19,17 +18,12 @@ export type ApmSyncUnitDefinition = {
 
 export type ApmSyncPrimitiveCounts = Record<ApmPrimitiveSyncUnit, number>
 
-export const DEFAULT_APM_SYNC_UNIT: ApmSyncUnit = 'studio-agent'
+export const DEFAULT_APM_SYNC_UNIT: ApmSyncUnit = 'agents'
 
 export const APM_SYNC_UNITS: ApmSyncUnitDefinition[] = [
     {
-        id: 'studio-agent',
-        label: 'Studio Agent',
-        description: 'Export a Studio Agent as an agent-scoped composed artifact.',
-    },
-    {
         id: 'agents',
-        label: 'APM Agents',
+        label: 'Agents',
         description: 'Sync only APM agent primitives.',
     },
     {
@@ -123,9 +117,7 @@ export function apmPackageHasSyncUnit(
     syncUnit: ApmSyncUnit,
 ) {
     const units = apmPackageSyncUnits(pkg)
-    return syncUnit === 'studio-agent'
-        ? units.includes('agents') || pkg.kind === 'agent'
-        : units.includes(syncUnit)
+    return units.includes(syncUnit)
 }
 
 export type ApmSyncTargetId =

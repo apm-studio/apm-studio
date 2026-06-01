@@ -39,7 +39,10 @@ function ModeIcon({ viewMode }: { viewMode: ViewMode }) {
     return <PanelTop size={13} />
 }
 
-const STUDIO_AGENT_VIEW_MODE_OPTIONS: HeaderModeOption[] = ['canvas', 'full', 'split']
+const STUDIO_AGENT_VIEW_MODE_GROUPS: Array<{ label: string; options: HeaderModeOption[] }> = [
+    { label: 'Edit', options: ['canvas'] },
+    { label: 'Run', options: ['full', 'split'] },
+]
 
 type SplitPanePillProps = {
     pane: SplitViewPane
@@ -95,6 +98,7 @@ export default function StudioViewHeader() {
         enterSplitView,
         setSplitViewActivePane,
         exitFocusMode,
+        closeEditor,
     } = useStudioStore(useShallow((state) => ({
         teams: state.teams,
         agents: state.agents,
@@ -110,6 +114,7 @@ export default function StudioViewHeader() {
         enterSplitView: state.enterSplitView,
         setSplitViewActivePane: state.setSplitViewActivePane,
         exitFocusMode: state.exitFocusMode,
+        closeEditor: state.closeEditor,
     })))
 
     const fullscreenTarget = resolveFocusTarget(focusSnapshot)
@@ -158,6 +163,8 @@ export default function StudioViewHeader() {
             return
         }
 
+        closeEditor()
+
         if (nextMode === 'split') {
             if (!hasRestorableSplitView) {
                 enterEmptySplitView()
@@ -194,21 +201,26 @@ export default function StudioViewHeader() {
             <div className="studio-view-header__context">
                 {workspaceMode === 'studio-agent' ? (
                     <div className="studio-view-header__mode-switch" aria-label="Studio Agent view mode">
-                        {STUDIO_AGENT_VIEW_MODE_OPTIONS.map((option) => {
-                            return (
-                                <button
-                                    type="button"
-                                    key={option}
-                                    className={`studio-view-header__mode-option ${viewMode === option ? 'is-active' : ''}`}
-                                    onClick={() => handleSelectViewMode(option)}
-                                    aria-pressed={viewMode === option}
-                                    title={`Switch to ${modeLabel(option)} view`}
-                                >
-                                    <ModeIcon viewMode={option} />
-                                    <span>{modeLabel(option)}</span>
-                                </button>
-                            )
-                        })}
+                        {STUDIO_AGENT_VIEW_MODE_GROUPS.map((group) => (
+                            <div key={group.label} className="studio-view-header__mode-group">
+                                <span className="studio-view-header__mode-group-label">{group.label}</span>
+                                <div className="studio-view-header__mode-group-options">
+                                    {group.options.map((option) => (
+                                        <button
+                                            type="button"
+                                            key={option}
+                                            className={`studio-view-header__mode-option ${viewMode === option ? 'is-active' : ''}`}
+                                            onClick={() => handleSelectViewMode(option)}
+                                            aria-pressed={viewMode === option}
+                                            title={`Switch to ${group.label} ${modeLabel(option)}`}
+                                        >
+                                            <ModeIcon viewMode={option} />
+                                            <span>{modeLabel(option)}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 ) : (
                     <span className="studio-view-header__mode-pill">Studio Agent</span>

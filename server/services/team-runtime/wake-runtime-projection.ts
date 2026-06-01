@@ -64,7 +64,6 @@ export async function prepareWakeRuntimeProjection(params: {
         const prepared = await prepareRuntimeForExecution(threadManager.workingDir, () => ensureAgentProjection({
             agentId: agentConfig.agentId,
             agentName: agentConfig.agentName,
-            instructionRef: agentConfig.instructionRef,
             skillRefs: agentConfig.skillRefs,
             model: agentConfig.model,
             modelVariant: agentConfig.modelVariant,
@@ -80,7 +79,6 @@ export async function prepareWakeRuntimeProjection(params: {
         if (prepared.requiresDispose) {
             publishProjectionConsumed(threadManager.workingDir, buildProjectionDirtyPatch({
                 agentId: agentConfig.agentId,
-                instructionRef: agentConfig.instructionRef,
                 skillRefs: agentConfig.skillRefs,
             }))
         }

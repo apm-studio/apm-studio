@@ -27,6 +27,7 @@ export const createWorkspaceSlice: StateCreator<
     selectedAgentSessionId: null,
     selectedMarkdownEditorId: null,
     workspaceMode: 'studio-agent',
+    apmPackageScope: 'workspace',
     ...buildCanvasViewResetState(),
     canvasRevealTarget: null,
     inspectorFocus: null,

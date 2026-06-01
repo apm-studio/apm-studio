@@ -67,7 +67,6 @@ function buildAgentManifest(repo: string, ref: string, candidate: AgentCandidate
                 model,
                 modelVariant: candidate.modelVariant || null,
                 agentBody: candidate.instruction,
-                instructionRef: null,
                 skillRefs: [],
                 mcpServerNames: [],
                 runtimeAgentId: null,

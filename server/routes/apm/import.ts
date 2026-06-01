@@ -15,6 +15,7 @@ import {
     previewApmPackagesFromGitHub,
 } from '../../services/apm-package/github-import.js'
 import { importApmPackage } from '../../services/apm-package/repository.js'
+import { recordImportCatalogDownload, searchImportCatalog } from '../../services/import/registry-service.js'
 import { jsonError, requestWorkingDir } from '../route-errors.js'
 import { errorMessage, requestApmPackageWorkingDir } from './route-utils.js'
 
@@ -41,9 +42,26 @@ apmImport.post('/api/apm/import/github', async (c) => {
     }
     try {
         const response = await importApmPackagesFromGitHub(requestWorkingDir(c), body)
+        await recordImportCatalogDownload(body, response).catch(() => undefined)
         return c.json(response satisfies ApmGitHubImportResponse, 201)
     } catch (error) {
         return jsonError(c, errorMessage(error, 'Unable to import GitHub source as APM packages.'), 500)
+    }
+})
+
+apmImport.get('/api/apm/import/catalog', async (c) => {
+    try {
+        const response = await searchImportCatalog({
+            q: c.req.query('q'),
+            kind: c.req.query('kind') as never,
+            target: c.req.query('target') as never,
+            tag: c.req.query('tag'),
+            limit: Number.parseInt(c.req.query('limit') || '20', 10),
+            cursor: c.req.query('cursor'),
+        })
+        return c.json(response)
+    } catch (error) {
+        return jsonError(c, errorMessage(error, 'Unable to search APM Registry.'), 500)
     }
 })
 

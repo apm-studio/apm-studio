@@ -20,7 +20,6 @@ export type DraftKind = 'instruction' | 'skill' | 'agent' | 'team'
  * Agent draft content shape (when DraftFile.kind === 'agent').
  */
 export interface AgentDraftContent {
-    instructionRef: SharedPrimitiveRef | null
     agentBody?: string | null
     skillRefs: SharedPrimitiveRef[]
     model: WorkspaceModelConfig | null

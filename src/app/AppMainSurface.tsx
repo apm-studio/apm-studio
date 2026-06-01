@@ -3,8 +3,8 @@ import { CanvasArea } from '../features/workspace'
 import { useStudioStore } from '../store'
 import type { AppShellPolicy } from '../components/app-shell-policy'
 
-const TargetManagePage = lazy(() =>
-    import('../features/target-manage').then((module) => ({ default: module.TargetManagePage })),
+const TargetExportPage = lazy(() =>
+    import('../features/target-export').then((module) => ({ default: module.TargetExportPage })),
 )
 const ImportPage = lazy(() => import('../features/import/ImportPage'))
 const AssistantChat = lazy(() =>
@@ -23,10 +23,10 @@ export function AppMainSurface({ shellPolicy, isAnyFullscreenActive }: AppMainSu
     const isTrackingOpen = useStudioStore((state) => state.isTrackingOpen)
     const isAssistantOpen = useStudioStore((state) => state.isAssistantOpen)
 
-    if (shellPolicy.surfaceMode === 'target-manage') {
+    if (shellPolicy.surfaceMode === 'target-export') {
         return (
             <Suspense fallback={null}>
-                <TargetManagePage />
+                <TargetExportPage />
             </Suspense>
         )
     }

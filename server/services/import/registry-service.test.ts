@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { searchImportCatalog } from './registry-service.js'
+import { recordImportCatalogDownload, searchImportCatalog } from './registry-service.js'
 
 const listing = {
     id: 'voltagent-codex-reviewer',
@@ -56,5 +56,71 @@ describe('import registry service', () => {
 
         expect(result.listings).toHaveLength(1)
         expect(fetchMock).toHaveBeenCalledWith(new URL('https://registry.test/v1/catalog?q=review&kind=agent&target=codex&limit=5'))
+    })
+
+    it('records successful registry imports as anonymous download events', async () => {
+        vi.stubEnv('APM_STUDIO_REGISTRY_EVENT_TOKEN', 'event-token')
+        const fetchMock = vi.fn(async () => jsonResponse({ ok: true }))
+        vi.stubGlobal('fetch', fetchMock)
+
+        await recordImportCatalogDownload({
+            source: 'acme/agents/reviewer.md',
+            format: 'claude-md',
+            registryListingId: 'reviewer',
+        }, {
+            ok: true,
+            scope: 'workspace',
+            targetWorkingDir: '/tmp/workspace',
+            source: {
+                repo: 'acme/agents',
+                ref: 'main',
+                subpath: 'reviewer.md',
+            },
+            packages: [],
+            warnings: [],
+        })
+
+        expect(fetchMock).toHaveBeenCalledWith(new URL('https://registry.test/v1/downloads'), {
+            method: 'POST',
+            headers: {
+                'content-type': 'application/json',
+                authorization: 'Bearer event-token',
+            },
+            body: JSON.stringify({
+                listingId: 'reviewer',
+                source: {
+                    type: 'github',
+                    repo: 'acme/agents',
+                    ref: 'main',
+                    path: 'reviewer.md',
+                },
+                importRecipe: {
+                    format: 'claude-md',
+                    adapter: 'claude-md@studio-import',
+                },
+            }),
+        })
+    })
+
+    it('skips download recording for manual GitHub imports', async () => {
+        const fetchMock = vi.fn(async () => jsonResponse({ ok: true }))
+        vi.stubGlobal('fetch', fetchMock)
+
+        await recordImportCatalogDownload({
+            source: 'acme/agents',
+            format: 'auto',
+        }, {
+            ok: true,
+            scope: 'workspace',
+            targetWorkingDir: '/tmp/workspace',
+            source: {
+                repo: 'acme/agents',
+                ref: 'main',
+            },
+            packages: [],
+            warnings: [],
+        })
+
+        expect(fetchMock).not.toHaveBeenCalled()
     })
 })

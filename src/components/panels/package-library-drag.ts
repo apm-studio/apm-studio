@@ -23,7 +23,6 @@ export function buildPackagePrimitiveDragPayload(item: PackagePrimitive) {
             name: item.name,
             author: item.author,
             source: item.source,
-            instructionUrn: item.instructionUrn || null,
             skillUrns: Array.isArray(item.skillUrns) ? item.skillUrns : [],
             model: item.model || null,
             modelVariant: item.modelVariant || null,

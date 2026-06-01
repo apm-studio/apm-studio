@@ -61,23 +61,21 @@ describe('target sync planning', () => {
     })
 
     it('normalizes sync units without silently accepting unsupported units', () => {
-        expect(normalizeRequestedSyncUnit(undefined)).toBe('studio-agent')
+        expect(normalizeRequestedSyncUnit(undefined)).toBe('agents')
         expect(normalizeRequestedSyncUnit('skills')).toBe('skills')
         expect(normalizeRequestedSyncUnit('commands')).toBe('commands')
         expect(() => normalizeRequestedSyncUnit('unknown' as ApmSyncRunRequest['syncUnit']))
             .toThrow('Unsupported APM sync unit: unknown')
     })
 
-    it('treats Studio Agent export as an agent-scoped unit for Codex and Claude', () => {
+    it('uses target primitive capability rules', () => {
         const skillAndMcpPackage = packageSummary({ skills: 1, mcp: 1, kind: 'skill' })
         const agentAndSkillPackage = packageSummary({ agents: 1, skills: 1 })
 
-        expect(targetSupportsPackage('codex', agentAndSkillPackage, 'studio-agent')).toBe(true)
-        expect(targetSupportsPackage('claude', agentAndSkillPackage, 'studio-agent')).toBe(true)
-        expect(targetSupportsPackage('gemini', agentAndSkillPackage, 'studio-agent')).toBe(false)
-        expect(targetSupportsPackage('agent-skills', agentAndSkillPackage, 'studio-agent')).toBe(false)
-        expect(targetSupportsPackage('codex', skillAndMcpPackage, 'studio-agent')).toBe(false)
-
+        expect(targetSupportsPackage('codex', agentAndSkillPackage, 'agents')).toBe(true)
+        expect(targetSupportsPackage('claude', agentAndSkillPackage, 'agents')).toBe(true)
+        expect(targetSupportsPackage('gemini', agentAndSkillPackage, 'agents')).toBe(false)
+        expect(targetSupportsPackage('agent-skills', agentAndSkillPackage, 'agents')).toBe(false)
         expect(targetSupportsPackage('gemini', skillAndMcpPackage, 'skills')).toBe(true)
         expect(targetSupportsPackage('gemini', skillAndMcpPackage, 'mcp')).toBe(true)
         expect(targetSupportsPackage('gemini', skillAndMcpPackage, 'agents')).toBe(false)

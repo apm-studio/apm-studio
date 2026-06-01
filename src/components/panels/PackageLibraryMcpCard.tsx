@@ -203,7 +203,7 @@ export function McpEditableCard({
         <div
             ref={setNodeRef}
             className={[
-                'primitive-card',
+                'package-card',
                 'package-mcp-editor',
                 isDragging ? 'is-dragging package-mcp-editor--dragging' : '',
                 isActive ? 'is-selected package-mcp-editor--expanded' : '',
@@ -211,7 +211,7 @@ export function McpEditableCard({
             ].filter(Boolean).join(' ')}
             {...rootDragProps}
         >
-            <div className="primitive-card__header">
+            <div className="package-card__header">
                 <button
                     type="button"
                     className={`package-mcp-editor__drag-handle${canDrag ? '' : ' is-disabled'}`}
@@ -221,7 +221,7 @@ export function McpEditableCard({
                     <GripVertical size={10} className="drag-handle" />
                 </button>
                 <Server size={12} className="primitive-icon mcp" />
-                <span className="primitive-card__name">{entryName || 'New MCP Server'}</span>
+                <span className="package-card__name">{entryName || 'New MCP Server'}</span>
                 <div className="package-mcp-editor__header-actions">
                     {isActive ? (
                         savedEntry && !isDirty ? (
@@ -248,7 +248,7 @@ export function McpEditableCard({
                         )
                     ) : (
                         <button
-                            className="primitive-card__edit-btn"
+                            className="package-card__edit-btn"
                             type="button"
                             title={interactionLocked ? 'Save or discard the open server first' : 'Edit server'}
                             onClick={(event) => {
@@ -264,12 +264,12 @@ export function McpEditableCard({
                 </div>
             </div>
 
-            <div className="primitive-card__author">
+            <div className="package-card__author">
                 <span className={`package-mcp-editor__status-dot package-mcp-editor__status-dot--${liveStatus}`} />
                 {[transportLabel, savedEntry ? describeMcpStatus(liveStatus) : 'Not saved'].join(' · ')}
             </div>
 
-            <div className="primitive-card__desc package-mcp-editor__desc-row">
+            <div className="package-card__desc package-mcp-editor__desc-row">
                 <span>{description}</span>
                 <Tip text={detailTip} />
             </div>

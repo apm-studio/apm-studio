@@ -1,6 +1,8 @@
 import { Hono } from 'hono'
 
 import type {
+    ApmPackageCopyRequest,
+    ApmPackageCopyResponse,
     ApmPackageListResponse,
     ApmPackageReadResponse,
     ApmPackageWriteRequest,
@@ -8,10 +10,12 @@ import type {
     ApmValidationRequest,
     ApmValidationResult,
 } from '../../../shared/apm-contracts.js'
+import { isApmPackageScope } from '../../../shared/apm-contracts.js'
 import {
     validateApmPackageManifest,
 } from '../../services/apm-package/manifest.js'
 import {
+    copyApmPackage,
     listApmPackages,
     readApmPackage,
     writeApmPackage,
@@ -40,6 +44,36 @@ apmPackages.get('/api/apm/packages/:packageId', async (c) => {
         return c.json(result satisfies ApmPackageReadResponse)
     } catch (error) {
         return jsonError(c, errorMessage(error, 'Unable to read APM package.'), 500)
+    }
+})
+
+apmPackages.post('/api/apm/packages/copy', async (c) => {
+    const body = await c.req.json<ApmPackageCopyRequest>().catch(() => null)
+    if (!body?.packageId || !body.packageId.trim()) {
+        return jsonError(c, 'packageId is required.', 400)
+    }
+    if (!isApmPackageScope(body.fromScope) || !isApmPackageScope(body.toScope)) {
+        return jsonError(c, 'fromScope and toScope must be workspace or user.', 400)
+    }
+    if (body.fromScope === body.toScope) {
+        return jsonError(c, 'fromScope and toScope must be different.', 400)
+    }
+
+    try {
+        const copied = await copyApmPackage(
+            requestApmPackageWorkingDir(c, body.fromScope),
+            requestApmPackageWorkingDir(c, body.toScope),
+            body.packageId,
+        )
+        const response: ApmPackageCopyResponse = {
+            ok: true,
+            fromScope: body.fromScope,
+            toScope: body.toScope,
+            ...copied,
+        }
+        return c.json(response)
+    } catch (error) {
+        return jsonError(c, errorMessage(error, 'Unable to copy APM package.'), 500)
     }
 })
 

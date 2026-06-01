@@ -10,14 +10,13 @@ vi.mock('../../server/lib/model-catalog.js', () => ({
 describe('agent prompt projection', () => {
     it('uses canonical requestTargets only', () => {
         const canonical: CompilePromptRequest = {
-            instructionRef: null,
             skillRefs: [],
             model: { provider: 'openai', modelId: 'gpt-5' },
             requestTargets: [{ agentId: 'peer-1', agentName: 'Peer One', description: 'Reviewer' }],
         }
 
         expect(getCompileRequestTargets(canonical)).toEqual(canonical.requestTargets)
-        expect(getCompileRequestTargets({ instructionRef: null, skillRefs: [], model: { provider: 'openai', modelId: 'gpt-5' } })).toEqual([])
+        expect(getCompileRequestTargets({ skillRefs: [], model: { provider: 'openai', modelId: 'gpt-5' } })).toEqual([])
     })
 
     it('compiles stable agent prompt sections into the agent body', async () => {
@@ -26,7 +25,6 @@ describe('agent prompt projection', () => {
             {
                 agentId: 'reviewer',
                 agentName: 'Reviewer',
-                instructionRef: null,
                 model: { provider: 'openai', modelId: 'gpt-5' },
                 modelVariant: null,
                 workspaceHash: 'workspacehash',
@@ -51,7 +49,6 @@ describe('agent prompt projection', () => {
             {
                 agentId: 'reviewer',
                 agentName: 'Reviewer',
-                instructionRef: null,
                 model: { provider: 'openai', modelId: 'gpt-5' },
                 modelVariant: null,
                 workspaceHash: 'workspacehash',

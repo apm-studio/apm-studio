@@ -26,7 +26,6 @@ export async function prewarmTeamParticipantProjections(params: {
             await ensureAgentProjection({
                 agentId: agentConfig.agentId,
                 agentName: agentConfig.agentName,
-                instructionRef: agentConfig.instructionRef,
                 skillRefs: agentConfig.skillRefs,
                 model: agentConfig.model,
                 modelVariant: agentConfig.modelVariant,

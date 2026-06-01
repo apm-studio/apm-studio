@@ -3,7 +3,6 @@ import { describe, it, expect } from 'vitest'
 import {
     buildDraftDeleteCascade,
     buildPackagePrimitiveDeleteCascade,
-    buildPrimitiveDeleteCascade,
     buildAgentDeleteCascade,
 } from './cascade-cleanup'
 function makeAgent(overrides: Partial<WorkspaceAgentNode> & { id: string }): WorkspaceAgentNode {
@@ -12,7 +11,6 @@ function makeAgent(overrides: Partial<WorkspaceAgentNode> & { id: string }): Wor
         position: { x: 0, y: 0 },
         scope: 'shared',
         model: null,
-        instructionRef: null,
         skillRefs: [],
         mcpServerNames: [],
         ...overrides,
@@ -37,27 +35,6 @@ function makeTeam(overrides: Partial<WorkspaceTeamSnapshot> & { id: string }): W
 describe('buildDraftDeleteCascade', () => {
     it('returns empty patch when kind is "team"', () => {
         expect(buildDraftDeleteCascade('team', 'draft-1', [], [])).toEqual({})
-    })
-
-    it('nullifies agent instructionRef matching deleted instruction draft', () => {
-        const agents = [
-            makeAgent({ id: 'p1', instructionRef: { kind: 'draft', draftId: 'instruction-1' } }),
-            makeAgent({ id: 'p2', instructionRef: { kind: 'registry', urn: '/@acme/foo' } }),
-            makeAgent({ id: 'p3', instructionRef: { kind: 'draft', draftId: 'instruction-2' } }),
-        ]
-        const result = buildDraftDeleteCascade('instruction', 'instruction-1', agents, [])
-        expect(result.agents).toHaveLength(3)
-        expect(result.agents![0].instructionRef).toBeNull()
-        expect(result.agents![1].instructionRef).toEqual({ kind: 'registry', urn: '/@acme/foo' })
-        expect(result.agents![2].instructionRef).toEqual({ kind: 'draft', draftId: 'instruction-2' })
-        expect(result.workspaceDirty).toBe(true)
-    })
-
-    it('returns empty patch when no instruction matches', () => {
-        const agents = [
-            makeAgent({ id: 'p1', instructionRef: { kind: 'draft', draftId: 'other' } }),
-        ]
-        expect(buildDraftDeleteCascade('instruction', 'no-match', agents, [])).toEqual({})
     })
 
     it('removes matching skill draft from agent skillRefs', () => {
@@ -116,19 +93,6 @@ describe('buildDraftDeleteCascade', () => {
 // ── Package primitive cascade ─────────────────────────
 
 describe('buildPackagePrimitiveDeleteCascade', () => {
-    it('nullifies agent instructionRef matching removed instruction URN', () => {
-        const agents = [
-            makeAgent({ id: 'p1', instructionRef: { kind: 'registry', urn: '/@acme/foo' } }),
-            makeAgent({ id: 'p2', instructionRef: { kind: 'draft', draftId: 'draft-1' } }),
-            makeAgent({ id: 'p3', instructionRef: { kind: 'registry', urn: '/@acme/bar' } }),
-        ]
-        const result = buildPackagePrimitiveDeleteCascade('instruction', '/@acme/foo', agents, [])
-        expect(result.agents![0].instructionRef).toBeNull()
-        expect(result.agents![1].instructionRef).toEqual({ kind: 'draft', draftId: 'draft-1' })
-        expect(result.agents![2].instructionRef).toEqual({ kind: 'registry', urn: '/@acme/bar' })
-        expect(result.workspaceDirty).toBe(true)
-    })
-
     it('removes matching skill URN from agent skillRefs', () => {
         const agents = [
             makeAgent({
@@ -165,32 +129,6 @@ describe('buildPackagePrimitiveDeleteCascade', () => {
         expect(result.teams![0].relations).toHaveLength(0)
     })
 
-    it('returns empty patch when no matches', () => {
-        const agents = [
-            makeAgent({ id: 'p1', instructionRef: { kind: 'registry', urn: '/@acme/other' } }),
-        ]
-        expect(buildPackagePrimitiveDeleteCascade('instruction', '/@acme/nope', agents, [])).toEqual({})
-    })
-})
-
-// ── Unified buildPrimitiveDeleteCascade ─────────────────────
-
-describe('buildPrimitiveDeleteCascade', () => {
-    it('delegates draft target correctly', () => {
-        const agents = [
-            makeAgent({ id: 'p1', instructionRef: { kind: 'draft', draftId: 'my-instruction' } }),
-        ]
-        const result = buildPrimitiveDeleteCascade('instruction', { kind: 'draft', draftId: 'my-instruction' }, agents, [])
-        expect(result.agents![0].instructionRef).toBeNull()
-    })
-
-    it('delegates registry target correctly', () => {
-        const agents = [
-            makeAgent({ id: 'p1', instructionRef: { kind: 'registry', urn: '/@x/y' } }),
-        ]
-        const result = buildPrimitiveDeleteCascade('instruction', { kind: 'registry', urn: '/@x/y' }, agents, [])
-        expect(result.agents![0].instructionRef).toBeNull()
-    })
 })
 
 // ── Canvas agent delete ──────────────────────────────

@@ -64,7 +64,7 @@ Studio Agents + rules = Team Workflow
 GitHub repo -> APM Studio -> APM CLI-first target sync -> assistant app
 ```
 
-The community registry lives in the sibling `apm-registry` Worker project. It stores GitHub source references, import recipes, target compatibility, trust metadata, and presets; package content remains in source repositories and local APM manifests.
+The community registry lives in the sibling `apm-registry` Worker project. It stores GitHub source references, import recipes, target compatibility, trust metadata, presets, and anonymous download counts; package content remains in source repositories and local APM manifests.
 
 ## CLI
 

@@ -85,7 +85,6 @@ type AgentPatch = Partial<Omit<WorkspaceAgentNode, 'meta'>> & {
 export function applyAgentPatch<T extends AgentPatch>(agent: WorkspaceAgentNode, patch: T): WorkspaceAgentNode {
     const mutatesSourceIdentity = (
         'name' in patch
-        || 'instructionRef' in patch
         || 'skillRefs' in patch
         || 'model' in patch
         || 'modelPlaceholder' in patch

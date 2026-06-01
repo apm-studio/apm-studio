@@ -1,7 +1,7 @@
 /**
  * Agent configuration mutations for the workspace slice.
  *
- * Contains all Instruction, Skill, Model, MCP, and agent-config setters.
+ * Contains all Agent Body, Skill, Model, MCP, and agent-config setters.
  * Each function produces a Zustand partial that the workspace slice
  * spreads directly into its returned object.
  */
@@ -94,31 +94,6 @@ function scheduleLiveTeamWorkspacePersist(get: GetFn, agentId: string) {
 
 function markAgentProjectionDirty(get: GetFn, agentId: string) {
     get().recordStudioChange({ kind: 'agent', agentIds: [agentId] })
-}
-
-// ── Instruction ──────────────────────────────────────────
-
-export function setAgentInstruction(set: SetFn, get: GetFn, agentId: string, instruction: { urn?: string } | null) {
-    set((s) => ({
-        agents: s.agents.map(a => {
-            if (a.id !== agentId) return a
-            return applyAgentPatch(a, {
-                instructionRef: instruction?.urn ? { kind: 'registry' as const, urn: instruction.urn } : null,
-            })
-        }),
-        workspaceDirty: true,
-    }))
-    markAgentProjectionDirty(get, agentId)
-    scheduleLiveTeamWorkspacePersist(get, agentId)
-}
-
-export function setAgentInstructionRef(set: SetFn, get: GetFn, agentId: string, instructionRef: SharedPrimitiveRef | null) {
-    set((s) => ({
-        agents: mapAgents(s.agents, agentId, (agent) => applyAgentPatch(agent, { instructionRef })),
-        workspaceDirty: true,
-    }))
-    markAgentProjectionDirty(get, agentId)
-    scheduleLiveTeamWorkspacePersist(get, agentId)
 }
 
 export function setAgentBody(set: SetFn, get: GetFn, agentId: string, agentBody: string | null) {

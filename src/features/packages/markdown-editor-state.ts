@@ -22,11 +22,6 @@ export type MarkdownEditorState = {
 
 export type SavedDraftAttachPlan =
     | {
-        kind: 'instruction'
-        agentId: string
-        draftId: string
-    }
-    | {
         kind: 'skill-add'
         agentId: string
         draftId: string
@@ -78,13 +73,6 @@ export function buildSavedDraftAttachPlan(
     draftId: string,
 ): SavedDraftAttachPlan | null {
     if (!attachTarget?.agentId) return null
-    if (attachTarget.mode === 'instruction') {
-        return {
-            kind: 'instruction',
-            agentId: attachTarget.agentId,
-            draftId,
-        }
-    }
     if (attachTarget.mode === 'skill-new' && !attachTarget.targetRef) {
         return {
             kind: 'skill-add',

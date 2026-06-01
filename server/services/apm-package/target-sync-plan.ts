@@ -93,14 +93,10 @@ export function normalizeRequestedSyncUnit(value: ApmSyncRunRequest['syncUnit'])
 
 export function targetSupportsPackage(
     target: ApmSyncTargetId,
-    pkg: ApmPackageSummary,
+    _pkg: ApmPackageSummary,
     syncUnit: ApmSyncUnit,
 ) {
-    if (syncUnit !== 'studio-agent') {
-        return targetSupportsSyncUnit(target, syncUnit)
-    }
     return targetSupportsSyncUnit(target, syncUnit)
-        && apmPackageHasSyncUnit(pkg, syncUnit)
 }
 
 function planPackageTargetJob(
@@ -112,7 +108,7 @@ function planPackageTargetJob(
         return {
             kind: 'skip',
             result: skippedResult(pkg, target, syncUnit, [
-                `Package does not contain ${syncUnit === 'studio-agent' ? 'a Studio Agent' : syncUnit}.`,
+                `Package does not contain ${syncUnit}.`,
             ]),
         }
     }

@@ -85,7 +85,6 @@ export function buildApmManifestForAgent(agent: WorkspaceAgentSnapshot): ApmPack
     const packageId = agent.id
     const name = slugifyName(agent.name)
     const skillRefs = agent.skillRefs || []
-    const instructionRef = agent.instructionRef || null
     const agentBody = agent.agentBody || null
     const mcpServerNames = agent.mcpServerNames || []
     const description = authoringDescription(agent)
@@ -96,7 +95,6 @@ export function buildApmManifestForAgent(agent: WorkspaceAgentSnapshot): ApmPack
         model: agent.model || null,
         modelVariant: agent.modelVariant || null,
         agentBody,
-        instructionRef: instructionRef,
         skillRefs: skillRefs,
         mcpServerNames,
         runtimeAgentId: agent.runtimeAgentId || null,
@@ -122,7 +120,6 @@ export function buildApmManifestForAgent(agent: WorkspaceAgentSnapshot): ApmPack
                 instruction: { source: 'inline', content: agentBody },
             } : {}),
         }],
-        instructions: instructionRef ? [manifestRef(instructionRef)] : [],
         skills: skillRefs.map(manifestRef),
         scripts: {},
         'x-apm': {

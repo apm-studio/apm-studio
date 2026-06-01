@@ -16,9 +16,11 @@ import {
     MANIFEST_FILE,
     lockPath,
     manifestPath,
+    packageDir,
     sourceDir,
     toPosixPath,
 } from './paths.js'
+import { ensureRootApmPackageDependency } from './root-manifest.js'
 import {
     activePackageIds,
     packageIdsFromDisk,
@@ -52,9 +54,7 @@ function agentComponentsFromManifest(manifest: ApmPackageManifest): ApmPackageSu
     }
 
     return {
-        instructions: agent?.instructionRef
-            ? 1
-            : manifestArrayLength(manifest.instructions),
+        instructions: manifestArrayLength(manifest.instructions),
         skills: agent?.skillRefs?.length || manifestArrayLength(manifest.skills),
         mcp: (agent?.mcpServerNames || extractMcpServerNames(manifest)).length,
         model: hasModel(agent?.model),
@@ -108,7 +108,6 @@ async function agentFromMicrosoftApmSource(
         model: modelId ? { provider: 'openai', modelId } : null,
         modelVariant: null,
         agentBody: parsed.body || null,
-        instructionRef: null,
         skillRefs: [],
         mcpServerNames: extractMcpServerNames(manifest),
         runtimeAgentId: null,
@@ -223,6 +222,43 @@ export async function writeApmPackage(
     const readBack = await readApmPackage(workingDir, packageId)
     if (!readBack) {
         throw new Error('APM package write did not produce a readable manifest.')
+    }
+    return readBack
+}
+
+async function ensurePackageActiveInWorkspaceDocument(workingDir: string, packageId: string) {
+    const document = await readLocalWorkspaceDocument(workingDir)
+    if (document && !document.activePackageIds.includes(packageId)) {
+        document.activePackageIds.push(packageId)
+        await writeLocalWorkspaceDocument(workingDir, document)
+    }
+}
+
+export async function copyApmPackage(
+    sourceWorkingDir: string,
+    targetWorkingDir: string,
+    packageId: string,
+): Promise<ApmPackageReadResponse> {
+    const sourcePackage = await readApmPackage(sourceWorkingDir, packageId)
+    if (!sourcePackage) {
+        throw new Error('Source APM package not found.')
+    }
+
+    const sourcePath = packageDir(sourceWorkingDir, packageId)
+    const targetPath = packageDir(targetWorkingDir, packageId)
+    if (path.resolve(sourcePath) === path.resolve(targetPath)) {
+        throw new Error('Source and target package locations are the same.')
+    }
+
+    await fs.rm(targetPath, { recursive: true, force: true })
+    await fs.mkdir(path.dirname(targetPath), { recursive: true })
+    await fs.cp(sourcePath, targetPath, { recursive: true })
+    await ensureRootApmPackageDependency(targetWorkingDir, packageId)
+    await ensurePackageActiveInWorkspaceDocument(targetWorkingDir, packageId)
+
+    const readBack = await readApmPackage(targetWorkingDir, packageId)
+    if (!readBack) {
+        throw new Error('APM package copy did not produce a readable manifest.')
     }
     return readBack
 }

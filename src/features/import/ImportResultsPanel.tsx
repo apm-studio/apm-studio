@@ -1,17 +1,20 @@
 import {
-    FolderOpen,
-    Globe2,
+    ExternalLink,
+    Loader,
     Loader2,
     PackagePlus,
+    SearchCheck,
     Search,
 } from 'lucide-react'
 import type {
     ApmGitHubImportCandidate,
     ApmGitHubImportPreviewResponse,
 } from '../../../shared/apm-contracts'
+import type { RegistryListing } from '../../../shared/registry-contracts'
 import { ImportCandidateCard } from './ImportCandidateCard'
 import {
     candidateInstallKey,
+    githubSourceUrl,
     type ImportScope,
     RESULT_KIND_FILTERS,
     type ResultKindFilter,
@@ -22,6 +25,10 @@ interface ImportResultsPanelProps {
     previewLoading: boolean
     previewError: string | null
     previewResponse: ApmGitHubImportPreviewResponse | null
+    registryListings: RegistryListing[]
+    registryLoading: boolean
+    registryError: string | null
+    registryPreviewingId: string | null
     resultCandidates: ApmGitHubImportCandidate[]
     filteredCandidates: ApmGitHubImportCandidate[]
     resultQuery: string
@@ -37,15 +44,19 @@ interface ImportResultsPanelProps {
     onImportSelected: () => void
     onImportCandidate: (candidateId: string) => void
     onToggleCandidate: (candidateId: string) => void
+    onPreviewRegistryListing: (listing: RegistryListing) => void
     onQueryChange: (query: string) => void
     onKindChange: (kind: ResultKindFilter) => void
-    onScopeChange: (scope: ImportScope) => void
 }
 
 export function ImportResultsPanel({
     previewLoading,
     previewError,
     previewResponse,
+    registryListings,
+    registryLoading,
+    registryError,
+    registryPreviewingId,
     resultCandidates,
     filteredCandidates,
     resultQuery,
@@ -61,10 +72,15 @@ export function ImportResultsPanel({
     onImportSelected,
     onImportCandidate,
     onToggleCandidate,
+    onPreviewRegistryListing,
     onQueryChange,
     onKindChange,
-    onScopeChange,
 }: ImportResultsPanelProps) {
+    const previewSourceUrl = previewResponse?.source.href || githubSourceUrl(previewResponse?.source.repo)
+    const openExternal = (url: string) => {
+        window.open(url, '_blank', 'noopener,noreferrer')
+    }
+
     return (
         <section className="import-page__parsed-panel" aria-label="Parsed GitHub package items">
             <header className="import-results-top">
@@ -73,21 +89,35 @@ export function ImportResultsPanel({
                         <h2>Results</h2>
                         <p>
                             {previewLoading
-                                ? 'Parsing repository...'
-                                : previewResponse
-                                    ? `${previewResponse.source.repo} - ${filteredCandidates.length}/${resultCandidates.length} shown`
-                                    : 'No parsed results yet.'}
+                            ? 'Parsing repository...'
+                            : previewResponse
+                                ? `${previewResponse.source.repo} - ${filteredCandidates.length}/${resultCandidates.length} shown`
+                                : registryLoading
+                                    ? 'Searching APM Registry...'
+                                    : `${registryListings.length} registry result${registryListings.length === 1 ? '' : 's'}`}
                         </p>
                     </div>
-                    <button
-                        type="button"
-                        className="btn btn--primary"
-                        onClick={onImportSelected}
-                        disabled={!previewResponse || selectedCount === 0 || importing || !!candidateInstallingId || workspaceInstallDisabled}
-                    >
-                        {importing ? <Loader2 size={13} className="spin" /> : <PackagePlus size={13} />}
-                        Install Selected
-                    </button>
+                    <div className="import-results-top__actions">
+                        <button
+                            type="button"
+                            className="icon-btn"
+                            onClick={() => previewSourceUrl ? openExternal(previewSourceUrl) : undefined}
+                            disabled={!previewSourceUrl}
+                            title={previewSourceUrl ? `Open ${previewSourceUrl}` : 'No GitHub source selected'}
+                            aria-label="Open parsed GitHub source"
+                        >
+                            <ExternalLink size={14} />
+                        </button>
+                        <button
+                            type="button"
+                            className="btn btn--primary"
+                            onClick={onImportSelected}
+                            disabled={!previewResponse || selectedCount === 0 || importing || !!candidateInstallingId || workspaceInstallDisabled}
+                        >
+                            {importing ? <Loader2 size={13} className="spin" /> : <PackagePlus size={13} />}
+                            Install Selected
+                        </button>
+                    </div>
                 </div>
 
                 <div className="import-results-controls">
@@ -112,24 +142,6 @@ export function ImportResultsPanel({
                             <option key={filter.value} value={filter.value}>{filter.label}</option>
                         ))}
                     </select>
-                    <div className="import-install-scope" aria-label="Install target">
-                        <button
-                            type="button"
-                            className={`tab ${installScope === 'workspace' ? 'active' : ''}`}
-                            onClick={() => onScopeChange('workspace')}
-                        >
-                            <FolderOpen size={12} />
-                            Workspace
-                        </button>
-                        <button
-                            type="button"
-                            className={`tab ${installScope === 'user' ? 'active' : ''}`}
-                            onClick={() => onScopeChange('user')}
-                        >
-                            <Globe2 size={12} />
-                            User
-                        </button>
-                    </div>
                 </div>
                 <p className="import-install-target" title={installTargetPath}>{scopeLabel(installScope)}: {installTargetPath}</p>
             </header>
@@ -138,8 +150,70 @@ export function ImportResultsPanel({
                 {previewError ? (
                     <div className="alert alert--danger import-parsed-alert">{previewError}</div>
                 ) : null}
+                {registryError ? (
+                    <div className="alert alert--danger import-parsed-alert">{registryError}</div>
+                ) : null}
                 {previewResponse?.warnings.length ? (
                     <div className="alert alert--muted import-parsed-alert">{previewResponse.warnings[0]}</div>
+                ) : null}
+
+                {registryLoading && !previewResponse ? (
+                    <div className="import-parsed-empty">
+                        <Loader2 size={16} className="spin" />
+                        <span>Searching APM Registry...</span>
+                    </div>
+                ) : registryListings.length > 0 ? (
+                    <div className="import-registry-list">
+                        <div className="import-registry-list__header">
+                            <SearchCheck size={14} />
+                            <span>Registry</span>
+                        </div>
+                        {registryListings.map((listing) => (
+                            <article key={listing.id} className="package-card import-registry-item">
+                                <div className="import-registry-item__body">
+                                    <div className="package-card__header">
+                                        <SearchCheck size={13} className="primitive-icon skill" />
+                                        <span className="package-card__name">{listing.name}</span>
+                                    </div>
+                                    <div className="package-card__author" title={`${listing.source.repo}${listing.source.path ? `/${listing.source.path}` : ''}`}>
+                                        {listing.kind} / {listing.source.repo}{listing.source.path ? `/${listing.source.path}` : ''}
+                                    </div>
+                                    <div className="package-card__desc">
+                                        {listing.summary}
+                                    </div>
+                                    <div className="import-registry-item__meta">
+                                        <span>{listing.importRecipe.format}</span>
+                                        <span>{listing.trust.level}</span>
+                                        <span>{listing.downloads || 0} downloads</span>
+                                    </div>
+                                </div>
+                                <div className="import-registry-item__actions">
+                                    <button
+                                        type="button"
+                                        className="icon-btn"
+                                        onClick={() => {
+                                            const url = githubSourceUrl(listing.source.repo)
+                                            if (url) openExternal(url)
+                                        }}
+                                        title={`Open ${listing.source.repo} on GitHub`}
+                                        aria-label={`Open ${listing.name} on GitHub`}
+                                    >
+                                        <ExternalLink size={13} />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="btn btn--sm btn--primary"
+                                        onClick={() => onPreviewRegistryListing(listing)}
+                                        disabled={!!registryPreviewingId || previewLoading}
+                                        title={`Preview ${listing.name}`}
+                                    >
+                                        {registryPreviewingId === listing.id ? <Loader size={12} className="spin" /> : <Search size={12} />}
+                                        Preview
+                                    </button>
+                                </div>
+                            </article>
+                        ))}
+                    </div>
                 ) : null}
 
                 {previewLoading ? (

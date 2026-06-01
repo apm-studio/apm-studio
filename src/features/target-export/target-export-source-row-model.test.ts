@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import type { ApmPackageSummary } from '../../../shared/apm-contracts'
 import {
-    buildTargetManagePackageDragPayload,
-    buildTargetManageSourcePackageRowModel,
-} from './target-manage-source-row-model'
+    buildTargetExportPackageDragPayload,
+    buildTargetExportSourcePackageRowModel,
+} from './target-export-source-row-model'
 
 function packageSummary(partial: Partial<ApmPackageSummary> = {}): ApmPackageSummary {
     return {
@@ -25,9 +25,9 @@ function packageSummary(partial: Partial<ApmPackageSummary> = {}): ApmPackageSum
     }
 }
 
-describe('Target manage source row model', () => {
+describe('Target export source row model', () => {
     it('marks staged source packages as ready and includes primitive/model badges', () => {
-        expect(buildTargetManageSourcePackageRowModel({
+        expect(buildTargetExportSourcePackageRowModel({
             pkg: packageSummary({
                 agentName: 'Planner Agent',
                 description: 'Plans work.',
@@ -39,10 +39,10 @@ describe('Target manage source row model', () => {
                 },
             }),
             staged: true,
-            syncUnit: 'studio-agent',
+            syncUnit: 'agents',
             targetState: 'unsynced',
         })).toEqual(expect.objectContaining({
-            badges: expect.arrayContaining(['1 agent', '1 skill', 'model: Studio only']),
+            badges: expect.arrayContaining(['1 agent', 'model: Studio only']),
             detail: 'Plans work.',
             packageId: 'planner',
             packageName: 'Planner Agent',
@@ -53,7 +53,7 @@ describe('Target manage source row model', () => {
     })
 
     it('shows unsynced and synced target states before staging', () => {
-        expect(buildTargetManageSourcePackageRowModel({
+        expect(buildTargetExportSourcePackageRowModel({
             pkg: packageSummary(),
             staged: false,
             syncUnit: 'agents',
@@ -63,7 +63,7 @@ describe('Target manage source row model', () => {
             stateClass: 'is-unsynced',
         }))
 
-        expect(buildTargetManageSourcePackageRowModel({
+        expect(buildTargetExportSourcePackageRowModel({
             pkg: packageSummary(),
             staged: false,
             syncUnit: 'agents',
@@ -75,7 +75,7 @@ describe('Target manage source row model', () => {
     })
 
     it('marks package warnings as check state when the source package is not staged', () => {
-        const row = buildTargetManageSourcePackageRowModel({
+        const row = buildTargetExportSourcePackageRowModel({
             pkg: packageSummary({
                 microsoftApm: {
                     packageRoot: '/tmp/planner',
@@ -98,7 +98,7 @@ describe('Target manage source row model', () => {
     })
 
     it('uses an empty badge when a source package has no selected-unit primitives', () => {
-        const row = buildTargetManageSourcePackageRowModel({
+        const row = buildTargetExportSourcePackageRowModel({
             pkg: packageSummary({
                 microsoftApm: {
                     packageRoot: '/tmp/planner',
@@ -121,7 +121,7 @@ describe('Target manage source row model', () => {
     })
 
     it('includes the selected sync unit in drag payloads', () => {
-        expect(buildTargetManagePackageDragPayload(packageSummary({ agentName: 'Planner Agent' }), 'skills'))
+        expect(buildTargetExportPackageDragPayload(packageSummary({ agentName: 'Planner Agent' }), 'skills'))
             .toEqual(expect.objectContaining({
                 kind: 'apm-package',
                 packageId: 'planner',

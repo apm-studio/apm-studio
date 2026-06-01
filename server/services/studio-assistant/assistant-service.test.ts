@@ -195,7 +195,8 @@ describe('ensureAssistantAgent', () => {
         expect(prompt).toContain('Use same-call refs only for objects created earlier')
         expect(prompt).toContain('Instruction and Skill actions are draft-only')
         expect(prompt).toContain('package import and target sync are outside this tool surface')
-        expect(prompt).toContain('missing Instruction/Skill/model details alone should not block mutation')
+        expect(prompt).toContain('missing Skill/MCP/model details alone should not block mutation')
+        expect(prompt).toContain('Do not create or attach Instruction drafts as part of Agent creation')
         expect(prompt).toContain('Relation payloads use `source...` and `target...` fields only')
         expect(prompt).toContain('`teamRules` is always an array of strings')
     })
@@ -211,8 +212,6 @@ describe('ensureAssistantAgent', () => {
             hidden: index === 20,
             model: null,
             modelVariant: null,
-            instructionUrn: null,
-            instructionDraftId: null,
             skillUrns: [],
             skillDraftIds: [],
         }))

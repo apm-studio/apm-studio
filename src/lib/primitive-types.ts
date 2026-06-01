@@ -7,7 +7,7 @@ import type {
 } from '../../shared/team-types'
 import type { WorkspaceModelConfig } from '../../shared/workspace-contracts'
 
-export type StudioPrimitiveKind =
+export type PackageLibraryItemKind =
     | 'instruction'
     | 'skill'
     | 'agent'
@@ -15,8 +15,8 @@ export type StudioPrimitiveKind =
     | 'model'
     | 'mcp'
 
-export interface PrimitiveCard {
-    kind: StudioPrimitiveKind
+export interface PackageLibraryItem {
+    kind: PackageLibraryItemKind
     urn: string
     slug?: string
     name: string
@@ -27,7 +27,6 @@ export interface PrimitiveCard {
     content?: string
     draftId?: string
     draftContent?: AgentDraftContent | TeamDraftContent
-    instructionUrn?: string | null
     skillUrns?: string[]
     teamRules?: string[]
     teamUrn?: string | null

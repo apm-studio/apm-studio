@@ -1,4 +1,4 @@
-import type { PrimitiveCard, DraftPrimitive } from '../../lib/primitive-types'
+import type { PackageLibraryItem, DraftPrimitive } from '../../lib/primitive-types'
 import type { WorkspaceAgentNode } from '../../../shared/workspace-contracts'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
@@ -23,7 +23,7 @@ type Args = {
         selectedMcpServers: string[]
         unavailableDetails: Array<{ serverName: string; reason: string; detail?: string }>
     } | null
-    skillPrimitives: PrimitiveCard[]
+    skillPrimitives: PackageLibraryItem[]
     drafts: Record<string, DraftPrimitive>
 }
 

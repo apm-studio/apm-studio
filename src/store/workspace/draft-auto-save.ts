@@ -16,7 +16,7 @@ const DEBOUNCE_MS = 2000
 
 function configHash(p: WorkspaceAgentNode): string {
     return JSON.stringify({
-        instructionRef: p.instructionRef,
+        agentBody: p.agentBody,
         skillRefs: p.skillRefs,
         model: p.model,
         modelVariant: p.modelVariant,
@@ -64,7 +64,6 @@ export function initDraftAutoSave(
                 const description = agent.meta?.authoring?.description || agent.name
 
                 const content = {
-                    instructionRef: agent.instructionRef || null,
                     agentBody: agent.agentBody || null,
                     skillRefs: agent.skillRefs || [],
                     model: agent.model || null,

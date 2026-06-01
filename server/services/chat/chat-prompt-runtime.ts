@@ -69,7 +69,6 @@ async function prepareProjectedAgentRuntime(input: {
     const model = agent.model!
     const projectionDirtyPatch = buildProjectionDirtyPatch({
         agentId: projectionAgentId || null,
-        instructionRef: agent.instructionRef,
         skillRefs: [...(agent.skillRefs || []), ...(agent.extraSkillRefs || [])],
     })
     const requestedProjectionScope = normalizeProjectionDirtyPatch(request.projectionScope)
@@ -78,7 +77,6 @@ async function prepareProjectedAgentRuntime(input: {
         target: {
             agentId: projectionAgentId,
             agentName: projectionAgentName,
-            instructionRef: agent.instructionRef,
             agentBody: agent.agentBody || null,
             skillRefs: [...(agent.skillRefs || []), ...(agent.extraSkillRefs || [])],
             model,

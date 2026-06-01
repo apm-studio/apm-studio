@@ -100,16 +100,7 @@ export function getAgentCascadeReferences(item: PackagePanelItem | PackagePrimit
     if (item.kind !== 'agent') return []
 
     const references: CascadeReference[] = []
-    const instructionUrn = item.instructionUrn
     const skillUrns = item.skillUrns
-
-    if (typeof instructionUrn === 'string' && instructionUrn.trim()) {
-        references.push({
-            kind: 'instruction',
-            label: displayUrn(instructionUrn),
-            stub: buildCascadeStubFromUrn(instructionUrn, item.source),
-        })
-    }
 
     if (Array.isArray(skillUrns)) {
         skillUrns
@@ -128,14 +119,6 @@ export function getAgentCascadeReferences(item: PackagePanelItem | PackagePrimit
     const draft = agentDraftContent(item)
     if (!draft) return references
 
-    if (draft.instructionRef) {
-        references.push({
-            kind: 'instruction',
-            label: refLabel('instruction', draft.instructionRef),
-            stub: null,
-        })
-    }
-
     if (Array.isArray(draft.skillRefs)) {
         draft.skillRefs.forEach((skillRef) => {
             references.push({
@@ -153,7 +136,6 @@ export function getAgentSummary(item: PackagePanelItem | PackagePrimitive) {
     if (item.kind !== 'agent') return null
     const parts: string[] = []
     const skillUrns = item.skillUrns
-    if (item.instructionUrn) parts.push('Instruction linked')
     if (Array.isArray(skillUrns) && skillUrns.length > 0) {
         parts.push(`${skillUrns.length} Skill${skillUrns.length > 1 ? 's' : ''}`)
     }

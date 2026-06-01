@@ -127,7 +127,7 @@
 }
 
 /* ── Primitive Card ───────────────────────────────────── */
-.primitive-card {
+.package-card {
     padding: 12px;
     background: var(--bg-primary);
     border: 1px solid var(--border-main);
@@ -137,29 +137,29 @@
     user-select: none;
 }
 
-.primitive-card:hover {
+.package-card:hover {
     border-color: var(--accent-light);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-.primitive-card.is-selected {
+.package-card.is-selected {
     border-color: var(--accent);
     box-shadow: 0 0 0 1px rgba(0, 102, 255, 0.16);
     background: var(--bg-hover);
 }
 
-.primitive-card:active {
+.package-card:active {
     cursor: grabbing;
 }
 
-.primitive-card.is-dragging {
+.package-card.is-dragging {
     opacity: 0.5;
     cursor: grabbing;
     background: var(--bg-hover);
     border-color: var(--accent-color);
 }
 
-.primitive-card__delete-btn {
+.package-card__delete-btn {
     background: transparent;
     border: none;
     color: var(--text-muted);
@@ -174,17 +174,17 @@
     flex-shrink: 0;
 }
 
-.primitive-card:hover .primitive-card__delete-btn {
+.package-card:hover .package-card__delete-btn {
     opacity: 0.6;
 }
 
-.primitive-card__delete-btn:hover {
+.package-card__delete-btn:hover {
     opacity: 1 !important;
     color: var(--danger, #ef4444);
     background: rgba(239, 68, 68, 0.1);
 }
 
-.primitive-card__edit-btn {
+.package-card__edit-btn {
     background: transparent;
     border: none;
     color: var(--text-muted);
@@ -199,24 +199,24 @@
     flex-shrink: 0;
 }
 
-.primitive-card:hover .primitive-card__edit-btn {
+.package-card:hover .package-card__edit-btn {
     opacity: 0.6;
 }
 
-.primitive-card__edit-btn:hover {
+.package-card__edit-btn:hover {
     opacity: 1 !important;
     color: var(--primary, #3b82f6);
     background: rgba(59, 130, 246, 0.1);
 }
 
-.primitive-card__header {
+.package-card__header {
     display: flex;
     align-items: center;
     gap: 6px;
     margin-bottom: 4px;
 }
 
-.primitive-card__name {
+.package-card__name {
     font-size: var(--font-base);
     font-weight: 600;
     color: var(--text-primary);
@@ -254,7 +254,7 @@
     color: #dc2626;
 }
 
-.primitive-card__author {
+.package-card__author {
     font-size: var(--font-xs);
     color: var(--text-muted);
     margin-bottom: 6px;
@@ -314,7 +314,7 @@
     border-bottom-color: var(--accent);
 }
 
-.primitive-card__desc {
+.package-card__desc {
     font-size: var(--font-sm);
     color: var(--text-secondary);
     line-height: 1.3;

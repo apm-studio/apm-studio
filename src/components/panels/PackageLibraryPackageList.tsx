@@ -25,15 +25,15 @@ function packageIcon(section: PackageCardSection) {
 }
 
 function packageCardLabel(section: PackageCardSection) {
-    if (section === 'agents') return 'Studio Agent'
+    if (section === 'agents') return 'Agent'
     if (section === 'skills') return 'Skill'
     return 'Instruction'
 }
 
 function packageDragTitle(section: PackageCardSection) {
-    if (section === 'agents') return 'Drag to the canvas to add this Studio Agent.'
-    if (section === 'skills') return 'Drag onto a Studio Agent Skills slot.'
-    return 'Drag onto a Studio Agent Instruction slot.'
+    if (section === 'agents') return 'Drag to the canvas to add this Agent package.'
+    if (section === 'skills') return 'Drag onto an Agent Skills card.'
+    return 'Instruction packages are standalone project/file rules.'
 }
 
 function packageKindForSection(section: PackageCardSection) {
@@ -43,7 +43,7 @@ function packageKindForSection(section: PackageCardSection) {
 }
 
 function packageEmptyMessage(section: PackageCardSection) {
-    if (section === 'agents') return 'No Studio Agent packages found.'
+    if (section === 'agents') return 'No Agent packages found.'
     if (section === 'skills') return 'No Skill packages found.'
     return 'No Instruction packages found.'
 }
@@ -61,6 +61,7 @@ function PackageRow({
     const primitiveEntries = apmPackagePrimitiveEntries(pkg)
     const cardLabel = packageCardLabel(primitiveSection)
     const packagePath = pkg.microsoftApm?.packageRoot || pkg.manifestPath || 'package root unavailable'
+    const dragDisabled = primitiveSection === 'instructions'
     const dragPayload = useMemo(() => ({
         ...buildApmPackageDragPayload(pkg),
         packageKind: packageKindForSection(primitiveSection),
@@ -68,6 +69,7 @@ function PackageRow({
     const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
         id: `apm-package-${primitiveSection}-${pkg.scope}-${pkg.packageId}`,
         data: dragPayload,
+        disabled: dragDisabled,
     })
 
     return (
@@ -75,13 +77,13 @@ function PackageRow({
             ref={setNodeRef}
             {...listeners}
             {...attributes}
-            className={`primitive-card package-summary-card ${isDragging ? 'is-dragging' : ''}`}
+            className={`package-card package-summary-card ${isDragging ? 'is-dragging' : ''}`}
             title={packageDragTitle(primitiveSection)}
         >
-            <div className="primitive-card__header">
+            <div className="package-card__header">
                 <GripVertical size={10} className="drag-handle" />
                 {packageIcon(primitiveSection)}
-                <span className="primitive-card__name" title={title}>{title}</span>
+                <span className="package-card__name" title={title}>{title}</span>
                 {warnings.length > 0 ? (
                     <span className="primitive-sync-badge package-summary-card__warning" title={warnings.join('\n')}>
                         {warnings.length} warn
@@ -89,10 +91,10 @@ function PackageRow({
                 ) : null}
                 <span className={`source-badge ${pkg.scope}`}>{pkg.scope}</span>
             </div>
-            <div className="primitive-card__author" title={`${cardLabel} · ${pkg.packageId}`}>
+            <div className="package-card__author" title={`${cardLabel} · ${pkg.packageId}`}>
                 {cardLabel} · {pkg.packageId}
             </div>
-            <div className="primitive-card__desc" title={pkg.description || primitives}>
+            <div className="package-card__desc" title={pkg.description || primitives}>
                 {pkg.description || primitives}
             </div>
             <div className="package-summary-card__primitive-map" aria-label={`${title} primitives`}>

@@ -7,6 +7,8 @@ export const REGISTRY_IMPORT_FORMATS = [
     'codex-toml',
     'skill-md',
     'claude-md',
+    'instruction-md',
+    'mcp-config',
     'cursor-rules',
     'opencode-agent',
     'custom',
@@ -52,6 +54,8 @@ export type RegistryListing = {
         warnings?: string[]
     }
     status: 'active' | 'pending' | 'hidden' | 'deprecated'
+    downloads?: number
+    sourceDownloads?: number
     createdAt: string
     updatedAt: string
 }
@@ -59,4 +63,15 @@ export type RegistryListing = {
 export type RegistryCatalogResponse = {
     listings: RegistryListing[]
     nextCursor?: string
+}
+
+export type RegistryDownloadEventRequest = {
+    listingId?: string
+    source: RegistryGithubSourceRef
+    importRecipe?: RegistryImportRecipe
+    target?: RegistryTargetId
+}
+
+export type RegistryDownloadEventResponse = {
+    ok: true
 }

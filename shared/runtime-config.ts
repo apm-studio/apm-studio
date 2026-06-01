@@ -7,7 +7,6 @@ export type SharedModelConfig = {
 }
 
 export type AgentRuntimeConfigInput = {
-    instructionRef?: SharedPrimitiveRef | null
     agentBody?: string | null
     skillRefs?: SharedPrimitiveRef[] | null
     model?: SharedModelConfig | null
@@ -66,7 +65,6 @@ export function resolveAgentRuntimeConfig(
     agent: AgentRuntimeConfigInput,
 ) {
     return {
-        instructionRef: agent.instructionRef || null,
         agentBody: typeof agent.agentBody === 'string' ? agent.agentBody : null,
         skillRefs: agent.skillRefs || [],
         model: agent.model || null,
@@ -81,7 +79,6 @@ export function buildAgentConfigHash(
     agent: AgentRuntimeConfigInput,
 ): string {
     const normalized = {
-        instructionRef: primitiveRefKey(agent.instructionRef),
         agentBody: typeof agent.agentBody === 'string' ? agent.agentBody : null,
         skillRefs: [...primitiveRefKeys(agent.skillRefs)].sort(),
         mcpServerNames: [...resolveMappedMcpServerNames(agent)].sort(),

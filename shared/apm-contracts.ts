@@ -29,7 +29,6 @@ export interface ApmAgentExtension {
     model: ModelSelection
     modelVariant?: string | null
     agentBody?: string | null
-    instructionRef?: SharedPrimitiveRef | null
     skillRefs: SharedPrimitiveRef[]
     mcpServerNames: string[]
     runtimeAgentId?: string | null
@@ -201,6 +200,18 @@ export interface ApmPackageWriteResponse extends ApmPackageReadResponse {
 
 export type ApmPackageImportResponse = ApmPackageWriteResponse
 
+export interface ApmPackageCopyRequest {
+    packageId: string
+    fromScope: ApmPackageScope
+    toScope: ApmPackageScope
+}
+
+export interface ApmPackageCopyResponse extends ApmPackageReadResponse {
+    ok: true
+    fromScope: ApmPackageScope
+    toScope: ApmPackageScope
+}
+
 export interface ApmPackageImportRequest {
     packageId?: string
     manifestYaml?: string
@@ -228,6 +239,7 @@ export interface ApmGitHubImportRequest {
     limit?: number
     candidateIds?: string[]
     scope?: ApmPackageScope
+    registryListingId?: string
 }
 
 export interface ApmGitHubImportPackage {
@@ -282,12 +294,16 @@ export interface ApmGitHubImportPreviewResponse {
 export type ApmGitHubSourceCatalogId =
     | 'awesome-copilot'
     | 'addy-agent-skills'
+    | 'wshobson-agents'
     | 'vercel-agent-skills'
-    | 'vercel-skills'
     | 'microsoft-skills'
-    | 'microsoft-apm'
     | 'awesome-agent-skills'
     | 'awesome-claude-code-subagents'
+    | 'alireza-claude-skills'
+    | 'composio-agent-orchestrator'
+    | 'khazp-vibe-coding-prompt-template'
+    | 'lst97-claude-code-sub-agents'
+    | 'awesome-claude-code-agents'
 
 export type ApmGitHubSourceItemKind = 'agent' | 'skill' | 'mcp' | 'package'
 

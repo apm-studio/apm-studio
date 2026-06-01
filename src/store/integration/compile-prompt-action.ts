@@ -20,7 +20,6 @@ export function createCompilePromptAction(get: () => StudioState) {
             const res = await compileApi.compile(
                 agent.id,
                 agent.name,
-                runtimeConfig.instructionRef,
                 runtimeConfig.skillRefs,
                 runtimeConfig.model,
                 runtimeConfig.modelVariant,
@@ -45,13 +44,6 @@ export function createCompilePromptAction(get: () => StudioState) {
 
             if (res.toolName) {
                 lines.push(`// Capability Loader Tool: ${res.toolName}`)
-            }
-
-            if (res.instructionStack?.length) {
-                lines.push('', '// Instruction Stack')
-                for (const [index, layer] of res.instructionStack.entries()) {
-                    lines.push(`// ${index + 1}. ${layer.label}: ${layer.detail}`)
-                }
             }
 
             if (res.skillCatalog.length > 0) {

@@ -60,9 +60,9 @@ describe('APM target sync', () => {
             available: true,
             commandPreview: expect.stringContaining('uvx --from git+https://github.com/microsoft/apm.git apm'),
             strategy: 'cli-first',
-            supportedSyncUnits: expect.arrayContaining(['studio-agent', 'agents', 'skills', 'hooks']),
+            supportedSyncUnits: expect.arrayContaining(['agents', 'skills', 'hooks']),
         }))
-        expect(response.targets.find((target) => target.id === 'cursor')?.supportedSyncUnits).not.toContain('studio-agent')
+        expect(response.targets.find((target) => target.id === 'codex')?.supportedSyncUnits).not.toContain('studio-agent')
         expect(response.targets.find((target) => target.id === 'gemini')?.supportedSyncUnits).not.toContain('agents')
         expect(response.targets.find((target) => target.id === 'gemini')?.supportedSyncUnits).toEqual(expect.arrayContaining(['commands', 'hooks']))
         expect(response.targets.find((target) => target.id === 'agent-skills')?.supportedSyncUnits).toEqual(['skills'])
@@ -106,7 +106,7 @@ describe('APM target sync', () => {
         }
     })
 
-    it('falls back to Codex subagent sync without writing the Studio Agent runtime model', async () => {
+    it('falls back to Codex agent sync without writing the Studio runtime model', async () => {
         mockMissingCli()
         const workingDir = await fs.mkdtemp(path.join(os.tmpdir(), 'apm-target-sync-codex-'))
         const { getApmSyncTargets, runApmTargetSync } = await import('./target-sync.js')
@@ -116,16 +116,16 @@ describe('APM target sync', () => {
 
             const response = await runApmTargetSync(workingDir, {
                 targets: ['codex'],
-                syncUnit: 'studio-agent',
+                syncUnit: 'agents',
                 packageIds: ['agent-1'],
             })
             const codexAgent = await fs.readFile(path.join(workingDir, '.codex', 'agents', 'planner.toml'), 'utf-8')
 
-            expect(response.syncUnit).toBe('studio-agent')
+            expect(response.syncUnit).toBe('agents')
             expect(response.results[0]).toEqual(expect.objectContaining({
                 packageId: 'agent-1',
                 target: 'codex',
-                syncUnit: 'studio-agent',
+                syncUnit: 'agents',
                 status: 'synced',
                 projectedAs: 'Codex subagent',
                 modelOmitted: true,
@@ -138,7 +138,7 @@ describe('APM target sync', () => {
             expect(ownership.files['.codex/agents/planner.toml']).toEqual(expect.objectContaining({
                 packageId: 'agent-1',
                 target: 'codex',
-                syncUnit: 'studio-agent',
+                syncUnit: 'agents',
                 source: 'studio-fallback',
             }))
             await expect(fs.stat(path.join(workingDir, '.apm-studio', 'projections', 'studio-fallback-sync.json'))).rejects.toMatchObject({ code: 'ENOENT' })
@@ -147,7 +147,7 @@ describe('APM target sync', () => {
             expect(codex?.currentItems).toEqual([
                 expect.objectContaining({
                     packageId: 'agent-1',
-                    syncUnit: 'studio-agent',
+                    syncUnit: 'agents',
                     artifacts: ['.codex/agents/planner.toml'],
                 }),
             ])
@@ -156,7 +156,7 @@ describe('APM target sync', () => {
                     path: '.codex/agents/planner.toml',
                     managed: true,
                     managedPackageId: 'agent-1',
-                    managedSyncUnit: 'studio-agent',
+                    managedSyncUnit: 'agents',
                 }),
             ]))
             expect(execFileMock).toHaveBeenCalled()
@@ -209,14 +209,14 @@ describe('APM target sync', () => {
 
             const response = await runApmTargetSync(workingDir, {
                 targets: ['codex'],
-                syncUnit: 'studio-agent',
+                syncUnit: 'agents',
                 packageIds: ['agent-1'],
             })
 
             expect(response.results[0]).toEqual(expect.objectContaining({
                 packageId: 'agent-1',
                 target: 'codex',
-                syncUnit: 'studio-agent',
+                syncUnit: 'agents',
                 status: 'synced',
                 command: expect.stringContaining('uvx --from git+https://github.com/microsoft/apm.git apm install'),
                 artifacts: ['.codex/agents/planner.toml'],
@@ -228,7 +228,7 @@ describe('APM target sync', () => {
         }
     })
 
-    it('skips unsupported Studio Agent targets and falls back for shared skills', async () => {
+    it('skips unsupported agent targets and falls back for shared skills', async () => {
         mockMissingCli()
         const workingDir = await fs.mkdtemp(path.join(os.tmpdir(), 'apm-target-sync-skills-'))
         const { runApmTargetSync } = await import('./target-sync.js')
@@ -241,7 +241,7 @@ describe('APM target sync', () => {
 
             const unsupported = await runApmTargetSync(workingDir, {
                 targets: ['gemini'],
-                syncUnit: 'studio-agent',
+                syncUnit: 'agents',
                 packageIds: ['agent-1'],
             })
             expect(unsupported.results[0]).toEqual(expect.objectContaining({

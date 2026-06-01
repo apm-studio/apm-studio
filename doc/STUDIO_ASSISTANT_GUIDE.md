@@ -146,9 +146,8 @@ Key rules:
 - Agent and Team actions are current-workspace-only
 - same-call refs are the main dependency mechanism
 - prefer exact ids; use name matching only as fallback
-- if Instruction is missing on a clear create request, the assistant should not block the workflow only because Instruction was not named; it should use a role-appropriate inline Instruction draft when intent is clear and ask only when Instruction scope, tone, or policy choices are important and unclear
-- this applies both to standalone Agent creation and to Agents created as part of a Team/workflow request
-- for Instruction authoring, Instruction design, or missing-Instruction proposal turns, the assistant should load `studio-assistant-instruction-design-guide`
+- Instruction drafts are standalone APM primitive drafts. The assistant must not create or attach an Instruction draft as part of Agent creation.
+- for explicit standalone Instruction authoring or Instruction design turns, the assistant should load `studio-assistant-instruction-design-guide`
 - `createSkillDraft` and `updateSkillDraft` touch `SKILL.md` only
 - bundle file actions target saved Skill drafts and relative bundle paths only
 - bundle file actions must not target `SKILL.md` or `draft.json`
@@ -158,7 +157,7 @@ Key rules:
 The assistant sees a compact workspace snapshot optimized for the current user turn.
 
 - working directory
-- agents: id, name, description, model, current modelVariant, MCP, Instruction and Skill refs
+- agents: id, name, description, model, current modelVariant, MCP, and Skill refs
 - teams: id, name, description, rules, safety, participant summaries, relation summaries
 - drafts: id, kind, name, description, tags, save state
 - available models, including model-specific variant ids when present
@@ -219,6 +218,7 @@ Skill alignment:
 - sibling file actions may target `references/*`, `scripts/*`, `assets/*`, and `agents/openai.yaml`
 - keep `SKILL.md` short and trigger-focused
 - move long examples and schemas into `references/*`
+- bundle file paths should stay stable and human-readable; do not append random/hash/timestamp suffixes to assets or sibling files unless the user explicitly wants versioned copies
 - avoid clutter files such as `README.md` or `CHANGELOG.md` unless the user explicitly asks
 - external skill recommendations should include a short security warning
 

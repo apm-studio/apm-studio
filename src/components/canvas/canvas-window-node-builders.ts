@@ -138,7 +138,6 @@ export function buildAgentCanvasNodes(args: {
             transformActive: transformTarget?.type === 'agent' && transformTarget.id === agent.id,
             onActivateTransform: () => onActivateTransform('agent', agent.id),
             onDeactivateTransform: () => onDeactivateTransform('agent', agent.id),
-            instructionLabel: primitiveRefLabel(agent.instructionRef, drafts),
             skillSummary: skillSummaryLabel(agent.skillRefs, drafts),
             mcpSummary: agentMcpSummary(agent),
             editMode: editingTarget?.type === 'agent' && editingTarget.id === agent.id,

@@ -1,7 +1,6 @@
 // Agent node factory functions
 
-import type {
-    SharedPrimitiveRef } from '../../shared/chat-contracts'
+import type { SharedPrimitiveRef } from '../../shared/chat-contracts'
 import type { WorkspaceAgentScope,
     WorkspaceModelConfig,
     WorkspaceAgentNode,
@@ -20,7 +19,6 @@ export function createAgentNode(input: {
     x: number
     y: number
     scope?: WorkspaceAgentScope
-    instructionRef?: SharedPrimitiveRef | null
     skillRefs?: SharedPrimitiveRef[]
     model?: WorkspaceModelConfig | null
     modelPlaceholder?: WorkspaceModelConfig | null
@@ -53,7 +51,6 @@ export function createAgentNode(input: {
         ...(input.modelPlaceholder ? { modelPlaceholder: input.modelPlaceholder } : {}),
         ...(input.modelVariant ? { modelVariant: input.modelVariant } : {}),
         ...(input.runtimeAgentId ? { runtimeAgentId: input.runtimeAgentId } : {}),
-        instructionRef: input.instructionRef || null,
         ...(typeof input.agentBody === 'string' ? { agentBody: input.agentBody } : {}),
         skillRefs: input.skillRefs || [],
         mcpServerNames: Array.from(new Set(input.mcpServerNames || [])),
@@ -70,7 +67,6 @@ export function createAgentNodeFromPrimitive(input: {
     primitive: {
         name: string
         urn?: string | null
-        instructionUrn?: string | null
         skillUrns?: string[]
         model?: WorkspaceModelConfig | string | null
         modelVariant?: string | null
@@ -95,7 +91,6 @@ export function createAgentNodeFromPrimitive(input: {
         x: input.x,
         y: input.y,
         scope: input.scope,
-        instructionRef: normalized.instructionRef,
         skillRefs: normalized.skillRefs,
         model: normalized.model,
         modelPlaceholder: normalized.modelPlaceholder,
@@ -131,7 +126,6 @@ export function cloneAgentNode(input: {
         x: input.x,
         y: input.y,
         scope: input.scope || input.source.scope,
-        instructionRef: input.source.instructionRef,
         agentBody: input.source.agentBody || null,
         skillRefs: input.source.skillRefs,
         model: input.source.model,

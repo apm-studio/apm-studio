@@ -7,7 +7,7 @@ import type {
 } from '../../../shared/apm-contracts.js'
 import type { SharedPrimitiveRef } from '../../../shared/chat-contracts.js'
 import { getApmUserScopeCwd } from '../../lib/apm-studio-paths.js'
-import { readDraft, readDraftTextContent } from '../drafts/service.js'
+import { readDraft } from '../drafts/service.js'
 import {
     skillBundleDir,
     isSkillBundleDraft,
@@ -101,21 +101,6 @@ function quoteShellArg(value: string) {
     return `'${value.replace(/'/g, "'\\''")}'`
 }
 
-async function resolveInstructionContent(
-    workingDir: string,
-    ref: SharedPrimitiveRef | null | undefined,
-) {
-    if (!ref) return null
-    if (ref.kind === 'draft') {
-        return readDraftTextContent(workingDir, 'instruction', ref.draftId)
-    }
-    const packageRef = parseApmPackageRef(ref)
-    if (packageRef) {
-        return resolvePackageInstructionContent(workingDir, packageRef)
-    }
-    throw new Error('Registry instruction references are no longer supported. Import the source as an APM package primitive instead.')
-}
-
 type ApmPackageRef = {
     scope: 'workspace' | 'user'
     packageId: string
@@ -133,23 +118,6 @@ function parseApmPackageRef(ref: SharedPrimitiveRef): ApmPackageRef | null {
 
 function packageRefWorkingDir(workingDir: string, ref: ApmPackageRef) {
     return ref.scope === 'user' ? getApmUserScopeCwd() : workingDir
-}
-
-async function firstFileInDirectory(dir: string, predicate: (entryName: string) => boolean) {
-    const entries = await fs.readdir(dir, { withFileTypes: true }).catch(() => [])
-    return entries
-        .filter((entry) => entry.isFile() && predicate(entry.name))
-        .map((entry) => path.join(dir, entry.name))
-        .sort((left, right) => left.localeCompare(right))[0] || null
-}
-
-async function resolvePackageInstructionContent(workingDir: string, ref: ApmPackageRef) {
-    const instructionsDir = path.join(sourceDir(packageRefWorkingDir(workingDir, ref), ref.packageId), 'instructions')
-    const instructionFile = await firstFileInDirectory(instructionsDir, (name) => name.endsWith('.md'))
-    if (!instructionFile) {
-        throw new Error(`APM package '${ref.packageId}' has no instruction primitive.`)
-    }
-    return fs.readFile(instructionFile, 'utf-8')
 }
 
 async function materializeDraftSkill(
@@ -282,10 +250,6 @@ function agentBody(agent: NonNullable<ApmPackageManifest['x-apm']>['agent']) {
     return typeof body === 'string' && body.trim() ? body.trim() : null
 }
 
-function instructionRef(agent: NonNullable<ApmPackageManifest['x-apm']>['agent']) {
-    return agent?.instructionRef || null
-}
-
 function skillRefs(agent: NonNullable<ApmPackageManifest['x-apm']>['agent']) {
     return agent?.skillRefs || []
 }
@@ -378,24 +342,6 @@ export async function syncMicrosoftApmSourceTree(
 
     const resolvedAgentName = agentName(agent)
     const agentSlug = slugifySegment(resolvedAgentName || packageId)
-    const instruction = await resolveInstructionContent(
-        workingDir,
-        instructionRef(agent),
-    ).catch((error) => {
-        warnings.push(error instanceof Error ? error.message : 'Unable to materialize instruction content.')
-        return null
-    })
-
-    if (instruction) {
-        await writeText(
-            path.join(instructionDir, `${agentSlug}.instructions.md`),
-            `${frontmatter({
-                applyTo: '**',
-                description: `${resolvedAgentName} instructions`,
-            })}\n\n${instruction.trimEnd()}\n`,
-        )
-    }
-
     const usedSkillNames = new Set<string>()
     const materializedSkills: MaterializedSkill[] = []
     for (const ref of skillRefs(agent)) {

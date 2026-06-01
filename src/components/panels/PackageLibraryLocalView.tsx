@@ -57,7 +57,7 @@ type Props = {
 const noopPackagePanelHandler: PackagePanelHandler = () => {}
 
 function primitiveSectionLabel(section: PackagePrimitiveSection) {
-    if (section === 'agents') return 'Studio Agents'
+    if (section === 'agents') return 'Agents'
     if (section === 'instructions') return 'Instructions'
     if (section === 'skills') return 'Skills'
     return 'MCP'
@@ -117,11 +117,11 @@ export default function PackageLibraryLocalView({
                     if (!showPrimitives) setPrimitiveSection(primitiveSection)
                 }}>
                     <Layers3 size={11} />
-                    <span>Primitives</span>
+                    <span>APM primitives</span>
                 </button>
                 <button className={`scope-btn ${localSection === 'models' ? 'active' : ''}`} onClick={() => setLocalSection('models')}>
                     <Cpu size={11} />
-                    <span>Models</span>
+                    <span>Runtime settings</span>
                 </button>
             </div>
 

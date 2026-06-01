@@ -2,7 +2,6 @@ import fs from 'fs/promises'
 import path from 'path'
 import type {
     ApmSyncPackageResult,
-    ApmSyncUnit,
 } from '../../../shared/apm-sync-contracts.js'
 import { runApmCliInstall, selectApmCliRunner } from './apm-cli-runner.js'
 import { applyCliArtifacts } from './sync-cli-artifacts.js'
@@ -96,14 +95,11 @@ async function runStudioFallback(
         }
     }
 
-    const fallbackUnit: ApmSyncUnit = job.syncUnit === 'studio-agent'
-        ? 'studio-agent'
-        : job.syncUnit
     const result = await syncPackageWithStudioFallback(
         workingDir,
         job.package.packageId,
         job.target,
-        fallbackUnit,
+        job.syncUnit,
     )
     return {
         ...result,

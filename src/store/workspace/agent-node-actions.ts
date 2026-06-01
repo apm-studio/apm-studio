@@ -137,7 +137,6 @@ export function applyAgentPrimitiveImpl(
                     return agent
                 }
                 return applyAgentPatch(agent, {
-                    instructionRef: normalized.instructionRef,
                     skillRefs: normalized.skillRefs,
                     model: normalized.model,
                     modelPlaceholder: normalized.modelPlaceholder,

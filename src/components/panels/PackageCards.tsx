@@ -1,4 +1,4 @@
-// Draggable primitive card sub-components
+// Draggable package-library card sub-components
 import { useMemo } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import {
@@ -67,7 +67,7 @@ function primitiveKindIcon(kind: string, className = 'primitive-icon combo') {
     return <Package size={12} className={className} />
 }
 
-function PrimitiveCardHeader({
+function PackageCardHeader({
     icon,
     name,
     trailing,
@@ -79,10 +79,10 @@ function PrimitiveCardHeader({
     dragHandle?: boolean
 }) {
     return (
-        <div className="primitive-card__header">
+        <div className="package-card__header">
             {dragHandle ? <GripVertical size={10} className="drag-handle" /> : null}
             {icon}
-            <span className="primitive-card__name">{name}</span>
+            <span className="package-card__name">{name}</span>
             {trailing}
         </div>
     )
@@ -128,10 +128,10 @@ export function DraggablePrimitive({
                 ref={setNodeRef}
                 {...listeners}
                 {...attributes}
-                className={`primitive-card ${isDragging ? 'is-dragging' : ''} ${selected ? 'is-selected' : ''}`}
+                className={`package-card ${isDragging ? 'is-dragging' : ''} ${selected ? 'is-selected' : ''}`}
                 onClick={() => onSelect(item)}
             >
-                <PrimitiveCardHeader
+                <PackageCardHeader
                     icon={primitiveKindIcon(item.kind)}
                     name={item.name}
                     dragHandle
@@ -141,7 +141,7 @@ export function DraggablePrimitive({
                             {skillSyncLabel(item) ? <span className={`primitive-sync-badge primitive-sync-badge--${item.github?.sync?.state}`}>{skillSyncLabel(item)}</span> : undefined}
                             {item.source === 'draft' && (item.kind === 'instruction' || item.kind === 'skill') && onEditDraft && (
                                 <button
-                                    className="primitive-card__edit-btn"
+                                    className="package-card__edit-btn"
                                     onClick={(e) => { e.stopPropagation(); e.preventDefault(); onEditDraft(item) }}
                                     onPointerDown={(e) => e.stopPropagation()}
                                     title="Edit draft"
@@ -151,7 +151,7 @@ export function DraggablePrimitive({
                             )}
                             {canDelete && (
                                 <button
-                                    className="primitive-card__delete-btn"
+                                    className="package-card__delete-btn"
                                     onClick={handleDelete}
                                     onPointerDown={(e) => e.stopPropagation()}
                                     title={item.source === 'draft' ? 'Delete draft' : 'Uninstall'}
@@ -162,13 +162,13 @@ export function DraggablePrimitive({
                         </>
                     }
                 />
-                <div className="primitive-card__author">{item.author}</div>
-                <div className="primitive-card__desc">{item.description || 'No description provided.'}</div>
+                <div className="package-card__author">{item.author}</div>
+                <div className="package-card__desc">{item.description || 'No description provided.'}</div>
                 {skillSyncLabel(item) ? (
-                    <div className="primitive-card__desc">{item.github?.sync?.message || skillSyncLabel(item)}</div>
+                    <div className="package-card__desc">{item.github?.sync?.message || skillSyncLabel(item)}</div>
                 ) : null}
                 {agentMcpSummary(item) ? (
-                    <div className="primitive-card__desc">{agentMcpSummary(item)}</div>
+                    <div className="package-card__desc">{agentMcpSummary(item)}</div>
                 ) : null}
             </div>
         </HoverableCard>
@@ -200,16 +200,16 @@ export function DraggableModel({
                 ref={setNodeRef}
                 {...listeners}
                 {...attributes}
-                className={`primitive-card model-card ${isDragging ? 'is-dragging' : ''} ${selected ? 'is-selected' : ''}`}
+                className={`package-card model-card ${isDragging ? 'is-dragging' : ''} ${selected ? 'is-selected' : ''}`}
                 onClick={() => onSelect(modelItem)}
             >
-                <PrimitiveCardHeader
+                <PackageCardHeader
                     icon={primitiveKindIcon('model')}
                     name={model.name || model.id}
                     dragHandle
                 />
-                <div className="primitive-card__author">{model.providerName}</div>
-                <div className="primitive-card__desc">
+                <div className="package-card__author">{model.providerName}</div>
+                <div className="package-card__desc">
                     {model.context ? `Ctx: ${Math.round(model.context / 1000)}k` : ''}
                     {model.connected ? ' • Ready' : ' • Not Configured'}
                 </div>
@@ -249,10 +249,10 @@ export function DraggableMcp({
                 ref={setNodeRef}
                 {...listeners}
                 {...attributes}
-                className={`primitive-card mcp-card ${isDragging ? 'is-dragging' : ''} ${selected ? 'is-selected' : ''}`}
+                className={`package-card mcp-card ${isDragging ? 'is-dragging' : ''} ${selected ? 'is-selected' : ''}`}
                 onClick={() => onSelect(mcpItem)}
             >
-                <PrimitiveCardHeader
+                <PackageCardHeader
                     icon={primitiveKindIcon('mcp')}
                     name={mcp.name}
                     dragHandle
@@ -260,7 +260,7 @@ export function DraggableMcp({
                         <>
                             {onEdit ? (
                                 <button
-                                    className="primitive-card__edit-btn"
+                                    className="package-card__edit-btn"
                                     onClick={(e) => { e.stopPropagation(); e.preventDefault(); onEdit(mcpItem) }}
                                     onPointerDown={(e) => e.stopPropagation()}
                                     title="Edit server"
@@ -270,7 +270,7 @@ export function DraggableMcp({
                             ) : null}
                             {onDelete ? (
                                 <button
-                                    className="primitive-card__delete-btn"
+                                    className="package-card__delete-btn"
                                     onClick={(e) => { e.stopPropagation(); e.preventDefault(); onDelete(mcpItem) }}
                                     onPointerDown={(e) => e.stopPropagation()}
                                     title="Remove server"
@@ -281,13 +281,13 @@ export function DraggableMcp({
                         </>
                     }
                 />
-                <div className="primitive-card__author">
+                <div className="package-card__author">
                     <span className={`package-mcp-editor__status-dot package-mcp-editor__status-dot--${mcp.status || 'disconnected'}`} style={{ display: 'inline-block', marginRight: 4, verticalAlign: 'middle' }} />
                     {mcp.status}
                     {mcp.configType ? ` · ${mcp.configType}` : ''}
                 </div>
-                <div className="primitive-card__desc">
-                    {dragDisabled ? 'Save this server before dragging.' : 'Drag onto an agent to enable it there.'}
+                <div className="package-card__desc">
+                    {dragDisabled ? 'Save this server before dragging.' : 'Drag onto an Agent to enable it there.'}
                 </div>
             </div>
         </HoverableCard>

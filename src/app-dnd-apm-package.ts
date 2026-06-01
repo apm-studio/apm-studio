@@ -38,14 +38,6 @@ function agentBodyFromManifest(manifest: ApmPackageManifest, agent: ApmAgentExte
         }
     }
 
-    const firstInstruction = Array.isArray(manifest.instructions) ? manifest.instructions[0] : null
-    if (typeof firstInstruction === 'string' && firstInstruction.trim()) {
-        return firstInstruction
-    }
-    if (isRecord(firstInstruction) && typeof firstInstruction.content === 'string' && firstInstruction.content.trim()) {
-        return firstInstruction.content
-    }
-
     return null
 }
 
@@ -77,10 +69,6 @@ function packageSupportsDropType(primitive: DragPrimitive, dropType: string | un
     const packageKind = primitive.packageKind
     const counts = primitive.primitiveCounts || {}
 
-    if (dropType === 'instruction') {
-        return packageKind === 'instruction'
-            || (packageKind !== 'agent' && Number(counts.instructions || 0) > 0)
-    }
     if (dropType === 'skill') {
         return packageKind === 'skill'
             || (packageKind !== 'agent' && Number(counts.skills || 0) > 0)
@@ -91,14 +79,14 @@ function packageSupportsDropType(primitive: DragPrimitive, dropType: string | un
     return false
 }
 
-function primitivePathName(value: unknown, kind: 'instruction' | 'skill') {
+function primitivePathName(value: unknown) {
     if (typeof value !== 'string' || !value.trim()) {
         return null
     }
     const parts = value.split('/').filter(Boolean)
     const last = parts.pop()
     if (!last) return null
-    if (kind === 'skill' && last.toLowerCase() === 'skill.md') {
+    if (last.toLowerCase() === 'skill.md') {
         return parts.pop() || null
     }
     return last
@@ -117,8 +105,8 @@ function manifestEntryPath(entry: unknown) {
     return null
 }
 
-function manifestPrimitiveName(manifest: ApmPackageManifest, kind: 'instruction' | 'skill', fallback: string) {
-    const entries = kind === 'instruction' ? manifest.instructions : manifest.skills
+function manifestSkillName(manifest: ApmPackageManifest, fallback: string) {
+    const entries = manifest.skills
     const first = Array.isArray(entries) ? entries[0] : null
     const directName = isRecord(first) && typeof first.name === 'string' && first.name.trim()
         ? first.name.trim()
@@ -127,7 +115,7 @@ function manifestPrimitiveName(manifest: ApmPackageManifest, kind: 'instruction'
         return directName
     }
 
-    const pathName = primitivePathName(manifestEntryPath(first), kind)
+    const pathName = primitivePathName(manifestEntryPath(first))
     return pathName || fallback
 }
 
@@ -145,7 +133,11 @@ export async function resolveApmPackageAgentPrimitive(
         || !!primitive.agentName
         || Number(primitive.primitiveCounts?.agents || 0) > 0
     if (!hasAgentPrimitive) {
-        showDropWarning('Only APM packages with an Agent primitive can be dropped onto the canvas. Use Primitives for Instructions, Skills, and MCP.')
+        if (primitive.packageKind === 'instruction') {
+            showDropWarning('Instruction packages are standalone project/file rules. Open them from Packages or export them through Export.')
+            return null
+        }
+        showDropWarning('Only APM packages with an Agent primitive can be dropped onto the canvas. Use Skills and MCP from Packages for agent attachments.')
         return null
     }
 
@@ -177,7 +169,6 @@ export async function resolveApmPackageAgentPrimitive(
         description: agent?.description
             || (typeof manifest.description === 'string' ? manifest.description : undefined)
             || primitive.description,
-        instructionUrn: registryUrnFromSharedRef(agent?.instructionRef || null),
         skillUrns: registryUrnsFromSharedRefs(agent?.skillRefs || []),
         model,
         modelVariant: agent?.modelVariant || null,
@@ -194,7 +185,7 @@ export async function resolveApmPackagePrimitiveForAgentDrop(
     dropType: string | undefined,
     showDropWarning: (message: string) => void,
 ): Promise<DragPrimitive | null> {
-    if (dropType !== 'instruction' && dropType !== 'skill' && dropType !== 'mcp') {
+    if (dropType !== 'skill' && dropType !== 'mcp') {
         return null
     }
 
@@ -244,7 +235,7 @@ export async function resolveApmPackagePrimitiveForAgentDrop(
         kind: dropType,
         urn: packageUrn(scope, resolvedPackageId),
         source: scope,
-        name: manifestPrimitiveName(manifest, dropType, fallbackName),
+        name: manifestSkillName(manifest, fallbackName),
         description: typeof manifest.description === 'string' ? manifest.description : primitive.description,
         author: typeof manifest.author === 'string' && manifest.author.trim()
             ? manifest.author

@@ -1,5 +1,5 @@
 import type {
-    ApmPackageSummary,
+    ApmPackageScope,
 } from '../../../shared/apm-contracts'
 import type {
     ApmSyncRunResponse,
@@ -21,24 +21,33 @@ import {
     sidebarSectionForUnit,
     targetAvailability,
     targetPackageAvailability,
-    type TargetManagePackageSyncState,
-    type TargetSyncChoice,
+    type TargetExportScopedPackage,
+    type TargetExportPackageState,
+    type TargetExportChoice,
     unitLabel,
-} from './target-manage-sync-utils'
+} from './target-export-sync-utils'
 
 const EMPTY_TARGETS: ApmSyncTargetSummary[] = []
 
-export interface TargetManageControllerModelInput {
-    apmPackages: ApmPackageSummary[]
+export interface TargetExportControllerModelInput {
+    projectPackages: TargetExportScopedPackage[]
+    userPackages: TargetExportScopedPackage[]
     targetsResponse: ApmSyncTargetsResponse | null
     selectedSyncUnit: ApmSyncUnit
     selectedTargets: ApmSyncTargetId[]
     stagedPackageIds: string[]
+    stagedScopeCopies: TargetExportScopeCopy[]
     filter: string
-    syncChoices: Record<string, TargetSyncChoice>
+    exportChoices: Record<string, TargetExportChoice>
     loadingTargets: boolean
     running: boolean
     lastResult: ApmSyncRunResponse | null
+}
+
+export interface TargetExportScopeCopy {
+    packageId: string
+    fromScope: ApmPackageScope
+    toScope: ApmPackageScope
 }
 
 function sameOrderedValues(left: string[], right: string[]) {
@@ -46,7 +55,7 @@ function sameOrderedValues(left: string[], right: string[]) {
         && left.every((value, index) => value === right[index])
 }
 
-export function normalizeTargetManageStagedPackages(
+export function normalizeTargetExportStagedPackages(
     current: string[],
     syncablePackageIds: string[],
 ) {
@@ -61,7 +70,7 @@ export function normalizeTargetManageStagedPackages(
     return valid
 }
 
-export function normalizeTargetManageTargetSelection(
+export function normalizeTargetExportTargetSelection(
     current: ApmSyncTargetId[],
     availableTargetIds: ApmSyncTargetId[],
 ) {
@@ -74,34 +83,73 @@ export function normalizeTargetManageTargetSelection(
     return sameOrderedValues(next, current) ? current : next
 }
 
-export function buildTargetManageControllerModel(input: TargetManageControllerModelInput) {
+export function targetExportScopeCopyKey(copy: TargetExportScopeCopy) {
+    return `${copy.fromScope}:${copy.toScope}:${copy.packageId}`
+}
+
+export function normalizeTargetExportStagedScopeCopies(
+    current: TargetExportScopeCopy[],
+    sourcePackageIdsByScope: Record<ApmPackageScope, string[]>,
+) {
+    const availableByScope: Record<ApmPackageScope, Set<string>> = {
+        workspace: new Set(sourcePackageIdsByScope.workspace),
+        user: new Set(sourcePackageIdsByScope.user),
+    }
+    const seen = new Set<string>()
+    const valid = current.filter((copy) => {
+        if (copy.fromScope === copy.toScope) return false
+        if (!availableByScope[copy.fromScope].has(copy.packageId)) return false
+        const key = targetExportScopeCopyKey(copy)
+        if (seen.has(key)) return false
+        seen.add(key)
+        return true
+    })
+    if (
+        valid.length === current.length
+        && valid.every((copy, index) => targetExportScopeCopyKey(copy) === targetExportScopeCopyKey(current[index]))
+    ) {
+        return current
+    }
+    return valid
+}
+
+export function buildTargetExportControllerModel(input: TargetExportControllerModelInput) {
     const {
-        apmPackages,
         filter,
         lastResult,
         loadingTargets,
+        projectPackages,
         running,
+        stagedScopeCopies,
         stagedPackageIds,
         selectedSyncUnit,
         selectedTargets,
-        syncChoices,
+        exportChoices,
         targetsResponse,
+        userPackages,
     } = input
 
     const targets = targetsResponse?.targets || EMPTY_TARGETS
     const selectedTargetSet = new Set(selectedTargets)
     const stagedPackageSet = new Set(stagedPackageIds)
-    const workspaceCounts = sumApmPackageSyncPrimitiveCounts(apmPackages)
+    const stagedScopeCopySet = new Set(stagedScopeCopies.map(targetExportScopeCopyKey))
+    const projectCounts = sumApmPackageSyncPrimitiveCounts(projectPackages)
+    const userCounts = sumApmPackageSyncPrimitiveCounts(userPackages)
     const sidebarSection = sidebarSectionForUnit(selectedSyncUnit)
     const primitiveUnit = primitiveUnitForSidebar(selectedSyncUnit)
-    const syncablePackages = apmPackages.filter((pkg) => packageHasSyncUnit(pkg, selectedSyncUnit))
-    const syncablePackageIds = syncablePackages.map((pkg) => pkg.packageId)
+    const projectSyncablePackages = projectPackages.filter((pkg) => packageHasSyncUnit(pkg, selectedSyncUnit))
+    const userSyncablePackages = userPackages.filter((pkg) => packageHasSyncUnit(pkg, selectedSyncUnit))
+    const syncablePackageIds = projectSyncablePackages.map((pkg) => pkg.packageId)
     const queryText = filter.trim().toLowerCase()
-    const filteredSyncablePackages = syncablePackages.filter((pkg) =>
+    const filteredProjectPackages = projectSyncablePackages.filter((pkg) =>
         !queryText || packageSearchHaystack(pkg).includes(queryText),
     )
-    const visiblePackageIds = filteredSyncablePackages.map((pkg) => pkg.packageId)
-    const stagedPackages = syncablePackages.filter((pkg) => stagedPackageSet.has(pkg.packageId))
+    const filteredUserPackages = userSyncablePackages.filter((pkg) =>
+        !queryText || packageSearchHaystack(pkg).includes(queryText),
+    )
+    const visiblePackageIds = filteredProjectPackages.map((pkg) => pkg.packageId)
+    const visibleUserPackageIds = filteredUserPackages.map((pkg) => pkg.packageId)
+    const stagedPackages = projectSyncablePackages.filter((pkg) => stagedPackageSet.has(pkg.packageId))
     const stagedCounts = sumApmPackageSyncPrimitiveCounts(stagedPackages)
     const stagedPrimitiveSummary = primitiveSummary(stagedCounts, selectedSyncUnit)
     const targetStates = new Map(targets.map((target) => [
@@ -121,7 +169,8 @@ export function buildTargetManageControllerModel(input: TargetManageControllerMo
         : null
     const targetsReady = activeTargets.length > 0
         && activeTargets.every((target) => targetStates.get(target.id)?.available)
-    const packageWarnings = syncablePackages.reduce((total, pkg) => total + (pkg.microsoftApm?.warnings.length || 0), 0)
+    const projectPackageWarnings = projectSyncablePackages.reduce((total, pkg) => total + (pkg.microsoftApm?.warnings.length || 0), 0)
+    const userPackageWarnings = userSyncablePackages.reduce((total, pkg) => total + (pkg.microsoftApm?.warnings.length || 0), 0)
     const modelOmitted = stagedPackages.some((pkg) => pkg.agentComponents?.model)
     const toolingCommand = targetsResponse?.tooling.recommendedCommand
     const toolingStatusLabel = loadingTargets || !targetsResponse
@@ -145,17 +194,11 @@ export function buildTargetManageControllerModel(input: TargetManageControllerMo
     ))
     const activeTargetCurrentByPackage = new Map(matchingCurrentItems.map((item) => [item.packageId, item]))
     const definitions = activeTarget?.definitions || []
-    const activeTargetDefinitions = definitions.filter((definition) => {
-        if (selectedSyncUnit === 'studio-agent') {
-            return definition.managedSyncUnit === 'studio-agent'
-                || definition.kind === 'agent'
-                || definition.kind === 'skill'
-                || definition.kind === 'mcp'
-        }
-        return !definition.syncUnit || definition.syncUnit === selectedSyncUnit
-    })
+    const activeTargetDefinitions = definitions.filter((definition) =>
+        !definition.syncUnit || definition.syncUnit === selectedSyncUnit,
+    )
     const activeTargetManagedDefinitionByPackage = new Map<string, ApmSyncTargetDefinitionSummary>()
-    for (const pkg of syncablePackages) {
+    for (const pkg of projectSyncablePackages) {
         const definition = findManagedDefinitionForPackage(activeTargetDefinitions, pkg)
         if (definition) activeTargetManagedDefinitionByPackage.set(pkg.packageId, definition)
     }
@@ -166,42 +209,48 @@ export function buildTargetManageControllerModel(input: TargetManageControllerMo
     }
     const matchedDefinitionIds = new Set(Array.from(activeTargetManagedDefinitionByPackage.values()).map((definition) => definition.id))
     const targetOnlyDefinitions = activeTargetDefinitions.filter((definition) => !matchedDefinitionIds.has(definition.id))
-    const activeTargetPackageSyncStateByPackage = new Map<string, TargetManagePackageSyncState>()
-    for (const pkg of syncablePackages) {
+    const activeTargetPackageExportStateByPackage = new Map<string, TargetExportPackageState>()
+    for (const pkg of projectSyncablePackages) {
         if (!activeTarget || !targetPackageAvailability(activeTarget, selectedSyncUnit, pkg).available) {
-            activeTargetPackageSyncStateByPackage.set(pkg.packageId, 'blocked')
+            activeTargetPackageExportStateByPackage.set(pkg.packageId, 'blocked')
             continue
         }
-        activeTargetPackageSyncStateByPackage.set(
+        activeTargetPackageExportStateByPackage.set(
             pkg.packageId,
             activeTargetCurrentByPackage.has(pkg.packageId) || activeTargetManagedDefinitionByPackage.has(pkg.packageId)
                 ? 'synced'
                 : 'unsynced',
         )
     }
-    const unsyncedPackageIds = syncablePackages
-        .filter((pkg) => activeTargetPackageSyncStateByPackage.get(pkg.packageId) === 'unsynced')
+    const unsyncedPackageIds = projectSyncablePackages
+        .filter((pkg) => activeTargetPackageExportStateByPackage.get(pkg.packageId) === 'unsynced')
         .map((pkg) => pkg.packageId)
-    const activePushPackageIds = !activeTarget
+    const activeSavePackageIds = !activeTarget
         ? []
         : stagedPackages
-            .filter((pkg) => syncChoices[`${activeTarget.id}:${pkg.packageId}`] !== 'skip')
+            .filter((pkg) => exportChoices[`${activeTarget.id}:${pkg.packageId}`] !== 'skip')
             .map((pkg) => pkg.packageId)
-    const syncDisabled = running || selectedTargets.length === 0 || !targetsReady || activePushPackageIds.length === 0
+    const hasScopeCopyChanges = stagedScopeCopies.length > 0
+    const hasTargetExportChanges = stagedPackageIds.length > 0 || Object.keys(exportChoices).length > 0
+    const hasExportChanges = hasTargetExportChanges || hasScopeCopyChanges
+    const targetExportBlocked = activeSavePackageIds.length > 0 && (selectedTargets.length === 0 || !targetsReady)
+    const saveDisabled = running || targetExportBlocked || (activeSavePackageIds.length === 0 && !hasScopeCopyChanges)
+    const revertDisabled = running || !hasExportChanges
     const activeTargetPlanSteps = !activeTarget
         ? []
         : [
-            selectedSyncUnit === 'studio-agent'
-                ? 'Compose each Studio Agent into one target agent artifact.'
-                : `Build a temp package from ${unitLabel(selectedSyncUnit)}.`,
-            `${activePushPackageIds.length} Studio item${activePushPackageIds.length === 1 ? '' : 's'} marked Push.`,
-            `${toolingStatusLabel} install --target ${activeTarget.id}.`,
-            `Write managed project files into ${activeTarget.outputHint}.`,
-            modelOmitted ? 'Keep model settings inside Studio Agent runtime.' : null,
+            stagedScopeCopies.length > 0
+                ? `Copy ${stagedScopeCopies.length} package${stagedScopeCopies.length === 1 ? '' : 's'} between User and Workspace.`
+                : null,
+            activeSavePackageIds.length > 0 ? `Build a temp package from ${unitLabel(selectedSyncUnit)}.` : null,
+            activeSavePackageIds.length > 0 ? `${activeSavePackageIds.length} Workspace item${activeSavePackageIds.length === 1 ? '' : 's'} marked Save.` : null,
+            activeSavePackageIds.length > 0 ? `${toolingStatusLabel} install --target ${activeTarget.id}.` : null,
+            activeSavePackageIds.length > 0 ? `Write managed project files into ${activeTarget.outputHint}.` : null,
+            modelOmitted ? 'Keep model settings inside Studio runtime.' : null,
         ].filter((step): step is string => Boolean(step))
 
     return {
-        activePushPackageIds,
+        activeSavePackageIds,
         activeTarget,
         activeTargetAvailability,
         activeTargetCurrentByPackage,
@@ -209,22 +258,33 @@ export function buildTargetManageControllerModel(input: TargetManageControllerMo
         activeTargetDefinitions,
         activeTargetPlanSteps,
         activeTargetResultByPackage,
-        activeTargetPackageSyncStateByPackage,
+        activeTargetPackageExportStateByPackage,
         availableTargetIds,
         availableTargetIdsKey: availableTargetIds.join('|'),
-        filteredSyncablePackages,
-        packageWarnings,
+        filteredProjectPackages,
+        filteredUserPackages,
+        projectPackageWarnings,
+        userPackageWarnings,
+        projectPackages,
+        userPackages,
+        projectCounts,
+        userCounts,
         primitiveUnit,
         sidebarSection,
         selectableTargetIds,
         selectableTargetIdsKey: selectableTargetIds.join('|'),
+        stagedScopeCopies,
+        stagedScopeCopyKeys: Array.from(stagedScopeCopySet),
+        stagedScopeCopySet,
         stagedPackageIdsKey: stagedPackageIds.join('|'),
         stagedPackageSet,
         stagedPackages,
         stagedPrimitiveSummary,
         syncablePackageIds,
         syncablePackageIdsKey: syncablePackageIds.join('|'),
-        syncDisabled,
+        hasExportChanges,
+        revertDisabled,
+        saveDisabled,
         targetOnlyDefinitions,
         targetStates,
         targets,
@@ -233,8 +293,8 @@ export function buildTargetManageControllerModel(input: TargetManageControllerMo
         unsyncedPackageIds,
         unsyncedPackageIdsKey: unsyncedPackageIds.join('|'),
         visiblePackageIds,
-        workspaceCounts,
+        visibleUserPackageIds,
     }
 }
 
-export type TargetManageControllerModel = ReturnType<typeof buildTargetManageControllerModel>
+export type TargetExportControllerModel = ReturnType<typeof buildTargetExportControllerModel>

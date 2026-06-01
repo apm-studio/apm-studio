@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
+import WorkspaceExplorerApmUserSection from './WorkspaceExplorerApmUserSection'
 import WorkspaceExplorerWorkspacesSection from './WorkspaceExplorerWorkspacesSection'
 import WorkspaceExplorerThreadsSection from './WorkspaceExplorerThreadsSection'
 import { useWorkspaceExplorerThreadsController } from './useWorkspaceExplorerThreadsController'
@@ -9,40 +10,61 @@ import './WorkspaceExplorerItems.css'
 type WorkspaceExplorerProps = {
     workspaceOnly?: boolean
     showThreads?: boolean
+    showApmUserScope?: boolean
 }
 
-export default function WorkspaceExplorer({ workspaceOnly = false, showThreads = true }: WorkspaceExplorerProps) {
-    return workspaceOnly ? <WorkspaceOnlyExplorer /> : <WorkspaceExplorerFull showThreads={showThreads} />
+export default function WorkspaceExplorer({
+    workspaceOnly = false,
+    showThreads = true,
+    showApmUserScope = false,
+}: WorkspaceExplorerProps) {
+    return workspaceOnly
+        ? <WorkspaceOnlyExplorer showApmUserScope={showApmUserScope} />
+        : <WorkspaceExplorerFull showThreads={showThreads} showApmUserScope={showApmUserScope} />
 }
 
-function WorkspaceOnlyExplorer() {
-    const { workingDir, workspaceRows, newWorkspace } = useWorkspaceExplorerWorkspaces()
+function WorkspaceOnlyExplorer({ showApmUserScope }: { showApmUserScope: boolean }) {
+    const { apmPackageScope, workingDir, workspaceRows, newWorkspace, selectWorkspaceScope } = useWorkspaceExplorerWorkspaces()
+    const openWorkspace = () => {
+        selectWorkspaceScope()
+        newWorkspace()
+    }
 
     return (
         <div className="explorer explorer--stacked explorer--workspace-only">
+            {showApmUserScope ? <WorkspaceExplorerApmUserSection /> : null}
             <WorkspaceExplorerWorkspacesSection
                 workspacesHeight={208}
                 workspaceRows={workspaceRows}
                 workingDir={workingDir}
-                onOpenWorkspace={newWorkspace}
+                workspaceScopeActive={apmPackageScope === 'workspace'}
+                onOpenWorkspace={openWorkspace}
+                onSelectWorkspaceScope={selectWorkspaceScope}
                 fill
             />
         </div>
     )
 }
 
-function WorkspaceExplorerFull({ showThreads }: { showThreads: boolean }) {
+function WorkspaceExplorerFull({ showThreads, showApmUserScope }: { showThreads: boolean; showApmUserScope: boolean }) {
     const { workspacesHeight, onDividerMouseDown } = useWorkspaceSectionResize(208)
-    const { workingDir, workspaceRows, newWorkspace } = useWorkspaceExplorerWorkspaces()
+    const { apmPackageScope, workingDir, workspaceRows, newWorkspace, selectWorkspaceScope } = useWorkspaceExplorerWorkspaces()
     const threadSectionProps = useWorkspaceExplorerThreadsController({ showThreads, workingDir })
+    const openWorkspace = () => {
+        selectWorkspaceScope()
+        newWorkspace()
+    }
 
     return (
         <div className="explorer explorer--stacked">
+            {showApmUserScope ? <WorkspaceExplorerApmUserSection /> : null}
             <WorkspaceExplorerWorkspacesSection
                 workspacesHeight={workspacesHeight}
                 workspaceRows={workspaceRows}
                 workingDir={workingDir}
-                onOpenWorkspace={newWorkspace}
+                workspaceScopeActive={apmPackageScope === 'workspace'}
+                onOpenWorkspace={openWorkspace}
+                onSelectWorkspaceScope={selectWorkspaceScope}
             />
 
             <div className="explorer__divider" onMouseDown={onDividerMouseDown} />

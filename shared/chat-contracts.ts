@@ -10,7 +10,6 @@ export type SharedPrimitiveRef =
 export type CompilePromptRequest = {
     agentId?: string
     agentName?: string
-    instructionRef: SharedPrimitiveRef | null
     agentBody?: string | null
     skillRefs: SharedPrimitiveRef[]
     model: {
@@ -38,10 +37,6 @@ export interface SkillCatalogEntry {
 export interface PromptPreview {
     system: string
     agent: string
-    instructionStack?: Array<{
-        label: string
-        detail: string
-    }>
     skillCatalog: SkillCatalogEntry[]
     capabilitySnapshot: ModelCapabilities | null
     toolName?: string
@@ -298,7 +293,6 @@ export type ChatSendRequest = {
     agent: {
         agentId: string
         agentName: string
-        instructionRef: SharedPrimitiveRef | null
         agentBody?: string | null
         skillRefs: SharedPrimitiveRef[]
         extraSkillRefs?: SharedPrimitiveRef[]

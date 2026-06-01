@@ -11,11 +11,8 @@ export type PreparedRuntimeResult = {
     reason: 'runtime_reload' | null
 }
 
-function collectDraftIds(instructionRef: SharedPrimitiveRef | null | undefined, skillRefs: SharedPrimitiveRef[] | null | undefined) {
+function collectDraftIds(skillRefs: SharedPrimitiveRef[] | null | undefined) {
     const ids = new Set<string>()
-    if (instructionRef?.kind === 'draft') {
-        ids.add(instructionRef.draftId)
-    }
     for (const ref of skillRefs || []) {
         if (ref.kind === 'draft') {
             ids.add(ref.draftId)
@@ -26,11 +23,10 @@ function collectDraftIds(instructionRef: SharedPrimitiveRef | null | undefined, 
 
 export function collectRuntimeDraftIds(
     runtimeConfig: {
-        instructionRef: SharedPrimitiveRef | null
         skillRefs: SharedPrimitiveRef[]
     },
 ) {
-    return collectDraftIds(runtimeConfig.instructionRef, runtimeConfig.skillRefs)
+    return collectDraftIds(runtimeConfig.skillRefs)
 }
 
 function projectionDirtyAffectsTarget(
@@ -39,7 +35,6 @@ function projectionDirtyAffectsTarget(
         agentId?: string | null
         teamId?: string | null
         runtimeConfig: {
-            instructionRef: SharedPrimitiveRef | null
             skillRefs: SharedPrimitiveRef[]
         }
     },
@@ -63,7 +58,6 @@ export async function preparePendingRuntimeExecution(
         agentId?: string | null
         teamId?: string | null
         runtimeConfig: {
-            instructionRef: SharedPrimitiveRef | null
             skillRefs: SharedPrimitiveRef[]
         }
     },

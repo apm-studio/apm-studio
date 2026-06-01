@@ -61,7 +61,7 @@ describe('APM sync unit helpers', () => {
             mcp: 0,
         })
         expect(apmPackageSyncUnits(pkg)).toEqual(['agents', 'instructions', 'skills', 'prompts', 'commands', 'hooks'])
-        expect(apmPackageHasSyncUnit(pkg, 'studio-agent')).toBe(true)
+        expect(apmPackageHasSyncUnit(pkg, 'agents')).toBe(true)
         expect(apmPackageHasSyncUnit(pkg, 'mcp')).toBe(false)
     })
 

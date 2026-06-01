@@ -14,54 +14,54 @@ import {
 import {
     primitiveCountParts,
     targetPackageAvailability,
-    type TargetSyncChoice,
+    type TargetExportChoice,
     unitLabel,
-} from './target-manage-sync-utils'
+} from './target-export-sync-utils'
 
-export type TargetManageTargetStateClass = 'is-ready' | 'is-warning'
+export type TargetExportTargetStateClass = 'is-ready' | 'is-warning'
 
-export interface TargetManageTargetPackageRowModel {
+export interface TargetExportTargetPackageRowModel {
     availability: ReturnType<typeof targetPackageAvailability>
     badges: string[]
     detail: string
     packageId: string
     packageName: string
-    stateClass: TargetManageTargetStateClass
+    stateClass: TargetExportTargetStateClass
     status: string
-    syncChoice: TargetSyncChoice
+    exportChoice: TargetExportChoice
 }
 
-export interface TargetManageTargetOnlyDefinitionRowModel {
+export interface TargetExportTargetOnlyDefinitionRowModel {
     badges: string[]
     detail: string
     id: string
     name: string
-    stateClass: TargetManageTargetStateClass
+    stateClass: TargetExportTargetStateClass
     status: string
 }
 
-export function buildTargetManageTargetPackageRowModel(input: {
+export function buildTargetExportTargetPackageRowModel(input: {
     currentItem?: ApmSyncTargetItemSummary
     definition?: ApmSyncTargetDefinitionSummary
     pkg: ApmPackageSummary
     result?: ApmSyncPackageResult
-    syncChoice: TargetSyncChoice
+    exportChoice: TargetExportChoice
     syncUnit: ApmSyncUnit
     target: ApmSyncTargetSummary
-}): TargetManageTargetPackageRowModel {
+}): TargetExportTargetPackageRowModel {
     const {
         currentItem,
         definition,
         pkg,
         result,
-        syncChoice,
+        exportChoice,
         syncUnit,
         target,
     } = input
     const counts = apmPackageSyncPrimitiveCounts(pkg)
     const parts = primitiveCountParts(counts)
     const availability = targetPackageAvailability(target, syncUnit, pkg)
-    const status = result?.status || (syncChoice === 'skip' ? 'Skip' : availability.available ? 'Push' : 'Blocked')
+    const status = result?.status || (exportChoice === 'skip' ? 'Skip' : availability.available ? 'Save' : 'Blocked')
     const stateClass = result?.status === 'failed' || result?.status === 'skipped' || !availability.available
         ? 'is-warning'
         : 'is-ready'
@@ -90,13 +90,13 @@ export function buildTargetManageTargetPackageRowModel(input: {
         packageName: pkg.agentName || pkg.name,
         stateClass,
         status,
-        syncChoice,
+        exportChoice,
     }
 }
 
-export function buildTargetManageTargetOnlyDefinitionRowModel(
+export function buildTargetExportTargetOnlyDefinitionRowModel(
     definition: ApmSyncTargetDefinitionSummary,
-): TargetManageTargetOnlyDefinitionRowModel {
+): TargetExportTargetOnlyDefinitionRowModel {
     return {
         badges: [
             'Target only',

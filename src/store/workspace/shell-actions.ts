@@ -7,6 +7,7 @@ type WorkspaceShellActions = Pick<WorkspaceSlice,
     | 'setTerminalOpen'
     | 'setTrackingOpen'
     | 'setWorkspaceMode'
+    | 'setApmPackageScope'
     | 'setPackageLibraryOpen'
     | 'toggleTheme'
     | 'setCanvasCenter'
@@ -27,7 +28,7 @@ export function createWorkspaceShellActions(set: WorkspaceSetState): WorkspaceSh
             : { isTrackingOpen: false }),
 
         setWorkspaceMode: (mode) => set(() => {
-            if (mode === 'import' || mode === 'manage') {
+            if (mode === 'import' || mode === 'export') {
                 return {
                     workspaceMode: mode,
                     isTrackingOpen: false,
@@ -39,6 +40,8 @@ export function createWorkspaceShellActions(set: WorkspaceSetState): WorkspaceSh
 
             return { workspaceMode: mode }
         }),
+
+        setApmPackageScope: (scope) => set({ apmPackageScope: scope }),
 
         setPackageLibraryOpen: (open) => set({ isPackageLibraryOpen: open }),
 

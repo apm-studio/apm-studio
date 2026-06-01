@@ -34,7 +34,7 @@
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.package-mcp-editor.primitive-card:active {
+.package-mcp-editor.package-card:active {
     cursor: default;
 }
 
@@ -42,7 +42,7 @@
     cursor: grab;
 }
 
-.package-mcp-editor--card-draggable.primitive-card:active {
+.package-mcp-editor--card-draggable.package-card:active {
     cursor: grabbing;
 }
 
@@ -286,7 +286,7 @@
     justify-content: center;
 }
 
-.primitive-card__edit-btn:disabled {
+.package-card__edit-btn:disabled {
     opacity: 0.2;
     cursor: default;
 }

@@ -29,7 +29,6 @@ describe('resolveCanvasNodeSpawnPosition', () => {
                 height: 400,
                 scope: 'shared',
                 model: null,
-                instructionRef: null,
                 skillRefs: [],
                 mcpServerNames: [],
             }],

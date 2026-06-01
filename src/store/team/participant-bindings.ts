@@ -132,7 +132,6 @@ export function buildHiddenRegistryAgentPlaceholder(input: {
         height: AGENT_DEFAULT_HEIGHT,
         scope: 'shared' as const,
         model: null,
-        instructionRef: null,
         skillRefs: [],
         mcpServerNames: [],
         mcpBindingMap: {},

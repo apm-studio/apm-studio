@@ -1,4 +1,4 @@
-import type { PrimitiveCard } from '../../lib/primitive-types'
+import type { PackageLibraryItem } from '../../lib/primitive-types'
 import type {
     TeamParticipantSessionStatus,
     TeamRelation,
@@ -71,7 +71,7 @@ export interface TeamSlice {
     updateTeamSize: (id: string, width: number, height: number) => void
 
     updateTeamAuthoringMeta: (id: string, meta: WorkspaceTeamSnapshot['meta']) => void
-    importTeamFromPrimitive: (primitive: PrimitiveCard) => Promise<void>
+    importTeamFromPrimitive: (primitive: PackageLibraryItem) => Promise<void>
 
     createThread: (teamId: string) => Promise<string>
     selectThread: (teamId: string, threadId: string | null) => void

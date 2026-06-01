@@ -196,8 +196,8 @@ describe('placeholderForLocalSection', () => {
 })
 
 describe('placeholderForPrimitiveSection', () => {
-    it('returns Studio Agent component placeholders', () => {
-        expect(placeholderForPrimitiveSection('agents')).toBe('studio agent package, apm.yml path...')
+    it('returns APM primitive placeholders', () => {
+        expect(placeholderForPrimitiveSection('agents')).toBe('agent package, apm.yml path...')
         expect(placeholderForPrimitiveSection('instructions')).toBe('instruction package, apm.yml path...')
         expect(placeholderForPrimitiveSection('skills')).toBe('skill package, apm.yml path...')
         expect(placeholderForPrimitiveSection('mcp')).toBe('mcp server, tool, status...')
@@ -230,7 +230,6 @@ describe('buildPackagePrimitiveDragPayload', () => {
             urn: 'agent/@user/project/researcher',
             name: 'researcher',
             author: '@user',
-            instructionUrn: 'instruction/@user/project/reasoning',
             skillUrns: ['skill/@user/project/write'],
             model: { provider: 'openai', modelId: 'gpt-5' },
             modelVariant: 'reasoning-high',
@@ -248,7 +247,6 @@ describe('buildPackagePrimitiveDragPayload', () => {
 
     it('includes draftContent for agent drafts', () => {
         const draftContent = {
-            instructionRef: { kind: 'registry' as const, urn: 'instruction/@user/project/reasoning' },
             skillRefs: [],
             model: null,
             mcpServerNames: [],

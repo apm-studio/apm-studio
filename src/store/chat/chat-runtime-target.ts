@@ -18,7 +18,6 @@ import { isAssistantChatKey } from '../assistant/slice'
 import type { ChatGet } from './chat-internals'
 
 export type ChatRuntimeConfig = {
-    instructionRef: SharedPrimitiveRef | null
     agentBody?: string | null
     skillRefs: SharedPrimitiveRef[]
     model: { provider: string; modelId: string } | null
@@ -48,7 +47,6 @@ export type ResolvedChatRuntimeTarget = {
 }
 
 export const EMPTY_RUNTIME_CONFIG: ChatRuntimeConfig = {
-    instructionRef: null,
     agentBody: null,
     skillRefs: [],
     model: null,
@@ -158,8 +156,6 @@ export function buildAssistantWorkspaceContext(get: ChatGet): AssistantWorkspace
                     }
                     : null,
                 modelVariant: agent.modelVariant || null,
-                instructionUrn: agent.instructionRef?.kind === 'registry' ? agent.instructionRef.urn : null,
-                instructionDraftId: agent.instructionRef?.kind === 'draft' ? agent.instructionRef.draftId : null,
                 skillUrns: agent.skillRefs
                     .filter((ref) => ref.kind === 'registry')
                     .map((ref) => ref.urn),

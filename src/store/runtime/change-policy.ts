@@ -113,9 +113,6 @@ export function draftIdsFromPrimitiveRefs(refs: SharedPrimitiveRef[] | null | un
     return unique((refs || []).map((ref) => ref.kind === 'draft' ? ref.draftId : null))
 }
 
-export function draftIdsFromRuntimeRefs(instructionRef: SharedPrimitiveRef | null | undefined, skillRefs: SharedPrimitiveRef[] | null | undefined) {
-    return unique([
-        instructionRef?.kind === 'draft' ? instructionRef.draftId : null,
-        ...draftIdsFromPrimitiveRefs(skillRefs),
-    ])
+export function draftIdsFromRuntimeRefs(skillRefs: SharedPrimitiveRef[] | null | undefined) {
+    return draftIdsFromPrimitiveRefs(skillRefs)
 }

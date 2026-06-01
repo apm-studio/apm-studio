@@ -41,7 +41,6 @@ export interface WorkspaceAgentSnapshot {
     model: WorkspaceModelConfig | null
     modelPlaceholder?: WorkspaceModelConfig | null
     modelVariant?: string | null
-    instructionRef?: SharedPrimitiveRef | null
     agentBody?: string | null
     skillRefs?: SharedPrimitiveRef[]
     mcpServerNames?: string[]
@@ -56,7 +55,6 @@ export interface WorkspaceAgentSnapshot {
 export interface WorkspaceAgentNode extends WorkspaceAgentSnapshot {
     position: WorkspacePoint
     scope: WorkspaceAgentScope
-    instructionRef: SharedPrimitiveRef | null
     skillRefs: SharedPrimitiveRef[]
     mcpServerNames: string[]
 }
@@ -65,7 +63,7 @@ export type WorkspaceMarkdownEditorKind = 'instruction' | 'skill'
 
 export interface WorkspaceMarkdownEditorAttachTarget {
     agentId: string
-    mode: 'instruction' | 'skill-new' | 'skill-replace'
+    mode: 'skill-new' | 'skill-replace'
     targetRef?: SharedPrimitiveRef | null
 }
 
