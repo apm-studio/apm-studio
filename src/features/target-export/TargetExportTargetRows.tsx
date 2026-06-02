@@ -16,6 +16,8 @@ interface TargetExportTargetRowsProps {
     activeTargetCurrentPackages: TargetExportControllerState['activeTargetCurrentPackages']
     activeTargetDefinitionByPackage: TargetExportControllerState['activeTargetDefinitionByPackage']
     activeTargetResultByPackage: TargetExportControllerState['activeTargetResultByPackage']
+    importTargetDefinition: TargetExportControllerState['importTargetDefinition']
+    importingTargetDefinitionIds: TargetExportControllerState['importingTargetDefinitionIds']
     running: boolean
     selectedSyncUnit: TargetExportControllerState['selectedSyncUnit']
     setPackageExportChoice: (packageId: string, choice: TargetExportChoice) => void
@@ -31,6 +33,8 @@ export function TargetExportTargetRows({
     activeTargetCurrentPackages,
     activeTargetDefinitionByPackage,
     activeTargetResultByPackage,
+    importTargetDefinition,
+    importingTargetDefinitionIds,
     running,
     selectedSyncUnit,
     setPackageExportChoice,
@@ -163,6 +167,15 @@ export function TargetExportTargetRows({
                         <span className="target-export-action-choice">
                             <button type="button" className="target-export-choice-btn is-active" disabled>
                                 Keep
+                            </button>
+                            <button
+                                type="button"
+                                className="target-export-choice-btn"
+                                onClick={() => void importTargetDefinition(definition)}
+                                disabled={running || importingTargetDefinitionIds.includes(definition.id)}
+                                title={`Import ${row.name} into Workspace packages`}
+                            >
+                                {importingTargetDefinitionIds.includes(definition.id) ? 'Importing' : 'Import'}
                             </button>
                         </span>
                     </article>

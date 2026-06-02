@@ -24,6 +24,8 @@ import type {
 import type {
     ApmSyncRunRequest,
     ApmSyncRunResponse,
+    ApmTargetDefinitionImportRequest,
+    ApmTargetDefinitionImportResponse,
     ApmSyncTargetsResponse,
 } from '../../../shared/apm-sync-contracts'
 import type {
@@ -104,6 +106,9 @@ export const apmApi = {
 
     importGitHub: (body: ApmGitHubImportRequest) =>
         postJSON<ApmGitHubImportResponse>('/api/apm/import/github', body),
+
+    importTargetDefinition: (body: ApmTargetDefinitionImportRequest) =>
+        postJSON<ApmTargetDefinitionImportResponse>('/api/apm/import/target-definition', body),
 
     previewGitHub: (body: ApmGitHubImportRequest) =>
         postJSON<ApmGitHubImportPreviewResponse>('/api/apm/import/github/preview', body),

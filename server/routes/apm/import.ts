@@ -8,12 +8,15 @@ import type {
     ApmGitHubSourceCatalogResponse,
     ApmPackageImportRequest,
     ApmPackageImportResponse,
+    ApmTargetDefinitionImportRequest,
+    ApmTargetDefinitionImportResponse,
 } from '../../../shared/apm-contracts.js'
 import {
     importApmPackagesFromGitHub,
     listApmGitHubSourceItems,
     previewApmPackagesFromGitHub,
 } from '../../services/apm-package/github-import.js'
+import { importApmPackageFromTargetDefinition } from '../../services/apm-package/local-target-import.js'
 import { importApmPackage } from '../../services/apm-package/repository.js'
 import { recordImportCatalogDownload, searchImportCatalog } from '../../services/import/registry-service.js'
 import { jsonError, requestWorkingDir } from '../route-errors.js'
@@ -46,6 +49,19 @@ apmImport.post('/api/apm/import/github', async (c) => {
         return c.json(response satisfies ApmGitHubImportResponse, 201)
     } catch (error) {
         return jsonError(c, errorMessage(error, 'Unable to import GitHub source as APM packages.'), 500)
+    }
+})
+
+apmImport.post('/api/apm/import/target-definition', async (c) => {
+    const body = await c.req.json<ApmTargetDefinitionImportRequest>().catch(() => null)
+    if (!body) {
+        return jsonError(c, 'Request body is required.', 400)
+    }
+    try {
+        const response = await importApmPackageFromTargetDefinition(requestWorkingDir(c), body)
+        return c.json(response satisfies ApmTargetDefinitionImportResponse, 201)
+    } catch (error) {
+        return jsonError(c, errorMessage(error, 'Unable to import target definition as an APM package.'), 500)
     }
 })
 

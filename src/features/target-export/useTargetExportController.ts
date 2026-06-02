@@ -8,6 +8,7 @@ import type {
 } from '../../../shared/apm-contracts'
 import type {
     ApmSyncRunResponse,
+    ApmSyncTargetDefinitionSummary,
     ApmSyncTargetId,
     ApmSyncTargetsResponse,
     ApmSyncUnit,
@@ -47,6 +48,7 @@ export function useTargetExportController() {
     const [targetMessage, setTargetMessage] = useState<string | null>(null)
     const [lastResult, setLastResult] = useState<ApmSyncRunResponse | null>(null)
     const [exportChoices, setExportChoices] = useState<Record<string, TargetExportChoice>>({})
+    const [importingTargetDefinitionIds, setImportingTargetDefinitionIds] = useState<string[]>([])
     const {
         data: rawProjectPackages = EMPTY_APM_PACKAGES,
         isLoading: projectPackagesLoading,
@@ -105,6 +107,7 @@ export function useTargetExportController() {
         setLastResult(null)
         setError(null)
         setRunning(false)
+        setImportingTargetDefinitionIds([])
         void refreshTargets()
     }, [refreshTargets, workingDir])
 
@@ -239,6 +242,40 @@ export function useTargetExportController() {
         }))
     }, [model.activeTarget?.id])
 
+    const importTargetDefinition = useCallback(async (definition: ApmSyncTargetDefinitionSummary) => {
+        const workingDirAtSubmit = useStudioStore.getState().workingDir
+        const target = model.targets.find((candidate) => candidate.id === definition.target)
+        setImportingTargetDefinitionIds((current) => (
+            current.includes(definition.id) ? current : [...current, definition.id]
+        ))
+        setError(null)
+        setTargetMessage(null)
+        setLastResult(null)
+        try {
+            const response = await apmApi.importTargetDefinition({
+                target: definition.target,
+                path: definition.path,
+                scope: 'workspace',
+            })
+            if (useStudioStore.getState().workingDir !== workingDirAtSubmit) return
+            await refetchProjectPackages()
+            await refreshTargets()
+            if (useStudioStore.getState().workingDir !== workingDirAtSubmit) return
+            const packageNames = response.packages.map((pkg) => pkg.name).join(', ')
+            const targetLabel = target?.label || definition.target
+            const warning = response.warnings[0] ? ` ${response.warnings[0]}` : ''
+            setTargetMessage(`Imported ${packageNames || 'target definition'} into Workspace. Stage it and Save to make ${targetLabel} managed.${warning}`)
+        } catch (err) {
+            if (useStudioStore.getState().workingDir === workingDirAtSubmit) {
+                setError(err instanceof Error ? err.message : 'Target import failed.')
+            }
+        } finally {
+            if (useStudioStore.getState().workingDir === workingDirAtSubmit) {
+                setImportingTargetDefinitionIds((current) => current.filter((id) => id !== definition.id))
+            }
+        }
+    }, [model.targets, refetchProjectPackages, refreshTargets])
+
     const selectTarget = useCallback((targetId: ApmSyncTargetId) => {
         const target = model.targets.find((candidate) => candidate.id === targetId)
         if (!target?.available) return
@@ -347,6 +384,8 @@ export function useTargetExportController() {
         stagedPackageIds,
         stagedScopeCopies,
         exportChoices,
+        importTargetDefinition,
+        importingTargetDefinitionIds,
         targetMessage,
         targetsResponse,
         toggleStagedPackage,

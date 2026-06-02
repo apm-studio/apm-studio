@@ -1,4 +1,9 @@
-import type { ApmPackageSummary, ApmToolingStatus } from './apm-contracts.js'
+import type {
+    ApmGitHubImportPackage,
+    ApmPackageScope,
+    ApmPackageSummary,
+    ApmToolingStatus,
+} from './apm-contracts.js'
 
 export type ApmSyncUnit =
     | 'agents'
@@ -193,6 +198,22 @@ export interface ApmSyncRunRequest {
     targets: ApmSyncTargetId[]
     syncUnit?: ApmSyncUnit
     packageIds?: string[]
+}
+
+export interface ApmTargetDefinitionImportRequest {
+    target: ApmSyncTargetId
+    path: string
+    scope?: ApmPackageScope
+}
+
+export interface ApmTargetDefinitionImportResponse {
+    ok: true
+    scope: ApmPackageScope
+    targetWorkingDir: string
+    target: ApmSyncTargetId
+    definitionPath: string
+    packages: ApmGitHubImportPackage[]
+    warnings: string[]
 }
 
 export interface ApmSyncPackageResult {

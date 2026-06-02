@@ -25,6 +25,8 @@ export function TargetExportTargetsColumn({ controller, onOpenDetails }: TargetE
         activeTargetDefinitions,
         activeTargetPlanSteps,
         activeTargetResultByPackage,
+        importTargetDefinition,
+        importingTargetDefinitionIds,
         running,
         selectTarget,
         selectedSyncUnit,
@@ -139,6 +141,8 @@ export function TargetExportTargetsColumn({ controller, onOpenDetails }: TargetE
                         activeTargetCurrentPackages={activeTargetCurrentPackages}
                         activeTargetDefinitionByPackage={activeTargetDefinitionByPackage}
                         activeTargetResultByPackage={activeTargetResultByPackage}
+                        importTargetDefinition={importTargetDefinition}
+                        importingTargetDefinitionIds={importingTargetDefinitionIds}
                         running={running}
                         selectedSyncUnit={selectedSyncUnit}
                         setPackageExportChoice={setPackageExportChoice}
