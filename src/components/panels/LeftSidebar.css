@@ -10,7 +10,7 @@
     flex-direction: row;
     height: 100%;
     position: relative;
-    z-index: 10;
+    z-index: var(--z-sidebar);
 }
 
 /* Main sidebar sections */
@@ -45,7 +45,7 @@
     width: 5px;
     height: 100%;
     cursor: col-resize;
-    z-index: 20;
+    z-index: calc(var(--z-sidebar) + 10);
     background: transparent;
     transition: background 0.15s;
 }
@@ -63,13 +63,13 @@
     overflow: hidden;
     background: var(--bg-panel);
     border-right: 1px solid var(--border-main);
-    box-shadow: 2px 0 12px rgba(0, 0, 0, 0.06);
-    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: var(--shadow-dropdown);
+    transition: width 0.25s cubic-bezier(0.22, 1, 0.36, 1);
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
     position: relative;
-    z-index: 40;
+    z-index: calc(var(--z-sidebar) + 30);
     pointer-events: none;
 }
 
@@ -81,7 +81,7 @@
 .sidebar-drawer.left-drawer {
     border-left: none;
     border-right: 1px solid var(--border-main);
-    box-shadow: 2px 0 12px rgba(0, 0, 0, 0.06);
+    box-shadow: var(--shadow-dropdown);
 }
 
 .sidebar-container--drawer-open .sidebar {
@@ -108,7 +108,7 @@
     font-weight: 700;
     color: var(--text-secondary);
     text-transform: uppercase;
-    letter-spacing: 0.8px;
+    letter-spacing: 0;
 }
 
 /* ── Packages Button (prominent, full-width) ─────── */
@@ -119,27 +119,31 @@
     width: calc(100% - 16px);
     margin: 6px 8px 2px;
     padding: 7px 10px;
-    background: var(--bg-elevated, rgba(13, 153, 255, 0.04));
+    background: color-mix(in srgb, var(--bg-elevated) 78%, var(--bg-panel));
     border: 1px solid var(--border-main);
     border-radius: var(--radius);
     cursor: pointer;
     color: var(--text-secondary);
     font-size: var(--font-base);
     font-weight: 600;
-    letter-spacing: 0.3px;
-    transition: all 0.15s ease;
+    letter-spacing: 0;
+    transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
 }
 
 .package-library-btn:hover {
-    background: rgba(13, 153, 255, 0.08);
-    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 9%, var(--bg-panel));
+    border-color: color-mix(in srgb, var(--accent) 52%, var(--border-main));
     color: var(--accent);
 }
 
 .package-library-btn.active {
-    background: rgba(13, 153, 255, 0.1);
-    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 12%, var(--bg-panel));
+    border-color: color-mix(in srgb, var(--accent) 58%, var(--border-main));
     color: var(--accent);
+}
+
+.package-library-btn:active {
+    transform: translateY(1px);
 }
 
 .package-library-btn span {
@@ -173,7 +177,7 @@
     border: none;
     border-bottom: 2px solid transparent;
     cursor: pointer;
-    transition: all 0.1s;
+    transition: color 0.18s ease, background 0.18s ease, border-color 0.18s ease;
     text-align: center;
 }
 

@@ -107,7 +107,7 @@ export function AgentSkillsDetail({
                             ))}
                         </div>
                     ) : (
-                        <span className="adv-section__summary">No Skills connected. Drag & drop from the Packages.</span>
+                        <span className="adv-section__summary">No Skills connected.</span>
                     )}
                 </div>
             </div>
@@ -235,7 +235,7 @@ export function AgentMcpDetail({
                             ))}
                         </div>
                     ) : (
-                        <span className="adv-section__summary">No MCP servers connected. Drag & drop from Packages.</span>
+                        <span className="adv-section__summary">No MCP servers connected.</span>
                     )}
                 </div>
             </div>

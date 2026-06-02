@@ -1,18 +1,22 @@
 # APM Studio
 
-**Package Studio Agents, instructions, MCP, skills, and Studio runtime models once, then manage target sync for Codex, Claude, and APM-compatible assistant files.**
+<p align="center">
+  <img src=".github/apm-studio-icon.png" alt="APM Studio icon" width="112" />
+</p>
+
+**Import, manage, run, and inject APM-backed coding-agent packages from one local Studio.**
 
 [![npm version](https://img.shields.io/npm/v/apm-studio?style=flat-square)](https://www.npmjs.com/package/apm-studio)
 ![Node.js >=20.19.0](https://img.shields.io/badge/Node.js-%3E%3D20.19.0-3c873a?style=flat-square)
 [![License: MIT](https://img.shields.io/badge/License-MIT-0f172a?style=flat-square)](./LICENSE)
 
-[Quick Start](#quick-start) | [Why APM Studio](#why-apm-studio) | [Concepts](#concepts) | [CLI](#cli) | [Development](#development)
+[Quick Start](#quick-start) | [APM Studio Flow](#apm-studio-flow) | [Microsoft APM](#microsoft-apm) | [CLI](#cli) | [Development](#development)
 
-![APM Studio canvas](.github/screenshot.png)
+![APM Studio interface](.github/screenshot.png)
 
-APM Studio is a local workspace for importing reusable coding-agent packages, editing/running Studio Agents, and managing external assistant target sync. It gives you a visual canvas for composing instructions, skills, MCP requirements, Studio Agent model settings, and multi-agent workflows, then projects selected units into the assistant target you choose.
+APM Studio is a local editor for APM packages. It imports source references from GitHub, manages local packages in `packages/*`, runs Studio Agents with local runtime settings, and injects selected APM primitives into assistant target files when you choose to sync.
 
-The core idea is simple: build an APM-style agent package, keep it versionable and inspectable, and sync it into the coding assistants you already use.
+The npm package is `apm-studio`. The first APM Studio package-line release is `0.3.0`.
 
 ## Quick Start
 
@@ -20,51 +24,56 @@ Requirements:
 
 - Node.js `>=20.19.0`
 - macOS, Linux, Windows, or WSL
-- OpenCode for local runtime execution
+- OpenCode for local Studio Agent runtime
+- Microsoft APM CLI for full target sync coverage
+
+One-click install:
+
+```bash
+curl -fsSL https://apm.studio/install.sh | sh
+```
+
+Windows:
+
+```powershell
+irm https://apm.studio/install.ps1 | iex
+```
+
+Manual npm install:
 
 ```bash
 npm install -g apm-studio
 apm-studio /path/to/project
 ```
 
-From source:
+The installer installs or updates `apm-studio`, checks for the upstream Microsoft APM CLI, delegates missing APM CLI setup to Microsoft APM, and runs `apm install` when the current workspace already has an `apm.yml`.
 
-```bash
-npm install
-npm run dev
-```
+## APM Studio Flow
 
-## Why APM Studio
-
-AI coding assistants are powerful, but their reusable behavior often ends up scattered across prompts, skill folders, project docs, model settings, and app-specific config. APM Studio turns those pieces into APM-backed packages you can import, edit/run as Studio Agents, and sync into target assistants.
-
-| Capability | What it gives you |
+| Step | What happens |
 | --- | --- |
-| Studio Agents | Compose instructions, skills, MCP requirements, and Studio runtime model settings as reusable agents. |
-| Visual editing | Arrange agents and team workflows on a local canvas. |
-| Manage targets | Export Studio Agents or sync APM primitives to external coding assistants through a CLI-first target pipeline with Studio fallback where supported. |
-| Runtime chat | Test standalone agents and multi-agent workflows through the local runtime. |
-| APM-first state | Keep canonical package state in `packages/<packageId>/apm.yml` plus the package `.apm/` source tree while `.apm-studio/` stores Studio UI metadata, drafts, and cache. |
-| Import, Studio Agent, Manage | Import source-reference presets, edit and run agents/teams in Studio, then manage selected target sync. |
-| GitHub-backed registry | Preview and import community repos as APM packages without copying package content into the registry. |
+| Import | Search source references or paste a GitHub repo, preview detected primitives, then install selected packages locally. |
+| Manage | Edit local APM package metadata and Studio Agent composition while keeping canonical package content under `packages/<packageId>/`. |
+| Run | Test Studio Agents locally with Studio-only model settings that are not emitted to target assistant files. |
+| Inject | Sync selected APM agents, instructions, skills, prompts, commands, hooks, or MCP config into supported assistant targets. |
 
-## Concepts
-
-| Concept | Role |
-| --- | --- |
-| Instruction | The always-on instruction layer for an agent. |
-| Skill | A reusable capability bundle, usually backed by `SKILL.md`. |
-| Studio Agent | A runnable agent built from instruction, MCP, skills, and a Studio-only model setting. |
-| Team Workflow | A multi-agent workflow with participants, relationships, and collaboration rules. |
-| Manage | A target-sync mode for exporting Studio Agents and syncing APM agents, instructions, skills, and MCP configuration to external assistant apps. |
+APM Studio keeps source and output separate:
 
 ```text
-Instruction + MCP + Skills + Studio runtime model = Studio Agent
-Studio Agents + rules = Team Workflow
-GitHub repo -> APM Studio -> APM CLI-first target sync -> assistant app
+GitHub source -> packages/<packageId>/apm.yml -> Studio Agent runtime
+                                             -> Inject target sync -> assistant files
 ```
 
-The community registry lives in the sibling `apm-registry` Worker project. It stores GitHub source references, import recipes, target compatibility, trust metadata, presets, and anonymous download counts; package content remains in source repositories and local APM manifests.
+Studio-only workspace state lives in `.apm-studio/`. Generated OpenCode runtime projection lives in `.opencode/`. Assistant target files are written only through Inject.
+
+## Microsoft APM
+
+APM Studio builds on the upstream Microsoft APM package format and CLI:
+
+- GitHub: [microsoft/apm](https://github.com/microsoft/apm)
+- Docs: [microsoft.github.io/apm](https://microsoft.github.io/apm/)
+
+Target sync is CLI-first. APM Studio tries `APM_STUDIO_APM_CLI`, then `apm`, then `uvx --from git+https://github.com/microsoft/apm.git apm`. Studio-native fallback is limited to supported agent and skill sync when no CLI runner is available.
 
 ## CLI
 
@@ -85,16 +94,6 @@ apm-studio open . --no-open
 apm-studio open . --port 43111
 apm-studio doctor
 ```
-
-Behavior:
-
-- `apm-studio` opens the current directory as a workspace.
-- `apm-studio <path>` opens that directory as a workspace.
-- `apm-studio doctor` checks Node.js, workspace path, ports, and OpenCode readiness.
-
-## Managed Runtime
-
-APM Studio starts and owns its OpenCode sidecar automatically. App-owned config lives under `~/.apm-studio/opencode`.
 
 Default local ports:
 
@@ -120,7 +119,6 @@ Important directories:
 - `src/`: browser UI and workspace state.
 - `shared/`: client/server contracts for packages, runtime, workspace state, and target sync.
 - `server/`: API routes, Import behavior, target sync, runtime preparation, and projections.
+- `packages/`: canonical local APM package source.
 - `.opencode/`: generated runtime artifacts.
 - `doc/`: behavior and boundary guides.
-
-Local APM package content lives under `packages/*`; generated runtime output and assistant target files are not source of truth.

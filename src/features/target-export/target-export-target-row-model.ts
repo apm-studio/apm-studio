@@ -14,6 +14,7 @@ import {
 import {
     primitiveCountParts,
     targetPackageAvailability,
+    targetOutputHint,
     type TargetExportChoice,
     unitLabel,
 } from './target-export-sync-utils'
@@ -59,7 +60,7 @@ export function buildTargetExportTargetPackageRowModel(input: {
         target,
     } = input
     const counts = apmPackageSyncPrimitiveCounts(pkg)
-    const parts = primitiveCountParts(counts)
+    const parts = primitiveCountParts(counts, syncUnit)
     const availability = targetPackageAvailability(target, syncUnit, pkg)
     const status = result?.status || (exportChoice === 'skip' ? 'Skip' : availability.available ? 'Save' : 'Blocked')
     const stateClass = result?.status === 'failed' || result?.status === 'skipped' || !availability.available
@@ -71,7 +72,7 @@ export function buildTargetExportTargetPackageRowModel(input: {
         || definition?.path
         || currentItem?.artifacts[0]
         || availability.reason
-        || target.outputHint
+        || targetOutputHint(target, syncUnit)
     const badges = [
         ...(parts.length > 0 ? parts : ['empty']),
         definition?.kind,

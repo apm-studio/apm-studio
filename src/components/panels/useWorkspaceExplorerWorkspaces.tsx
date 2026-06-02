@@ -5,7 +5,7 @@ import { studioApi } from '../../api-clients/studio'
 import { showToast } from '../../lib/toast'
 import { useStudioStore } from '../../store'
 import { DropdownMenu } from '../shared/DropdownMenu'
-import { LayerRow, workspaceLabel, workspaceShortPath } from './workspace-explorer-utils'
+import { LayerRow, workspaceLabel } from './workspace-explorer-utils'
 
 export function useWorkspaceExplorerWorkspaces() {
     const {
@@ -56,8 +56,7 @@ export function useWorkspaceExplorerWorkspaces() {
         <LayerRow
             key={entry.id}
             icon={<Folder size={12} className={entry.id === workspaceId ? 'icon-active' : 'icon-muted'} />}
-            label={workspaceLabel(entry.workingDir)}
-            meta={workspaceShortPath(entry.workingDir)}
+            label={<span title={entry.workingDir}>{workspaceLabel(entry.workingDir)}</span>}
             active={entry.id === workspaceId && apmPackageScope === 'workspace'}
             onClick={() => {
                 setApmPackageScope('workspace')

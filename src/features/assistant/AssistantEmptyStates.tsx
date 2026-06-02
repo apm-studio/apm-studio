@@ -4,9 +4,9 @@ export function AssistantEmptyPrompt() {
     return (
         <div className="assistant-empty">
             <Sparkles size={48} className="assistant-empty__icon" />
-            <h3 className="assistant-empty__title">How can I help you design?</h3>
+            <h3 className="assistant-empty__title">Ask APM Assistant</h3>
             <p className="assistant-empty__desc">
-                Ask me to package agents, apply them to assistants, or explain how APM Studio works.
+                Create packages, sync assistants, or explain the workspace.
             </p>
         </div>
     )
@@ -19,7 +19,7 @@ export function AssistantModelMissingState({ onOpenSettings }: { onOpenSettings:
                 <AlertCircle size={40} className="assistant-empty__icon assistant-empty__icon--warn" />
                 <h3 className="assistant-empty__title">Model not configured</h3>
                 <p className="assistant-empty__desc">
-                    To use APM Assistant, configure at least one AI model provider first.
+                    Connect a model provider to use APM Assistant.
                 </p>
                 <button className="assistant-setup-btn" onClick={onOpenSettings}>
                     <Settings size={14} />

@@ -78,6 +78,7 @@ export function looksLikeCodexTomlAgent(sourcePath: string, subpath: string) {
     return sourcePath.includes('.codex/agents/')
         || sourcePath.startsWith('agents/')
         || sourcePath.includes('/agents/')
+        || sourcePath.startsWith('categories/')
 }
 
 export function looksLikeInstructionMarkdown(sourcePath: string, subpath: string) {
@@ -105,11 +106,22 @@ function looksLikePromptMarkdown(sourcePath: string, subpath: string) {
 export function looksLikeMcpConfig(sourcePath: string, subpath: string) {
     const base = path.posix.basename(sourcePath).toLowerCase()
     if (subpath && sourcePath === subpath) return base.endsWith('.json')
+    const targetMcpPaths = [
+        '.codex/mcp.json',
+        '.cursor/mcp.json',
+        '.vscode/mcp.json',
+        '.github/mcp.json',
+        '.claude/mcp.json',
+        '.gemini/mcp.json',
+        '.windsurf/mcp_config.json',
+        'opencode.json',
+        '.opencode/opencode.json',
+    ]
     return base === 'mcp.json'
         || base === '.mcp.json'
         || base === 'mcp-servers.json'
-        || sourcePath.endsWith('/.cursor/mcp.json')
-        || sourcePath.endsWith('/.vscode/mcp.json')
+        || base === 'mcp_config.json'
+        || targetMcpPaths.some((entry) => sourcePath === entry || sourcePath.endsWith(`/${entry}`))
 }
 
 export function firstParagraph(raw: string, fallback: string) {

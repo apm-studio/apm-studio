@@ -4,7 +4,8 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: var(--font-sans);
+    letter-spacing: 0;
 }
 
 html,
@@ -19,7 +20,33 @@ body,
 }
 
 html {
-    scroll-behavior: auto;
+    scroll-behavior: smooth;
+}
+
+button,
+input,
+select,
+textarea {
+    font: inherit;
+}
+
+button,
+[role="button"],
+select {
+    -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+[role="button"]:focus-visible,
+a:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    box-shadow: var(--shadow-focus);
+}
+
+::selection {
+    background: color-mix(in srgb, var(--accent) 22%, transparent);
+    color: var(--text-primary);
 }
 
 /* Base Scrollbars */

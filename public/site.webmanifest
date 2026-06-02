@@ -1,0 +1,22 @@
+{
+  "name": "APM Studio",
+  "short_name": "APM Studio",
+  "description": "APM Studio is a local editor for importing, managing, running, and injecting APM-backed assistant packages.",
+  "icons": [
+    {
+      "src": "/apm-studio-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "theme_color": "#050a0f",
+  "background_color": "#050a0f",
+  "display": "standalone"
+}

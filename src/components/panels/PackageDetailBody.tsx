@@ -207,7 +207,7 @@ export default function PackageDetailBody({
                 <div className="package-popover__section">
                     <div className="section-title">Details</div>
                     {item.context && <div className="package-popover__section-item">Context: {Math.round(item.context / 1000)}k tokens</div>}
-                    <div className="package-popover__section-item">Status: {item.connected ? 'Ready' : 'Not Configured'}</div>
+                    <div className="package-popover__section-item">Status: {item.connected ? 'Ready' : 'Connect provider'}</div>
                     <div className="package-popover__section-item">Tools: {item.toolCall ? 'Yes' : 'No'}</div>
                     <div className="package-popover__section-item">Attachments: {item.attachment ? 'Yes' : 'No'}</div>
                     {item.modalities && (

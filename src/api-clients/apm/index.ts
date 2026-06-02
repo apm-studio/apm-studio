@@ -6,13 +6,17 @@ import type {
     ApmGitHubSourceCatalogResponse,
     ApmPackageCopyRequest,
     ApmPackageCopyResponse,
+    ApmPackageDeleteResponse,
     ApmPackageImportResponse,
     ApmPackageImportRequest,
     ApmPackageListResponse,
     ApmPackageReadResponse,
+    ApmAuditResponse,
     ApmToolingResponse,
     ApmPackageWriteRequest,
     ApmPackageWriteResponse,
+    ApmPrimitiveFileListResponse,
+    ApmPrimitiveFileReadResponse,
     ApmValidationRequest,
     ApmValidationResult,
     ApmPackageScope,
@@ -27,10 +31,18 @@ import type {
     RegistryListingKind,
     RegistryTargetId,
 } from '../../../shared/registry-contracts'
-import { fetchJSON, postJSON, putJSON } from '../../api-core'
+import { deleteJSON, fetchJSON, postJSON, putJSON } from '../../api-core'
 
 function scopeQuery(scope?: ApmPackageScope) {
     return scope ? `?scope=${scope}` : ''
+}
+
+function packageFileQuery(scope: ApmPackageScope | undefined, path?: string) {
+    const params = new URLSearchParams()
+    if (scope) params.set('scope', scope)
+    if (path) params.set('path', path)
+    const serialized = params.toString()
+    return serialized ? `?${serialized}` : ''
 }
 
 type RegistryCatalogQuery = {
@@ -60,11 +72,29 @@ export const apmApi = {
     tooling: () =>
         fetchJSON<ApmToolingResponse>('/api/apm/tooling'),
 
+    audit: () =>
+        fetchJSON<ApmAuditResponse>('/api/apm/audit'),
+
     readPackage: (packageId: string, scope?: ApmPackageScope) =>
         fetchJSON<ApmPackageReadResponse>(`/api/apm/packages/${encodeURIComponent(packageId)}${scopeQuery(scope)}`),
 
     writePackage: (packageId: string, body: ApmPackageWriteRequest, scope?: ApmPackageScope) =>
         putJSON<ApmPackageWriteResponse>(`/api/apm/packages/${encodeURIComponent(packageId)}${scopeQuery(scope)}`, body),
+
+    listPackagePrimitives: (packageId: string, scope?: ApmPackageScope) =>
+        fetchJSON<ApmPrimitiveFileListResponse>(`/api/apm/packages/${encodeURIComponent(packageId)}/primitives${scopeQuery(scope)}`),
+
+    readPackagePrimitive: (packageId: string, path: string, scope?: ApmPackageScope) =>
+        fetchJSON<ApmPrimitiveFileReadResponse>(`/api/apm/packages/${encodeURIComponent(packageId)}/primitives/file${packageFileQuery(scope, path)}`),
+
+    syncPackageSource: (packageId: string, scope?: ApmPackageScope) =>
+        postJSON<ApmPackageWriteResponse & { synced: boolean }>(`/api/apm/packages/${encodeURIComponent(packageId)}/sync-source${scopeQuery(scope)}`),
+
+    regeneratePackageLock: (packageId: string, baseManifestHash?: string, scope?: ApmPackageScope) =>
+        postJSON<ApmPackageWriteResponse>(`/api/apm/packages/${encodeURIComponent(packageId)}/lock/regenerate${scopeQuery(scope)}`, { baseManifestHash }),
+
+    deletePackage: (packageId: string, scope?: ApmPackageScope) =>
+        deleteJSON<ApmPackageDeleteResponse>(`/api/apm/packages/${encodeURIComponent(packageId)}${scopeQuery(scope)}`),
 
     copyPackage: (body: ApmPackageCopyRequest) =>
         postJSON<ApmPackageCopyResponse>('/api/apm/packages/copy', body),

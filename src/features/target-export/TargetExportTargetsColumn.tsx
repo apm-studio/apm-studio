@@ -5,12 +5,15 @@ import { useStudioStore } from '../../store'
 import { TargetExportTargetLogo } from './TargetExportTargetLogo'
 import { TargetExportTargetRows } from './TargetExportTargetRows'
 import type { TargetExportControllerState } from './useTargetExportController'
+import type { TargetExportAssetDetailRequest } from './target-export-detail-model'
+import { targetOutputHint } from './target-export-sync-utils'
 
 interface TargetExportTargetsColumnProps {
     controller: TargetExportControllerState
+    onOpenDetails: (request: TargetExportAssetDetailRequest) => void
 }
 
-export function TargetExportTargetsColumn({ controller }: TargetExportTargetsColumnProps) {
+export function TargetExportTargetsColumn({ controller, onOpenDetails }: TargetExportTargetsColumnProps) {
     const apmPackageScope = useStudioStore((state) => state.apmPackageScope)
     const {
         activeSavePackageIds,
@@ -38,6 +41,9 @@ export function TargetExportTargetsColumn({ controller }: TargetExportTargetsCol
     const visibleTargetMessage = targetMessage && targetMessage !== activeTargetAvailability?.reason
         ? targetMessage
         : null
+    const activeTargetOutputHint = activeTarget && activeTargetAvailability?.available
+        ? targetOutputHint(activeTarget, selectedSyncUnit)
+        : 'Unsupported'
     const { isOver, setNodeRef } = useDroppable({
         id: droppableId,
         data: {
@@ -71,9 +77,10 @@ export function TargetExportTargetsColumn({ controller }: TargetExportTargetsCol
                 </div>
             </div>
 
-            <div className="target-export-target-tabs" role="tablist" aria-label="Export target">
+            <div className="target-export-target-tabs" role="tablist" aria-label="Inject target">
                 {targets.map((target) => {
                     const availability = targetStates.get(target.id) || { available: false, reason: 'Target unavailable.' }
+                    const outputHint = targetOutputHint(target, selectedSyncUnit)
                     return (
                         <button
                             key={target.id}
@@ -82,7 +89,7 @@ export function TargetExportTargetsColumn({ controller }: TargetExportTargetsCol
                             aria-selected={activeTarget?.id === target.id}
                             role="tab"
                             disabled={!target.available}
-                            title={availability.reason || target.description}
+                            title={availability.reason || `${target.label} ${selectedSyncUnit}: ${outputHint}`}
                             onClick={() => selectTarget(target.id)}
                         >
                             <span className="target-export-target-tab__main">
@@ -90,7 +97,7 @@ export function TargetExportTargetsColumn({ controller }: TargetExportTargetsCol
                                 <strong>{target.label}</strong>
                             </span>
                             <span className="target-export-target-tab__hint">
-                                {availability.available ? target.outputHint : 'Unsupported'}
+                                {availability.available ? outputHint : 'Unsupported'}
                             </span>
                         </button>
                     )
@@ -102,10 +109,13 @@ export function TargetExportTargetsColumn({ controller }: TargetExportTargetsCol
                     ref={setNodeRef}
                     className={`target-export-target-panel ${isOver ? 'is-over' : ''} ${!activeTargetAvailability?.available ? 'is-blocked' : ''}`}
                 >
-                    <div className="target-export-source__summary target-export-target-summary">
-                        <strong>{activeSavePackageIds.length} save</strong>
-                        <span>{activeTarget.outputHint}</span>
-                        <span>{activeTargetDefinitions.length} target definition{activeTargetDefinitions.length === 1 ? '' : 's'}</span>
+                    <div
+                        className="target-export-source__summary target-export-target-summary"
+                        title={`${activeTargetOutputHint} · ${activeTargetDefinitions.length} target definition${activeTargetDefinitions.length === 1 ? '' : 's'}`}
+                    >
+                        {activeSavePackageIds.length > 0 ? <strong>{activeSavePackageIds.length} save</strong> : null}
+                        <span>{activeTargetOutputHint}</span>
+                        {activeSavePackageIds.length === 0 ? <span>Nothing staged</span> : null}
                     </div>
 
                     {visibleTargetMessage ? (
@@ -129,6 +139,7 @@ export function TargetExportTargetsColumn({ controller }: TargetExportTargetsCol
                         running={running}
                         selectedSyncUnit={selectedSyncUnit}
                         setPackageExportChoice={setPackageExportChoice}
+                        onOpenDetails={onOpenDetails}
                         stagedPackages={stagedPackages}
                         exportChoices={exportChoices}
                         targetOnlyDefinitions={targetOnlyDefinitions}
@@ -137,20 +148,23 @@ export function TargetExportTargetsColumn({ controller }: TargetExportTargetsCol
                     {stagedPackages.length === 0 && targetOnlyDefinitions.length === 0 && stagedScopeCopies.length === 0 ? (
                         <div className="target-export-empty">
                             {apmPackageScope === 'user'
-                                ? 'Copy User packages to Workspace before target export.'
+                                ? 'Copy User packages to Workspace before target injection.'
                                 : 'Drop source cards here or use Add to target.'}
                         </div>
                     ) : null}
 
-                    {activeTargetAvailability?.available ? (
-                        <ol className="target-export-save-steps target-export-save-plan">
-                            {activeTargetPlanSteps.map((step) => <li key={step}>{step}</li>)}
-                        </ol>
+                    {activeTargetAvailability?.available && activeTargetPlanSteps.length > 0 ? (
+                        <details className="target-export-save-plan-details">
+                            <summary>{activeTargetPlanSteps.length} save step{activeTargetPlanSteps.length === 1 ? '' : 's'}</summary>
+                            <ol className="target-export-save-steps target-export-save-plan">
+                                {activeTargetPlanSteps.map((step) => <li key={step}>{step}</li>)}
+                            </ol>
+                        </details>
                     ) : null}
                 </div>
             ) : (
                 <div className="target-export-empty">
-                    Select a target to preview export.
+                    Select a target to preview injection.
                 </div>
             )}
         </aside>

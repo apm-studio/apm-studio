@@ -1,13 +1,17 @@
 import {
     ExternalLink,
+    History,
     Loader2,
     Search,
+    X,
 } from 'lucide-react'
 import type { ApmGitHubImportFormat } from '../../../shared/apm-contracts'
 import {
     CURATED_GITHUB_REPOS,
     githubSourceUrl,
+    importFormatLabel,
     IMPORT_FORMATS,
+    type ImportSearchHistoryEntry,
     type ImportScope,
     scopeLabel,
 } from './import-catalog-model'
@@ -18,10 +22,13 @@ interface ImportSearchPanelProps {
     installScope: ImportScope
     installTargetPath: string
     loading: boolean
+    searchHistory: ImportSearchHistoryEntry[]
     onSourceChange: (source: string) => void
     onFormatChange: (format: ApmGitHubImportFormat) => void
     onSearch: () => void
     onCuratedSearch: (source: string, format: ApmGitHubImportFormat) => void
+    onHistorySearch: (entry: ImportSearchHistoryEntry) => void
+    onClearHistory: () => void
 }
 
 export function ImportSearchPanel({
@@ -30,12 +37,14 @@ export function ImportSearchPanel({
     installScope,
     installTargetPath,
     loading,
+    searchHistory,
     onSourceChange,
     onFormatChange,
     onSearch,
     onCuratedSearch,
+    onHistorySearch,
+    onClearHistory,
 }: ImportSearchPanelProps) {
-    const sourceUrl = githubSourceUrl(source)
     const showCurated = source.trim().length === 0
     const openExternal = (url: string) => {
         window.open(url, '_blank', 'noopener,noreferrer')
@@ -44,7 +53,7 @@ export function ImportSearchPanel({
     return (
         <section className="import-search-hero" aria-label="GitHub source search">
             <div className="import-search-hero__title">
-                <h1>Search</h1>
+                <h1>Import</h1>
                 <span className="import-search-hero__scope" title={installTargetPath}>
                     Install to {scopeLabel(installScope)}
                 </span>
@@ -64,16 +73,6 @@ export function ImportSearchPanel({
                     onChange={(event) => onSourceChange(event.target.value)}
                     placeholder="Search registry or paste owner/repo"
                 />
-                <button
-                    type="button"
-                    className="icon-btn import-search-form__external"
-                    onClick={() => sourceUrl ? openExternal(sourceUrl) : undefined}
-                    disabled={!sourceUrl}
-                    title={sourceUrl ? `Open ${sourceUrl}` : 'Enter a GitHub repository to open it'}
-                    aria-label="Open GitHub source"
-                >
-                    <ExternalLink size={14} />
-                </button>
                 <select
                     className="select"
                     value={format}
@@ -90,10 +89,42 @@ export function ImportSearchPanel({
                 </button>
             </form>
 
+            {searchHistory.length > 0 ? (
+                <div className="import-search-history" aria-label="Recent import searches">
+                    <div className="import-search-history__header">
+                        <span>Recent searches</span>
+                        <button
+                            type="button"
+                            className="icon-btn"
+                            onClick={onClearHistory}
+                            title="Clear recent searches"
+                            aria-label="Clear recent searches"
+                        >
+                            <X size={12} />
+                        </button>
+                    </div>
+                    <div className="import-search-history__items">
+                        {searchHistory.map((entry) => (
+                            <button
+                                key={`${entry.source}:${entry.format}`}
+                                type="button"
+                                className="import-search-history__item"
+                                onClick={() => onHistorySearch(entry)}
+                                title={`Search ${entry.source}`}
+                            >
+                                <History size={12} />
+                                <span className="import-search-history__source">{entry.source}</span>
+                                <span className="badge badge--subtle">{importFormatLabel(entry.format)}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            ) : null}
+
             {showCurated ? (
                 <div className="import-curated-list" aria-label="Curated GitHub repositories">
                     <div className="import-curated-list__header">
-                        <span>Curated repositories</span>
+                        <span>Suggested sources</span>
                     </div>
                     <div className="import-curated-list__grid">
                         {CURATED_GITHUB_REPOS.map((curatedSource) => (
@@ -105,7 +136,6 @@ export function ImportSearchPanel({
                                     title={`Preview ${curatedSource.repo}`}
                                 >
                                     <span className="import-curated-source__name">{curatedSource.name}</span>
-                                    <span className="import-curated-source__repo">{curatedSource.repo}</span>
                                 </button>
                                 <button
                                     type="button"

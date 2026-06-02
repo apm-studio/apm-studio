@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="APM Studio">
+  <rect width="64" height="64" rx="14" fill="#242321"/>
+  <path d="M17 43V21h9.6c6.3 0 10.2 3.2 10.2 8.4 0 5.1-3.9 8.3-10.2 8.3h-4.2V43H17Zm5.4-10h4c3.1 0 4.9-1.4 4.9-3.7s-1.8-3.7-4.9-3.7h-4V33Z" fill="#F6F3EF"/>
+  <path d="M40.6 43V21H47v22h-6.4Z" fill="#CE7053"/>
+  <path d="M42.2 16.5h3.2c1.5 0 2.6 1.1 2.6 2.6v.2h-8.4v-.2c0-1.5 1.1-2.6 2.6-2.6Z" fill="#CE7053"/>
+</svg>

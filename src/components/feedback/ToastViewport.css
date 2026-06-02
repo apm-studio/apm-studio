@@ -3,7 +3,7 @@
     left: 50%;
     bottom: 24px;
     transform: translateX(-50%);
-    z-index: 10000;
+    z-index: var(--z-toast);
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -21,7 +21,7 @@
     font-size: var(--font-base);
     font-weight: 500;
     line-height: 1.4;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+    box-shadow: var(--shadow-dropdown);
     border: 1px solid var(--border-main);
     background: var(--bg-card);
     color: var(--text-primary);
@@ -35,21 +35,21 @@
 }
 
 .studio-toast-card--error {
-    background: rgba(242, 72, 34, 0.12);
-    color: #d9412c;
-    border-color: rgba(242, 72, 34, 0.2);
+    background: var(--status-danger-bg);
+    color: var(--status-danger);
+    border-color: color-mix(in srgb, var(--status-danger) 24%, var(--border-main));
 }
 
 .studio-toast-card--warning {
-    background: rgba(219, 147, 32, 0.12);
-    color: #9a6300;
-    border-color: rgba(219, 147, 32, 0.24);
+    background: var(--status-warning-bg);
+    color: var(--status-warning);
+    border-color: color-mix(in srgb, var(--status-warning) 24%, var(--border-main));
 }
 
 .studio-toast-card--success {
-    background: rgba(20, 174, 92, 0.12);
-    color: #0d9e4f;
-    border-color: rgba(20, 174, 92, 0.2);
+    background: var(--status-success-bg);
+    color: var(--status-success);
+    border-color: color-mix(in srgb, var(--status-success) 24%, var(--border-main));
 }
 
 .studio-toast-card__content {

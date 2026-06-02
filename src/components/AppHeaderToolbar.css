@@ -1,0 +1,58 @@
+.app-header-toolbar {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    height: 34px;
+    min-width: 0;
+    flex: 0 0 auto;
+    padding: 3px;
+    border: 1px solid var(--border-main);
+    border-radius: var(--radius-lg);
+    background: var(--bg-elevated);
+}
+
+.app-header-toolbar__item {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-1);
+    min-height: 28px;
+    padding: 0 var(--space-2);
+    border: none;
+    border-radius: var(--radius);
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: var(--font-sm);
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.app-header-toolbar__branch {
+    max-width: 144px;
+}
+
+.app-header-toolbar__branch-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.app-header-toolbar__status-icon--ok {
+    color: var(--status-success);
+}
+
+.app-header-toolbar__status-icon--warn {
+    color: var(--status-danger);
+}
+
+.app-header-toolbar .icon-btn {
+    flex: 0 0 auto;
+    width: 28px;
+    height: 28px;
+}
+
+@media (max-width: 760px) {
+    .app-header-toolbar__branch {
+        display: none;
+    }
+}

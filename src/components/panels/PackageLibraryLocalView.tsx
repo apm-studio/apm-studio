@@ -1,7 +1,7 @@
 import type { Dispatch, SetStateAction } from 'react'
 import type { RuntimeModelCatalogEntry } from '../../../shared/model-variants'
 import type { McpServerSummary } from '../../../shared/opencode-contracts'
-import { Bot, Cpu, FileText, FolderOpen, HardDrive, Layers3, Search, Server, Zap } from 'lucide-react'
+import { Bot, Cpu, FileText, FolderOpen, HardDrive, Layers3, RefreshCw, Search, Server, Zap } from 'lucide-react'
 import { PACKAGE_PRIMITIVE_SECTIONS } from './package-library-utils'
 import type {
     LocalSection,
@@ -12,6 +12,7 @@ import type {
 import PackageLibraryMcpManager from './PackageLibraryMcpManager'
 import PackageLibraryModelList from './PackageLibraryModelList'
 import PackageLibraryPackageList from './PackageLibraryPackageList'
+import PackageLibraryPackageInspector from './PackageLibraryPackageInspector'
 import type { McpCatalogState } from './useMcpCatalog'
 import type { PackagePanelItem, PackagePanelHandler, ScopedApmPackageSummary } from './package-panel-types'
 
@@ -29,12 +30,17 @@ type Props = {
     localPlaceholder: string
     authoringHint: string | null
     apmPackagesLoading: boolean
+    onRefreshApmPackages: () => Promise<void>
     filteredApmPackages: ScopedApmPackageSummary[]
     groupedModels: Array<{ key: string; label: string; items: RuntimeModelCatalogEntry[]; connected?: boolean }>
     liveMcpServers: McpServerSummary[]
     selectedItem: PackagePanelItem | null
     selectedItemKey: string | null
+    selectedApmPackage: ScopedApmPackageSummary | null
     onSelectItem: PackagePanelHandler
+    onSelectApmPackage: (pkg: ScopedApmPackageSummary) => void
+    onCloseApmPackage: () => void
+    onApmPackageDeleted: () => void
     onCloseItem: () => void
     showModels: boolean
     showMcps: boolean
@@ -60,6 +66,9 @@ function primitiveSectionLabel(section: PackagePrimitiveSection) {
     if (section === 'agents') return 'Agents'
     if (section === 'instructions') return 'Instructions'
     if (section === 'skills') return 'Skills'
+    if (section === 'prompts') return 'Prompts'
+    if (section === 'commands') return 'Commands'
+    if (section === 'hooks') return 'Hooks'
     return 'MCP'
 }
 
@@ -67,6 +76,9 @@ function primitiveSectionIcon(section: PackagePrimitiveSection) {
     if (section === 'agents') return <Bot size={8} style={{ verticalAlign: -1, marginRight: 2 }} />
     if (section === 'instructions') return <FileText size={8} style={{ verticalAlign: -1, marginRight: 2 }} />
     if (section === 'skills') return <Zap size={8} style={{ verticalAlign: -1, marginRight: 2 }} />
+    if (section === 'prompts') return <FileText size={8} style={{ verticalAlign: -1, marginRight: 2 }} />
+    if (section === 'commands') return <FileText size={8} style={{ verticalAlign: -1, marginRight: 2 }} />
+    if (section === 'hooks') return <Zap size={8} style={{ verticalAlign: -1, marginRight: 2 }} />
     return <Server size={8} style={{ verticalAlign: -1, marginRight: 2 }} />
 }
 
@@ -84,12 +96,17 @@ export default function PackageLibraryLocalView({
     localPlaceholder,
     authoringHint,
     apmPackagesLoading,
+    onRefreshApmPackages,
     filteredApmPackages,
     groupedModels,
     liveMcpServers,
     selectedItem,
     selectedItemKey,
+    selectedApmPackage,
     onSelectItem,
+    onSelectApmPackage,
+    onCloseApmPackage,
+    onApmPackageDeleted,
     onCloseItem,
     showModels,
     showMcps,
@@ -108,7 +125,7 @@ export default function PackageLibraryLocalView({
     setExpandedModelProviders,
     modelProviderTabs,
 }: Props) {
-    const showPrimitives = localSection !== 'models'
+    const showPrimitives = localSection === 'packages'
 
     return (
         <div className="package-library-local-view">
@@ -119,9 +136,13 @@ export default function PackageLibraryLocalView({
                     <Layers3 size={11} />
                     <span>APM primitives</span>
                 </button>
+                <button className={`scope-btn ${localSection === 'mcp' ? 'active' : ''}`} onClick={() => setLocalSection('mcp')}>
+                    <Server size={11} />
+                    <span>MCP servers</span>
+                </button>
                 <button className={`scope-btn ${localSection === 'models' ? 'active' : ''}`} onClick={() => setLocalSection('models')}>
                     <Cpu size={11} />
-                    <span>Runtime settings</span>
+                    <span>Models</span>
                 </button>
             </div>
 
@@ -163,15 +184,37 @@ export default function PackageLibraryLocalView({
                     <Search size={12} className="icon-muted" />
                     <input className="text-input" value={filter} onChange={(e) => setFilter(e.target.value)} placeholder={localPlaceholder} />
                 </div>
+                {localSection === 'packages' ? (
+                    <button
+                        type="button"
+                        className="icon-btn"
+                        onClick={() => void onRefreshApmPackages()}
+                        title="Refresh local APM packages"
+                        aria-label="Refresh local APM packages"
+                        disabled={apmPackagesLoading}
+                    >
+                        <RefreshCw size={12} className={apmPackagesLoading ? 'spin' : undefined} />
+                    </button>
+                ) : null}
             </div>
 
             {authoringHint ? <div className="package-authoring-hint">{authoringHint}</div> : null}
 
-            {localSection === 'packages' && primitiveSection !== 'mcp' ? (
+            {localSection === 'packages' ? (
                 <PackageLibraryPackageList
                     primitiveSection={primitiveSection}
                     packages={filteredApmPackages}
                     loading={apmPackagesLoading}
+                    selectedPackageKey={selectedApmPackage ? `${selectedApmPackage.scope}:${selectedApmPackage.packageId}` : null}
+                    onSelectPackage={onSelectApmPackage}
+                />
+            ) : null}
+
+            {localSection === 'packages' && selectedApmPackage ? (
+                <PackageLibraryPackageInspector
+                    pkg={selectedApmPackage}
+                    onClose={onCloseApmPackage}
+                    onDeleted={onApmPackageDeleted}
                 />
             ) : null}
 

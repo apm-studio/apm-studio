@@ -163,7 +163,9 @@ export function DraggablePrimitive({
                     }
                 />
                 <div className="package-card__author">{item.author}</div>
-                <div className="package-card__desc">{item.description || 'No description provided.'}</div>
+                {item.description ? (
+                    <div className="package-card__desc">{item.description}</div>
+                ) : null}
                 {skillSyncLabel(item) ? (
                     <div className="package-card__desc">{item.github?.sync?.message || skillSyncLabel(item)}</div>
                 ) : null}
@@ -193,6 +195,10 @@ export function DraggableModel({
     })
 
     const modelItem: ModelPanelItem = { ...model, kind: 'model', name: model.name || model.id }
+    const modelTitle = [
+        model.id,
+        model.context ? `${model.context.toLocaleString()} context` : null,
+    ].filter(Boolean).join(' · ')
 
     return (
         <HoverableCard item={modelItem}>
@@ -209,9 +215,8 @@ export function DraggableModel({
                     dragHandle
                 />
                 <div className="package-card__author">{model.providerName}</div>
-                <div className="package-card__desc">
-                    {model.context ? `Ctx: ${Math.round(model.context / 1000)}k` : ''}
-                    {model.connected ? ' • Ready' : ' • Not Configured'}
+                <div className="package-card__desc" title={modelTitle}>
+                    {model.connected ? 'Ready' : 'Connect provider'}
                 </div>
             </div>
         </HoverableCard>

@@ -17,6 +17,12 @@ function packageResponse(overrides: Partial<ApmPackageReadResponse>): ApmPackage
     return {
         packageId: 'review-skill',
         manifestYaml: '',
+        manifestHash: 'sha256:manifest',
+        lockStatus: {
+            state: 'current',
+            manifestHash: 'sha256:manifest',
+            lockManifestHash: 'sha256:manifest',
+        },
         manifest: {
             name: 'review-skill',
             version: '0.1.0',

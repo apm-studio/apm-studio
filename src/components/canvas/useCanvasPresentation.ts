@@ -19,6 +19,7 @@ import {
     buildMarkdownEditorCanvasNodes,
     buildAgentCanvasNodes,
 } from './canvas-window-node-builders'
+import { shouldRenderStudioAgentTeamsUi } from '../../app/studio-agent-ui-state'
 
 type CanvasNodeKind = 'agent' | 'markdownEditor' | 'canvasTerminal' | 'team'
 
@@ -70,10 +71,11 @@ export function useCanvasPresentation(args: UseCanvasPresentationArgs) {
     } = args
 
     const [nodes, setNodes, onNodesChange] = useNodesState<Node>([])
+    const showTeamsUi = shouldRenderStudioAgentTeamsUi()
 
     const buildAgentNodes = useCallback(() => buildAgentCanvasNodes({
-        teams,
-        editingTeamId,
+        teams: showTeamsUi ? teams : [],
+        editingTeamId: showTeamsUi ? editingTeamId : null,
         agents,
         selectedAgentId,
         focusedAgentId,
@@ -95,6 +97,7 @@ export function useCanvasPresentation(args: UseCanvasPresentationArgs) {
         agentMcpSummary,
         onActivateTransform,
         onDeactivateTransform,
+        showTeamsUi,
     ])
 
     const buildMarkdownEditorNodes = useCallback(() => buildMarkdownEditorCanvasNodes({
@@ -149,24 +152,27 @@ export function useCanvasPresentation(args: UseCanvasPresentationArgs) {
 
     useEffect(() => {
         const isCanvasMode = viewMode === 'canvas'
+        // Team canvas nodes are parked while the Studio Agent Team UX is upgraded.
+        // Keep the builders/codepaths intact; re-enable through studio-agent-ui-state.
         setNodes(composeCanvasNodes({
             agentNodes: buildAgentNodes(),
             markdownEditorNodes: isCanvasMode ? buildMarkdownEditorNodes() : [],
             canvasTerminalNodes: isCanvasMode ? buildCanvasTerminalNodes() : [],
-            teamNodes: buildTeamNodes(),
+            teamNodes: showTeamsUi ? buildTeamNodes() : [],
         }))
     }, [
         buildAgentNodes,
         buildMarkdownEditorNodes,
         buildCanvasTerminalNodes,
         buildTeamNodes,
+        showTeamsUi,
         viewMode,
         setNodes,
     ])
 
     const edges = useMemo(
-        () => viewMode === 'canvas' ? composeCanvasEdges(teams, editingTeamId, agents) : [],
-        [teams, editingTeamId, agents, viewMode],
+        () => viewMode === 'canvas' && showTeamsUi ? composeCanvasEdges(teams, editingTeamId, agents) : [],
+        [teams, editingTeamId, agents, showTeamsUi, viewMode],
     )
 
     return {

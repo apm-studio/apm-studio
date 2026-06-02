@@ -14,7 +14,9 @@ import {
 import {
     categoryFromAgentPath,
     looksLikeClaudeAgentMarkdown,
+    looksLikeCodexTomlAgent,
     parseClaudeAgentMarkdown,
+    parseCodexTomlAgent,
     type AgentCandidate,
 } from './github-import-detection.js'
 import {
@@ -106,16 +108,19 @@ function parseAwesomeAgentSkillRows(raw: string) {
     return rows
 }
 
-async function listClaudeSubagentItems(adapter: SourceAdapter, limit: number) {
+async function listSubagentItems(adapter: SourceAdapter, limit: number) {
     const metadata = await fetchRepoMetadata(adapter.owner, adapter.repo, adapter)
     const ref = metadata.defaultBranch
     const tree = await fetchTree(adapter.owner, adapter.repo, ref)
     const candidatePaths = tree
-        .filter((sourcePath) => looksLikeClaudeAgentMarkdown(sourcePath, ''))
+        .filter((sourcePath) => looksLikeClaudeAgentMarkdown(sourcePath, '') || looksLikeCodexTomlAgent(sourcePath, ''))
     const sourcePaths = candidatePaths.slice(0, limit)
     const rawCandidates = await Promise.all(sourcePaths.map(async (sourcePath) => {
         const raw = await fetchGithubRawText(adapter.owner, adapter.repo, ref, sourcePath).catch(() => null)
-        return raw ? parseClaudeAgentMarkdown(sourcePath, raw) : null
+        if (!raw) return null
+        return looksLikeCodexTomlAgent(sourcePath, '')
+            ? parseCodexTomlAgent(sourcePath, raw)
+            : parseClaudeAgentMarkdown(sourcePath, raw)
     }))
 
     return {
@@ -202,7 +207,7 @@ export async function listApmGitHubSourceItems(
     for (const adapter of adapters) {
         try {
             const result = adapter.kind === 'agents'
-                ? await listClaudeSubagentItems(adapter, limit)
+                ? await listSubagentItems(adapter, limit)
                 : adapter.kind === 'skills'
                     ? await listAgentSkillItems(adapter, limit)
                     : await listPresetItems(adapter)

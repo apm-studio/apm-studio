@@ -8,6 +8,7 @@ import type {
 import {
     listSyncTargetProfiles,
 } from './sync-targets.js'
+import { getApmCliTargets } from './apm-cli-targets.js'
 import { getApmToolingStatus } from './tooling.js'
 import { collectTargetDefinitions } from './target-definitions.js'
 import {
@@ -23,6 +24,7 @@ export async function getApmSyncTargets(workingDir?: string): Promise<ApmSyncTar
     const ownership = workingDir ? await readSyncOwnershipManifest(workingDir) : emptySyncOwnershipManifest()
     const profiles = listSyncTargetProfiles()
     const definitionsByTarget = new Map<ApmSyncTargetId, ApmSyncTargetDefinitionSummary[]>()
+    const cliTargets = workingDir ? await getApmCliTargets(workingDir) : new Map()
     if (workingDir) {
         await Promise.all(profiles.map(async (target) => {
             definitionsByTarget.set(target.id, await collectTargetDefinitions(workingDir, target.id, ownership))
@@ -38,7 +40,12 @@ export async function getApmSyncTargets(workingDir?: string): Promise<ApmSyncTar
             label: target.label,
             description: target.description,
             outputHint: target.outputHint,
+            outputHints: target.outputHints,
             available: true,
+            apmCliStatus: cliTargets.get(target.id)?.status,
+            apmCliSource: cliTargets.get(target.id)?.source,
+            apmCliDeployDir: cliTargets.get(target.id)?.deployDir,
+            apmCliNeeds: cliTargets.get(target.id)?.needs,
             commandPreview: `${tooling.recommendedCommand || 'Studio fallback'} install <package> --target ${target.id}`,
             supportedSyncUnits: target.supportedSyncUnits,
             strategy: target.strategy,

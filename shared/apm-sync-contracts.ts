@@ -170,8 +170,13 @@ export interface ApmSyncTargetSummary {
     label: string
     description: string
     outputHint: string
+    outputHints?: Partial<Record<ApmSyncUnit, string>>
     commandPreview: string
     available: boolean
+    apmCliStatus?: 'active' | 'inactive' | 'unknown'
+    apmCliSource?: string | null
+    apmCliDeployDir?: string
+    apmCliNeeds?: string | null
     supportedSyncUnits: ApmSyncUnit[]
     strategy: ApmSyncStrategy
     currentItems: ApmSyncTargetItemSummary[]

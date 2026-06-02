@@ -8,6 +8,7 @@ import {
 } from './manifest.js'
 import {
     copyApmPackage,
+    deleteApmPackage,
     importApmPackage,
     listApmAgentProjectionSnapshots,
     listApmPackages,
@@ -15,9 +16,16 @@ import {
     writeApmPackage,
 } from './repository.js'
 import {
+    listApmPackagePrimitiveFiles,
+    readApmPackagePrimitiveFile,
+    regenerateApmPackageLock,
+    syncManagedApmPackageSourceToManifest,
+} from './package-source-files.js'
+import {
     readApmWorkspaceSnapshotForDir,
     writeApmPackagesForWorkspace,
 } from './workspace.js'
+import { yamlString } from './yaml-io.js'
 import { createDraft } from '../drafts/service.js'
 import type { WorkspaceAgentSnapshot } from '../../../shared/workspace-contracts.js'
 
@@ -388,6 +396,72 @@ describe('apm package storage', () => {
         }
     })
 
+    it('deletes a package and removes root/workspace package references', async () => {
+        await writeApmPackage(workingDir, 'skill-pack', {
+            name: 'review-skill-package',
+            version: '1.0.0',
+            type: 'skill',
+            skills: [{ path: '.apm/skills/review/SKILL.md' }],
+            'x-apm': {
+                schemaVersion: 1,
+                packageId: 'skill-pack',
+                kind: 'skill',
+            },
+        })
+        await writeApmPackagesForWorkspace(workingDir, {
+            workingDir,
+            agents: [agent()],
+        })
+
+        const deleted = await deleteApmPackage(workingDir, 'skill-pack')
+
+        expect(deleted).toEqual({ packageId: 'skill-pack' })
+        await expect(fs.stat(path.join(workingDir, 'packages', 'skill-pack')))
+            .rejects.toMatchObject({ code: 'ENOENT' })
+        await expect(readApmPackage(workingDir, 'skill-pack')).resolves.toBeNull()
+        await expect(listApmPackages(workingDir)).resolves.toEqual([
+            expect.objectContaining({ packageId: 'agent-1' }),
+        ])
+        await expect(fs.readFile(path.join(workingDir, 'apm.yml'), 'utf-8'))
+            .resolves.not.toContain('./packages/skill-pack')
+        await expect(fs.readFile(path.join(workingDir, '.apm-studio', 'workspace.json'), 'utf-8'))
+            .resolves.not.toContain('"skill-pack"')
+    })
+
+    it('removes root package dependency variants when deleting a package', async () => {
+        await writeApmPackage(workingDir, 'skill-pack', {
+            name: 'review-skill-package',
+            version: '1.0.0',
+            type: 'skill',
+            'x-apm': {
+                schemaVersion: 1,
+                packageId: 'skill-pack',
+                kind: 'skill',
+            },
+        })
+        await fs.writeFile(path.join(workingDir, 'apm.yml'), [
+            'name: root',
+            'version: 1.0.0',
+            'dependencies:',
+            '  apm:',
+            '    - ./packages/other-pack',
+            '    - packages/skill-pack',
+            '    - name: skill-pack',
+            '    - path: ./packages/skill-pack',
+            '    - name: kept-by-name',
+            '      path: ./packages/kept-pack',
+            '  mcp: []',
+        ].join('\n'), 'utf-8')
+
+        await deleteApmPackage(workingDir, 'skill-pack')
+
+        const rootManifest = await fs.readFile(path.join(workingDir, 'apm.yml'), 'utf-8')
+        expect(rootManifest).toContain('./packages/other-pack')
+        expect(rootManifest).toContain('./packages/kept-pack')
+        expect(rootManifest).not.toContain('packages/skill-pack')
+        expect(rootManifest).not.toContain('name: skill-pack')
+    })
+
     it('generates deterministic lock hashes for identical manifests', () => {
         const manifest = {
             name: 'stable',
@@ -405,5 +479,134 @@ describe('apm package storage', () => {
             ...manifest,
             b: { a: 2, z: 1 },
         }))
+    })
+
+    it('reports package lock status as current, missing, invalid, or stale', async () => {
+        await writeApmPackage(workingDir, 'stable', {
+            name: 'stable',
+            version: '1.0.0',
+            'x-apm': {
+                schemaVersion: 1,
+                packageId: 'stable',
+                kind: 'skill',
+            },
+        })
+
+        await expect(readApmPackage(workingDir, 'stable')).resolves.toEqual(expect.objectContaining({
+            lockStatus: expect.objectContaining({ state: 'current' }),
+        }))
+
+        const lockFile = path.join(workingDir, 'packages', 'stable', 'apm.lock.yaml')
+        await fs.rm(lockFile)
+        await expect(readApmPackage(workingDir, 'stable')).resolves.toEqual(expect.objectContaining({
+            lockStatus: expect.objectContaining({ state: 'missing' }),
+        }))
+
+        await fs.writeFile(lockFile, 'lockfile_version: [', 'utf-8')
+        await expect(readApmPackage(workingDir, 'stable')).resolves.toEqual(expect.objectContaining({
+            lockStatus: expect.objectContaining({ state: 'invalid' }),
+        }))
+
+        await writeApmPackage(workingDir, 'stable', {
+            name: 'stable',
+            version: '1.0.0',
+            'x-apm': {
+                schemaVersion: 1,
+                packageId: 'stable',
+                kind: 'skill',
+            },
+        })
+        await fs.writeFile(path.join(workingDir, 'packages', 'stable', 'apm.yml'), yamlString({
+            name: 'stable',
+            version: '2.0.0',
+            'x-apm': {
+                schemaVersion: 1,
+                packageId: 'stable',
+                kind: 'skill',
+            },
+        }), 'utf-8')
+        await expect(readApmPackage(workingDir, 'stable')).resolves.toEqual(expect.objectContaining({
+            lockStatus: expect.objectContaining({ state: 'stale' }),
+        }))
+    })
+
+    it('regenerates a missing package lock without manifest edits', async () => {
+        await writeApmPackage(workingDir, 'stable', {
+            name: 'stable',
+            version: '1.0.0',
+            'x-apm': {
+                schemaVersion: 1,
+                packageId: 'stable',
+                kind: 'skill',
+            },
+        })
+        const before = await readApmPackage(workingDir, 'stable')
+        await fs.rm(path.join(workingDir, 'packages', 'stable', 'apm.lock.yaml'))
+
+        const regenerated = await regenerateApmPackageLock(workingDir, 'stable', before?.manifestHash, readApmPackage)
+
+        expect(regenerated?.lockStatus.state).toBe('current')
+        await expect(fs.access(path.join(workingDir, 'packages', 'stable', 'apm.lock.yaml'))).resolves.toBeUndefined()
+    })
+
+    it('treats primitive source content as read-only Studio preview and detects external file changes', async () => {
+        await writeApmPackage(workingDir, 'skill-pack', {
+            name: 'review-skill-package',
+            version: '1.0.0',
+            type: 'skill',
+            skills: [{ path: '.apm/skills/review/SKILL.md' }],
+            'x-apm': {
+                schemaVersion: 1,
+                packageId: 'skill-pack',
+                kind: 'skill',
+            },
+        })
+        const skillDir = path.join(workingDir, 'packages', 'skill-pack', '.apm', 'skills', 'review')
+        await fs.mkdir(skillDir, { recursive: true })
+        await fs.writeFile(path.join(skillDir, 'SKILL.md'), '# Review Skill\n\nCheck tests.\n', 'utf-8')
+
+        const listed = await listApmPackagePrimitiveFiles(workingDir, 'skill-pack')
+        expect(listed.files).toEqual([
+            expect.objectContaining({
+                path: '.apm/skills/review/SKILL.md',
+                kind: 'skill',
+            }),
+        ])
+        const file = await readApmPackagePrimitiveFile(workingDir, 'skill-pack', '.apm/skills/review/SKILL.md')
+        const lockBefore = await fs.readFile(path.join(workingDir, 'packages', 'skill-pack', 'apm.lock.yaml'), 'utf-8')
+        await fs.writeFile(path.join(skillDir, 'SKILL.md'), '# Review Skill\n\nChanged externally.\n', 'utf-8')
+        const changed = await readApmPackagePrimitiveFile(workingDir, 'skill-pack', '.apm/skills/review/SKILL.md')
+        expect(changed.content).toContain('Changed externally.')
+        expect(changed.hash).not.toBe(file.hash)
+        await expect(fs.readFile(path.join(workingDir, 'packages', 'skill-pack', 'apm.lock.yaml'), 'utf-8')).resolves.toBe(lockBefore)
+    })
+
+    it('syncs externally edited Studio-managed agent source into the manifest and lock', async () => {
+        await writeApmPackagesForWorkspace(workingDir, {
+            workingDir,
+            agents: [agent()],
+        })
+        const listed = await listApmPackagePrimitiveFiles(workingDir, 'agent-1')
+        expect(listed.files.find((file) => file.kind === 'agent')).toEqual(expect.objectContaining({
+            readonlyReason: expect.stringContaining('local editor'),
+        }))
+        await fs.writeFile(
+            path.join(workingDir, 'packages', 'agent-1', '.apm', 'agents', 'review-agent.agent.md'),
+            '---\nname: review-agent\ndescription: Updated external description.\n---\n\nUpdated external agent body.\n',
+            'utf-8',
+        )
+
+        const result = await syncManagedApmPackageSourceToManifest(
+            workingDir,
+            'agent-1',
+            readApmPackage,
+        )
+
+        expect(result.synced).toBe(true)
+        expect(result.package?.manifest.description).toBe('Updated external description.')
+        expect(result.package?.manifest['x-apm']?.agent?.agentBody).toBe('Updated external agent body.')
+        expect(result.package?.lockStatus.state).toBe('current')
+        await expect(fs.readFile(path.join(workingDir, 'packages', 'agent-1', '.apm', 'agents', 'review-agent.agent.md'), 'utf-8'))
+            .resolves.toContain('Updated external agent body.')
     })
 })

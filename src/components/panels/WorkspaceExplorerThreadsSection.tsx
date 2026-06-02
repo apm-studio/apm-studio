@@ -6,6 +6,7 @@ import { resolveTeamThreadActivityAt, resolveSessionActivityAt } from './workspa
 import type { AgentEditorFocus, WorkspaceExplorerTeam, WorkspaceExplorerTeamThread, WorkspaceExplorerEditingTarget } from './workspace-explorer-types'
 
 import type { SessionEntity } from '../../store/session'
+import { shouldRenderStudioAgentTeamsUi } from '../../app/studio-agent-ui-state'
 import WorkspaceExplorerTeamGroup from './WorkspaceExplorerTeamGroup'
 import WorkspaceExplorerAgentGroup from './WorkspaceExplorerAgentGroup'
 
@@ -100,6 +101,7 @@ export default function WorkspaceExplorerThreadsSection({
 }: WorkspaceExplorerThreadsSectionProps) {
     const hasAgents = threadRows.length > 0
     const hasTeams = teams.length > 0
+    const showTeamsUi = shouldRenderStudioAgentTeamsUi()
     const sessionActivityById = Object.fromEntries(
         sessions.map((session) => {
             const entity = seEntities[session.id]
@@ -170,7 +172,7 @@ export default function WorkspaceExplorerThreadsSection({
     return (
         <section className="explorer-section explorer-section--threads" ref={containerRef}>
             {/* ── Studio Agents Pane ── */}
-            <div className="explorer__pane" style={{ flex: agentsFlex }}>
+            <div className="explorer__pane" style={{ flex: showTeamsUi ? agentsFlex : 1 }}>
                 <div className="explorer__subheader explorer__subheader--inline">
                     <span className="explorer__title">Studio Agents</span>
                     <div className="explorer__actions">
@@ -222,65 +224,70 @@ export default function WorkspaceExplorerThreadsSection({
                 </div>
             </div>
 
-            {/* ── Divider ── */}
-            <div className="explorer__divider" onMouseDown={onDividerMouseDown} />
+            {showTeamsUi ? (
+                <>
+                    {/* ── Divider ── */}
+                    <div className="explorer__divider" onMouseDown={onDividerMouseDown} />
 
-            {/* ── Teams Pane ── */}
-            <div className="explorer__pane" style={{ flex: 1 }}>
-                <div className="explorer__subheader explorer__subheader--inline">
-                    <span className="explorer__title">
-                        Teams
-                    </span>
-                    <div className="explorer__actions">
-                        <button className="icon-btn" onClick={onAddTeam} title="Add Team" disabled={!workspaceId}>
-                            <Workflow size={12} />
-                        </button>
+                    {/* Teams UI is intentionally parked while the Studio Agent Team UX is upgraded.
+                        Keep this branch intact so the future re-enable is a guard flip, not a rebuild. */}
+                    <div className="explorer__pane" style={{ flex: 1 }}>
+                        <div className="explorer__subheader explorer__subheader--inline">
+                            <span className="explorer__title">
+                                Teams
+                            </span>
+                            <div className="explorer__actions">
+                                <button className="icon-btn" onClick={onAddTeam} title="Add Team" disabled={!workspaceId}>
+                                    <Workflow size={12} />
+                                </button>
+                            </div>
+                        </div>
+                        <div className="explorer__pane-scroll scroll-area">
+                            {hasTeams ? (
+                                <div className="explorer__section-list">
+                                    {teams.map((team) => {
+                                        const teamKey = `team-${team.id}`
+                                        const threads = showThreads ? [...(teamThreads[team.id] || [])].sort(
+                                            (left, right) => (
+                                                resolveTeamThreadActivityAt(right, sessionActivityById)
+                                                - resolveTeamThreadActivityAt(left, sessionActivityById)
+                                            ) || ((right.createdAt || 0) - (left.createdAt || 0)),
+                                        ) : []
+                                        const isExpanded = showThreads && (expandedRows[teamKey] ?? threads.length > 0)
+                                        return (
+                                            <WorkspaceExplorerTeamGroup
+                                                key={teamKey}
+                                                team={team}
+                                                showThreads={showThreads}
+                                                selectedTeamId={selectedTeamId}
+                                                activeThreadId={activeThreadId}
+                                                threads={threads}
+                                                expanded={isExpanded}
+                                                pendingDelete={pendingDelete}
+                                                onToggleExpanded={onToggleExpanded}
+                                                onOpenTeam={onOpenTeam}
+                                                onCreateThread={onCreateThread}
+                                                onSetPendingDelete={onSetPendingDelete}
+                                                onSaveTeamAsDraft={onSaveTeamAsDraft}
+                                                onToggleTeamVisibility={onToggleTeamVisibility}
+                                                onRemoveTeam={onRemoveTeam}
+                                                onSelectThread={onSelectThread}
+                                                onDeleteThread={onDeleteThread}
+                                                onRenameThread={onRenameThread}
+                                                onOpenTeamEditor={onOpenTeamEditor}
+                                            />
+                                        )
+                                    })}
+                                </div>
+                            ) : (
+                                <div className="empty-state empty-state--tight empty-state--nested">
+                                    No teams yet
+                                </div>
+                            )}
+                        </div>
                     </div>
-                </div>
-                <div className="explorer__pane-scroll scroll-area">
-                    {hasTeams ? (
-                        <div className="explorer__section-list">
-                            {teams.map((team) => {
-                                const teamKey = `team-${team.id}`
-                                const threads = showThreads ? [...(teamThreads[team.id] || [])].sort(
-                                    (left, right) => (
-                                        resolveTeamThreadActivityAt(right, sessionActivityById)
-                                        - resolveTeamThreadActivityAt(left, sessionActivityById)
-                                    ) || ((right.createdAt || 0) - (left.createdAt || 0)),
-                                ) : []
-                                const isExpanded = showThreads && (expandedRows[teamKey] ?? threads.length > 0)
-                                return (
-                                    <WorkspaceExplorerTeamGroup
-                                        key={teamKey}
-                                        team={team}
-                                        showThreads={showThreads}
-                                        selectedTeamId={selectedTeamId}
-                                        activeThreadId={activeThreadId}
-                                        threads={threads}
-                                        expanded={isExpanded}
-                                        pendingDelete={pendingDelete}
-                                        onToggleExpanded={onToggleExpanded}
-                                        onOpenTeam={onOpenTeam}
-                                        onCreateThread={onCreateThread}
-                                        onSetPendingDelete={onSetPendingDelete}
-                                        onSaveTeamAsDraft={onSaveTeamAsDraft}
-                                        onToggleTeamVisibility={onToggleTeamVisibility}
-                                        onRemoveTeam={onRemoveTeam}
-                                        onSelectThread={onSelectThread}
-                                        onDeleteThread={onDeleteThread}
-                                        onRenameThread={onRenameThread}
-                                        onOpenTeamEditor={onOpenTeamEditor}
-                                    />
-                                )
-                            })}
-                        </div>
-                    ) : (
-                        <div className="empty-state empty-state--tight empty-state--nested">
-                            No teams yet
-                        </div>
-                    )}
-                </div>
-            </div>
+                </>
+            ) : null}
         </section>
     )
 }

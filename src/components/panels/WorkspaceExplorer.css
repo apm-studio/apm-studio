@@ -97,7 +97,7 @@
     justify-content: space-between;
     gap: 8px;
     padding: 8px 12px;
-    background: var(--bg-elevated, rgba(255, 255, 255, 0.02));
+    background: color-mix(in srgb, var(--bg-elevated) 86%, var(--bg-panel));
     border-bottom: 1px solid var(--border-light);
     position: sticky;
     top: 0;
@@ -115,7 +115,7 @@
     font-weight: 700;
     color: var(--text-secondary);
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0;
 }
 
 .explorer__title-note {
@@ -154,7 +154,7 @@
 .explorer__context-label {
     font-size: var(--font-xs);
     font-weight: 700;
-    letter-spacing: 0.08em;
+    letter-spacing: 0;
     text-transform: uppercase;
     color: var(--text-muted);
 }
@@ -190,11 +190,12 @@
     text-align: left;
     cursor: pointer;
     border-radius: var(--radius);
-    transition: background 0.1s ease;
+    transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
 }
 
 .layer-row:hover {
     background: var(--bg-hover);
+    transform: translateX(1px);
 }
 
 .layer-row.active {
@@ -254,21 +255,21 @@
 }
 
 .layer-row__meta--success {
-    color: #10b981;
-    border-color: color-mix(in srgb, #10b981 25%, var(--border-light));
-    background: color-mix(in srgb, #10b981 10%, var(--bg-hover));
+    color: var(--status-success);
+    border-color: color-mix(in srgb, var(--status-success) 25%, var(--border-light));
+    background: color-mix(in srgb, var(--status-success-bg) 72%, var(--bg-hover));
 }
 
 .layer-row__meta--warn {
-    color: #f59e0b;
-    border-color: color-mix(in srgb, #f59e0b 25%, var(--border-light));
-    background: color-mix(in srgb, #f59e0b 10%, var(--bg-hover));
+    color: var(--status-warning);
+    border-color: color-mix(in srgb, var(--status-warning) 25%, var(--border-light));
+    background: color-mix(in srgb, var(--status-warning-bg) 72%, var(--bg-hover));
 }
 
 .layer-row__meta--danger {
-    color: #ef4444;
-    border-color: color-mix(in srgb, #ef4444 25%, var(--border-light));
-    background: color-mix(in srgb, #ef4444 10%, var(--bg-hover));
+    color: var(--status-danger);
+    border-color: color-mix(in srgb, var(--status-danger) 25%, var(--border-light));
+    background: color-mix(in srgb, var(--status-danger-bg) 72%, var(--bg-hover));
 }
 
 .layer-row__actions {
@@ -320,6 +321,11 @@
     margin: 0;
     padding: 8px 12px 10px;
     border-bottom: 1px solid var(--border-light);
+    background: transparent;
+}
+
+.explorer__context--workspaces.explorer__context-button:hover,
+.explorer__context--workspaces.explorer__context-button.is-active {
     background: transparent;
 }
 

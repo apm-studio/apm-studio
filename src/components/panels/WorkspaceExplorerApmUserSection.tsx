@@ -18,7 +18,7 @@ export default function WorkspaceExplorerApmUserSection() {
                 <LayerRow
                     icon={<UserRound size={12} className={scope === 'user' ? 'icon-active' : 'icon-muted'} />}
                     label="APM User"
-                    meta={`${packageCount} · ~/.apm`}
+                    meta={packageCount}
                     active={scope === 'user'}
                     onClick={() => setScope('user')}
                 />

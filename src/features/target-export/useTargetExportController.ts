@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { apmApi } from '../../api-clients/apm'
 import { useApmPackages } from '../../hooks/queries/apm'
 import { useStudioStore } from '../../store'
@@ -35,6 +35,7 @@ const EMPTY_APM_PACKAGES: ApmPackageSummary[] = []
 
 export function useTargetExportController() {
     const workingDir = useStudioStore((state) => state.workingDir)
+    const targetsRequestIdRef = useRef(0)
     const [targetsResponse, setTargetsResponse] = useState<ApmSyncTargetsResponse | null>(null)
     const [selectedSyncUnit, setSelectedSyncUnit] = useState<ApmSyncUnit>(DEFAULT_APM_SYNC_UNIT)
     const [selectedTargets, setSelectedTargets] = useState<ApmSyncTargetId[]>(['codex'])
@@ -45,7 +46,6 @@ export function useTargetExportController() {
     const [error, setError] = useState<string | null>(null)
     const [targetMessage, setTargetMessage] = useState<string | null>(null)
     const [lastResult, setLastResult] = useState<ApmSyncRunResponse | null>(null)
-    const [filter, setFilter] = useState('')
     const [exportChoices, setExportChoices] = useState<Record<string, TargetExportChoice>>({})
     const {
         data: rawProjectPackages = EMPTY_APM_PACKAGES,
@@ -66,18 +66,45 @@ export function useTargetExportController() {
     const apmPackagesLoading = projectPackagesLoading || userPackagesLoading
 
     const refreshTargets = useCallback(async () => {
+        const requestId = targetsRequestIdRef.current + 1
+        const requestWorkingDir = useStudioStore.getState().workingDir
+        targetsRequestIdRef.current = requestId
         setLoadingTargets(true)
         setError(null)
         try {
-            setTargetsResponse(await apmApi.listSyncTargets())
+            const response = await apmApi.listSyncTargets()
+            if (
+                targetsRequestIdRef.current === requestId
+                && useStudioStore.getState().workingDir === requestWorkingDir
+            ) {
+                setTargetsResponse(response)
+            }
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Unable to load target definitions.')
+            if (
+                targetsRequestIdRef.current === requestId
+                && useStudioStore.getState().workingDir === requestWorkingDir
+            ) {
+                setError(err instanceof Error ? err.message : 'Unable to load target definitions.')
+            }
         } finally {
-            setLoadingTargets(false)
+            if (
+                targetsRequestIdRef.current === requestId
+                && useStudioStore.getState().workingDir === requestWorkingDir
+            ) {
+                setLoadingTargets(false)
+            }
         }
     }, [])
 
     useEffect(() => {
+        setTargetsResponse(null)
+        setStagedPackageIds([])
+        setStagedScopeCopies([])
+        setExportChoices({})
+        setTargetMessage(null)
+        setLastResult(null)
+        setError(null)
+        setRunning(false)
         void refreshTargets()
     }, [refreshTargets, workingDir])
 
@@ -89,7 +116,6 @@ export function useTargetExportController() {
         selectedTargets,
         stagedPackageIds,
         stagedScopeCopies,
-        filter,
         exportChoices,
         loadingTargets,
         running,
@@ -97,7 +123,6 @@ export function useTargetExportController() {
     }), [
         projectPackages,
         userPackages,
-        filter,
         lastResult,
         loadingTargets,
         running,
@@ -132,12 +157,13 @@ export function useTargetExportController() {
         setStagedPackageIds([])
         setStagedScopeCopies([])
         setExportChoices({})
-        setTargetMessage('Reverted staged export changes.')
+        setTargetMessage('Reverted staged inject changes.')
         setLastResult(null)
     }, [])
 
     const saveExport = useCallback(async () => {
         if (model.activeSavePackageIds.length === 0 && model.stagedScopeCopies.length === 0) return
+        const workingDirAtSubmit = useStudioStore.getState().workingDir
         setRunning(true)
         setError(null)
         setTargetMessage(null)
@@ -154,12 +180,14 @@ export function useTargetExportController() {
                     syncUnit: selectedSyncUnit,
                 })
                 : null
+            if (useStudioStore.getState().workingDir !== workingDirAtSubmit) return
             setLastResult(response)
             await Promise.all([
                 refetchProjectPackages(),
                 refetchUserPackages(),
             ])
             await refreshTargets()
+            if (useStudioStore.getState().workingDir !== workingDirAtSubmit) return
             setStagedPackageIds([])
             setStagedScopeCopies([])
             setExportChoices({})
@@ -169,13 +197,17 @@ export function useTargetExportController() {
             const targetCount = model.activeSavePackageIds.length
             const messages = [
                 copyCount > 0 ? `Copied ${copyCount} package${copyCount === 1 ? '' : 's'} between User and Workspace.` : null,
-                targetCount > 0 ? `Saved export changes to ${targetLabel}.` : null,
+                targetCount > 0 ? `Saved inject changes to ${targetLabel}.` : null,
             ].filter((entry): entry is string => Boolean(entry))
             setTargetMessage(messages.join(' '))
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Save failed.')
+            if (useStudioStore.getState().workingDir === workingDirAtSubmit) {
+                setError(err instanceof Error ? err.message : 'Save failed.')
+            }
         } finally {
-            setRunning(false)
+            if (useStudioStore.getState().workingDir === workingDirAtSubmit) {
+                setRunning(false)
+            }
         }
     }, [
         model.activeSavePackageIds,
@@ -225,7 +257,7 @@ export function useTargetExportController() {
         if (!pkg) {
             const userPackage = userPackages.find((candidate) => candidate.packageId === packageId)
             setTargetMessage(userPackage
-                ? 'Copy this User package to Workspace before exporting to a target.'
+                ? 'Copy this User package to Workspace before injecting into a target.'
                 : 'Package is no longer available in this workspace.')
             return false
         }
@@ -290,7 +322,7 @@ export function useTargetExportController() {
     const toggleStagedPackage = useCallback((packageId: string) => {
         if (stagedPackageIds.includes(packageId)) {
             setStagedPackageIds((current) => current.filter((id) => id !== packageId))
-            setTargetMessage('Removed from staged export changes.')
+            setTargetMessage('Removed from staged inject changes.')
             setLastResult(null)
             return
         }
@@ -301,7 +333,6 @@ export function useTargetExportController() {
         ...model,
         apmPackagesLoading,
         error,
-        filter,
         loadingTargets,
         refreshTargets,
         revertExportChanges,
@@ -310,7 +341,6 @@ export function useTargetExportController() {
         selectSyncUnit,
         selectTarget,
         selectedSyncUnit,
-        setFilter,
         setPackageExportChoice,
         stagePackageForActiveTarget,
         stageScopeCopy,

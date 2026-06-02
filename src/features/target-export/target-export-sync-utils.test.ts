@@ -8,9 +8,10 @@ import type {
 } from '../../../shared/apm-sync-contracts'
 import {
     findManagedDefinitionForPackage,
-    packageSearchHaystack,
+    packageReadiness,
     primitiveSummary,
     targetAvailability,
+    targetOutputHint,
     targetPackageAvailability,
 } from './target-export-sync-utils'
 
@@ -66,23 +67,24 @@ describe('Target export utils', () => {
             label: 'Gemini',
             supportedSyncUnits: ['skills', 'mcp'],
         })
-        const pkg = packageSummary({
-            microsoftApm: {
-                packageRoot: '/tmp/planner',
-                sourceDir: '/tmp/planner/.apm',
-                installCommand: 'apm install .',
-                validateCommand: 'apm validate .',
-                packCommand: 'apm pack .',
-                primitiveCounts: { agents: 1, instructions: 0, skills: 1 },
-                primitivePaths: [],
-                warnings: [],
-            },
-        })
-
-        expect(targetAvailability(target, 'agents', [pkg])).toEqual({
+        expect(targetAvailability(target, 'agents')).toEqual({
             available: false,
             reason: 'Gemini does not support Agents.',
         })
+    })
+
+    it('returns primitive-specific target output hints when available', () => {
+        const target = targetSummary({
+            outputHint: '.claude/ + .mcp.json',
+            outputHints: {
+                instructions: '.claude/rules/ + CLAUDE.md',
+                mcp: '.mcp.json + .claude/mcp.json',
+            },
+        })
+
+        expect(targetOutputHint(target, 'instructions')).toBe('.claude/rules/ + CLAUDE.md')
+        expect(targetOutputHint(target, 'mcp')).toBe('.mcp.json + .claude/mcp.json')
+        expect(targetOutputHint(target, 'skills')).toBe('.claude/ + .mcp.json')
     })
 
     it('blocks package staging when the package lacks the selected primitive unit', () => {
@@ -106,6 +108,26 @@ describe('Target export utils', () => {
         expect(targetPackageAvailability(target, 'skills', pkg)).toEqual({
             available: false,
             reason: 'Planner does not contain Skills.',
+        })
+    })
+
+    it('describes ready packages with export language', () => {
+        const pkg = packageSummary({
+            microsoftApm: {
+                packageRoot: '/tmp/planner',
+                sourceDir: '/tmp/planner/.apm',
+                installCommand: 'apm install .',
+                validateCommand: 'apm validate .',
+                packCommand: 'apm pack .',
+                primitiveCounts: { agents: 1, instructions: 0, skills: 0 },
+                primitivePaths: [],
+                warnings: [],
+            },
+        })
+
+        expect(packageReadiness(pkg, 'agents')).toEqual({
+            label: 'Ready',
+            title: 'Agents can be injected from this package.',
         })
     })
 
@@ -135,20 +157,4 @@ describe('Target export utils', () => {
         ], pkg)).toBeNull()
     })
 
-    it('includes primitive counts in package search text', () => {
-        const pkg = packageSummary({
-            microsoftApm: {
-                packageRoot: '/tmp/planner',
-                sourceDir: '/tmp/planner/.apm',
-                installCommand: 'apm install .',
-                validateCommand: 'apm validate .',
-                packCommand: 'apm pack .',
-                primitiveCounts: { agents: 1, instructions: 2, skills: 3 },
-                primitivePaths: [],
-                warnings: [],
-            },
-        })
-
-        expect(packageSearchHaystack(pkg)).toContain('1 agents 2 instructions 3 skills 0 prompts 0 commands 0 hooks 0 mcp')
-    })
 })

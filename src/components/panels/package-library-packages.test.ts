@@ -46,6 +46,57 @@ const userPackage: ApmPackageSummary = {
     },
 }
 
+const automationPackage: ApmPackageSummary = {
+    packageId: 'release-ops',
+    name: 'release-ops',
+    kind: 'package',
+    source: 'apm',
+    microsoftApm: {
+        packageRoot: 'packages/release-ops',
+        sourceDir: 'packages/release-ops/.apm',
+        installCommand: 'apm install ./packages/release-ops',
+        validateCommand: 'apm validate packages/release-ops',
+        packCommand: 'apm pack packages/release-ops',
+        primitiveCounts: { agents: 0, instructions: 0, skills: 0, prompts: 1, commands: 1, hooks: 1, mcp: 0 },
+        primitivePaths: [],
+        warnings: [],
+    },
+}
+
+const mcpPackage: ApmPackageSummary = {
+    packageId: 'github-mcp',
+    name: 'github-mcp',
+    kind: 'package',
+    source: 'apm',
+    microsoftApm: {
+        packageRoot: 'packages/github-mcp',
+        sourceDir: 'packages/github-mcp/.apm',
+        installCommand: 'apm install ./packages/github-mcp',
+        validateCommand: 'apm validate packages/github-mcp',
+        packCommand: 'apm pack packages/github-mcp',
+        primitiveCounts: { agents: 0, instructions: 0, skills: 0, prompts: 0, commands: 0, hooks: 0, mcp: 1 },
+        primitivePaths: [],
+        warnings: [],
+    },
+}
+
+const teamPackage: ApmPackageSummary = {
+    packageId: 'workflow-team',
+    name: 'workflow-team',
+    kind: 'team',
+    source: 'apm',
+    microsoftApm: {
+        packageRoot: 'packages/workflow-team',
+        sourceDir: 'packages/workflow-team/.apm',
+        installCommand: 'apm install ./packages/workflow-team',
+        validateCommand: 'apm validate packages/workflow-team',
+        packCommand: 'apm pack packages/workflow-team',
+        primitiveCounts: { agents: 2, instructions: 0, skills: 1 },
+        primitivePaths: [],
+        warnings: [],
+    },
+}
+
 describe('package-library-packages', () => {
     it('adds workspace and user scope labels to APM packages', () => {
         expect(scopeApmPackages([workspacePackage], [userPackage])).toMatchObject([
@@ -71,12 +122,23 @@ describe('package-library-packages', () => {
     })
 
     it('matches package cards to Studio Agent primitive sections', () => {
-        const [agentPackage, skillPackage] = scopeApmPackages([workspacePackage], [userPackage])
+        const [agentPackage, promptCommandHookPackage, mcpPackageWithScope, skillPackage] = scopeApmPackages([workspacePackage, automationPackage, mcpPackage], [userPackage])
 
         expect(packageMatchesPrimitiveSection(agentPackage, 'agents')).toBe(true)
         expect(packageMatchesPrimitiveSection(agentPackage, 'skills')).toBe(false)
         expect(packageMatchesPrimitiveSection(skillPackage, 'skills')).toBe(true)
         expect(packageMatchesPrimitiveSection(skillPackage, 'agents')).toBe(false)
+        expect(packageMatchesPrimitiveSection(promptCommandHookPackage, 'prompts')).toBe(true)
+        expect(packageMatchesPrimitiveSection(promptCommandHookPackage, 'commands')).toBe(true)
+        expect(packageMatchesPrimitiveSection(promptCommandHookPackage, 'hooks')).toBe(true)
+        expect(packageMatchesPrimitiveSection(mcpPackageWithScope, 'mcp')).toBe(true)
+    })
+
+    it('hides parked Team packages from Studio Agent package sections', () => {
+        const [teamPackageWithScope] = scopeApmPackages([teamPackage], [])
+
+        expect(packageMatchesPrimitiveSection(teamPackageWithScope, 'agents')).toBe(false)
+        expect(packageMatchesPrimitiveSection(teamPackageWithScope, 'skills')).toBe(false)
     })
 
     it('builds draggable package payloads with scope and primitive metadata', () => {

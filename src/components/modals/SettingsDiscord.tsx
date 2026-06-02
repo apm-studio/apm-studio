@@ -169,7 +169,7 @@ export default function SettingsDiscord() {
                     <div className="stg-row">
                         <div className="stg-row__text">
                             <span className="stg-row__title">Enable Discord integration</span>
-                            <span className="stg-row__desc">Run the Discord bot from this Studio server.</span>
+                            <span className="stg-row__desc">Turn on the Studio Discord bot.</span>
                         </div>
                         <label className="toggle-switch">
                             <input type="checkbox" checked={enabled} onChange={(event) => setEnabled(event.target.checked)} />
@@ -181,7 +181,7 @@ export default function SettingsDiscord() {
                         <div className="stg-row__text">
                             <span className="stg-row__title">Bot token</span>
                             <span className="stg-row__desc">
-                                {status?.config.hasToken ? 'Token saved. Leave blank to keep the current token.' : 'Paste a Discord bot token. It is stored on the Studio server only.'}
+                                {status?.config.hasToken ? 'Token saved. Leave blank to keep it.' : 'Paste a Discord bot token.'}
                             </span>
                         </div>
                         <input
@@ -196,10 +196,10 @@ export default function SettingsDiscord() {
                     <div className="stg-row stg-row--top">
                         <div className="stg-row__text">
                             <span className="stg-row__title">Server</span>
-                            <span className="stg-row__desc">Choose a bot-visible server, or paste a server ID manually.</span>
+                            <span className="stg-row__desc">Choose a server or paste an ID.</span>
                         </div>
                         <div className="stg-field-stack">
-                            <select className="stg-select" value={selectedGuildKnown ? guildId : ''} onChange={(event) => setGuildId(event.target.value)}>
+                            <select className="select stg-select" value={selectedGuildKnown ? guildId : ''} onChange={(event) => setGuildId(event.target.value)}>
                                 <option value="">Select server...</option>
                                 {(status?.guilds || []).map((guild) => (
                                     <option key={guild.id} value={guild.id}>{guild.name}</option>
@@ -236,7 +236,7 @@ export default function SettingsDiscord() {
                         <div className="stg-row">
                             <div className="stg-row__text">
                                 <span className="stg-row__title">Require Manage Server</span>
-                                <span className="stg-row__desc">Default strict mode. Users with Discord Manage Server can use Studio commands and chat.</span>
+                                <span className="stg-row__desc">Only server managers can use Studio.</span>
                             </div>
                             <label className="toggle-switch">
                                 <input type="checkbox" checked={requireManageGuild} onChange={(event) => setRequireManageGuild(event.target.checked)} />
@@ -246,7 +246,7 @@ export default function SettingsDiscord() {
                         <div className="stg-row stg-row--top">
                             <div className="stg-row__text">
                                 <span className="stg-row__title">Allowed role IDs</span>
-                                <span className="stg-row__desc">Optional Discord role IDs that may use Studio even without Manage Server.</span>
+                                <span className="stg-row__desc">Roles that can use Studio.</span>
                             </div>
                             <textarea
                                 className="text-input stg-input stg-textarea"
@@ -259,7 +259,7 @@ export default function SettingsDiscord() {
                         <div className="stg-row stg-row--top">
                             <div className="stg-row__text">
                                 <span className="stg-row__title">Allowed user IDs</span>
-                                <span className="stg-row__desc">Optional Discord user IDs for direct exceptions.</span>
+                                <span className="stg-row__desc">Users that can use Studio.</span>
                             </div>
                             <textarea
                                 className="text-input stg-input stg-textarea"
@@ -278,7 +278,7 @@ export default function SettingsDiscord() {
                     <div className="stg-row">
                         <div className="stg-row__text">
                             <span className="stg-row__title">Current workspace</span>
-                            <span className="stg-row__desc">Save and sync the control channel, Agent/Team categories, and thread channels.</span>
+                            <span className="stg-row__desc">Sync this workspace to Discord.</span>
                         </div>
                         <button className="btn" onClick={() => void sync('current')} disabled={!canSyncCurrent || syncing !== null}>
                             {syncing === 'current' ? 'Syncing…' : 'Sync current'}
@@ -287,7 +287,7 @@ export default function SettingsDiscord() {
                     <div className="stg-row">
                         <div className="stg-row__text">
                             <span className="stg-row__title">Studio control</span>
-                            <span className="stg-row__desc">Refresh the Discord workspace switcher without opening every thread channel.</span>
+                            <span className="stg-row__desc">Refresh the workspace switcher.</span>
                         </div>
                         <button className="btn" onClick={() => void sync('all')} disabled={!canSyncAll || syncing !== null}>
                             {syncing === 'all' ? 'Refreshing…' : 'Refresh workspace list'}

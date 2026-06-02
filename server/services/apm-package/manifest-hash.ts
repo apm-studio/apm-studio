@@ -19,3 +19,11 @@ function sortForHash(value: unknown): unknown {
 export function hashManifest(manifest: ApmPackageManifest) {
     return `sha256:${crypto.createHash('sha256').update(JSON.stringify(sortForHash(manifest))).digest('hex')}`
 }
+
+export function hashText(value: string) {
+    return `sha256:${crypto.createHash('sha256').update(value).digest('hex')}`
+}
+
+export function hashStructuredValue(value: unknown) {
+    return `sha256:${crypto.createHash('sha256').update(JSON.stringify(sortForHash(value))).digest('hex')}`
+}

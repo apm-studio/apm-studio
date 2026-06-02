@@ -183,7 +183,7 @@
     font-weight: 600;
     color: var(--text-secondary);
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0;
 }
 
 .package-mcp-tabs {
@@ -308,16 +308,16 @@
 
 .team-panel__tip-popup {
     position: fixed;
-    z-index: 9999;
+    z-index: var(--z-popover);
     width: 200px;
     padding: 6px 10px;
     font-size: 11px;
     font-weight: 400;
     line-height: 1.45;
-    color: #fff;
-    background: rgba(30, 30, 30, 0.95);
+    color: var(--text-primary);
+    background: color-mix(in srgb, var(--bg-panel) 94%, transparent);
     border-radius: 6px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    box-shadow: var(--shadow-dropdown);
     pointer-events: none;
     white-space: normal;
     word-wrap: break-word;

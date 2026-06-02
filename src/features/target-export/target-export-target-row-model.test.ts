@@ -129,6 +129,18 @@ describe('Target export target row model', () => {
         ]))
     })
 
+    it('shows primitive badges for the selected sync unit', () => {
+        const row = buildTargetExportTargetPackageRowModel({
+            pkg: packageSummary(),
+            exportChoice: 'save',
+            syncUnit: 'skills',
+            target: targetSummary(),
+        })
+
+        expect(row.badges).toContain('1 skill')
+        expect(row.badges).not.toContain('1 agent')
+    })
+
     it('marks unsupported package rows as blocked and disables save through availability', () => {
         const row = buildTargetExportTargetPackageRowModel({
             pkg: packageSummary(),

@@ -15,11 +15,11 @@ import {
 import {
     findManagedDefinitionForPackage,
     packageHasSyncUnit,
-    packageSearchHaystack,
     primitiveSummary,
     primitiveUnitForSidebar,
     sidebarSectionForUnit,
     targetAvailability,
+    targetOutputHint,
     targetPackageAvailability,
     type TargetExportScopedPackage,
     type TargetExportPackageState,
@@ -37,7 +37,6 @@ export interface TargetExportControllerModelInput {
     selectedTargets: ApmSyncTargetId[]
     stagedPackageIds: string[]
     stagedScopeCopies: TargetExportScopeCopy[]
-    filter: string
     exportChoices: Record<string, TargetExportChoice>
     loadingTargets: boolean
     running: boolean
@@ -115,7 +114,6 @@ export function normalizeTargetExportStagedScopeCopies(
 
 export function buildTargetExportControllerModel(input: TargetExportControllerModelInput) {
     const {
-        filter,
         lastResult,
         loadingTargets,
         projectPackages,
@@ -135,26 +133,17 @@ export function buildTargetExportControllerModel(input: TargetExportControllerMo
     const stagedScopeCopySet = new Set(stagedScopeCopies.map(targetExportScopeCopyKey))
     const projectCounts = sumApmPackageSyncPrimitiveCounts(projectPackages)
     const userCounts = sumApmPackageSyncPrimitiveCounts(userPackages)
-    const sidebarSection = sidebarSectionForUnit(selectedSyncUnit)
+    const sidebarSection = sidebarSectionForUnit()
     const primitiveUnit = primitiveUnitForSidebar(selectedSyncUnit)
     const projectSyncablePackages = projectPackages.filter((pkg) => packageHasSyncUnit(pkg, selectedSyncUnit))
     const userSyncablePackages = userPackages.filter((pkg) => packageHasSyncUnit(pkg, selectedSyncUnit))
     const syncablePackageIds = projectSyncablePackages.map((pkg) => pkg.packageId)
-    const queryText = filter.trim().toLowerCase()
-    const filteredProjectPackages = projectSyncablePackages.filter((pkg) =>
-        !queryText || packageSearchHaystack(pkg).includes(queryText),
-    )
-    const filteredUserPackages = userSyncablePackages.filter((pkg) =>
-        !queryText || packageSearchHaystack(pkg).includes(queryText),
-    )
-    const visiblePackageIds = filteredProjectPackages.map((pkg) => pkg.packageId)
-    const visibleUserPackageIds = filteredUserPackages.map((pkg) => pkg.packageId)
     const stagedPackages = projectSyncablePackages.filter((pkg) => stagedPackageSet.has(pkg.packageId))
     const stagedCounts = sumApmPackageSyncPrimitiveCounts(stagedPackages)
     const stagedPrimitiveSummary = primitiveSummary(stagedCounts, selectedSyncUnit)
     const targetStates = new Map(targets.map((target) => [
         target.id,
-        targetAvailability(target, selectedSyncUnit, stagedPackages),
+        targetAvailability(target, selectedSyncUnit),
     ]))
     const availableTargetIds = targets
         .filter((target) => targetStates.get(target.id)?.available)
@@ -245,7 +234,7 @@ export function buildTargetExportControllerModel(input: TargetExportControllerMo
             activeSavePackageIds.length > 0 ? `Build a temp package from ${unitLabel(selectedSyncUnit)}.` : null,
             activeSavePackageIds.length > 0 ? `${activeSavePackageIds.length} Workspace item${activeSavePackageIds.length === 1 ? '' : 's'} marked Save.` : null,
             activeSavePackageIds.length > 0 ? `${toolingStatusLabel} install --target ${activeTarget.id}.` : null,
-            activeSavePackageIds.length > 0 ? `Write managed project files into ${activeTarget.outputHint}.` : null,
+            activeSavePackageIds.length > 0 ? `Write managed project files into ${targetOutputHint(activeTarget, selectedSyncUnit)}.` : null,
             modelOmitted ? 'Keep model settings inside Studio runtime.' : null,
         ].filter((step): step is string => Boolean(step))
 
@@ -261,8 +250,8 @@ export function buildTargetExportControllerModel(input: TargetExportControllerMo
         activeTargetPackageExportStateByPackage,
         availableTargetIds,
         availableTargetIdsKey: availableTargetIds.join('|'),
-        filteredProjectPackages,
-        filteredUserPackages,
+        syncableProjectPackages: projectSyncablePackages,
+        syncableUserPackages: userSyncablePackages,
         projectPackageWarnings,
         userPackageWarnings,
         projectPackages,
@@ -292,8 +281,6 @@ export function buildTargetExportControllerModel(input: TargetExportControllerMo
         toolingStatusLabel,
         unsyncedPackageIds,
         unsyncedPackageIdsKey: unsyncedPackageIds.join('|'),
-        visiblePackageIds,
-        visibleUserPackageIds,
     }
 }
 

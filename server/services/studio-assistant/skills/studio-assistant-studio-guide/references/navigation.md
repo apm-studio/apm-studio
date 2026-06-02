@@ -1,16 +1,16 @@
 # APM Studio Navigation Reference
 
-## Top Toolbar
+## App Header
 - `APM Studio`: workspace initialization state.
+- Mode navigation for the primary Studio workflows.
 - Branch label: current git branch when available.
-- `Sign in` or user menu: APM Studio registry login.
 - Server status indicator.
+- `Toggle Theme`: switches the whole Studio UI between light and dark mode.
+- `Settings`.
+
+## Studio Agent Header Tools
 - `Terminal`: `Show/Hide Pinned Terminal`, `Add Terminal to Canvas`.
 - `Workspace Tracking`: opens the right-side tracking panel and closes Assistant.
-- `Save selected package locally`.
-- `Toggle Theme`.
-- `Settings`.
-- `Assistant`.
 
 ## Assistant Panel
 - Header shows model and status such as `Ready`, `Thinking`, `Running`, `Retrying`, or `Needs attention`.

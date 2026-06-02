@@ -1,5 +1,5 @@
 import { useDndMonitor, useDroppable } from '@dnd-kit/core'
-import { Bot, FileText, PackageOpen, Search, Server, UserRound, Zap } from 'lucide-react'
+import { Bot, FileText, PackageOpen, Server, UserRound, Zap } from 'lucide-react'
 import type { ApmPackageScope } from '../../../shared/apm-contracts'
 import type { DragPrimitive, DropTargetData } from '../../lib/dnd-handlers'
 import {
@@ -10,15 +10,17 @@ import {
 } from './target-export-sync-utils'
 import { TargetExportSourceRows } from './TargetExportSourceRows'
 import type { TargetExportControllerState } from './useTargetExportController'
+import type { TargetExportAssetDetailRequest } from './target-export-detail-model'
+import { buildTargetExportSourcePrimitiveItems } from './target-export-source-row-model'
 
 interface TargetExportSourceColumnProps {
     controller: TargetExportControllerState
+    onOpenDetails: (request: TargetExportAssetDetailRequest) => void
     scope: ApmPackageScope
 }
 
 interface TargetExportSourceControlsProps {
     controller: TargetExportControllerState
-    scope: ApmPackageScope
 }
 
 function syncUnitIcon(unit: string) {
@@ -35,18 +37,14 @@ function oppositeScope(scope: ApmPackageScope): ApmPackageScope {
     return scope === 'user' ? 'workspace' : 'user'
 }
 
-export function TargetExportSourceControls({ controller, scope }: TargetExportSourceControlsProps) {
+export function TargetExportSourceControls({ controller }: TargetExportSourceControlsProps) {
     const {
-        filter,
-        filteredProjectPackages,
-        filteredUserPackages,
         selectSyncUnit,
         selectedSyncUnit,
-        setFilter,
     } = controller
 
     return (
-        <section className="target-export-filterbar" aria-label="APM primitive filter">
+        <section className="target-export-controlbar" aria-label="APM source controls">
             <div className="target-export-primitive-tabs" role="tablist" aria-label="APM primitive unit">
                 {PRIMITIVE_SYNC_UNITS.map((unit) => (
                     <button
@@ -62,29 +60,11 @@ export function TargetExportSourceControls({ controller, scope }: TargetExportSo
                     </button>
                 ))}
             </div>
-
-            <div className="target-export-source-toolbar">
-                <label className="target-export-search">
-                    <Search size={12} className="icon-muted" />
-                    <input
-                        className="text-input"
-                        value={filter}
-                        onChange={(event) => setFilter(event.target.value)}
-                        placeholder="package, primitive, target path..."
-                    />
-                </label>
-                <span className="badge badge--subtle" title="Selected in the left APM scope sidebar">
-                    {packageScopeLabel(scope)} source
-                </span>
-                <span className="badge badge--subtle">
-                    {filteredProjectPackages.length} workspace · {filteredUserPackages.length} user
-                </span>
-            </div>
         </section>
     )
 }
 
-export function TargetExportSourceColumn({ controller, scope }: TargetExportSourceColumnProps) {
+export function TargetExportSourceColumn({ controller, onOpenDetails, scope }: TargetExportSourceColumnProps) {
     const {
         activeTarget,
         apmPackagesLoading,
@@ -104,16 +84,14 @@ export function TargetExportSourceColumn({ controller, scope }: TargetExportSour
         userCounts,
         userPackageWarnings,
         userPackages,
-        visiblePackageIds,
-        visibleUserPackageIds,
     } = controller
 
     const isProject = scope === 'workspace'
     const title = packageScopeLabel(scope)
     const destinationScope = oppositeScope(scope)
-    const packages = isProject ? controller.filteredProjectPackages : controller.filteredUserPackages
+    const packages = isProject ? controller.syncableProjectPackages : controller.syncableUserPackages
+    const sourceItems = buildTargetExportSourcePrimitiveItems(packages, selectedSyncUnit)
     const allPackages = isProject ? projectPackages : userPackages
-    const visibleIds = isProject ? visiblePackageIds : visibleUserPackageIds
     const counts = isProject ? projectCounts : userCounts
     const packageWarnings = isProject ? projectPackageWarnings : userPackageWarnings
     const copyToDestinationCount = controller.stagedScopeCopies
@@ -153,21 +131,22 @@ export function TargetExportSourceColumn({ controller, scope }: TargetExportSour
                         {isProject ? <PackageOpen size={15} /> : <UserRound size={15} />}
                         <h2>{title}</h2>
                     </div>
-                    <p>{isProject ? 'Workspace APM packages export to targets.' : 'User APM packages can be copied into Workspace.'}</p>
                 </div>
             </div>
 
-            <div className="target-export-source__summary">
-                {isProject ? <strong>{stagedPackageIds.length} staged</strong> : null}
-                {!isProject ? <strong>{copyToDestinationCount} copy</strong> : null}
+            <div className="target-export-source__summary" title={`${allPackages.length} packages · ${primitiveSummary(counts, selectedSyncUnit)}`}>
+                {isProject && stagedPackageIds.length > 0 ? <strong>{stagedPackageIds.length} staged</strong> : null}
+                {!isProject && copyToDestinationCount > 0 ? <strong>{copyToDestinationCount} copy</strong> : null}
                 {isProject && unsyncedPackageIds.length > 0 ? <span>{unsyncedPackageIds.length} unsynced</span> : null}
-                {copyToDestinationCount > 0 ? <span>{copyToDestinationCount} to {packageScopeLabel(destinationScope)}</span> : null}
-                <span>{allPackages.length} packages · {primitiveSummary(counts, selectedSyncUnit)}</span>
+                {copyToDestinationCount > 0 ? <span>to {packageScopeLabel(destinationScope)}</span> : null}
                 {packageWarnings > 0 ? <span>{packageWarnings} warnings</span> : null}
+                {stagedPackageIds.length === 0 && copyToDestinationCount === 0 && unsyncedPackageIds.length === 0 && packageWarnings === 0 ? (
+                    <span>{sourceItems.length} available</span>
+                ) : null}
             </div>
 
             <TargetExportSourceRows
-                packages={packages}
+                items={sourceItems}
                 activeTarget={activeTarget}
                 allowTargetStage={isProject}
                 copyTargetScope={destinationScope}
@@ -175,6 +154,7 @@ export function TargetExportSourceColumn({ controller, scope }: TargetExportSour
                 packageExportStateByPackage={controller.activeTargetPackageExportStateByPackage}
                 running={running}
                 selectedSyncUnit={selectedSyncUnit}
+                onOpenDetails={onOpenDetails}
                 stagePackageForActiveTarget={stagePackageForActiveTarget}
                 stagedPackageSet={stagedPackageSet}
                 stagedScopeCopySet={stagedScopeCopySet}
@@ -182,17 +162,12 @@ export function TargetExportSourceColumn({ controller, scope }: TargetExportSour
                 toggleStagedScopeCopy={toggleStagedScopeCopy}
             />
 
-            {packages.length === 0 && !apmPackagesLoading ? (
+            {sourceItems.length === 0 && !apmPackagesLoading ? (
                 <div className="target-export-empty">
-                    No {title.toLowerCase()} package contains {unitLabel(selectedSyncUnit)}.
+                    No {title.toLowerCase()} primitive contains {unitLabel(selectedSyncUnit)}.
                 </div>
             ) : null}
 
-            {visibleIds.length === 0 && packages.length > 0 ? (
-                <div className="target-export-empty">
-                    No package matches this filter.
-                </div>
-            ) : null}
         </section>
     )
 }

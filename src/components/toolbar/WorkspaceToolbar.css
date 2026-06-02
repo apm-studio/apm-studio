@@ -10,76 +10,8 @@
     background: var(--bg-elevated);
 }
 
-.toolbar__item {
-    display: flex;
-    align-items: center;
-    gap: var(--space-1);
-    min-height: 28px;
-    padding: 0 var(--space-2);
-    border: none;
-    border-radius: var(--radius);
-    background: transparent;
-    font-size: var(--font-sm);
-    font-weight: 700;
-    color: var(--text-secondary);
-    white-space: nowrap;
-}
-
-button.toolbar__item {
-    cursor: pointer;
-    transition: background 0.12s ease, color 0.12s ease;
-}
-
-button.toolbar__item:hover {
-    background: var(--bg-hover);
-    color: var(--text-primary);
-}
-
-.divider-v {
-    width: 1px;
-    height: 16px;
-    background: var(--border-main);
-    margin: 0 var(--space-1);
-}
-
-.toolbar__status-icon--ok {
-    color: var(--status-success);
-}
-
-.toolbar__status-icon--warn {
-    color: var(--status-danger);
-}
-
 .toolbar .icon-btn {
     flex: 0 0 auto;
     width: 28px;
     height: 28px;
-}
-
-/* ── Assistant text button ─── */
-.toolbar__assistant-btn {
-    display: flex;
-    align-items: center;
-    height: 28px;
-    padding: 0 var(--space-3);
-    border: 1px solid var(--border-light);
-    border-radius: var(--radius);
-    background: transparent;
-    font-size: var(--font-sm);
-    font-weight: 700;
-    color: var(--text-secondary);
-    cursor: pointer;
-    transition: background 0.15s, color 0.15s, border-color 0.15s;
-    white-space: nowrap;
-}
-
-.toolbar__assistant-btn:hover {
-    background: var(--bg-hover);
-    color: var(--text-primary);
-}
-
-.toolbar__assistant-btn.is-active {
-    color: var(--primary);
-    border-color: var(--primary);
-    background: rgba(var(--primary-rgb, 99, 102, 241), 0.08);
 }

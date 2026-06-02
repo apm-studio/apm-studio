@@ -2,8 +2,10 @@ import { Bot, PackagePlus, Upload } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useStudioStore } from '../store'
 import type { WorkspaceMode } from '../store/workspace/types'
+import AppHeaderToolbar from './AppHeaderToolbar'
 import StudioViewHeader from './canvas/StudioViewHeader'
 import type { AppHeaderConfig } from './AppHeaderContext'
+import { APP_MODE_ORDER, appModeLabel, modeContextLabel, modeTitle } from './app-mode-header-model'
 import './AppModeHeader.css'
 
 type AppModeOption = {
@@ -13,26 +15,18 @@ type AppModeOption = {
     title: string
 }
 
-const APP_MODE_OPTIONS: AppModeOption[] = [
-    {
-        mode: 'import',
-        label: 'Import',
-        icon: <PackagePlus size={13} />,
-        title: 'Import packages and source primitives from GitHub',
-    },
-    {
-        mode: 'studio-agent',
-        label: 'Studio Agent',
-        icon: <Bot size={13} />,
-        title: 'Edit and run local Studio Agents',
-    },
-    {
-        mode: 'export',
-        label: 'Export',
-        icon: <Upload size={13} />,
-        title: 'Export APM primitives to assistant targets',
-    },
-]
+const APP_MODE_ICONS: Record<WorkspaceMode, ReactNode> = {
+    import: <PackagePlus size={13} />,
+    export: <Upload size={13} />,
+    'studio-agent': <Bot size={13} />,
+}
+
+const APP_MODE_OPTIONS: AppModeOption[] = APP_MODE_ORDER.map((mode) => ({
+    mode,
+    label: appModeLabel(mode),
+    icon: APP_MODE_ICONS[mode],
+    title: modeTitle(mode),
+}))
 
 function workspaceLabel(workingDir: string) {
     if (!workingDir) {
@@ -45,12 +39,6 @@ function workspaceLabel(workingDir: string) {
 
 type AppModeHeaderProps = {
     pageHeader: AppHeaderConfig | null
-}
-
-function modeContextLabel(mode: WorkspaceMode) {
-    if (mode === 'import') return 'Import packages and source primitives'
-    if (mode === 'export') return 'Export assistant targets'
-    return 'Studio Agent workspace'
 }
 
 export default function AppModeHeader({ pageHeader }: AppModeHeaderProps) {
@@ -68,7 +56,9 @@ export default function AppModeHeader({ pageHeader }: AppModeHeaderProps) {
         <header className={`app-mode-header app-mode-header--${workspaceMode}`}>
             <div className="app-mode-header__base">
                 <div className="app-mode-header__brand" title={workingDir || undefined}>
-                    <span className="app-mode-header__mark" aria-hidden="true">APM</span>
+                    <span className="app-mode-header__mark" aria-hidden="true">
+                        <img src="/apm-studio-icon.png" alt="" />
+                    </span>
                     <span className="app-mode-header__brand-copy">
                         <span className="app-mode-header__product">APM Studio</span>
                         <span className="app-mode-header__workspace">{workspaceLabel(workingDir)}</span>
@@ -90,23 +80,26 @@ export default function AppModeHeader({ pageHeader }: AppModeHeaderProps) {
                     ))}
                 </nav>
             </div>
-            {showCanvasChrome ? (
-                <StudioViewHeader />
-            ) : shouldRenderPageHeader ? (
-                <div className={`app-mode-header__page ${pageHeader?.hideContext ? 'app-mode-header__page--actions-only' : ''}`}>
-                    {!pageHeader?.hideContext ? (
-                        <div className="app-mode-header__page-context">
-                            <span className="app-mode-header__page-title">{pageHeader?.title || modeContextLabel(workspaceMode)}</span>
-                            {pageHeader?.subtitle ? (
-                                <span className="app-mode-header__page-subtitle">{pageHeader.subtitle}</span>
-                            ) : null}
-                        </div>
-                    ) : null}
-                    {pageHeader?.actions ? (
-                        <div className="app-mode-header__page-actions">{pageHeader.actions}</div>
-                    ) : null}
-                </div>
-            ) : null}
+            <div className="app-mode-header__content">
+                {showCanvasChrome ? (
+                    <StudioViewHeader />
+                ) : shouldRenderPageHeader ? (
+                    <div className={`app-mode-header__page ${pageHeader?.hideContext ? 'app-mode-header__page--actions-only' : ''}`}>
+                        {!pageHeader?.hideContext ? (
+                            <div className="app-mode-header__page-context">
+                                <span className="app-mode-header__page-title">{pageHeader?.title || modeContextLabel(workspaceMode)}</span>
+                                {pageHeader?.subtitle ? (
+                                    <span className="app-mode-header__page-subtitle">{pageHeader.subtitle}</span>
+                                ) : null}
+                            </div>
+                        ) : null}
+                        {pageHeader?.actions ? (
+                            <div className="app-mode-header__page-actions">{pageHeader.actions}</div>
+                        ) : null}
+                    </div>
+                ) : null}
+                <AppHeaderToolbar />
+            </div>
         </header>
     )
 }

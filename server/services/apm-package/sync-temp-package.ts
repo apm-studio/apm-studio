@@ -8,6 +8,7 @@ import type { ApmSyncUnit } from '../../../shared/apm-sync-contracts.js'
 import { readManifestFile } from './package-files.js'
 import {
     manifestPath,
+    sanitizePackageId,
     sourceDir,
 } from './paths.js'
 import { yamlString } from './yaml-io.js'
@@ -19,13 +20,21 @@ export type SyncTempPackage = {
     packageRoot: string
 }
 
+function microsoftApmPackageTypeForSync(manifest: ApmPackageManifest, syncUnit: ApmSyncUnit): ApmPackageManifest['type'] {
+    if (syncUnit === 'commands' || syncUnit === 'prompts') return 'prompts'
+    if (manifest.type === 'instructions' || manifest.type === 'skill' || manifest.type === 'hybrid' || manifest.type === 'prompts') {
+        return manifest.type
+    }
+    return 'hybrid'
+}
+
 export function filteredManifestForSync(manifest: ApmPackageManifest, syncUnit: ApmSyncUnit): ApmPackageManifest {
     const includeMcp = syncUnit === 'mcp'
     return {
         name: manifest.name,
         version: manifest.version || '0.1.0',
         ...(typeof manifest.description === 'string' ? { description: manifest.description } : {}),
-        type: manifest.type || 'hybrid',
+        type: microsoftApmPackageTypeForSync(manifest, syncUnit),
         includes: 'auto',
         dependencies: {
             apm: [],
@@ -70,7 +79,7 @@ export async function createSyncTempPackage(
     const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), 'apm-studio-sync-'))
     const workspaceDir = path.join(rootDir, 'workspace')
     const homeDir = path.join(rootDir, 'home')
-    const packageRoot = path.join(rootDir, 'package')
+    const packageRoot = path.join(rootDir, sanitizePackageId(packageId))
     await Promise.all([
         fs.mkdir(workspaceDir, { recursive: true }),
         fs.mkdir(homeDir, { recursive: true }),

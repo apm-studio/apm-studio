@@ -39,8 +39,23 @@
     font-weight: 600;
     color: var(--text-muted);
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0;
     padding-bottom: 8px;
+}
+
+.stg-details > summary {
+    display: flex;
+    align-items: center;
+    min-height: 30px;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: var(--font-sm);
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.stg-details .stg-group {
+    margin-top: var(--space-2);
 }
 
 .stg-group {
@@ -109,9 +124,18 @@
 
 .stg-field-stack {
     display: flex;
+    width: min(280px, 100%);
+    flex: 0 0 auto;
     flex-direction: column;
     gap: 6px;
     align-items: stretch;
+}
+
+.stg-field-stack .stg-select,
+.stg-field-stack .stg-input {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
 }
 
 .stg-inline-control {
@@ -235,6 +259,12 @@
     display: flex;
     flex-direction: column;
     gap: 20px;
+}
+
+.stg-model-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
 }
 
 /* ── Using / Usage tab ──────────────────────────────── */

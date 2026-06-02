@@ -22,10 +22,26 @@ function apmDependencies(manifest: ApmPackageManifest): ApmDependency[] {
     return Array.isArray(dependencies.apm) ? dependencies.apm.filter(isApmDependency) : []
 }
 
-function dependencyMatchesPackage(entry: ApmDependency, packageRef: string) {
-    if (entry === packageRef) return true
+function normalizeDependencyRef(value: unknown) {
+    if (typeof value !== 'string') return null
+    const normalized = toPosixPath(value.trim()).replace(/^\.\//, '')
+    return normalized || null
+}
+
+function dependencyMatchesPackage(entry: ApmDependency, packageRef: string, packageId: string) {
+    const normalizedPackageRef = normalizeDependencyRef(packageRef)
+    const normalizedPackageId = normalizeDependencyRef(packageId)
+    const matches = (value: unknown) => {
+        const normalized = normalizeDependencyRef(value)
+        return !!normalized && (
+            normalized === normalizedPackageRef
+            || normalized === normalizedPackageId
+        )
+    }
+
+    if (matches(entry)) return true
     if (!isRecord(entry)) return false
-    return entry.path === packageRef || entry.name === packageRef
+    return matches(entry.path) || matches(entry.name)
 }
 
 export async function ensureRootApmPackageDependency(
@@ -51,7 +67,7 @@ export async function ensureRootApmPackageDependency(
         : {}
     const currentApmDeps = apmDependencies(manifest)
 
-    if (!currentApmDeps.some((entry) => dependencyMatchesPackage(entry, packageRef))) {
+    if (!currentApmDeps.some((entry) => dependencyMatchesPackage(entry, packageRef, packageId))) {
         dependencies.apm = [...currentApmDeps, packageRef]
     } else {
         dependencies.apm = currentApmDeps
@@ -69,5 +85,30 @@ export async function ensureRootApmPackageDependency(
     }
 
     await fs.mkdir(workingDir, { recursive: true })
+    await fs.writeFile(manifestPath, yamlString(nextManifest), 'utf-8')
+}
+
+export async function removeRootApmPackageDependency(
+    workingDir: string,
+    packageId: string,
+) {
+    const manifestPath = path.join(workingDir, MANIFEST_FILE)
+    const raw = await readText(manifestPath)
+    if (!raw) return
+
+    const manifest = parseYamlRecord<ApmPackageManifest>(raw, MANIFEST_FILE)
+    const packageRef = packageDependencyRef(workingDir, packageId)
+    const dependencies = isRecord(manifest.dependencies)
+        ? { ...manifest.dependencies }
+        : {}
+    const currentApmDeps = apmDependencies(manifest)
+    const nextApmDeps = currentApmDeps.filter((entry) => !dependencyMatchesPackage(entry, packageRef, packageId))
+
+    dependencies.apm = nextApmDeps
+    const nextManifest: ApmPackageManifest = {
+        ...manifest,
+        dependencies,
+    }
+
     await fs.writeFile(manifestPath, yamlString(nextManifest), 'utf-8')
 }

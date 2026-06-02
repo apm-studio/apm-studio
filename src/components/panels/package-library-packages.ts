@@ -1,4 +1,5 @@
 import type { ApmPackageSummary } from '../../../shared/apm-contracts'
+import { shouldRenderStudioAgentTeamsUi } from '../../app/studio-agent-ui-state'
 import type { PackagePrimitiveSection, SourceFilter } from './package-library-utils'
 import type { ScopedApmPackageSummary } from './package-panel-types'
 
@@ -57,6 +58,12 @@ export function packageMatchesPrimitiveSection(
     pkg: ScopedApmPackageSummary,
     section: PackagePrimitiveSection,
 ) {
+    // Team packages are parked from the Studio Agent Packages drawer with the rest of Team UI.
+    // Keep Team package support intact; re-enable through studio-agent-ui-state.
+    if (pkg.kind === 'team' && !shouldRenderStudioAgentTeamsUi()) {
+        return false
+    }
+
     const counts = pkg.microsoftApm?.primitiveCounts
 
     if (section === 'agents') {
@@ -71,7 +78,19 @@ export function packageMatchesPrimitiveSection(
         return pkg.kind === 'skill' || (pkg.kind !== 'agent' && Number(counts?.skills || 0) > 0)
     }
 
-    return pkg.kind === 'mcp'
+    if (section === 'prompts') {
+        return pkg.kind === 'prompt' || Number(counts?.prompts || 0) > 0
+    }
+
+    if (section === 'commands') {
+        return pkg.kind === 'command' || Number(counts?.commands || 0) > 0
+    }
+
+    if (section === 'hooks') {
+        return pkg.kind === 'hook' || Number(counts?.hooks || 0) > 0
+    }
+
+    return pkg.kind === 'mcp' || Number(counts?.mcp || 0) > 0
 }
 
 function apmPackageSearchHaystack(pkg: ScopedApmPackageSummary) {

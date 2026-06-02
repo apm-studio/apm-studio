@@ -24,7 +24,7 @@
 
 .chat-input__main:focus-within {
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 10%, transparent);
+    box-shadow: none;
 }
 
 .chat-input__main .text-input {

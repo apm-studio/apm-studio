@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 
 import type {
+    ApmAuditResponse,
     ApmToolingResponse,
 } from '../../../shared/apm-contracts.js'
 import type {
@@ -13,6 +14,7 @@ import {
     getApmSyncTargets,
     runApmTargetSync,
 } from '../../services/apm-package/target-sync.js'
+import { runApmAudit } from '../../services/apm-package/apm-cli-audit.js'
 import { getApmToolingStatus } from '../../services/apm-package/tooling.js'
 import { jsonError, requestWorkingDir } from '../route-errors.js'
 import { errorMessage } from './route-utils.js'
@@ -34,6 +36,15 @@ apmSync.get('/api/apm/targets', async (c) => {
         return c.json(response satisfies ApmSyncTargetsResponse)
     } catch (error) {
         return jsonError(c, errorMessage(error, 'Unable to inspect APM targets.'), 500)
+    }
+})
+
+apmSync.get('/api/apm/audit', async (c) => {
+    try {
+        const response = await runApmAudit(requestWorkingDir(c))
+        return c.json(response satisfies ApmAuditResponse)
+    } catch (error) {
+        return jsonError(c, errorMessage(error, 'Unable to run APM audit.'), 500)
     }
 })
 

@@ -16,12 +16,16 @@
     border: none;
     color: var(--text-secondary);
     cursor: pointer;
-    transition: background 0.1s, color 0.1s;
+    transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
 }
 
 .icon-btn:hover {
     background: var(--bg-hover);
     color: var(--text-primary);
+}
+
+.icon-btn:active {
+    transform: translateY(1px) scale(0.98);
 }
 
 .icon-btn:disabled {
@@ -46,12 +50,16 @@
     border: 1px solid transparent;
     color: var(--text-secondary);
     cursor: pointer;
-    transition: background 0.1s;
+    transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
 }
 
 .text-btn:hover {
     background: var(--bg-hover);
     color: var(--text-primary);
+}
+
+.text-btn:active {
+    transform: translateY(1px);
 }
 
 /* ── Text Input (inline editable) ────────────────────────── */
@@ -65,7 +73,7 @@
     color: var(--text-primary);
     font-size: var(--font-base);
     outline: none;
-    transition: border-color 0.1s, background 0.1s;
+    transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
 }
 
 .text-input:hover {
@@ -75,6 +83,7 @@
 .text-input:focus {
     border-color: var(--accent);
     background: var(--bg-panel);
+    box-shadow: none;
 }
 
 /* ── Buttons ─────────────────────────────────────────────── */
@@ -91,13 +100,18 @@
     background: transparent;
     color: var(--text-secondary);
     cursor: pointer;
-    transition: all 0.15s;
+    transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
     white-space: nowrap;
 }
 
 .btn:hover {
     background: var(--bg-hover);
+    border-color: var(--border-strong);
     color: var(--text-primary);
+}
+
+.btn:active {
+    transform: translateY(1px) scale(0.98);
 }
 
 .btn:disabled {
@@ -110,7 +124,8 @@
 .btn--primary {
     background: var(--accent);
     border-color: var(--accent);
-    color: #fff;
+    color: var(--text-on-accent);
+    box-shadow: var(--shadow-sm);
 }
 
 .btn--primary:hover {
@@ -133,7 +148,7 @@
 .btn--danger:hover {
     background: var(--danger);
     border-color: var(--danger);
-    color: #fff;
+    color: var(--text-on-accent);
 }
 
 /* ── Inputs ──────────────────────────────────────────────── */
@@ -147,7 +162,7 @@
     color: var(--text-primary);
     font-size: var(--font-base);
     outline: none;
-    transition: border-color 0.15s;
+    transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
 }
 
 .input:hover {
@@ -156,6 +171,7 @@
 
 .input:focus {
     border-color: var(--accent);
+    box-shadow: none;
 }
 
 /* Select dropdown */
@@ -170,12 +186,13 @@
     background: var(--bg-panel) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 8px center;
     color: var(--text-primary);
     cursor: pointer;
-    transition: border-color 0.15s;
+    transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
 }
 
 .select:focus {
     outline: none;
     border-color: var(--accent);
+    box-shadow: none;
 }
 
 /* ── Badges ──────────────────────────────────────────────── */
@@ -189,9 +206,10 @@
     background: var(--bg-hover);
     color: var(--text-muted);
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0;
     white-space: nowrap;
     flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
 }
 
 .badge--subtle {
@@ -199,7 +217,7 @@
     color: var(--text-muted);
     font-weight: 500;
     text-transform: none;
-    letter-spacing: normal;
+    letter-spacing: 0;
     border-radius: var(--radius-sm);
     padding: 2px 6px;
 }
@@ -210,7 +228,7 @@
     font-size: var(--font-sm);
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0;
     color: var(--text-muted);
 }
 
@@ -228,7 +246,7 @@
     background: transparent;
     color: var(--text-secondary);
     cursor: pointer;
-    transition: all 0.15s;
+    transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
 }
 
 .tab:hover {
@@ -237,9 +255,13 @@
 }
 
 .tab.active {
-    color: #fff;
+    color: var(--text-on-accent);
     background: var(--accent);
     border-color: var(--accent);
+}
+
+.tab:active {
+    transform: translateY(1px);
 }
 
 /* Larger tab variant (settings) */
@@ -262,9 +284,10 @@
 
 /* ── Surface Cards ───────────────────────────────────────── */
 .surface-card {
-    border: 1px solid var(--border-light);
+    border: 1px solid var(--border-main);
     border-radius: var(--radius-lg);
-    background: var(--bg-canvas);
+    background: var(--bg-panel);
+    box-shadow: var(--shadow-sm);
     overflow: hidden;
 }
 
@@ -286,8 +309,8 @@
 .modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 1300;
+    background: var(--overlay-scrim);
+    z-index: var(--z-modal);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -301,7 +324,7 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: var(--font-sans);
 }
 
 .modal-dialog__header {
@@ -338,6 +361,7 @@
     line-height: 1.5;
     background: var(--bg-hover);
     color: var(--text-secondary);
+    text-wrap: pretty;
 }
 
 .alert--muted {
@@ -380,7 +404,7 @@
     height: 20px;
     background: var(--border-main);
     border-radius: 10px;
-    transition: background 0.2s;
+    transition: background 0.2s ease, box-shadow 0.2s ease;
     position: relative;
 }
 
@@ -393,7 +417,7 @@
     height: 16px;
     background: white;
     border-radius: 50%;
-    transition: transform 0.2s;
+    transition: transform 0.2s ease;
 }
 
 .toggle-switch input:checked + .toggle-switch__track {
@@ -413,6 +437,13 @@
     border: 1px solid var(--border-light);
     border-radius: var(--radius-lg);
     background: var(--bg-canvas);
+    transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+}
+
+.search-input-container:focus-within {
+    border-color: var(--accent);
+    background: var(--bg-panel);
+    box-shadow: none;
 }
 
 .search-input-container__icon {

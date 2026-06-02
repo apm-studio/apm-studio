@@ -1,10 +1,13 @@
 import {
     ExternalLink,
+    CheckSquare,
+    FileSearch,
     Loader,
     Loader2,
     PackagePlus,
     SearchCheck,
     Search,
+    X,
 } from 'lucide-react'
 import type {
     ApmGitHubImportCandidate,
@@ -13,19 +16,22 @@ import type {
 import type { RegistryListing } from '../../../shared/registry-contracts'
 import { ImportCandidateCard } from './ImportCandidateCard'
 import {
-    candidateInstallKey,
+    candidateIsInstalled,
     githubSourceUrl,
     type ImportScope,
+    RESULT_ELEMENT_FILTERS,
     RESULT_KIND_FILTERS,
+    type ResultElementFilter,
     type ResultKindFilter,
-    scopeLabel,
 } from './import-catalog-model'
+import type { ImportAssetDetailRequest } from './import-detail-model'
 
 interface ImportResultsPanelProps {
     previewLoading: boolean
     previewError: string | null
     previewResponse: ApmGitHubImportPreviewResponse | null
     registryListings: RegistryListing[]
+    filteredRegistryListings: RegistryListing[]
     registryLoading: boolean
     registryError: string | null
     registryPreviewingId: string | null
@@ -33,20 +39,28 @@ interface ImportResultsPanelProps {
     filteredCandidates: ApmGitHubImportCandidate[]
     resultQuery: string
     resultKind: ResultKindFilter
+    resultElement: ResultElementFilter
     installScope: ImportScope
-    installTargetPath: string
-    selectedCandidateIds: Set<string>
+    selectedCandidateIds?: Set<string>
     selectedCount: number
+    selectableCandidateCount: number
+    selectedVisibleCandidateCount: number
     importing: boolean
     candidateInstallingId: string | null
-    installedCandidateKeys: Set<string>
+    installedPackageIds?: Set<string>
+    optimisticInstalledPackageKeys?: Set<string>
+    installTargetKey?: string
     workspaceInstallDisabled: boolean
     onImportSelected: () => void
     onImportCandidate: (candidateId: string) => void
     onToggleCandidate: (candidateId: string) => void
+    onSelectAllCandidates: () => void
+    onClearCandidateSelection: () => void
+    onOpenDetails: (request: ImportAssetDetailRequest) => void
     onPreviewRegistryListing: (listing: RegistryListing) => void
     onQueryChange: (query: string) => void
     onKindChange: (kind: ResultKindFilter) => void
+    onElementChange: (element: ResultElementFilter) => void
 }
 
 export function ImportResultsPanel({
@@ -54,6 +68,7 @@ export function ImportResultsPanel({
     previewError,
     previewResponse,
     registryListings,
+    filteredRegistryListings,
     registryLoading,
     registryError,
     registryPreviewingId,
@@ -61,24 +76,47 @@ export function ImportResultsPanel({
     filteredCandidates,
     resultQuery,
     resultKind,
+    resultElement,
     installScope,
-    installTargetPath,
     selectedCandidateIds,
     selectedCount,
+    selectableCandidateCount,
+    selectedVisibleCandidateCount,
     importing,
     candidateInstallingId,
-    installedCandidateKeys,
+    installedPackageIds,
+    optimisticInstalledPackageKeys,
+    installTargetKey,
     workspaceInstallDisabled,
     onImportSelected,
     onImportCandidate,
     onToggleCandidate,
+    onSelectAllCandidates,
+    onClearCandidateSelection,
+    onOpenDetails,
     onPreviewRegistryListing,
     onQueryChange,
     onKindChange,
+    onElementChange,
 }: ImportResultsPanelProps) {
+    const safeInstalledPackageIds = installedPackageIds ?? new Set<string>()
+    const safeOptimisticInstalledPackageKeys = optimisticInstalledPackageKeys ?? new Set<string>()
+    const safeSelectedCandidateIds = selectedCandidateIds ?? new Set<string>()
+    const safeInstallTargetKey = installTargetKey ?? installScope
     const previewSourceUrl = previewResponse?.source.href || githubSourceUrl(previewResponse?.source.repo)
+    const bulkActionDisabled = importing || !!candidateInstallingId
+    const allSelectableShownSelected = selectableCandidateCount > 0
+        && selectedVisibleCandidateCount === selectableCandidateCount
+    const resultFiltersEnabled = Boolean(previewResponse || registryListings.length > 0)
+    const registrySummary = `${filteredRegistryListings.length}/${registryListings.length} sources`
+    const previewSummary = previewResponse
+        ? `${filteredCandidates.length}/${resultCandidates.length} packages`
+        : ''
     const openExternal = (url: string) => {
         window.open(url, '_blank', 'noopener,noreferrer')
+    }
+    const openRegistryDetails = (listing: RegistryListing) => {
+        onOpenDetails({ kind: 'registry-listing', listing })
     }
 
     return (
@@ -91,10 +129,12 @@ export function ImportResultsPanel({
                             {previewLoading
                             ? 'Parsing repository...'
                             : previewResponse
-                                ? `${previewResponse.source.repo} - ${filteredCandidates.length}/${resultCandidates.length} shown`
+                                ? registryListings.length > 0
+                                    ? `${previewSummary}, ${registrySummary}`
+                                    : previewSummary
                                 : registryLoading
                                     ? 'Searching APM Registry...'
-                                    : `${registryListings.length} registry result${registryListings.length === 1 ? '' : 's'}`}
+                                    : registrySummary}
                         </p>
                     </div>
                     <div className="import-results-top__actions">
@@ -121,6 +161,35 @@ export function ImportResultsPanel({
                 </div>
 
                 <div className="import-results-controls">
+                    {previewResponse ? (
+                    <div className="import-results-bulk-actions" aria-label="Bulk result selection">
+                        {selectedCount > 0 ? (
+                            <span className="badge badge--subtle import-results-selected-count">
+                                {selectedCount} selected
+                            </span>
+                        ) : null}
+                        <button
+                            type="button"
+                            className="btn btn--sm"
+                            onClick={onSelectAllCandidates}
+                            disabled={!previewResponse || selectableCandidateCount === 0 || allSelectableShownSelected || bulkActionDisabled}
+                            title="Select all visible installable results"
+                        >
+                            <CheckSquare size={12} />
+                            Select all
+                        </button>
+                        <button
+                            type="button"
+                            className="btn btn--sm"
+                            onClick={onClearCandidateSelection}
+                            disabled={!previewResponse || selectedVisibleCandidateCount === 0 || bulkActionDisabled}
+                            title="Clear selected visible results"
+                        >
+                            <X size={12} />
+                            Clear
+                        </button>
+                    </div>
+                    ) : null}
                     <label className="import-result-search" aria-label="Search results">
                         <Search size={13} />
                         <input
@@ -128,14 +197,14 @@ export function ImportResultsPanel({
                             value={resultQuery}
                             onChange={(event) => onQueryChange(event.target.value)}
                             placeholder="Search results"
-                            disabled={!previewResponse}
+                            disabled={!resultFiltersEnabled}
                         />
                     </label>
                     <select
                         className="select import-result-kind"
                         value={resultKind}
                         onChange={(event) => onKindChange(event.target.value as ResultKindFilter)}
-                        disabled={!previewResponse}
+                        disabled={!resultFiltersEnabled}
                         aria-label="Filter result kind"
                     >
                         {RESULT_KIND_FILTERS.map((filter) => (
@@ -143,7 +212,21 @@ export function ImportResultsPanel({
                         ))}
                     </select>
                 </div>
-                <p className="import-install-target" title={installTargetPath}>{scopeLabel(installScope)}: {installTargetPath}</p>
+                <div className="import-apm-element-row" role="tablist" aria-label="Filter APM element">
+                    {RESULT_ELEMENT_FILTERS.map((filter) => (
+                        <button
+                            key={filter.value}
+                            type="button"
+                            className={`tab import-apm-element-tab ${resultElement === filter.value ? 'active' : ''}`}
+                            role="tab"
+                            aria-selected={resultElement === filter.value}
+                            onClick={() => onElementChange(filter.value)}
+                            disabled={!resultFiltersEnabled}
+                        >
+                            {filter.label}
+                        </button>
+                    ))}
+                </div>
             </header>
 
             <div className="import-results-scroll">
@@ -167,8 +250,9 @@ export function ImportResultsPanel({
                         <div className="import-registry-list__header">
                             <SearchCheck size={14} />
                             <span>Registry</span>
+                            <span className="badge badge--subtle">{filteredRegistryListings.length}/{registryListings.length}</span>
                         </div>
-                        {registryListings.map((listing) => (
+                        {filteredRegistryListings.map((listing) => (
                             <article key={listing.id} className="package-card import-registry-item">
                                 <div className="import-registry-item__body">
                                     <div className="package-card__header">
@@ -176,18 +260,30 @@ export function ImportResultsPanel({
                                         <span className="package-card__name">{listing.name}</span>
                                     </div>
                                     <div className="package-card__author" title={`${listing.source.repo}${listing.source.path ? `/${listing.source.path}` : ''}`}>
-                                        {listing.kind} / {listing.source.repo}{listing.source.path ? `/${listing.source.path}` : ''}
+                                        {listing.kind}
                                     </div>
                                     <div className="package-card__desc">
                                         {listing.summary}
                                     </div>
                                     <div className="import-registry-item__meta">
-                                        <span>{listing.importRecipe.format}</span>
                                         <span>{listing.trust.level}</span>
-                                        <span>{listing.downloads || 0} downloads</span>
+                                        <span>{listing.importRecipe.format}</span>
                                     </div>
                                 </div>
                                 <div className="import-registry-item__actions">
+                                    <button
+                                        type="button"
+                                        className="icon-btn"
+                                        onClick={(event) => {
+                                            event.preventDefault()
+                                            event.stopPropagation()
+                                            openRegistryDetails(listing)
+                                        }}
+                                        title={`View details for ${listing.name}`}
+                                        aria-label={`View details for ${listing.name}`}
+                                    >
+                                        <FileSearch size={13} />
+                                    </button>
                                     <button
                                         type="button"
                                         className="icon-btn"
@@ -213,6 +309,12 @@ export function ImportResultsPanel({
                                 </div>
                             </article>
                         ))}
+                        {filteredRegistryListings.length === 0 ? (
+                            <div className="import-parsed-empty">
+                                <Search size={16} />
+                                <span>No registry results match this search or filter.</span>
+                            </div>
+                        ) : null}
                     </div>
                 ) : null}
 
@@ -223,20 +325,36 @@ export function ImportResultsPanel({
                     </div>
                 ) : previewResponse ? (
                     <div className="import-parsed-grid">
-                        {filteredCandidates.map((candidate) => (
-                            <ImportCandidateCard
-                                key={candidate.id}
-                                candidate={candidate}
-                                selected={selectedCandidateIds.has(candidate.id)}
-                                installing={candidateInstallingId === candidate.id}
-                                installed={installedCandidateKeys.has(candidateInstallKey(installScope, candidate.id))}
-                                importing={importing}
-                                installScope={installScope}
-                                workspaceInstallDisabled={workspaceInstallDisabled}
-                                onToggle={onToggleCandidate}
-                                onInstall={onImportCandidate}
-                            />
-                        ))}
+                        {filteredCandidates.map((candidate) => {
+                            const installed = candidateIsInstalled(
+                                candidate,
+                                safeInstalledPackageIds,
+                                safeOptimisticInstalledPackageKeys,
+                                safeInstallTargetKey,
+                            )
+                            return (
+                                <ImportCandidateCard
+                                    key={candidate.id}
+                                    candidate={candidate}
+                                    selected={safeSelectedCandidateIds.has(candidate.id)}
+                                    installing={candidateInstallingId === candidate.id}
+                                    installed={installed}
+                                    importing={importing}
+                                    installScope={installScope}
+                                    workspaceInstallDisabled={workspaceInstallDisabled}
+                                    onToggle={onToggleCandidate}
+                                    onInstall={onImportCandidate}
+                                    onOpenDetails={(candidate) => onOpenDetails({
+                                        kind: 'candidate',
+                                        candidate,
+                                        previewSource: previewResponse.source,
+                                        installScope,
+                                        installed,
+                                        selected: safeSelectedCandidateIds.has(candidate.id),
+                                    })}
+                                />
+                            )
+                        })}
                         {filteredCandidates.length === 0 ? (
                             <div className="import-parsed-empty">
                                 <Search size={16} />

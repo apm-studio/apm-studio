@@ -134,8 +134,8 @@ export default function SettingsGeneral() {
     const shellDirty = shellValue.trim() !== savedShell
     const permissionCustom = permissionMode === 'custom'
     const permissionDescription = permissionCustom
-        ? 'Custom OpenCode permission rules are configured in opencode.json; Studio will not overwrite them.'
-        : 'Writes OpenCode permission "*" = "allow" so new agent actions skip permission prompts.'
+        ? 'Custom rules detected. Studio will not overwrite them.'
+        : 'Skip permission prompts for new agent actions.'
 
     return (
         <div className="stg-panel">
@@ -147,21 +147,21 @@ export default function SettingsGeneral() {
                 <div className="stg-group">
                     <ToggleRow
                         title="Show reasoning summaries"
-                        description="Display collapsed reasoning summaries from model thinking blocks"
+                        description="Show compact reasoning notes in chats."
                         checked={settings.showReasoningSummaries}
                         onChange={settings.setShowReasoningSummaries}
                     />
 
                     <ToggleRow
                         title="Expand shell tool parts"
-                        description="Auto-expand shell command output in the conversation feed"
+                        description="Open shell output by default."
                         checked={settings.shellToolPartsExpanded}
                         onChange={settings.setShellToolPartsExpanded}
                     />
 
                     <ToggleRow
                         title="Expand edit tool parts"
-                        description="Auto-expand file edit diffs in the conversation feed"
+                        description="Open file diffs by default."
                         checked={settings.editToolPartsExpanded}
                         onChange={settings.setEditToolPartsExpanded}
                     />
@@ -194,7 +194,7 @@ export default function SettingsGeneral() {
                     <div className="stg-row stg-row--top">
                         <div className="stg-row__text">
                             <span className="stg-row__title">Default shell</span>
-                            <span className="stg-row__desc">Used by Studio terminal sessions and agent shell commands.</span>
+                            <span className="stg-row__desc">Used by terminal and agent commands.</span>
                             {shellError ? <span className="stg-inline-error">{shellError}</span> : null}
                             {shellStatus ? <span className="stg-inline-status">{shellStatus}</span> : null}
                         </div>

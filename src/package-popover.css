@@ -3,14 +3,14 @@
 /* ── Hover Detail Popover ────────────────────────── */
 .package-popover {
     position: fixed;
-    z-index: 1000;
+    z-index: var(--z-popover);
     width: 320px;
     max-height: 70vh;
     overflow-y: auto;
     background: var(--bg-panel);
     border: 1px solid var(--border-main);
     border-radius: var(--radius);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    box-shadow: var(--shadow-dropdown);
     padding: 12px;
     pointer-events: auto;
     animation: popover-in 0.15s ease-out;
@@ -168,7 +168,7 @@
     font-size: var(--font-xs);
     font-weight: 700;
     color: var(--text-muted);
-    letter-spacing: 0.04em;
+    letter-spacing: 0;
     text-transform: uppercase;
 }
 
@@ -204,29 +204,29 @@
     font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0;
     background: var(--bg-hover);
     color: var(--text-muted);
 }
 
 .package-cascade__kind--instruction {
-    background: rgba(139, 92, 246, 0.12);
-    color: #8b5cf6;
+    background: var(--instruction-bg);
+    color: var(--instruction-color);
 }
 
 .package-cascade__kind--skill {
-    background: rgba(245, 158, 11, 0.14);
-    color: #d97706;
+    background: var(--skill-bg);
+    color: var(--skill-color);
 }
 
 .package-cascade__kind--agent {
-    background: rgba(16, 185, 129, 0.12);
-    color: #059669;
+    background: var(--status-success-bg);
+    color: var(--status-success);
 }
 
 .package-cascade__kind--team {
-    background: rgba(59, 130, 246, 0.12);
-    color: #2563eb;
+    background: var(--model-bg);
+    color: var(--model-color);
 }
 
 .package-cascade__title {
@@ -367,7 +367,7 @@
 .sub-scope-tag.active {
     background: var(--accent);
     border-color: var(--accent);
-    color: #fff;
+    color: var(--text-on-accent);
 }
 
 /* ── Source Badge on Primitive Cards ──────────────── */
@@ -377,22 +377,22 @@
     border-radius: var(--radius-sm);
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.3px;
+    letter-spacing: 0;
     flex-shrink: 0;
     margin-left: auto;
 }
 
 .source-badge.user {
-    background: rgba(139, 92, 246, 0.1);
-    color: #8b5cf6;
+    background: var(--model-bg);
+    color: var(--model-color);
 }
 
 .source-badge.workspace {
-    background: rgba(16, 185, 129, 0.1);
-    color: #10b981;
+    background: var(--status-success-bg);
+    color: var(--status-success);
 }
 
 .source-badge.draft {
-    background: rgba(245, 158, 11, 0.12);
-    color: #f59e0b;
+    background: var(--status-warning-bg);
+    color: var(--status-warning);
 }

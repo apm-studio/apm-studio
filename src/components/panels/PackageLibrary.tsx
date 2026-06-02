@@ -32,12 +32,17 @@ export default function PackageLibrary({ onClose }: { onClose?: () => void }) {
                 localPlaceholder={controller.localPlaceholder}
                 authoringHint={controller.authoringHint}
                 apmPackagesLoading={controller.apmPackagesLoading}
+                onRefreshApmPackages={controller.refreshApmPackages}
                 filteredApmPackages={controller.filteredApmPackages}
                 groupedModels={controller.groupedModels}
                 liveMcpServers={controller.liveMcpServers}
                 selectedItem={controller.selectedItem}
                 selectedItemKey={controller.selectedItemKey}
+                selectedApmPackage={controller.selectedApmPackage}
                 onSelectItem={controller.setSelectedItem}
+                onSelectApmPackage={controller.setSelectedApmPackage}
+                onCloseApmPackage={() => controller.setSelectedApmPackage(null)}
+                onApmPackageDeleted={() => controller.setSelectedApmPackage(null)}
                 onCloseItem={() => controller.setSelectedItem(null)}
                 showModels={controller.showModels}
                 showMcps={controller.showMcps}

@@ -1,9 +1,15 @@
 import fs from 'fs/promises'
 import path from 'path'
 import type {
+    ApmSyncTargetId,
+    ApmSyncUnit,
     ApmSyncPackageResult,
 } from '../../../shared/apm-sync-contracts.js'
-import { runApmCliInstall, selectApmCliRunner } from './apm-cli-runner.js'
+import {
+    type ApmCliRunner,
+    runApmCliInstall,
+    selectApmCliRunner,
+} from './apm-cli-runner.js'
 import { applyCliArtifacts } from './sync-cli-artifacts.js'
 import {
     createSyncTempPackage,
@@ -17,15 +23,46 @@ function packageDisplayName(job: RunnableApmSyncJob) {
     return job.package.agentName || job.package.name
 }
 
+const SHARED_TARGET_STATE_FILES: Partial<Record<ApmSyncUnit, Partial<Record<ApmSyncTargetId, string[]>>>> = {
+    hooks: {
+        claude: ['.claude/settings.json', '.claude/apm-hooks.json'],
+        codex: ['.codex/hooks.json'],
+        cursor: ['.cursor/hooks.json'],
+        gemini: ['.gemini/settings.json'],
+        windsurf: ['.windsurf/hooks.json'],
+    },
+    mcp: {
+        codex: ['.codex/config.toml', '.codex/mcp.json'],
+        claude: ['.mcp.json', '.claude/mcp.json'],
+        opencode: ['opencode.json', '.opencode/opencode.json'],
+        cursor: ['.cursor/mcp.json'],
+        windsurf: ['.windsurf/mcp_config.json'],
+        copilot: ['.github/mcp.json', '.vscode/mcp.json'],
+        gemini: ['.gemini/settings.json', '.gemini/mcp.json'],
+    },
+}
+
+async function seedExistingSharedTargetState(
+    workingDir: string,
+    tempWorkspace: string,
+    job: RunnableApmSyncJob,
+) {
+    const files = SHARED_TARGET_STATE_FILES[job.syncUnit]?.[job.target] || []
+    await Promise.all(files.map(async (relativePath) => {
+        const source = path.join(workingDir, relativePath)
+        const stat = await fs.stat(source).catch(() => null)
+        if (!stat?.isFile()) return
+        const target = path.join(tempWorkspace, relativePath)
+        await fs.mkdir(path.dirname(target), { recursive: true })
+        await fs.copyFile(source, target)
+    }))
+}
+
 async function runCliFirstSync(
     workingDir: string,
     job: RunnableApmSyncJob,
+    runner: ApmCliRunner,
 ): Promise<ApmSyncPackageResult> {
-    const runner = await selectApmCliRunner()
-    if (!runner) {
-        throw new Error('No APM CLI runner is available.')
-    }
-
     const tempPackage = await createSyncTempPackage(
         workingDir,
         job.package.packageId,
@@ -36,6 +73,7 @@ async function runCliFirstSync(
         await Promise.all(targetProfile.artifactRoots.map((root) =>
             fs.mkdir(path.join(tempPackage.workspaceDir, root), { recursive: true }),
         ))
+        await seedExistingSharedTargetState(workingDir, tempPackage.workspaceDir, job)
         const result = await runApmCliInstall(runner, tempPackage.packageRoot, job.target, {
             cwd: tempPackage.workspaceDir,
             env: {
@@ -68,6 +106,31 @@ async function runCliFirstSync(
         }
     } finally {
         await removeSyncTempPackage(tempPackage)
+    }
+}
+
+function cliInstallPreview(runner: ApmCliRunner, target: string) {
+    return [runner.displayCommand, 'install', '<package>', '--target', target].join(' ')
+}
+
+function cliFailureResult(
+    job: RunnableApmSyncJob,
+    runner: ApmCliRunner,
+    error: unknown,
+): ApmSyncPackageResult {
+    return {
+        packageId: job.package.packageId,
+        name: packageDisplayName(job),
+        target: job.target,
+        syncUnit: job.syncUnit,
+        command: cliInstallPreview(runner, job.target),
+        status: 'failed',
+        projectedAs: `${syncTargetProfile(job.target).label} ${job.syncUnit}`,
+        error: error instanceof Error ? error.message : 'APM CLI sync failed.',
+        warnings: [
+            'APM CLI was selected, so Studio did not replace the failed APM output with a fallback projection.',
+        ],
+        modelOmitted: true,
     }
 }
 
@@ -115,10 +178,9 @@ export async function runApmTargetSyncJob(
     workingDir: string,
     job: RunnableApmSyncJob,
 ): Promise<ApmSyncPackageResult> {
-    try {
-        return await runCliFirstSync(workingDir, job)
-    } catch (error) {
-        const reason = error instanceof Error ? error.message : 'APM CLI sync failed.'
+    const runner = await selectApmCliRunner()
+    if (!runner) {
+        const reason = 'No APM CLI runner is available.'
         try {
             return await runStudioFallback(workingDir, job, reason)
         } catch (fallbackError) {
@@ -133,5 +195,11 @@ export async function runApmTargetSyncJob(
                 warnings: [reason],
             }
         }
+    }
+
+    try {
+        return await runCliFirstSync(workingDir, job, runner)
+    } catch (error) {
+        return cliFailureResult(job, runner, error)
     }
 }

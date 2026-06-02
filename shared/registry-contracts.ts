@@ -7,6 +7,8 @@ export const REGISTRY_IMPORT_FORMATS = [
     'codex-toml',
     'skill-md',
     'claude-md',
+    'claude-settings',
+    'target-native',
     'instruction-md',
     'mcp-config',
     'cursor-rules',

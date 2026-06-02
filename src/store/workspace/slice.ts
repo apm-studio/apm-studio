@@ -10,6 +10,7 @@ import { createWorkspaceRuntimeActions } from './runtime-actions'
 import { createWorkspaceShellActions } from './shell-actions'
 import { createWorkspaceStorageActions } from './storage-actions'
 import { createWorkspaceTerminalActions } from './terminal-actions'
+import { readStoredWorkspaceMode } from './workspace-mode-storage'
 import type { WorkspaceSlice } from './types'
 
 export const createWorkspaceSlice: StateCreator<
@@ -26,7 +27,7 @@ export const createWorkspaceSlice: StateCreator<
     selectedAgentId: null,
     selectedAgentSessionId: null,
     selectedMarkdownEditorId: null,
-    workspaceMode: 'studio-agent',
+    workspaceMode: readStoredWorkspaceMode(),
     apmPackageScope: 'workspace',
     ...buildCanvasViewResetState(),
     canvasRevealTarget: null,

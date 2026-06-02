@@ -5,6 +5,7 @@ import { Maximize, Maximize2, Minimize, ZoomIn, ZoomOut } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { useStudioStore } from '../../store'
 import { getCanvasViewportSize } from '../../lib/focus-utils'
+import { shouldRenderStudioAgentTeamsUi } from '../../app/studio-agent-ui-state'
 
 export default function CanvasControls() {
     const { fitView, zoomIn, zoomOut, getViewport, setViewport } = useReactFlow()
@@ -30,6 +31,8 @@ export default function CanvasControls() {
     })))
     const isCanvasMode = viewMode === 'canvas'
     const isFullscreenActive = viewMode !== 'canvas'
+    const showTeamsUi = shouldRenderStudioAgentTeamsUi()
+    const focusableTeamId = showTeamsUi ? selectedTeamId : null
 
     const toggleFitView = useCallback(() => {
         if (isFitted && prevViewport.current) {
@@ -43,18 +46,19 @@ export default function CanvasControls() {
     }, [isFitted, fitView, getViewport, setViewport])
 
     const enterFocus = useCallback(() => {
-        const nodeId = selectedAgentId || selectedTeamId
+        const nodeId = selectedAgentId || focusableTeamId
         const nodeType = selectedAgentId ? 'agent' as const : 'team' as const
         if (!nodeId) return
 
         enterFocusMode(nodeId, nodeType, getCanvasViewportSize())
-    }, [selectedAgentId, selectedTeamId, enterFocusMode])
+    }, [selectedAgentId, focusableTeamId, enterFocusMode])
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
             if (event.key !== 'Escape') return
 
-            if (focusSnapshot?.type === 'team') {
+            // Team focus controls are parked with the rest of the Team UI until the UX is upgraded.
+            if (showTeamsUi && focusSnapshot?.type === 'team') {
                 exitTeamLayoutMode()
                 exitFocusMode()
                 return
@@ -67,7 +71,7 @@ export default function CanvasControls() {
 
         window.addEventListener('keydown', handleKeyDown)
         return () => window.removeEventListener('keydown', handleKeyDown)
-    }, [isFullscreenActive, exitFocusMode, focusSnapshot, exitTeamLayoutMode])
+    }, [isFullscreenActive, exitFocusMode, focusSnapshot, exitTeamLayoutMode, showTeamsUi])
 
     return (
         <div className="canvas-controls">
@@ -91,7 +95,7 @@ export default function CanvasControls() {
             >
                 <ZoomOut size={14} />
             </button>
-            {isCanvasMode && (selectedAgentId || selectedTeamId) && (
+            {isCanvasMode && (selectedAgentId || focusableTeamId) && (
                 <button
                     type="button"
                     className="canvas-controls__btn"

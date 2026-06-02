@@ -6,7 +6,8 @@ import type {
 export type ImportCandidate = ApmGitHubImportCandidate & {
     manifest: ApmPackageManifest
     copyFiles: Array<{
-        sourcePath: string
+        sourcePath?: string
         targetPath: string
+        content?: string
     }>
 }

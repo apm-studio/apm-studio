@@ -2,17 +2,21 @@ import fs from 'fs/promises'
 import path from 'path'
 import type {
     ApmPackageImportRequest,
-    ApmPackageLock,
     ApmPackageManifest,
     ApmPackageReadResponse,
     ApmPackageSummary,
 } from '../../../shared/apm-contracts.js'
 import type { WorkspaceAgentSnapshot } from '../../../shared/workspace-contracts.js'
 import { agentFromExtension } from './manifest-agent-normalization.js'
+import { hashManifest } from './manifest-hash.js'
 import { summarizeMicrosoftApmPackageSource } from './microsoft-apm-source.js'
 import { readManifestFile, writePackageFiles } from './package-files.js'
 import {
-    LOCK_FILE,
+    ApmPackageConflictError,
+    computeApmPackageSourceTreeHash,
+    readPackageLockDetails,
+} from './package-source-files.js'
+import {
     MANIFEST_FILE,
     lockPath,
     manifestPath,
@@ -20,7 +24,10 @@ import {
     sourceDir,
     toPosixPath,
 } from './paths.js'
-import { ensureRootApmPackageDependency } from './root-manifest.js'
+import {
+    ensureRootApmPackageDependency,
+    removeRootApmPackageDependency,
+} from './root-manifest.js'
 import {
     activePackageIds,
     packageIdsFromDisk,
@@ -175,18 +182,19 @@ export async function readApmPackage(
     packageId: string,
 ): Promise<ApmPackageReadResponse | null> {
     const manifestFile = manifestPath(workingDir, packageId)
-    const lockFile = lockPath(workingDir, packageId)
     const manifestYaml = await readText(manifestFile)
     if (!manifestYaml) return null
     const manifest = parseYamlRecord<ApmPackageManifest>(manifestYaml, MANIFEST_FILE)
-    const lockYaml = await readText(lockFile)
-    const lock = lockYaml ? parseYamlRecord<ApmPackageLock>(lockYaml, LOCK_FILE) : undefined
+    const lockDetails = await readPackageLockDetails(workingDir, packageId, manifest)
     return {
         packageId: manifest['x-apm']?.packageId || packageId,
         manifest,
-        lock,
+        lock: lockDetails.lock,
+        manifestHash: hashManifest(manifest),
+        sourceTreeHash: await computeApmPackageSourceTreeHash(workingDir, packageId),
+        lockStatus: lockDetails.lockStatus,
         manifestYaml,
-        lockYaml: lockYaml || undefined,
+        lockYaml: lockDetails.lockYaml,
         microsoftApm: await summarizeMicrosoftApmPackageSource(workingDir, packageId, manifest),
     }
 }
@@ -195,7 +203,14 @@ export async function writeApmPackage(
     workingDir: string,
     packageId: string,
     manifest: ApmPackageManifest,
+    baseManifestHash?: string,
 ): Promise<ApmPackageReadResponse> {
+    if (baseManifestHash) {
+        const currentManifest = await readManifestFile(manifestPath(workingDir, packageId))
+        if (!currentManifest || hashManifest(currentManifest) !== baseManifestHash) {
+            throw new ApmPackageConflictError('Manifest changed on disk. Refresh before saving.')
+        }
+    }
     const nextManifest: ApmPackageManifest = {
         ...manifest,
         ...(manifest['x-apm']?.agent
@@ -261,6 +276,28 @@ export async function copyApmPackage(
         throw new Error('APM package copy did not produce a readable manifest.')
     }
     return readBack
+}
+
+export async function deleteApmPackage(
+    workingDir: string,
+    packageId: string,
+): Promise<{ packageId: string } | null> {
+    const targetPath = packageDir(workingDir, packageId)
+    const stat = await fs.stat(targetPath).catch(() => null)
+    if (!stat?.isDirectory()) {
+        return null
+    }
+
+    await fs.rm(targetPath, { recursive: true, force: true })
+    await removeRootApmPackageDependency(workingDir, packageId)
+
+    const document = await readLocalWorkspaceDocument(workingDir)
+    if (document?.activePackageIds.includes(packageId)) {
+        document.activePackageIds = document.activePackageIds.filter((entry) => entry !== packageId)
+        await writeLocalWorkspaceDocument(workingDir, document)
+    }
+
+    return { packageId }
 }
 
 export async function importApmPackage(

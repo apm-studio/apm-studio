@@ -1,13 +1,14 @@
-import { PackageOpen } from 'lucide-react'
-import type { ApmPackageSummary } from '../../../shared/apm-contracts'
+import { FileSearch, PackageOpen } from 'lucide-react'
 import type { ApmSyncTargetDefinitionSummary } from '../../../shared/apm-sync-contracts'
 import { TargetExportPackageIcon } from './TargetExportPackageIcon'
 import {
     buildTargetExportTargetOnlyDefinitionRowModel,
     buildTargetExportTargetPackageRowModel,
 } from './target-export-target-row-model'
+import { buildTargetExportSourcePrimitiveItems } from './target-export-source-row-model'
 import type { TargetExportControllerState } from './useTargetExportController'
-import type { TargetExportChoice } from './target-export-sync-utils'
+import type { TargetExportChoice, TargetExportScopedPackage } from './target-export-sync-utils'
+import type { TargetExportAssetDetailRequest } from './target-export-detail-model'
 
 interface TargetExportTargetRowsProps {
     activeTarget: NonNullable<TargetExportControllerState['activeTarget']>
@@ -17,7 +18,8 @@ interface TargetExportTargetRowsProps {
     running: boolean
     selectedSyncUnit: TargetExportControllerState['selectedSyncUnit']
     setPackageExportChoice: (packageId: string, choice: TargetExportChoice) => void
-    stagedPackages: ApmPackageSummary[]
+    onOpenDetails: (request: TargetExportAssetDetailRequest) => void
+    stagedPackages: TargetExportScopedPackage[]
     exportChoices: TargetExportControllerState['exportChoices']
     targetOnlyDefinitions: ApmSyncTargetDefinitionSummary[]
 }
@@ -30,43 +32,70 @@ export function TargetExportTargetRows({
     running,
     selectedSyncUnit,
     setPackageExportChoice,
+    onOpenDetails,
     stagedPackages,
     exportChoices,
     targetOnlyDefinitions,
 }: TargetExportTargetRowsProps) {
+    const stagedItems = buildTargetExportSourcePrimitiveItems(stagedPackages, selectedSyncUnit)
+
     return (
         <div className="target-export-selected-list target-export-target-list">
-            {stagedPackages.map((pkg) => {
+            {stagedItems.map((item) => {
+                const pkg = item.pkg
+                const currentItem = activeTargetCurrentByPackage.get(pkg.packageId)
+                const definition = activeTargetDefinitionByPackage.get(pkg.packageId)
+                const result = activeTargetResultByPackage.get(pkg.packageId)
+                const exportChoice = exportChoices[`${activeTarget.id}:${pkg.packageId}`] || 'save'
                 const row = buildTargetExportTargetPackageRowModel({
-                    currentItem: activeTargetCurrentByPackage.get(pkg.packageId),
-                    definition: activeTargetDefinitionByPackage.get(pkg.packageId),
+                    currentItem,
+                    definition,
                     pkg,
-                    result: activeTargetResultByPackage.get(pkg.packageId),
-                    exportChoice: exportChoices[`${activeTarget.id}:${pkg.packageId}`] || 'save',
+                    result,
+                    exportChoice,
                     syncUnit: selectedSyncUnit,
                     target: activeTarget,
                 })
+                const detailRow = {
+                    ...row,
+                    detail: item.primitivePath || row.detail,
+                    packageName: item.primitiveName,
+                }
 
                 return (
                     <article
-                        key={`${activeTarget.id}:${row.packageId}`}
+                        key={`${activeTarget.id}:${item.id}`}
                         className="target-export-selected-chip target-export-target-item"
-                        title={row.detail}
+                        title={detailRow.detail}
                     >
                         <span className="target-export-selected-chip__title">
                             <TargetExportPackageIcon pkg={pkg} syncUnit={selectedSyncUnit} />
-                            <strong>{row.packageName}</strong>
+                            <strong>{item.primitiveName}</strong>
                             <span className={`target-export-state-pill ${row.stateClass}`}>
                                 {row.status}
                             </span>
+                            <button
+                                type="button"
+                                className="icon-btn target-export-detail-btn"
+                                onClick={() => onOpenDetails({
+                                    kind: 'target-package',
+                                    activeTarget,
+                                    currentItem,
+                                    definition,
+                                    exportChoice,
+                                    pkg,
+                                    result,
+                                    row: detailRow,
+                                    selectedSyncUnit,
+                                })}
+                                title={`View details for ${item.primitiveName}`}
+                                aria-label={`View details for ${item.primitiveName}`}
+                            >
+                                <FileSearch size={12} />
+                            </button>
                         </span>
-                        <span>
-                            {row.badges.map((badge) => (
-                                <span key={badge} className="badge badge--subtle">{badge}</span>
-                            ))}
-                        </span>
-                        <small>{row.detail}</small>
-                        <span className="target-export-action-choice" aria-label={`${row.packageName} export action`}>
+                        {row.stateClass === 'is-warning' ? <small>{row.detail}</small> : null}
+                        <span className="target-export-action-choice" aria-label={`${item.primitiveName} inject action`}>
                             <button
                                 type="button"
                                 className={`target-export-choice-btn ${row.exportChoice === 'save' ? 'is-active' : ''}`}
@@ -101,13 +130,21 @@ export function TargetExportTargetRows({
                             <span className={`target-export-state-pill ${row.stateClass}`}>
                                 {row.status}
                             </span>
+                            <button
+                                type="button"
+                                className="icon-btn target-export-detail-btn"
+                                onClick={() => onOpenDetails({
+                                    kind: 'target-only-definition',
+                                    activeTarget,
+                                    definition,
+                                    row,
+                                })}
+                                title={`View details for ${row.name}`}
+                                aria-label={`View details for ${row.name}`}
+                            >
+                                <FileSearch size={12} />
+                            </button>
                         </span>
-                        <span>
-                            {row.badges.map((badge) => (
-                                <span key={badge} className="badge badge--subtle">{badge}</span>
-                            ))}
-                        </span>
-                        <small>{row.detail}</small>
                         <span className="target-export-action-choice">
                             <button type="button" className="target-export-choice-btn is-active" disabled>
                                 Keep

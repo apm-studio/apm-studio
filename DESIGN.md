@@ -132,12 +132,12 @@ Use active state sparingly and clearly:
 
 Do not invent a new nav visual treatment for each panel.
 
-Studio's primary workflow modes are Import, Studio Agent, and Export. Keep them grouped in the app header so users can understand whether they are bringing in sources, editing/running local Studio Agents, or exporting APM primitives to external assistant targets.
+Studio's primary workflow modes are Import, Export, and Studio Agent. Keep them grouped in the app header so users can understand whether they are bringing in sources, exporting APM primitives to external assistant targets, or editing/running local Studio Agents.
 
 The app header is the single top-level workspace header. Canvas controls, Studio Agent run view controls, and page-specific actions should appear as dynamic header content instead of adding a second page or canvas header directly below it.
 Do not use the dynamic header to repeat context that is already visible in the mode nav, workspace sidebar, page title, or active tabs. For pages where the main surface already names the task, keep the header to actions only or omit the page context entirely.
 
-The app shell should stay stable across Import, Studio Agent, and Export: keep the top header and left sidebar mounted, and swap only the main content area for the selected workflow. Do not build mode-specific sidebars inside feature pages when the global sidebar can provide the shared workspace/package context.
+The app shell should stay stable across Import, Export, and Studio Agent: keep the top header and left sidebar mounted, and swap only the main content area for the selected workflow. Do not build mode-specific sidebars inside feature pages when the global sidebar can provide the shared workspace/package context.
 
 Keep mode-to-shell decisions centralized in `src/components/app-shell-policy.ts`. Shell components should receive an explicit sidebar/surface mode prop instead of independently reading `workspaceMode` and re-deriving the same policy.
 
@@ -148,6 +148,8 @@ Keep target export composed from focused parts: `useTargetExportController.ts` o
 
 Import should behave like a compact source workbench: default to all package source groups, keep search prominent, use the left-sidebar `User`/`Workspaces` selection as the install destination, and show GitHub-derived Agent, Skill, and MCP source items as separate scan-friendly sections that reuse the Packages sidebar `package-card` classes.
 Keep the Import source workbench composed from focused parts: `ExplorePresetCatalog.tsx` owns page state and import actions, `ExploreSearchPanel.tsx` owns search/curated-source controls, `ExploreResultsPanel.tsx` owns results controls and empty/loading/error states, `ExploreCandidateCard.tsx` owns each imported source row, and `explore-preset-catalog-model.ts` owns filtering, labels, and curated constants.
+Import and Export item details should open as read-only detail modals from compact detail actions on each asset row. Split modal sections across Content, Metadata, and Other tabs so source content, package/listing metadata, and auxiliary artifacts or warnings stay scannable. These details may show registry metadata, import candidate metadata, package paths, primitive counts, target artifacts, warnings, and read-only `apm.yml`, but they must not install, stage, save, sync, delete, or edit package content.
+Import result filtering should keep text search and broad result kind controls compact, then expose APM primitive filtering as its own selectable row ordered `All`, Agents, Instructions, Skills, Prompts, Commands, Hooks, and MCP.
 
 Markdown editor canvas frames should keep store/API wiring separate from editor chrome and state math: `MarkdownEditorFrame.tsx` owns draft persistence and canvas-node actions, `MarkdownPrimitiveEditor.tsx` and `TagsInput.tsx` own the visual editor, and `markdown-editor-state.ts` owns draft normalization, dirty checks, save patch construction, and saved-draft attachment planning.
 
@@ -157,7 +159,10 @@ Assistant chat should stay separate from Agent runtime UI even though it reuses 
 
 Team chat surfaces should keep runtime state wiring separate from board/thread rendering: `TeamChatPanel.tsx` owns Team state/session command orchestration, `TeamChatThreadSurface.tsx` owns participant tabs plus board/thread composition, `TeamChatComposer.tsx` owns input/permission/question/todo chrome, `TeamChatThreadRenderers.tsx` owns message/empty/loading rows, and `team-chat-panel-helpers.ts` owns participant execution-state and composer readiness view models.
 
-The Packages drawer should stay local-only. Its top-level grouping should separate `APM primitives` from `Runtime settings`: APM primitives include Agents, Instructions, Skills, Prompts, Commands, Hooks, and MCP; Runtime settings include model choices and other Studio-only run configuration. Studio Agent is the edit/run surface for an Agent package composed from Agent, Skill, and MCP primitives plus a Studio-only model setting. Agent, Skill, and MCP rows can participate in Agent composition; Instruction remains a standalone package/file rule primitive and should not be shown as an Agent drop target. Do not add a Local/Explore switch there; put registry search and community discovery surfaces on the Explore page.
+Teams and APM Assistant are temporarily parked from the Studio Agent page UI behind `src/app/studio-agent-ui-state.ts` while those experiences are upgraded. Do not delete the underlying runtime, store, or component codepaths; re-enable them through that guard when the refreshed UX is ready.
+
+The Packages drawer should stay local-only. Its top-level grouping should keep `APM primitives` separate from Studio runtime controls: APM primitives include Agents, Instructions, Skills, Prompts, Commands, Hooks, and MCP packages; runtime controls include MCP server configuration, model choices, and other Studio-only run configuration. Studio Agent is the edit/run surface for an Agent package composed from Agent, Skill, and MCP primitives plus a Studio-only model setting. Agent, Skill, and MCP package rows can participate in Agent composition; Instruction, Prompt, Command, and Hook packages remain standalone package/file primitives and should not be shown as Agent drop targets. Do not add a Local/Explore switch there; put registry search and community discovery surfaces on the Explore page.
+Local package inspection should keep package management and source synchronization in one compact inspector: Overview for metadata, lock status, and read-only APM audit status, Manifest for editable `apm.yml` plus read-only `apm.lock.yaml`, and Primitives for read-only previews of supported `.apm/*` source files. Primitive content is edited in the user's local editor, not inside Studio. Manual refresh is the drawer/inspector way to pick up external editor changes and sync Studio-managed Agent source back into `apm.yml`; do not add filesystem watcher UI. Use upstream `apm audit --ci --no-policy -f json` for integrity/drift findings instead of adding separate Studio drift-rule UI.
 
 ## Lists And Rows
 

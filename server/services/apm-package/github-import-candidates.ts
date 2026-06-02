@@ -25,6 +25,11 @@ import {
     buildMcpManifest,
     buildSkillManifest,
 } from './github-import-candidate-builders.js'
+import {
+    buildTargetImportCandidates,
+    sourceMatchesTargetImport,
+    targetImportPriority,
+} from './target-import/adapters.js'
 export type { ImportCandidate } from './github-import-candidate-types.js'
 
 function sourceMatchesFormat(sourcePath: string, subpath: string, format: ApmGitHubImportRequest['format']) {
@@ -32,9 +37,12 @@ function sourceMatchesFormat(sourcePath: string, subpath: string, format: ApmGit
     if (format === 'skill-md') return looksLikeSkillMarkdown(sourcePath)
     if (format === 'codex-toml') return looksLikeCodexTomlAgent(sourcePath, subpath)
     if (format === 'claude-md') return looksLikeClaudeAgentMarkdown(sourcePath, subpath)
+    if (format === 'claude-settings') return sourceMatchesTargetImport(sourcePath, subpath, format)
+    if (format === 'target-native') return sourceMatchesTargetImport(sourcePath, subpath, format)
     if (format === 'instruction-md') return looksLikeInstructionMarkdown(sourcePath, subpath)
     if (format === 'mcp-config') return looksLikeMcpConfig(sourcePath, subpath)
     return isApmManifestPath(sourcePath)
+        || sourceMatchesTargetImport(sourcePath, subpath, format)
         || looksLikeSkillMarkdown(sourcePath)
         || looksLikeClaudeAgentMarkdown(sourcePath, subpath)
         || looksLikeCodexTomlAgent(sourcePath, subpath)
@@ -44,11 +52,13 @@ function sourceMatchesFormat(sourcePath: string, subpath: string, format: ApmGit
 
 function sourcePriority(sourcePath: string, subpath: string) {
     if (isApmManifestPath(sourcePath)) return 0
-    if (looksLikeSkillMarkdown(sourcePath)) return 1
-    if (looksLikeClaudeAgentMarkdown(sourcePath, subpath)) return 2
-    if (looksLikeCodexTomlAgent(sourcePath, subpath)) return 3
-    if (looksLikeInstructionMarkdown(sourcePath, subpath)) return 4
-    if (looksLikeMcpConfig(sourcePath, subpath)) return 5
+    const targetPriority = targetImportPriority(sourcePath, subpath, 'auto')
+    if (targetPriority !== null) return targetPriority
+    if (looksLikeSkillMarkdown(sourcePath)) return 2
+    if (looksLikeClaudeAgentMarkdown(sourcePath, subpath)) return 3
+    if (looksLikeCodexTomlAgent(sourcePath, subpath)) return 4
+    if (looksLikeInstructionMarkdown(sourcePath, subpath)) return 5
+    if (looksLikeMcpConfig(sourcePath, subpath)) return 6
     return 7
 }
 
@@ -82,6 +92,17 @@ export async function buildImportCandidates(
                 candidates.push(candidate)
                 continue
             }
+        }
+        const targetCandidates = buildTargetImportCandidates({ repo, ref, sourcePath, raw, tree }, format, subpath)
+        if (targetCandidates.length > 0) {
+            for (const candidate of targetCandidates) {
+                if (candidates.length >= limit) break
+                candidates.push(candidate)
+            }
+            if (candidates.length >= limit) {
+                break
+            }
+            continue
         }
         if (acceptsFormat(format, 'skill-md') && looksLikeSkillMarkdown(sourcePath)) {
             candidates.push(buildSkillManifest(repo, ref, sourcePath, raw, tree))

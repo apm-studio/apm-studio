@@ -90,5 +90,17 @@ export function placeholderForPrimitiveSection(
         return 'skill package, apm.yml path...'
     }
 
-    return 'mcp server, tool, status...'
+    if (primitiveSection === 'prompts') {
+        return 'prompt package, apm.yml path...'
+    }
+
+    if (primitiveSection === 'commands') {
+        return 'command package, apm.yml path...'
+    }
+
+    if (primitiveSection === 'hooks') {
+        return 'hook package, apm.yml path...'
+    }
+
+    return 'mcp package, apm.yml path...'
 }

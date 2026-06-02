@@ -28,7 +28,8 @@ async function copyCandidateFiles(workingDir: string, repo: string, ref: string,
     if (candidate.copyFiles.length === 0) return
     const root = packageDir(workingDir, candidate.packageId)
     for (const file of candidate.copyFiles) {
-        const raw = await fetchGithubText(repo, ref, file.sourcePath)
+        const raw = file.content ?? (file.sourcePath ? await fetchGithubText(repo, ref, file.sourcePath) : null)
+        if (raw === null) continue
         const target = path.join(root, file.targetPath)
         await fs.mkdir(path.dirname(target), { recursive: true })
         await fs.writeFile(target, raw, 'utf-8')
@@ -114,7 +115,7 @@ export async function previewApmPackagesFromGitHub(
     const { candidates, totalMatched } = await buildImportCandidates(repo, ref, subpath, format, limit)
     const warnings: string[] = []
     if (candidates.length === 0) {
-        warnings.push(`No importable ${format === 'auto' ? 'APM, agent, skill, instruction, or MCP' : format} files found in ${request.source}.`)
+        warnings.push(`No importable ${format === 'auto' ? 'APM, agent, skill, instruction, hook, or MCP' : format} files found in ${request.source}.`)
     }
     if (candidates.length >= limit && totalMatched > candidates.length) {
         warnings.push(`Showing the first ${candidates.length} candidates. Narrow the source path or raise the limit to inspect more.`)
@@ -172,7 +173,7 @@ export async function importApmPackagesFromGitHub(
     }
 
     if (packages.length === 0) {
-        throw new Error(`No importable ${format === 'auto' ? 'APM, agent, skill, instruction, or MCP' : format} files found in ${request.source}.`)
+        throw new Error(`No importable ${format === 'auto' ? 'APM, agent, skill, instruction, hook, or MCP' : format} files found in ${request.source}.`)
     }
     if (packages.length >= limit && totalMatched > packages.length) {
         warnings.push(`Imported the first ${packages.length} packages. Narrow the source path or raise the limit to import more.`)

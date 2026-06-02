@@ -134,7 +134,7 @@ export async function resolveApmPackageAgentPrimitive(
         || Number(primitive.primitiveCounts?.agents || 0) > 0
     if (!hasAgentPrimitive) {
         if (primitive.packageKind === 'instruction') {
-            showDropWarning('Instruction packages are standalone project/file rules. Open them from Packages or export them through Export.')
+            showDropWarning('Instruction packages are standalone project/file rules. Open them from Packages or inject them through Inject.')
             return null
         }
         showDropWarning('Only APM packages with an Agent primitive can be dropped onto the canvas. Use Skills and MCP from Packages for agent attachments.')

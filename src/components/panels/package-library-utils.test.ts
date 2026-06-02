@@ -200,7 +200,10 @@ describe('placeholderForPrimitiveSection', () => {
         expect(placeholderForPrimitiveSection('agents')).toBe('agent package, apm.yml path...')
         expect(placeholderForPrimitiveSection('instructions')).toBe('instruction package, apm.yml path...')
         expect(placeholderForPrimitiveSection('skills')).toBe('skill package, apm.yml path...')
-        expect(placeholderForPrimitiveSection('mcp')).toBe('mcp server, tool, status...')
+        expect(placeholderForPrimitiveSection('prompts')).toBe('prompt package, apm.yml path...')
+        expect(placeholderForPrimitiveSection('commands')).toBe('command package, apm.yml path...')
+        expect(placeholderForPrimitiveSection('hooks')).toBe('hook package, apm.yml path...')
+        expect(placeholderForPrimitiveSection('mcp')).toBe('mcp package, apm.yml path...')
     })
 })
 

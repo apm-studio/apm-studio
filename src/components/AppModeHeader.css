@@ -4,14 +4,15 @@
     justify-content: space-between;
     gap: var(--space-4);
     min-height: 56px;
-    padding: var(--space-3) var(--space-5);
+    padding: var(--space-3) var(--space-6);
     border-bottom: 1px solid var(--border-main);
-    background: color-mix(in srgb, var(--bg-panel) 96%, var(--bg-elevated));
+    background:
+        linear-gradient(180deg, color-mix(in srgb, var(--bg-panel) 96%, var(--bg-elevated)), var(--bg-panel));
     color: var(--text-primary);
     flex: 0 0 auto;
-    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.02);
+    box-shadow: var(--shadow-sm);
     position: relative;
-    z-index: 1100;
+    z-index: var(--z-header);
 }
 
 .app-mode-header__base {
@@ -20,6 +21,15 @@
     gap: var(--space-4);
     min-width: 0;
     flex: 0 0 auto;
+}
+
+.app-mode-header__content {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--space-2);
+    min-width: 0;
+    flex: 1 1 auto;
 }
 
 .app-mode-header__brand {
@@ -34,15 +44,21 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
+    width: 30px;
+    height: 30px;
     flex: 0 0 auto;
-    border: 1px solid var(--border-main);
+    overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border-main));
     border-radius: var(--radius);
-    background: var(--bg-selected);
-    color: var(--text-primary);
-    font-size: var(--font-xs);
-    font-weight: 800;
+    background: var(--bg-elevated);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--bg-panel) 68%, transparent);
+}
+
+.app-mode-header__mark img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .app-mode-header__brand-copy {
@@ -80,7 +96,8 @@
     padding: 3px;
     border: 1px solid var(--border-main);
     border-radius: var(--radius-lg);
-    background: var(--bg-elevated);
+    background: color-mix(in srgb, var(--bg-elevated) 82%, var(--bg-panel));
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--bg-panel) 80%, transparent);
 }
 
 .app-mode-header__page {
@@ -111,6 +128,7 @@
     font-size: var(--font-base);
     font-weight: 800;
     white-space: nowrap;
+    text-wrap: balance;
 }
 
 .app-mode-header__page-subtitle {
@@ -145,8 +163,8 @@
     color: var(--text-secondary);
     cursor: pointer;
     font-size: var(--font-sm);
-    font-weight: 800;
-    transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+    font-weight: 700;
+    transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
     white-space: nowrap;
 }
 
@@ -156,14 +174,18 @@
 }
 
 .app-mode-header__mode.is-active {
-    border-color: var(--border-active);
-    background: color-mix(in srgb, var(--bg-selected) 82%, var(--bg-panel));
+    border-color: color-mix(in srgb, var(--accent) 46%, var(--border-main));
+    background: color-mix(in srgb, var(--bg-selected) 72%, var(--bg-panel));
     color: var(--text-primary);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    box-shadow: var(--shadow-sm);
 }
 
 .app-mode-header__mode.is-active svg {
     color: var(--accent);
+}
+
+.app-mode-header__mode:active {
+    transform: translateY(1px);
 }
 
 @media (max-width: 980px) {
@@ -190,6 +212,11 @@
         flex-direction: row;
         justify-content: flex-start;
         gap: var(--space-2);
+    }
+
+    .app-mode-header__content {
+        flex: 0 0 auto;
+        min-width: max-content;
     }
 
     .app-mode-header__brand {
@@ -250,10 +277,35 @@
     }
 
     .app-mode-header__brand {
-        flex-basis: 148px;
+        min-width: 112px;
+        max-width: 128px;
+        flex: 0 0 112px;
+    }
+
+    .app-mode-header__mark {
+        width: 28px;
+        height: 28px;
+    }
+
+    .app-mode-header__workspace {
+        max-width: 82px;
+    }
+
+    .app-mode-header__nav {
+        flex: 0 0 auto;
     }
 
     .app-mode-header__mode {
-        padding: 0 var(--space-2);
+        width: 30px;
+        padding: 0;
+    }
+
+    .app-mode-header__mode span {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
     }
 }

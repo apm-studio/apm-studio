@@ -25,8 +25,13 @@ vi.mock('../../services/apm-package/github-import.js', () => ({
     previewApmPackagesFromGitHub: vi.fn(async () => ({ ok: true, source: { repo: 'acme/agents', ref: 'main' }, candidates: [], warnings: [] })),
 }))
 
-const searchImportCatalogMock = vi.fn(async (_query: unknown): Promise<{ listings: unknown[] }> => ({ listings: [] }))
-const recordImportCatalogDownloadMock = vi.fn(async (_request: unknown, _response: unknown) => undefined)
+const searchImportCatalogMock = vi.fn(async (...args: unknown[]): Promise<{ listings: unknown[] }> => {
+    void args
+    return { listings: [] }
+})
+const recordImportCatalogDownloadMock = vi.fn(async (...args: unknown[]) => {
+    void args
+})
 
 vi.mock('../../services/import/registry-service.js', () => ({
     searchImportCatalog: (query: unknown) => searchImportCatalogMock(query),

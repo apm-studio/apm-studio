@@ -94,13 +94,7 @@ export function PinnedDetailPanel({
     const { resolvedItem, loading } = useResolvedPackageDetail(item)
 
     if (!item) {
-        return (
-            <div className="package-detail-panel package-detail-panel--empty">
-                <div className="package-detail-panel__empty-copy">
-                    Click a card to pin its details here.
-                </div>
-            </div>
-        )
+        return null
     }
 
     return (

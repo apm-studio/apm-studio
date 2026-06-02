@@ -9,6 +9,11 @@ import {
     resolveFocusTarget,
     resolveNodeBaselineHidden,
 } from '../../lib/focus-utils'
+import {
+    getStudioAgentVisibleFocusSnapshot,
+    getStudioAgentVisibleSplitPanes,
+    shouldRenderStudioAgentTeamsUi,
+} from '../../app/studio-agent-ui-state'
 import type { FullscreenNodeType, SplitViewPane } from '../../store/workspace/types'
 import CanvasControls from './CanvasControls'
 import './StudioViewHeader.css'
@@ -117,22 +122,27 @@ export default function StudioViewHeader() {
         closeEditor: state.closeEditor,
     })))
 
-    const fullscreenTarget = resolveFocusTarget(focusSnapshot)
+    const showTeamsUi = shouldRenderStudioAgentTeamsUi()
+    const visibleFocusSnapshot = getStudioAgentVisibleFocusSnapshot(focusSnapshot)
+    const fullscreenTarget = resolveFocusTarget(visibleFocusSnapshot)
+    // Team panes are parked while their Studio Agent UX is upgraded.
+    // Keep split/full Team codepaths intact and re-enable through studio-agent-ui-state.
+    const visibleSplitPanes = useMemo(() => getStudioAgentVisibleSplitPanes(splitView.panes), [splitView.panes])
     const visibleTeams = useMemo(() => teams.filter((team) => (
-        !resolveNodeBaselineHidden(focusSnapshot, team.id, 'team', !!team.hidden)
-    )), [teams, focusSnapshot])
+        showTeamsUi && !resolveNodeBaselineHidden(focusSnapshot, team.id, 'team', !!team.hidden)
+    )), [teams, focusSnapshot, showTeamsUi])
     const visibleAgents = useMemo(() => agents.filter((agent) => (
         !resolveNodeBaselineHidden(focusSnapshot, agent.id, 'agent', !!agent.hidden)
     )), [agents, focusSnapshot])
-    const hasRestorableSplitView = useMemo(() => splitView.panes.some((pane) => (
+    const hasRestorableSplitView = useMemo(() => visibleSplitPanes.some((pane) => (
         pane.type === 'team'
             ? teams.some((team) => team.id === pane.nodeId)
             : agents.some((agent) => agent.id === pane.nodeId)
-    )), [teams, agents, splitView.panes])
+    )), [teams, agents, visibleSplitPanes])
 
     const modeTarget = useMemo<ViewModeTarget | null>(() => {
         if (viewMode === 'split') {
-            const activePane = splitView.panes.find((pane) => pane.paneId === splitView.activePaneId) || splitView.panes[0]
+            const activePane = visibleSplitPanes.find((pane) => pane.paneId === splitView.activePaneId) || visibleSplitPanes[0]
             if (activePane) {
                 return { id: activePane.nodeId, type: activePane.type }
             }
@@ -151,7 +161,7 @@ export default function StudioViewHeader() {
         }
 
         return null
-    }, [fullscreenTarget, selectedTeamId, selectedAgentId, splitView.activePaneId, splitView.panes, viewMode, visibleTeams, visibleAgents])
+    }, [fullscreenTarget, selectedTeamId, selectedAgentId, splitView.activePaneId, visibleSplitPanes, viewMode, visibleTeams, visibleAgents])
 
     const handleSelectViewMode = (nextMode: ViewMode) => {
         if (nextMode === viewMode) return
@@ -233,7 +243,7 @@ export default function StudioViewHeader() {
                 ) : null}
                 {viewMode === 'split' ? (
                     <div className="studio-view-header__panes" aria-label="Split View panes">
-                        {splitView.panes.map((pane) => {
+                        {visibleSplitPanes.map((pane) => {
                             const label = paneLabel(pane, teams, agents)
                             return (
                                 <SplitPanePill

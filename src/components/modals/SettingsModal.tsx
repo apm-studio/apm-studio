@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { RefreshCw, Settings, X, Sliders, Server, LayoutGrid, MessageCircle, BarChart2 } from 'lucide-react'
+import { RefreshCw, Settings, X, Sliders, Server, LayoutGrid, MessageCircle } from 'lucide-react'
 import { opencodeApi } from '../../api-clients/opencode'
 import { useStudioStore } from '../../store'
 import { queryKeys } from '../../hooks/queries/keys'
@@ -15,9 +15,8 @@ import SettingsGeneral from './SettingsGeneral'
 import SettingsProviders from './SettingsProviders'
 import SettingsModels from './SettingsModels'
 import SettingsDiscord from './SettingsDiscord'
-import SettingsUsing from './SettingsUsing'
 
-type SettingsTab = 'general' | 'providers' | 'models' | 'discord' | 'using'
+type SettingsTab = 'general' | 'providers' | 'models' | 'discord'
 
 interface SidebarSection {
     label: string
@@ -36,7 +35,6 @@ const SECTIONS: SidebarSection[] = [
         items: [
             { key: 'providers', label: 'Providers', icon: <Server size={14} /> },
             { key: 'models', label: 'Models', icon: <LayoutGrid size={14} /> },
-            { key: 'using', label: 'Using', icon: <BarChart2 size={14} /> },
         ],
     },
     {
@@ -171,9 +169,6 @@ export default function SettingsModal({ open, onClose, initialTab = 'general' }:
 
             case 'discord':
                 return <SettingsDiscord />
-
-            case 'using':
-                return <SettingsUsing />
         }
     }
 

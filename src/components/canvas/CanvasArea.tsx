@@ -17,6 +17,11 @@ import { useCanvasPresentation } from './useCanvasPresentation';
 import { resolveFocusNodeId, syncFocusViewport } from '../../lib/focus-utils';
 import { buildSyncFullscreenViewportState } from '../../store/workspace/focus-mode-state';
 import { isSplitViewNodeDrag } from '../../lib/dnd-handlers';
+import {
+    getStudioAgentVisibleFocusSnapshot,
+    getStudioAgentVisibleSplitPanes,
+    shouldRenderStudioAgentTeamsUi,
+} from '../../app/studio-agent-ui-state';
 import OffsetBezierEdge from './OffsetBezierEdge';
 import SplitViewDropOverlay from './SplitViewDropOverlay';
 import SplitViewResizeOverlay from './SplitViewResizeOverlay';
@@ -121,10 +126,14 @@ export default function CanvasArea() {
         attachAgentToTeam: state.attachAgentToTeam,
         addRelation: state.addRelation,
     })));
+    const showTeamsUi = shouldRenderStudioAgentTeamsUi();
+    const visibleFocusSnapshot = getStudioAgentVisibleFocusSnapshot(focusSnapshot);
+    const visibleStudioAgentTeams = useMemo(() => showTeamsUi ? teams : [], [showTeamsUi, teams]);
+    const visibleSplitPanes = useMemo(() => getStudioAgentVisibleSplitPanes(splitView.panes), [splitView.panes]);
     const isFullscreenActive = viewMode !== 'canvas';
-    const focusedAgentId = viewMode === 'full' && focusSnapshot?.type === 'agent' ? focusSnapshot.nodeId : null;
-    const showFullEmptyState = viewMode === 'full' && !focusSnapshot;
-    const showSplitEmptyState = viewMode === 'split' && splitView.panes.length === 0;
+    const focusedAgentId = viewMode === 'full' && visibleFocusSnapshot?.type === 'agent' ? visibleFocusSnapshot.nodeId : null;
+    const showFullEmptyState = viewMode === 'full' && !visibleFocusSnapshot;
+    const showSplitEmptyState = viewMode === 'split' && visibleSplitPanes.length === 0;
     const splitLayoutKey = useMemo(() => JSON.stringify({
         panes: splitView.panes.map((pane) => pane.paneId),
         rows: splitView.rows,
@@ -160,7 +169,7 @@ export default function CanvasArea() {
         activateTransformTarget,
         deactivateTransformTarget,
     } = useCanvasTransformTarget({
-        teams,
+        teams: visibleStudioAgentTeams,
         agents,
         markdownEditors,
         canvasTerminals,
@@ -175,14 +184,16 @@ export default function CanvasArea() {
         onNodesChange,
         edges: relationEdges,
     } = useCanvasPresentation({
-        teams,
+        teams: visibleStudioAgentTeams,
         agents,
         markdownEditors,
         canvasTerminals,
         drafts,
         workingDir,
-        editingTeamId: teamEditorState?.teamId || null,
-        selectedTeamId,
+        // Team UI is intentionally parked while its Studio Agent UX is upgraded.
+        // Keep Team runtime/components intact and re-enable through studio-agent-ui-state.
+        editingTeamId: showTeamsUi ? teamEditorState?.teamId || null : null,
+        selectedTeamId: showTeamsUi ? selectedTeamId : null,
         selectedAgentId,
         selectedMarkdownEditorId,
         focusedAgentId,
@@ -198,7 +209,7 @@ export default function CanvasArea() {
     })
 
     useCanvasFocusFit({
-        focusSnapshot,
+        focusSnapshot: visibleFocusSnapshot,
         canvasRevealTarget,
         reactFlowInstance,
         nodeCount: nodes.length,
@@ -206,11 +217,11 @@ export default function CanvasArea() {
     })
 
     useEffect(() => {
-        if (!focusSnapshot || !flowShellRef.current) {
+        if (!visibleFocusSnapshot || !flowShellRef.current) {
             return
         }
 
-        const focusNodeId = resolveFocusNodeId(focusSnapshot)
+        const focusNodeId = resolveFocusNodeId(visibleFocusSnapshot)
         if (!focusNodeId) {
             return
         }
@@ -254,7 +265,7 @@ export default function CanvasArea() {
             }
             observer.disconnect()
         }
-    }, [focusSnapshot, reactFlowInstance, splitLayoutKey, viewMode])
+    }, [visibleFocusSnapshot, reactFlowInstance, splitLayoutKey, viewMode])
 
     const {
         onEdgeClick,
@@ -354,14 +365,14 @@ export default function CanvasArea() {
                 {showFullEmptyState ? (
                     <div className="canvas-fullscreen-empty-state">
                         <div className="canvas-fullscreen-empty-state__copy">
-                            Select a Team or Studio Agent from the left sidebar
+                            Select a Studio Agent from the left sidebar
                         </div>
                     </div>
                 ) : null}
                 {showSplitEmptyState ? (
                     <div className="canvas-fullscreen-empty-state">
                         <div className="canvas-fullscreen-empty-state__copy">
-                            Drag a Team or Studio Agent here from the left sidebar
+                            Drag a Studio Agent here from the left sidebar
                         </div>
                     </div>
                 ) : null}
@@ -371,7 +382,7 @@ export default function CanvasArea() {
                     viewMode={viewMode}
                     splitView={splitView}
                     viewportSize={flowViewportSize}
-                    teams={teams}
+                    teams={visibleStudioAgentTeams}
                     agents={agents}
                 />
                 <SplitViewResizeOverlay

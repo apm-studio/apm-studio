@@ -184,9 +184,12 @@ function stringRecord(value: unknown) {
 function mcpDependencyFromConfig(name: string, value: unknown): ApmDependency {
     if (!isPlainRecord(value)) return { name }
 
+    const commandParts = Array.isArray(value.command)
+        ? value.command.filter((entry): entry is string => typeof entry === 'string' && entry.trim().length > 0)
+        : []
     const command = typeof value.command === 'string' && value.command.trim()
         ? value.command.trim()
-        : null
+        : (commandParts[0] || null)
     const url = typeof value.url === 'string' && value.url.trim()
         ? value.url.trim()
         : null
@@ -205,12 +208,26 @@ function mcpDependencyFromConfig(name: string, value: unknown): ApmDependency {
     }
     if (command) dependency.command = command
     if (url) dependency.url = url
-    if (Array.isArray(value.args) || isPlainRecord(value.args)) dependency.args = value.args
+    if (Array.isArray(value.args) || isPlainRecord(value.args)) {
+        dependency.args = value.args
+    } else if (commandParts.length > 1) {
+        dependency.args = commandParts.slice(1)
+    }
     const env = stringRecord(value.env)
     if (env) dependency.env = env
     const headers = stringRecord(value.headers)
     if (headers) dependency.headers = headers
     return dependency
+}
+
+function mcpServersFromConfig(parsed: unknown) {
+    if (!isPlainRecord(parsed)) return null
+    if (isPlainRecord(parsed.mcpServers)) return parsed.mcpServers
+    if (isPlainRecord(parsed.servers)) return parsed.servers
+    if (isPlainRecord(parsed.mcp)) {
+        return isPlainRecord(parsed.mcp.servers) ? parsed.mcp.servers : parsed.mcp
+    }
+    return parsed
 }
 
 export function buildMcpManifest(repo: string, ref: string, sourcePath: string, raw: string): ImportCandidate | null {
@@ -220,9 +237,7 @@ export function buildMcpManifest(repo: string, ref: string, sourcePath: string, 
     } catch {
         return null
     }
-    const serversRecord = parsed && typeof parsed === 'object' && 'mcpServers' in parsed
-        ? (parsed as { mcpServers?: unknown }).mcpServers
-        : parsed
+    const serversRecord = mcpServersFromConfig(parsed)
     const names = serversRecord && typeof serversRecord === 'object' && !Array.isArray(serversRecord)
         ? Object.keys(serversRecord as Record<string, unknown>)
         : []

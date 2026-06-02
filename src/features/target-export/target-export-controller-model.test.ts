@@ -164,7 +164,6 @@ describe('Target export controller model', () => {
             selectedTargets: ['codex'],
             stagedPackageIds: ['planner'],
             stagedScopeCopies: [],
-            filter: '',
             exportChoices: {},
             loadingTargets: false,
             running: false,
@@ -192,6 +191,48 @@ describe('Target export controller model', () => {
             'Keep model settings inside Studio runtime.',
         ]))
         expect(model.saveDisabled).toBe(false)
+    })
+
+    it('uses primitive-specific target output hints in the save plan', () => {
+        const model = buildTargetExportControllerModel({
+            projectPackages: [projectPackage({
+                packageId: 'docs',
+                name: 'Docs',
+                kind: 'instruction',
+                microsoftApm: {
+                    packageRoot: '/tmp/docs',
+                    sourceDir: '/tmp/docs/.apm',
+                    installCommand: 'apm install .',
+                    validateCommand: 'apm validate .',
+                    packCommand: 'apm pack .',
+                    primitiveCounts: { agents: 0, instructions: 1, skills: 0 },
+                    primitivePaths: ['.apm/instructions/docs.instructions.md'],
+                    warnings: [],
+                },
+            })],
+            userPackages: [],
+            targetsResponse: targetsResponse([
+                targetSummary({
+                    id: 'claude',
+                    label: 'Claude',
+                    outputHint: '.claude/ + .mcp.json',
+                    outputHints: {
+                        instructions: '.claude/rules/ + CLAUDE.md',
+                    },
+                    supportedSyncUnits: ['instructions'],
+                }),
+            ]),
+            selectedSyncUnit: 'instructions',
+            selectedTargets: ['claude'],
+            stagedPackageIds: ['docs'],
+            stagedScopeCopies: [],
+            exportChoices: {},
+            loadingTargets: false,
+            running: false,
+            lastResult: null,
+        })
+
+        expect(model.activeTargetPlanSteps).toContain('Write managed project files into .claude/rules/ + CLAUDE.md.')
     })
 
     it('marks local packages without target ownership as unsynced and excludes managed local definitions from target-only rows', () => {
@@ -227,7 +268,6 @@ describe('Target export controller model', () => {
             selectedTargets: ['codex'],
             stagedPackageIds: [],
             stagedScopeCopies: [],
-            filter: '',
             exportChoices: {},
             loadingTargets: false,
             running: false,
@@ -249,7 +289,6 @@ describe('Target export controller model', () => {
             selectedTargets: ['codex'],
             stagedPackageIds: ['planner'],
             stagedScopeCopies: [],
-            filter: '',
             exportChoices: {
                 'codex:planner': 'skip',
             },
@@ -277,7 +316,6 @@ describe('Target export controller model', () => {
             selectedTargets: ['gemini'],
             stagedPackageIds: ['planner'],
             stagedScopeCopies: [],
-            filter: '',
             exportChoices: {},
             loadingTargets: false,
             running: false,
@@ -300,7 +338,6 @@ describe('Target export controller model', () => {
             selectedTargets: ['codex'],
             stagedPackageIds: [],
             stagedScopeCopies: [],
-            filter: '',
             exportChoices: {},
             loadingTargets: false,
             running: false,
@@ -310,6 +347,52 @@ describe('Target export controller model', () => {
         expect(model.stagedPackages).toEqual([])
         expect(model.activeSavePackageIds).toEqual([])
         expect(model.saveDisabled).toBe(true)
+    })
+
+    it('filters source packages to the selected primitive unit', () => {
+        const model = buildTargetExportControllerModel({
+            projectPackages: [
+                projectPackage({
+                    packageId: 'agent-only',
+                    microsoftApm: {
+                        packageRoot: '/tmp/agent-only',
+                        sourceDir: '/tmp/agent-only/.apm',
+                        installCommand: 'apm install .',
+                        validateCommand: 'apm validate .',
+                        packCommand: 'apm pack .',
+                        primitiveCounts: { agents: 1, instructions: 0, skills: 0 },
+                        primitivePaths: [],
+                        warnings: [],
+                    },
+                }),
+                projectPackage({
+                    packageId: 'skill-only',
+                    kind: 'skill',
+                    microsoftApm: {
+                        packageRoot: '/tmp/skill-only',
+                        sourceDir: '/tmp/skill-only/.apm',
+                        installCommand: 'apm install .',
+                        validateCommand: 'apm validate .',
+                        packCommand: 'apm pack .',
+                        primitiveCounts: { agents: 0, instructions: 0, skills: 1 },
+                        primitivePaths: [],
+                        warnings: [],
+                    },
+                }),
+            ],
+            userPackages: [],
+            targetsResponse: targetsResponse([targetSummary({})]),
+            selectedSyncUnit: 'skills',
+            selectedTargets: ['codex'],
+            stagedPackageIds: [],
+            stagedScopeCopies: [],
+            exportChoices: {},
+            loadingTargets: false,
+            running: false,
+            lastResult: null,
+        })
+
+        expect(model.syncableProjectPackages.map((pkg) => pkg.packageId)).toEqual(['skill-only'])
     })
 
     it('enables save for staged user/workspace package copies without target export rows', () => {
@@ -325,7 +408,6 @@ describe('Target export controller model', () => {
                 fromScope: 'user',
                 toScope: 'workspace',
             }],
-            filter: '',
             exportChoices: {},
             loadingTargets: false,
             running: false,
@@ -333,7 +415,7 @@ describe('Target export controller model', () => {
         })
 
         expect(model.activeSavePackageIds).toEqual([])
-        expect(model.filteredUserPackages.map((pkg) => pkg.packageId)).toEqual(['review-skill'])
+        expect(model.syncableUserPackages.map((pkg) => pkg.packageId)).toEqual(['review-skill'])
         expect(model.saveDisabled).toBe(false)
         expect(model.activeTargetPlanSteps).toEqual(expect.arrayContaining([
             'Copy 1 package between User and Workspace.',

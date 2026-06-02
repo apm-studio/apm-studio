@@ -28,6 +28,15 @@ interface ProviderGroup {
     models: ModelEntry[]
 }
 
+function modelBadges(model: ModelEntry) {
+    return [
+        model.toolCall ? 'Tools' : null,
+        model.reasoning ? 'Reasoning' : null,
+        model.attachment ? 'Files' : null,
+        model.variants.length > 0 ? `${model.variants.length} variants` : null,
+    ].filter((badge): badge is string => Boolean(badge))
+}
+
 export default function SettingsModels() {
     const [models, setModels] = useState<ModelEntry[]>([])
     const [loading, setLoading] = useState(true)
@@ -106,29 +115,33 @@ export default function SettingsModels() {
             ) : (
                 <div className="stg-models-list">
                     {groups.map((group) => (
-                        <div key={group.providerId} className="stg-section">
-                            <h3 className="stg-section__title">{group.providerName}</h3>
+                        <details key={group.providerId} className="stg-section stg-details">
+                            <summary>{group.providerName} · {group.models.length}</summary>
                             <div className="stg-group">
                                 {group.models.map((model) => {
                                     const key = `${model.provider}:${model.id}`
+                                    const badges = modelBadges(model)
+                                    const title = [
+                                        model.id,
+                                        model.context ? `${model.context.toLocaleString()} context` : null,
+                                    ].filter(Boolean).join(' · ')
                                     return (
-                                        <div key={key} className="stg-row">
+                                        <div key={key} className="stg-row" title={title}>
                                             <div className="stg-row__text">
                                                 <span className="stg-row__title">{model.name}</span>
-                                                <span className="stg-row__desc">
-                                                    {model.id}
-                                                    {model.toolCall ? ' · tools' : ''}
-                                                    {model.reasoning ? ' · reasoning' : ''}
-                                                    {model.attachment ? ' · attachments' : ''}
-                                                    {model.variants.length > 0 ? ` · ${model.variants.length} variant${model.variants.length === 1 ? '' : 's'}` : ''}
-                                                    {model.context ? ` · ${model.context.toLocaleString()} ctx` : ''}
-                                                </span>
+                                                {badges.length > 0 ? (
+                                                    <span className="stg-model-badges">
+                                                        {badges.map((badge) => (
+                                                            <span key={badge} className="badge badge--subtle">{badge}</span>
+                                                        ))}
+                                                    </span>
+                                                ) : null}
                                             </div>
                                         </div>
                                     )
                                 })}
                             </div>
-                        </div>
+                        </details>
                     ))}
                 </div>
             )}

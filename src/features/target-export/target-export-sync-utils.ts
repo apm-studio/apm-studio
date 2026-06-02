@@ -11,7 +11,6 @@ import type {
 } from '../../../shared/apm-sync-contracts'
 import {
     apmPackageHasSyncUnit,
-    apmPackageSyncPrimitiveCounts,
     APM_SYNC_UNITS,
 } from '../../../shared/apm-sync-contracts'
 
@@ -44,7 +43,7 @@ export function unitLabel(unit: ApmSyncUnit) {
     return APM_SYNC_UNITS.find((entry) => entry.id === unit)?.label || unit
 }
 
-export function sidebarSectionForUnit(_unit: ApmSyncUnit): TargetExportSidebarSection {
+export function sidebarSectionForUnit(): TargetExportSidebarSection {
     return 'primitives'
 }
 
@@ -85,24 +84,6 @@ export function scopeTargetExportPackages(
     return packages.map((pkg) => ({ ...pkg, scope }))
 }
 
-export function packageSearchHaystack(pkg: ApmPackageSummary) {
-    const counts = apmPackageSyncPrimitiveCounts(pkg)
-    return [
-        pkg.name,
-        pkg.packageId,
-        pkg.description,
-        pkg.kind,
-        pkg.agentName,
-        pkg.derivedFrom,
-        pkg.manifestPath,
-        pkg.microsoftApm?.packageRoot,
-        `${counts.agents} agents ${counts.instructions} instructions ${counts.skills} skills ${counts.prompts} prompts ${counts.commands} commands ${counts.hooks} hooks ${counts.mcp} mcp`,
-    ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase()
-}
-
 export function packageHasSyncUnit(pkg: ApmPackageSummary, syncUnit: ApmSyncUnit) {
     return apmPackageHasSyncUnit(pkg, syncUnit)
 }
@@ -135,13 +116,12 @@ export function packageReadiness(pkg: ApmPackageSummary, syncUnit: ApmSyncUnit) 
     const warnings = pkg.microsoftApm?.warnings || []
     return warnings.length > 0
         ? { label: 'Check', title: warnings.join('\n') }
-        : { label: 'Ready', title: `${unitLabel(syncUnit)} can be exported from this package.` }
+        : { label: 'Ready', title: `${unitLabel(syncUnit)} can be injected from this package.` }
 }
 
 export function targetAvailability(
     target: ApmSyncTargetSummary,
     syncUnit: ApmSyncUnit,
-    _selectedPackages: ApmPackageSummary[],
 ) {
     if (!target.available) {
         return { available: false, reason: target.disabledReason || 'Target unavailable.' }
@@ -151,6 +131,10 @@ export function targetAvailability(
         available: supported,
         reason: supported ? null : `${target.label} does not support ${unitLabel(syncUnit)}.`,
     }
+}
+
+export function targetOutputHint(target: ApmSyncTargetSummary, syncUnit: ApmSyncUnit) {
+    return target.outputHints?.[syncUnit] || target.outputHint
 }
 
 export function targetPackageAvailability(
@@ -164,7 +148,7 @@ export function targetPackageAvailability(
             reason: `${pkg.agentName || pkg.name} does not contain ${unitLabel(syncUnit)}.`,
         }
     }
-    return targetAvailability(target, syncUnit, [pkg])
+    return targetAvailability(target, syncUnit)
 }
 
 export function findManagedDefinitionForPackage(

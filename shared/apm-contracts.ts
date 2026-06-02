@@ -103,6 +103,15 @@ export interface ApmPackageLock extends Record<string, unknown> {
     }>
 }
 
+export type ApmPackageLockState = 'missing' | 'current' | 'stale' | 'invalid'
+
+export interface ApmPackageLockStatus {
+    state: ApmPackageLockState
+    manifestHash: string
+    lockManifestHash?: string
+    message?: string
+}
+
 export interface MicrosoftApmPrimitiveCounts {
     agents: number
     instructions: number
@@ -146,6 +155,45 @@ export interface ApmToolingStatus {
     deploymentNote: string
 }
 
+export interface ApmAuditCheck {
+    name: string
+    passed: boolean
+    message: string
+    details: string[]
+}
+
+export interface ApmAuditDriftFinding {
+    path: string
+    kind: string
+    package?: string | null
+    inlineDiff?: string | null
+}
+
+export interface ApmAuditSummary {
+    total: number
+    passed: number
+    failed: number
+}
+
+export interface ApmAuditStatus {
+    available: boolean
+    checkedAt: string
+    command?: string
+    runner?: string
+    exitCode?: number
+    passed?: boolean
+    summary?: ApmAuditSummary
+    checks: ApmAuditCheck[]
+    drift: ApmAuditDriftFinding[]
+    skippedReason?: string
+    error?: string
+    stderr?: string
+}
+
+export interface ApmAuditResponse {
+    audit: ApmAuditStatus
+}
+
 export interface ApmPackageSummary {
     packageId: string
     name: string
@@ -185,6 +233,9 @@ export interface ApmPackageReadResponse {
     packageId: string
     manifest: ApmPackageManifest
     lock?: ApmPackageLock
+    manifestHash: string
+    sourceTreeHash?: string
+    lockStatus: ApmPackageLockStatus
     manifestYaml: string
     lockYaml?: string
     microsoftApm?: MicrosoftApmPackageSourceSummary
@@ -192,6 +243,7 @@ export interface ApmPackageReadResponse {
 
 export interface ApmPackageWriteRequest {
     manifest: ApmPackageManifest
+    baseManifestHash?: string
 }
 
 export interface ApmPackageWriteResponse extends ApmPackageReadResponse {
@@ -212,6 +264,11 @@ export interface ApmPackageCopyResponse extends ApmPackageReadResponse {
     toScope: ApmPackageScope
 }
 
+export interface ApmPackageDeleteResponse {
+    ok: true
+    packageId: string
+}
+
 export interface ApmPackageImportRequest {
     packageId?: string
     manifestYaml?: string
@@ -223,12 +280,45 @@ export interface ApmValidationRequest {
     manifest?: unknown
 }
 
+export type ApmPrimitiveFileKind = 'agent' | 'instruction' | 'skill' | 'prompt' | 'command' | 'hook'
+
+export interface ApmPrimitiveFileSummary {
+    path: string
+    kind: ApmPrimitiveFileKind
+    label: string
+    hash: string
+    updatedAt?: number
+    size: number
+    readonlyReason?: string
+}
+
+export interface ApmPrimitiveFileListResponse {
+    packageId: string
+    sourceTreeHash: string
+    files: ApmPrimitiveFileSummary[]
+}
+
+export interface ApmPrimitiveFileReadResponse extends ApmPrimitiveFileSummary {
+    content: string
+}
+
+export interface ApmPackageLockRegenerateRequest {
+    baseManifestHash?: string
+}
+
+export interface ApmPackageSourceSyncResponse extends ApmPackageReadResponse {
+    ok: true
+    synced: boolean
+}
+
 export type ApmGitHubImportFormat =
     | 'auto'
     | 'apm'
     | 'skill-md'
     | 'codex-toml'
     | 'claude-md'
+    | 'claude-settings'
+    | 'target-native'
     | 'instruction-md'
     | 'mcp-config'
 
@@ -292,18 +382,18 @@ export interface ApmGitHubImportPreviewResponse {
 }
 
 export type ApmGitHubSourceCatalogId =
-    | 'awesome-copilot'
+    | 'anthropic-skills'
     | 'addy-agent-skills'
     | 'wshobson-agents'
     | 'vercel-agent-skills'
-    | 'microsoft-skills'
-    | 'awesome-agent-skills'
     | 'awesome-claude-code-subagents'
-    | 'alireza-claude-skills'
-    | 'composio-agent-orchestrator'
-    | 'khazp-vibe-coding-prompt-template'
-    | 'lst97-claude-code-sub-agents'
-    | 'awesome-claude-code-agents'
+    | 'awesome-codex-subagents'
+    | 'disler-hooks-mastery'
+    | 'claude-spellbook'
+    | 'copilot-assets'
+    | 'superclaude-plugin'
+    | 'cursor-prompts'
+    | 'windsurf-antigravity-rules'
 
 export type ApmGitHubSourceItemKind = 'agent' | 'skill' | 'mcp' | 'package'
 

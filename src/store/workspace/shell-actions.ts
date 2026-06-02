@@ -2,6 +2,7 @@ import { studioApi } from '../../api-clients/studio'
 import type { WorkspaceSetState } from './action-context'
 import { buildExitFocusModeState } from './focus-mode-state'
 import type { WorkspaceSlice } from './types'
+import { writeStoredWorkspaceMode } from './workspace-mode-storage'
 
 type WorkspaceShellActions = Pick<WorkspaceSlice,
     | 'setTerminalOpen'
@@ -27,19 +28,22 @@ export function createWorkspaceShellActions(set: WorkspaceSetState): WorkspaceSh
             ? { isTrackingOpen: true, isAssistantOpen: false }
             : { isTrackingOpen: false }),
 
-        setWorkspaceMode: (mode) => set(() => {
-            if (mode === 'import' || mode === 'export') {
-                return {
-                    workspaceMode: mode,
-                    isTrackingOpen: false,
-                    isAssistantOpen: false,
-                    isTerminalOpen: false,
-                    isPackageLibraryOpen: false,
+        setWorkspaceMode: (mode) => {
+            writeStoredWorkspaceMode(mode)
+            set(() => {
+                if (mode === 'import' || mode === 'export') {
+                    return {
+                        workspaceMode: mode,
+                        isTrackingOpen: false,
+                        isAssistantOpen: false,
+                        isTerminalOpen: false,
+                        isPackageLibraryOpen: false,
+                    }
                 }
-            }
 
-            return { workspaceMode: mode }
-        }),
+                return { workspaceMode: mode }
+            })
+        },
 
         setApmPackageScope: (scope) => set({ apmPackageScope: scope }),
 

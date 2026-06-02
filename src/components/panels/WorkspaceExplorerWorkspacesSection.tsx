@@ -40,11 +40,6 @@ export default function WorkspaceExplorerWorkspacesSection({
             >
                 <span className="explorer__context-label">Current</span>
                 <strong>{workingDir ? workspaceLabel(workingDir) : 'No workspace open'}</strong>
-                {workingDir ? (
-                    <span className="explorer__context-path" title={workingDir}>
-                        {workingDir}
-                    </span>
-                ) : null}
             </button>
             <div className="explorer__tree explorer__tree--workspaces scroll-area">
                 {workspaceRows.length > 0 ? workspaceRows : <div className="empty-state">No saved workspaces</div>}

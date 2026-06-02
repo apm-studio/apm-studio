@@ -15,8 +15,8 @@
 }
 
 .canvas-frame--active {
-    border-color: var(--text-muted);
-    box-shadow: 0 0 0 1px var(--text-muted), var(--shadow-window);
+    border-color: color-mix(in srgb, var(--accent) 58%, var(--border-main));
+    box-shadow: 0 0 0 1px var(--accent-light), var(--shadow-window);
 }
 
 .canvas-frame--content-active.canvas-frame--active {
@@ -45,7 +45,7 @@
 
 /* Resize outline styling */
 .canvas-frame .react-flow__resize-control.line {
-    border-color: #3b82f6 !important;
+    border-color: var(--accent) !important;
 }
 
 .canvas-frame__header {
@@ -53,7 +53,7 @@
     align-items: center;
     gap: 8px;
     padding: 8px 14px;
-    background: var(--bg-panel);
+    background: color-mix(in srgb, var(--bg-panel) 94%, var(--bg-elevated));
     border-bottom: 1px solid var(--border-light);
     user-select: none;
     cursor: grab;

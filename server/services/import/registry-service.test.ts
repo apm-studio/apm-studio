@@ -58,6 +58,30 @@ describe('import registry service', () => {
         expect(fetchMock).toHaveBeenCalledWith(new URL('https://registry.test/v1/catalog?q=review&kind=agent&target=codex&limit=5'))
     })
 
+    it('uses the public APM Studio registry when no override is configured', async () => {
+        vi.unstubAllEnvs()
+        const fetchMock = vi.fn(async () => jsonResponse({ listings: [listing] }))
+        vi.stubGlobal('fetch', fetchMock)
+
+        await searchImportCatalog({ q: 'review' })
+
+        expect(fetchMock).toHaveBeenCalledWith(new URL('https://registry.apm.studio/v1/catalog?q=review&limit=20'))
+    })
+
+    it('falls back to the transition workers.dev registry when the public endpoint is unavailable', async () => {
+        vi.unstubAllEnvs()
+        const fetchMock = vi.fn()
+            .mockRejectedValueOnce(new Error('DNS unavailable'))
+            .mockResolvedValueOnce(jsonResponse({ listings: [listing] }))
+        vi.stubGlobal('fetch', fetchMock)
+
+        const result = await searchImportCatalog({ q: 'review' })
+
+        expect(result.listings).toHaveLength(1)
+        expect(fetchMock).toHaveBeenNthCalledWith(1, new URL('https://registry.apm.studio/v1/catalog?q=review&limit=20'))
+        expect(fetchMock).toHaveBeenNthCalledWith(2, new URL('https://apm-registry.dance-of-tal.workers.dev/v1/catalog?q=review&limit=20'))
+    })
+
     it('records successful registry imports as anonymous download events', async () => {
         vi.stubEnv('APM_STUDIO_REGISTRY_EVENT_TOKEN', 'event-token')
         const fetchMock = vi.fn(async () => jsonResponse({ ok: true }))

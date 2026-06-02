@@ -7,7 +7,7 @@
  *   Click a card → detail view for that category (Agent Body, Skills, Model, MCP)
  *   Back button returns to main card view.
  */
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { ArrowLeft, ChevronLeft, Cpu, FileText, Server, Zap } from 'lucide-react'
 
 import { unresolvedDeclaredMcpServerNames } from '../../lib/agents'
@@ -87,30 +87,37 @@ export default function AgentEditPanel({
 
     onOpenPrimitiveEditor,
 }: AgentEditPanelProps) {
-    const [detailView, setDetailView] = useState<DetailView>(null)
+    const [detailViewState, setDetailViewState] = useState<{ agentId: string; view: DetailView }>(() => ({
+        agentId,
+        view: null,
+    }))
+    const detailView = detailViewState.agentId === agentId ? detailViewState.view : null
+    const setDetailView = useCallback((view: DetailView) => {
+        setDetailViewState({ agentId, view })
+    }, [agentId])
     const unresolvedMcpPlaceholders = agent ? unresolvedDeclaredMcpServerNames(agent) : []
 
     // ── Detail view titles ──
     const detailTitles: Record<string, string> = {
         body: 'Agent Body',
         skills: 'Skills',
-        model: 'Runtime',
+        model: 'Models',
         mcp: 'MCP Servers',
     }
 
-    // ── Compose card descriptions (with counts) ──
+    // ── Compose card status labels ──
     const bodyDesc = agent?.agentBody?.trim()
-        ? `${agent.agentBody.trim().length} character${agent.agentBody.trim().length === 1 ? '' : 's'}`
-        : 'Write the Agent role and durable behavior'
+        ? 'Configured'
+        : 'Write behavior'
     const skillDesc = presentation.skillPrimitives.length > 0
         ? `${presentation.skillPrimitives.length} Skill${presentation.skillPrimitives.length !== 1 ? 's' : ''}`
-        : 'Drag & drop or click to add'
+        : 'Add Skills'
     const modelDesc = agent?.model
-        ? `${agent.model.modelId}`
-        : 'Drag & drop or click to select'
+        ? 'Selected'
+        : 'Select model'
     const mcpDesc = presentation.mcpServers.length > 0
         ? `${presentation.mcpServers.length} server${presentation.mcpServers.length !== 1 ? 's' : ''}`
-        : 'Drag & drop or click to add'
+        : 'Add MCP'
 
     return (
         <>
@@ -159,7 +166,6 @@ export default function AgentEditPanel({
                                     key: 'body',
                                     title: 'Agent Body',
                                     description: bodyDesc,
-                                    hint: agent?.meta?.authoring?.description || agent?.name || null,
                                     icon: <FileText size={12} />,
                                     onClick: () => setDetailView('body'),
                                 },
@@ -185,7 +191,7 @@ export default function AgentEditPanel({
                         />
                     </div>
                     <div className="edit-overview__group">
-                        <span className="section-title">Runtime Settings</span>
+                        <span className="section-title">Models</span>
                         <AgentComposeCards
                             cards={[
                                 {

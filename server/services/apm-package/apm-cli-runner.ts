@@ -18,6 +18,12 @@ export type ApmCliRunResult = {
     command: string
 }
 
+export type ApmCliRunOutcome = ApmCliRunResult & {
+    exitCode: number
+    failed: boolean
+    error?: string
+}
+
 function shellWords(value: string) {
     const matches = value.match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g) || []
     return matches.map((part) => part.replace(/^['"]|['"]$/g, ''))
@@ -25,6 +31,26 @@ function shellWords(value: string) {
 
 function commandDisplay(command: string, args: string[]) {
     return [command, ...args].join(' ')
+}
+
+function execText(result: unknown, key: 'stdout' | 'stderr') {
+    if (result && typeof result === 'object' && key in result) {
+        const value = (result as Record<string, unknown>)[key]
+        return typeof value === 'string' ? value : String(value || '')
+    }
+    return key === 'stdout' ? String(result || '') : ''
+}
+
+function execErrorCode(error: unknown) {
+    if (error && typeof error === 'object' && 'code' in error) {
+        const code = (error as Record<string, unknown>).code
+        return typeof code === 'number' ? code : 1
+    }
+    return 1
+}
+
+function execErrorMessage(error: unknown) {
+    return error instanceof Error ? error.message : 'APM CLI command failed.'
 }
 
 async function commandAvailable(command: string, args: string[] = ['--version']) {
@@ -78,6 +104,62 @@ export async function selectApmCliRunner(): Promise<ApmCliRunner | null> {
     return null
 }
 
+export async function runApmCliCommand(
+    runner: ApmCliRunner,
+    args: string[],
+    options: {
+        cwd: string
+        env?: NodeJS.ProcessEnv
+        timeout?: number
+    },
+): Promise<ApmCliRunResult> {
+    const result = await execFileAsync(runner.command, [...runner.args, ...args], {
+        cwd: options.cwd,
+        env: {
+            ...process.env,
+            ...options.env,
+        },
+        timeout: options.timeout || 30_000,
+        windowsHide: true,
+        maxBuffer: 1024 * 1024 * 4,
+    })
+    return {
+        runner,
+        stdout: execText(result, 'stdout'),
+        stderr: execText(result, 'stderr'),
+        command: commandDisplay(runner.displayCommand, args),
+    }
+}
+
+export async function runApmCliCommandCapture(
+    runner: ApmCliRunner,
+    args: string[],
+    options: {
+        cwd: string
+        env?: NodeJS.ProcessEnv
+        timeout?: number
+    },
+): Promise<ApmCliRunOutcome> {
+    try {
+        const result = await runApmCliCommand(runner, args, options)
+        return {
+            ...result,
+            exitCode: 0,
+            failed: false,
+        }
+    } catch (error) {
+        return {
+            runner,
+            stdout: execText(error, 'stdout'),
+            stderr: execText(error, 'stderr'),
+            command: commandDisplay(runner.displayCommand, args),
+            exitCode: execErrorCode(error),
+            failed: true,
+            error: execErrorMessage(error),
+        }
+    }
+}
+
 export async function runApmCliInstall(
     runner: ApmCliRunner,
     packageRoot: string,
@@ -106,8 +188,8 @@ export async function runApmCliInstall(
     })
     return {
         runner,
-        stdout: result.stdout,
-        stderr: result.stderr,
+        stdout: execText(result, 'stdout'),
+        stderr: execText(result, 'stderr'),
         command: commandDisplay(runner.command, installArgs),
     }
 }

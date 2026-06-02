@@ -1,6 +1,7 @@
 import {
     Bot,
     CheckCircle2,
+    FileSearch,
     Loader2,
     Package,
     PackagePlus,
@@ -32,6 +33,7 @@ interface ImportCandidateCardProps {
     workspaceInstallDisabled: boolean
     onToggle: (candidateId: string) => void
     onInstall: (candidateId: string) => void
+    onOpenDetails: (candidate: ApmGitHubImportCandidate) => void
 }
 
 export function ImportCandidateCard({
@@ -44,13 +46,20 @@ export function ImportCandidateCard({
     workspaceInstallDisabled,
     onToggle,
     onInstall,
+    onOpenDetails,
 }: ImportCandidateCardProps) {
+    const openDetails = () => {
+        onOpenDetails(candidate)
+    }
+    const description = candidate.description?.trim()
+
     return (
         <article className={`package-card import-source-item ${selected ? 'is-selected' : ''}`}>
             <label className="import-source-item__select" aria-label={`Select ${candidate.name}`}>
                 <input
                     type="checkbox"
-                    checked={selected}
+                    checked={selected && !installed}
+                    disabled={installed || importing || installing || workspaceInstallDisabled}
                     onChange={() => onToggle(candidate.id)}
                 />
             </label>
@@ -60,22 +69,39 @@ export function ImportCandidateCard({
                     <span className="package-card__name">{candidate.name}</span>
                 </div>
                 <div className="package-card__author" title={candidate.sourcePath}>
-                    {candidate.kind} / {candidate.sourcePath}
+                    {candidate.kind}
                 </div>
-                <div className="package-card__desc">
-                    {candidate.description || 'No description provided.'}
-                </div>
+                {description ? (
+                    <div className="package-card__desc" title={description}>
+                        {description}
+                    </div>
+                ) : null}
             </div>
-            <button
-                type="button"
-                className={`btn btn--sm ${installed ? '' : 'btn--primary'}`}
-                onClick={() => onInstall(candidate.id)}
-                disabled={installed || installing || importing || workspaceInstallDisabled}
-                title={`Install ${candidate.name} to ${scopeLabel(installScope)}`}
-            >
-                {installed ? <CheckCircle2 size={12} /> : installing ? <Loader2 size={12} className="spin" /> : <PackagePlus size={12} />}
-                {installed ? 'Installed' : 'Install'}
-            </button>
+            <div className="import-source-item__actions">
+                <button
+                    type="button"
+                    className="icon-btn"
+                    onClick={(event) => {
+                        event.preventDefault()
+                        event.stopPropagation()
+                        openDetails()
+                    }}
+                    title={`View details for ${candidate.name}`}
+                    aria-label={`View details for ${candidate.name}`}
+                >
+                    <FileSearch size={13} />
+                </button>
+                <button
+                    type="button"
+                    className={`btn btn--sm ${installed ? '' : 'btn--primary'}`}
+                    onClick={() => onInstall(candidate.id)}
+                    disabled={installed || installing || importing || workspaceInstallDisabled}
+                    title={`Install ${candidate.name} to ${scopeLabel(installScope)}`}
+                >
+                    {installed ? <CheckCircle2 size={12} /> : installing ? <Loader2 size={12} className="spin" /> : <PackagePlus size={12} />}
+                    {installed ? 'Installed' : 'Install'}
+                </button>
+            </div>
         </article>
     )
 }

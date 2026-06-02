@@ -412,6 +412,7 @@ describe('workspace side panels', () => {
         harness.get().setWorkspaceMode('export')
 
         expect(harness.get().workspaceMode).toBe('export')
+        expect(localStorage.setItem).toHaveBeenLastCalledWith('apm-studio:workspace-mode', 'export')
         expect(harness.get().isTrackingOpen).toBe(false)
         expect(harness.get().isAssistantOpen).toBe(false)
         expect(harness.get().isTerminalOpen).toBe(false)
@@ -421,6 +422,7 @@ describe('workspace side panels', () => {
         harness.get().setWorkspaceMode('import')
 
         expect(harness.get().workspaceMode).toBe('import')
+        expect(localStorage.setItem).toHaveBeenLastCalledWith('apm-studio:workspace-mode', 'import')
         expect(harness.get().isAssistantOpen).toBe(false)
         expect(harness.get().isTerminalOpen).toBe(false)
         expect(harness.get().workspaceDirty).toBe(false)
@@ -428,6 +430,7 @@ describe('workspace side panels', () => {
         harness.get().setWorkspaceMode('studio-agent')
 
         expect(harness.get().workspaceMode).toBe('studio-agent')
+        expect(localStorage.setItem).toHaveBeenLastCalledWith('apm-studio:workspace-mode', 'studio-agent')
         expect(harness.get().isAssistantOpen).toBe(false)
         expect(harness.get().isTerminalOpen).toBe(false)
         expect(harness.get().workspaceDirty).toBe(false)

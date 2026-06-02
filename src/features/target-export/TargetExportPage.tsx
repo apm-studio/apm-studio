@@ -1,18 +1,21 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { RotateCcw, Save } from 'lucide-react'
 import { useAppHeader } from '../../components/AppHeaderContext'
 import { useStudioStore } from '../../store'
 import { TargetExportSourceColumn, TargetExportSourceControls } from './TargetExportSourceColumn'
+import { TargetExportAssetDetailsModal } from './TargetExportAssetDetailsModal'
 import { TargetExportTargetsColumn } from './TargetExportTargetsColumn'
-import { useTargetExportController } from './useTargetExportController'
+import { useTargetExportController, type TargetExportControllerState } from './useTargetExportController'
+import type { TargetExportAssetDetailRequest } from './target-export-detail-model'
 import '../../components/panels/PackageLibrary.css'
 import './TargetExportPage.css'
 
-export function TargetExportPage() {
-    const controller = useTargetExportController()
-    const apmPackageScope = useStudioStore((state) => state.apmPackageScope)
+interface TargetExportPageProps {
+    active?: boolean
+}
+
+function TargetExportHeader({ controller }: { controller: TargetExportControllerState }) {
     const {
-        error,
         revertDisabled,
         revertExportChanges,
         running,
@@ -38,21 +41,45 @@ export function TargetExportPage() {
     }), [headerActions])
 
     useAppHeader(headerConfig)
+    return null
+}
+
+export function TargetExportPage({ active = true }: TargetExportPageProps) {
+    const controller = useTargetExportController()
+    const apmPackageScope = useStudioStore((state) => state.apmPackageScope)
+    const [assetDetailRequest, setAssetDetailRequest] = useState<TargetExportAssetDetailRequest | null>(null)
+    const {
+        error,
+    } = controller
 
     return (
-        <main className="target-export-page">
-            {error ? (
-                <div className="alert alert--danger target-export-page__alert" role="alert">
-                    {error}
+        <>
+            {active ? <TargetExportHeader controller={controller} /> : null}
+            <main className="target-export-page">
+                {error ? (
+                    <div className="alert alert--danger target-export-page__alert" role="alert">
+                        {error}
+                    </div>
+                ) : null}
+
+                <TargetExportSourceControls controller={controller} />
+
+                <div className="target-export-layout">
+                    <TargetExportSourceColumn
+                        controller={controller}
+                        onOpenDetails={setAssetDetailRequest}
+                        scope={apmPackageScope}
+                    />
+                    <TargetExportTargetsColumn
+                        controller={controller}
+                        onOpenDetails={setAssetDetailRequest}
+                    />
                 </div>
-            ) : null}
-
-            <TargetExportSourceControls controller={controller} scope={apmPackageScope} />
-
-            <div className="target-export-layout">
-                <TargetExportSourceColumn controller={controller} scope={apmPackageScope} />
-                <TargetExportTargetsColumn controller={controller} />
-            </div>
-        </main>
+                <TargetExportAssetDetailsModal
+                    request={assetDetailRequest}
+                    onClose={() => setAssetDetailRequest(null)}
+                />
+            </main>
+        </>
     )
 }

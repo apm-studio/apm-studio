@@ -134,4 +134,9 @@ describe('sync temp package', () => {
         ])
         expect(filteredManifestForSync(manifest, 'agents').dependencies?.mcp).toEqual([])
     })
+
+    it('normalizes Studio-only package types to Microsoft APM CLI package types', () => {
+        expect(filteredManifestForSync({ name: 'Hooks', type: 'hooks' }, 'hooks').type).toBe('hybrid')
+        expect(filteredManifestForSync({ name: 'Commands', type: 'commands' }, 'commands').type).toBe('prompts')
+    })
 })

@@ -24,7 +24,7 @@ Setup has two sides:
 - In Discord, create and invite a bot with the required permissions and intents.
 - In APM Studio, save the bot token, select the Discord server, configure access, and sync a workspace.
 
-The bot token stays server-side. APM Studio stores it locally under the Studio config directory, preferring `~/.apm-studio/discord-config.json` for new installs while preserving existing `~/.agent-apm` configs. API responses only report whether a token exists.
+The bot token stays server-side. APM Studio stores it locally under the Studio config directory at `~/.apm-studio/discord-config.json`. API responses only report whether a token exists.
 
 ## Discord Setup
 

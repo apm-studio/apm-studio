@@ -86,15 +86,12 @@ export default function SettingsProviders(props: SettingsProvidersProps) {
                     ) : (
                         <span className="stg-provider-row__meta">{provider.modelCount} models</span>
                     )}
-                    {provider.env.length > 0 && (
-                        <span className="badge badge--subtle">{provider.env[0]}</span>
-                    )}
                 </div>
                 <div className="stg-provider-row__actions">
                     {isConnected
                         ? (
                             provider.source === 'env'
-                                ? <span className="badge badge--subtle">Set via environment</span>
+                                ? <span className="badge badge--subtle">Managed</span>
                                 : (
                                     <button className="btn" onClick={() => disconnectProvider(provider.id, provider.name)}>
                                         Disconnect
@@ -106,7 +103,7 @@ export default function SettingsProviders(props: SettingsProvidersProps) {
                                 Connect
                             </button>
                         ) : (
-                            <span className="badge badge--subtle">Config only</span>
+                            null
                         )}
                 </div>
             </div>
@@ -146,16 +143,16 @@ export default function SettingsProviders(props: SettingsProvidersProps) {
             </div>
 
             {/* All providers */}
-            <div className="stg-section">
-                <h3 className="stg-section__title">All providers</h3>
+            <details className="stg-section stg-details">
+                <summary>All providers · {allProviders.length}</summary>
                 <div className="stg-group">
                     {allProviders.length === 0 ? (
-                        <div className="empty-state">All available providers are already surfaced above.</div>
+                        <div className="empty-state">No additional providers.</div>
                     ) : (
                         allProviders.map((provider) => renderProviderRow(provider))
                     )}
                 </div>
-            </div>
+            </details>
 
             {/* Connect modal overlay */}
             {connectTarget && shouldShowConnectModal && (

@@ -10,9 +10,9 @@
     min-width: 260px;
     max-width: 520px;
     flex-shrink: 0;
-    background: var(--bg-main);
+    background: var(--bg-panel);
     border-left: 1px solid var(--border-light);
-    box-shadow: -4px 0 16px rgba(0, 0, 0, 0.05);
+    box-shadow: var(--shadow-panel);
     animation: slide-in-right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     z-index: 40;
     position: relative;
@@ -53,7 +53,7 @@
     justify-content: space-between;
     padding: 10px 12px;
     border-bottom: 1px solid var(--border-light);
-    background: var(--bg-hover);
+    background: color-mix(in srgb, var(--bg-elevated) 78%, var(--bg-panel));
     flex-shrink: 0;
 }
 
@@ -77,7 +77,7 @@
     width: 22px;
     height: 22px;
     border-radius: var(--radius-sm);
-    background: rgba(var(--primary-rgb), 0.1);
+    background: color-mix(in srgb, var(--accent) 13%, var(--bg-panel));
     color: var(--primary);
 }
 
@@ -123,8 +123,8 @@
 
 .assistant-status-pill.is-busy {
     color: var(--accent);
-    border-color: rgba(var(--accent-rgb, 59, 130, 246), 0.24);
-    background: rgba(var(--accent-rgb, 59, 130, 246), 0.08);
+    border-color: color-mix(in srgb, var(--accent) 28%, var(--border-light));
+    background: color-mix(in srgb, var(--accent) 10%, var(--bg-panel));
 }
 
 /* ── Session Tabs ── */
@@ -168,13 +168,14 @@
     font-weight: 500;
     cursor: pointer;
     white-space: nowrap;
-    transition: all 0.15s;
+    transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
     flex-shrink: 0;
 }
 
 .assistant-sessions__tab:hover {
     background: var(--bg-hover);
     color: var(--text-secondary);
+    transform: translateY(-1px);
 }
 
 .assistant-sessions__tab.is-active {
@@ -222,13 +223,14 @@
     color: var(--text-muted);
     cursor: pointer;
     flex-shrink: 0;
-    transition: all 0.15s;
+    transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
 }
 
 .assistant-sessions__new:hover {
     border-color: var(--primary);
     color: var(--primary);
-    background: rgba(var(--primary-rgb), 0.05);
+    background: color-mix(in srgb, var(--accent) 8%, var(--bg-panel));
+    transform: translateY(-1px);
 }
 
 .assistant-sessions__new:disabled {
@@ -266,7 +268,7 @@
 }
 
 .assistant-empty__icon--warn {
-    color: #F59E0B;
+    color: var(--status-warning);
     opacity: 0.7;
 }
 
@@ -290,18 +292,18 @@
 }
 
 .assistant-action-status--success {
-    background: rgba(34, 197, 94, 0.12);
-    color: #15803d;
+    background: var(--status-success-bg);
+    color: var(--status-success);
 }
 
 .assistant-action-status--warning {
-    background: rgba(245, 158, 11, 0.14);
-    color: #b45309;
+    background: var(--status-warning-bg);
+    color: var(--status-warning);
 }
 
 .assistant-action-status--error {
-    background: rgba(239, 68, 68, 0.14);
-    color: #b91c1c;
+    background: var(--status-danger-bg);
+    color: var(--status-danger);
 }
 
 .assistant-empty__desc {
@@ -425,7 +427,7 @@
 .assistant-input:focus {
     outline: none;
     border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
+    box-shadow: none;
 }
 
 .assistant-input:disabled {
