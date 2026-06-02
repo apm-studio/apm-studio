@@ -39,7 +39,7 @@ describe('ensureAgentProjection source boundaries', () => {
     beforeEach(async () => {
         workingDir = await fs.mkdtemp(path.join(os.tmpdir(), 'apm-studio-working-'))
 
-        compileSkillMock.mockReset().mockResolvedValue({
+        compileSkillMock.mockReset().mockResolvedValue([{
             logicalName: 'draft-skill',
             description: 'Draft skill',
             filePath: path.join(workingDir, '.opencode', 'skills', 'draft-skill', 'SKILL.md'),
@@ -47,7 +47,7 @@ describe('ensureAgentProjection source boundaries', () => {
             content: '---\nname: "draft-skill"\n---\n\nbody',
             additionalFiles: [],
             bundleChanged: false,
-        })
+        }])
         compileAgentMock.mockReset().mockResolvedValue({
             agentId: 'agent-1',
             agentNames: { build: 'apm-studio/workspace/hash/agent-1--build' },
@@ -101,6 +101,7 @@ describe('ensureAgentProjection source boundaries', () => {
             workingDir,
             'workspace',
             undefined,
+            expect.any(Set),
         )
         expect(compileAgentMock).toHaveBeenCalledWith(
             workingDir,

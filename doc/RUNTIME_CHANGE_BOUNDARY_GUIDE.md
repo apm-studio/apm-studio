@@ -110,6 +110,7 @@ Every execution path should follow this order.
 ## Projection Rules
 
 - Agent projection uses Agent Body plus referenced Skills, MCP bindings, and Studio-only model settings
+- Agent projection may receive installed APM package Skill refs in the form `apm-package/workspace/<packageId>` or `apm-package/user/<packageId>`; runtime preparation must materialize those local package `.apm/skills/*/SKILL.md` primitives into Studio-owned OpenCode skill projection instead of treating them as external registry references
 - do not add synthetic Instruction sections or fallback instructions
 - preview or prewarm may materialize projection files
 - preview or prewarm must not clear `projectionDirty`

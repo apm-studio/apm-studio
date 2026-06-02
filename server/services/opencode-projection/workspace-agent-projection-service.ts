@@ -45,8 +45,9 @@ export async function ensureAgentProjection(input: AgentProjectionInput): Promis
     const projectionRuntime = await resolveAgentProjectionRuntime(input)
 
     const compiledSkills: CompiledSkill[] = []
+    const usedSkillNames = new Set<string>()
     for (const ref of input.skillRefs) {
-        compiledSkills.push(await compileSkill(
+        compiledSkills.push(...await compileSkill(
             input.workingDir,
             ref,
             workspaceHash,
@@ -54,6 +55,7 @@ export async function ensureAgentProjection(input: AgentProjectionInput): Promis
             input.workingDir,
             input.scope || 'workspace',
             input.teamId,
+            usedSkillNames,
         ))
     }
 
