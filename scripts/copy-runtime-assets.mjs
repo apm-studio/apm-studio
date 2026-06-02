@@ -16,6 +16,8 @@ const assetCopies = [
     },
 ]
 
+await fs.chmod(path.join(rootDir, 'dist', 'cli.js'), 0o755)
+
 for (const assetCopy of assetCopies) {
     await fs.access(assetCopy.source)
     await fs.rm(assetCopy.target, { recursive: true, force: true })

@@ -117,14 +117,22 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
+studio_command() {
+    command -v apm-studio 2>/dev/null || true
+}
+
+quote_shell_arg() {
+    printf "'%s'" "$(printf '%s' "$1" | sed "s/'/'\\\\''/g")"
+}
+
 refresh_path() {
+    PATH="$HOME/.local/bin:/usr/local/bin:/opt/homebrew/bin:$PATH"
     if command_exists npm; then
         NPM_PREFIX="$(npm prefix -g 2>/dev/null || true)"
         if [ -n "$NPM_PREFIX" ]; then
             PATH="$NPM_PREFIX/bin:$NPM_PREFIX:$PATH"
         fi
     fi
-    PATH="$HOME/.local/bin:/usr/local/bin:/opt/homebrew/bin:$PATH"
     export PATH
     hash -r 2>/dev/null || true
 }
@@ -140,8 +148,10 @@ install_studio() {
     log "Installing ${STUDIO_PACKAGE}@${STUDIO_VERSION}..."
     npm install -g "${STUDIO_PACKAGE}@${STUDIO_VERSION}"
     refresh_path
-    command_exists apm-studio || fail "apm-studio was installed, but the command is not on PATH. Check your npm global prefix."
-    log "APM Studio installed: $(apm-studio --version 2>/dev/null || printf available)"
+    STUDIO_BIN="$(studio_command)"
+    [ -n "$STUDIO_BIN" ] || fail "apm-studio was installed, but the command is not on PATH. Check your npm global prefix."
+    log "APM Studio installed: $("${STUDIO_BIN}" --version 2>/dev/null || printf available)"
+    log "APM Studio command: ${STUDIO_BIN}"
 }
 
 install_apm_cli() {
@@ -193,13 +203,15 @@ run_workspace_apm_install() {
 }
 
 start_studio() {
+    STUDIO_BIN="$(studio_command)"
+    [ -n "$STUDIO_BIN" ] || fail "apm-studio is not on PATH. Check your npm global prefix."
     [ "$START_STUDIO" = "1" ] || {
         log "APM Studio is ready."
-        log "Start it with: apm-studio \"$WORK_DIR\""
+        log "Start it with: $(quote_shell_arg "$STUDIO_BIN") $(quote_shell_arg "$WORK_DIR")"
         return
     }
     log "Starting APM Studio for $WORK_DIR in this terminal..."
-    exec apm-studio "$WORK_DIR"
+    exec "$STUDIO_BIN" "$WORK_DIR"
 }
 
 log "APM Studio one-click installer"

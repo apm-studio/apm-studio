@@ -33,10 +33,22 @@ Install:
 curl -fsSL https://raw.githubusercontent.com/apm-studio/apm-studio/main/public/install.sh | sh
 ```
 
+Start immediately after install:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/apm-studio/apm-studio/main/public/install.sh | sh -s -- --start
+```
+
 Windows:
 
 ```powershell
 irm https://raw.githubusercontent.com/apm-studio/apm-studio/main/public/install.ps1 | iex
+```
+
+Start immediately on Windows:
+
+```powershell
+iex "& { $(irm https://raw.githubusercontent.com/apm-studio/apm-studio/main/public/install.ps1) } -Start"
 ```
 
 Manual npm install:
@@ -46,7 +58,7 @@ npm install -g apm-studio
 apm-studio
 ```
 
-The installer installs or updates `apm-studio`, checks for the upstream Microsoft APM CLI, delegates missing APM CLI setup to Microsoft APM, and runs `apm install` when the current workspace already has an `apm.yml`. It prints the concrete `apm-studio` start command when installation finishes. To launch Studio immediately from the installer, pass `--start`.
+The installer installs or updates `apm-studio`, checks for the upstream Microsoft APM CLI, delegates missing APM CLI setup to Microsoft APM, and runs `apm install` when the current workspace already has an `apm.yml`. It prints the concrete `apm-studio` start command when installation finishes. Use `--start` on Unix or `-Start` on Windows to launch Studio immediately from the installer.
 
 ## APM Studio Flow
 
@@ -113,6 +125,15 @@ npm run dev
 npm run type-check
 npm test
 ```
+
+Release check:
+
+```bash
+npm run pack:check
+npm publish --dry-run
+```
+
+Publishing a fix requires a new npm version so `npm install -g apm-studio` and the installers' default `latest` tag can receive it.
 
 Important directories:
 

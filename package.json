@@ -1,6 +1,6 @@
 {
   "name": "apm-studio",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "APM Studio edits and runs Studio Agents, then manages APM target sync for coding assistants.",
   "license": "MIT",
   "author": "monarchjuno",
@@ -44,13 +44,14 @@
     "build:client": "vite build --outDir client",
     "build:server": "tsc -p tsconfig.server.json && node scripts/copy-runtime-assets.mjs",
     "build:all": "npm run clean && npm run build:client && npm run build:server",
-    "pack:check": "npm run build:all && npm pack --dry-run",
+    "pack:check": "npm pack --dry-run",
+    "prepack": "npm run build:all",
     "type-check": "tsc -b --noEmit && tsc -p tsconfig.server.json --noEmit",
     "test": "vitest run",
     "lint": "eslint .",
     "preview": "vite preview",
     "opencode": "opencode serve --port 43202",
-    "prepublishOnly": "npm run build:all"
+    "prepublishOnly": "npm run type-check && npm test"
   },
   "bin": {
     "apm-studio": "dist/cli.js"

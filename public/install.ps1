@@ -32,6 +32,17 @@ function Test-Command {
     return $null -ne (Get-Command $Name -ErrorAction SilentlyContinue)
 }
 
+function Resolve-StudioCommand {
+    $command = Get-Command apm-studio -ErrorAction SilentlyContinue
+    if ($null -eq $command) {
+        return $null
+    }
+    if (-not [string]::IsNullOrWhiteSpace($command.Source)) {
+        return $command.Source
+    }
+    return $command.Path
+}
+
 function Refresh-Path {
     $machinePath = [Environment]::GetEnvironmentVariable("Path", "Machine")
     $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
@@ -68,11 +79,13 @@ function Install-Studio {
         throw "npm install -g $StudioPackage@$StudioVersion failed."
     }
     Refresh-Path
-    if (-not (Test-Command apm-studio)) {
+    $studioCommand = Resolve-StudioCommand
+    if ([string]::IsNullOrWhiteSpace($studioCommand)) {
         throw "apm-studio was installed, but the command is not on PATH. Check your npm global prefix."
     }
-    $version = (& apm-studio --version 2>$null)
+    $version = (& $studioCommand --version 2>$null)
     Write-Step "APM Studio installed: $version"
+    Write-Step "APM Studio command: $studioCommand"
 }
 
 function Install-ApmCli {
@@ -135,14 +148,18 @@ function Invoke-WorkspaceApmInstall {
 }
 
 function Start-Studio {
+    $studioCommand = Resolve-StudioCommand
+    if ([string]::IsNullOrWhiteSpace($studioCommand)) {
+        throw "apm-studio is not on PATH. Check your npm global prefix."
+    }
     $shouldStart = $Start -or $env:APM_STUDIO_START -eq "1"
     if ($NoStart -or -not $shouldStart) {
         Write-Step "APM Studio is ready."
-        Write-Step "Start it with: apm-studio `"$Dir`""
+        Write-Step "Start it with: & `"$studioCommand`" `"$Dir`""
         return
     }
     Write-Step "Starting APM Studio for $Dir in this terminal..."
-    & apm-studio $Dir
+    & $studioCommand $Dir
     if ($LASTEXITCODE -ne 0) {
         throw "apm-studio exited with code $LASTEXITCODE."
     }

@@ -155,6 +155,7 @@ Every execution path should follow this order.
 - `dev:all` should check readiness through the Studio API managed health path
 - `dev:all` should force dev server mode plus the dev API and sidecar ports instead of inheriting production CLI env
 - dev ports should stay separate from published CLI ports so a released Studio can drive source changes safely
+- Studio startup should expose the API and `/api/health` before waiting on managed sidecar readiness; sidecar startup, startup projection refresh, and integrations may continue in the background so the CLI can report the Studio URL promptly
 - managed sidecar spawn must work without a Unix shell; package bin wrappers should be launched through Node when needed
 - managed process shutdown must account for Windows process trees as well as Unix signals
 - managed sidecar readiness should use OpenCode `/global/health`

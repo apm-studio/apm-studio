@@ -15,6 +15,18 @@ const app = createServerApp()
 let server: ReturnType<typeof serve> | null = null
 let shuttingDown = false
 
+async function initializeStartupServices() {
+    await ensureOpencodeSidecar().catch((err) => {
+        console.warn(`OpenCode sidecar is not ready yet: ${err instanceof Error ? err.message : String(err)}`)
+    })
+    await refreshAssistantProjectionOnServerStartup().catch((err) => {
+        console.warn(`APM Assistant projection refresh failed on startup: ${err instanceof Error ? err.message : String(err)}`)
+    })
+    await discordIntegrationService.initialize().catch((err) => {
+        console.warn(`Discord integration startup failed: ${err instanceof Error ? err.message : String(err)}`)
+    })
+}
+
 function closeServer() {
     return new Promise<void>((resolve) => {
         if (!server) {
@@ -47,17 +59,6 @@ process.once('SIGTERM', () => {
     void shutdown('SIGTERM')
 })
 
-// ── Start Server ────────────────────────────────────────
-await ensureOpencodeSidecar().catch((err) => {
-    console.warn(`OpenCode sidecar is not ready yet: ${err instanceof Error ? err.message : String(err)}`)
-})
-await refreshAssistantProjectionOnServerStartup().catch((err) => {
-    console.warn(`APM Assistant projection refresh failed on startup: ${err instanceof Error ? err.message : String(err)}`)
-})
-await discordIntegrationService.initialize().catch((err) => {
-    console.warn(`Discord integration startup failed: ${err instanceof Error ? err.message : String(err)}`)
-})
-
 console.log(`\nAPM Studio Server${IS_PRODUCTION ? ' (production)' : ' (dev)'}`)
 console.log(`   API:      http://localhost:${PORT}`)
 console.log(`   OpenCode: ${OPENCODE_URL} (managed sidecar)`)
@@ -70,3 +71,5 @@ server = serve({
     websocket: { server: new WebSocketServer({ noServer: true }) },
 })
 console.log('   Terminal: WebSocket on /ws/terminal (Hono-managed PTY)')
+
+void initializeStartupServices()
