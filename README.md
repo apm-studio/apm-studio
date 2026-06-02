@@ -1,7 +1,7 @@
 # APM Studio
 
 <p align="center">
-  <img src=".github/apm-studio-icon.png" alt="APM Studio icon" width="112" />
+  <img src="https://raw.githubusercontent.com/apm-studio/apm-studio/main/.github/apm-studio-icon.png" alt="APM Studio icon" width="112" />
 </p>
 
 **Import, manage, run, and inject APM-backed coding-agent packages from one local Studio.**
@@ -12,7 +12,7 @@
 
 [Quick Start](#quick-start) | [APM Studio Flow](#apm-studio-flow) | [Microsoft APM](#microsoft-apm) | [CLI](#cli) | [Development](#development)
 
-![APM Studio interface](.github/screenshot.png)
+![APM Studio interface](https://raw.githubusercontent.com/apm-studio/apm-studio/main/.github/screenshot.png)
 
 APM Studio is a local editor for APM packages. It imports source references from GitHub, manages local packages in `packages/*`, runs Studio Agents with local runtime settings, and injects selected APM primitives into assistant target files when you choose to sync.
 
