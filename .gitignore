@@ -27,7 +27,8 @@ tmp-client-sourcemap/
 *.local
 .DS_Store
 .agent/
-.codex/agents/
+.codex/
+.claude/
 .opencode/
 
 # Editor files
