@@ -174,6 +174,21 @@ describe('Target export target row model', () => {
         }).status).toBe('Skip')
     })
 
+    it('marks unstaged managed package rows as current', () => {
+        const row = buildTargetExportTargetPackageRowModel({
+            currentItem: currentItem(),
+            definition: definitionSummary(),
+            pkg: packageSummary(),
+            exportChoice: 'save',
+            staged: false,
+            syncUnit: 'agents',
+            target: targetSummary(),
+        })
+
+        expect(row.status).toBe('Current')
+        expect(row.badges).toEqual(expect.arrayContaining(['Managed', 'Current']))
+    })
+
     it('builds target-only rows without package matching assumptions', () => {
         expect(buildTargetExportTargetOnlyDefinitionRowModel(definitionSummary({
             id: 'manual',

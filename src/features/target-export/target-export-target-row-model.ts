@@ -47,6 +47,7 @@ export function buildTargetExportTargetPackageRowModel(input: {
     pkg: ApmPackageSummary
     result?: ApmSyncPackageResult
     exportChoice: TargetExportChoice
+    staged?: boolean
     syncUnit: ApmSyncUnit
     target: ApmSyncTargetSummary
 }): TargetExportTargetPackageRowModel {
@@ -56,13 +57,16 @@ export function buildTargetExportTargetPackageRowModel(input: {
         pkg,
         result,
         exportChoice,
+        staged = true,
         syncUnit,
         target,
     } = input
     const counts = apmPackageSyncPrimitiveCounts(pkg)
     const parts = primitiveCountParts(counts, syncUnit)
     const availability = targetPackageAvailability(target, syncUnit, pkg)
-    const status = result?.status || (exportChoice === 'skip' ? 'Skip' : availability.available ? 'Save' : 'Blocked')
+    const status = result?.status
+        || (!staged && (currentItem || definition) ? 'Current' : null)
+        || (exportChoice === 'skip' ? 'Skip' : availability.available ? 'Save' : 'Blocked')
     const stateClass = result?.status === 'failed' || result?.status === 'skipped' || !availability.available
         ? 'is-warning'
         : 'is-ready'

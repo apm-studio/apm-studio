@@ -180,6 +180,7 @@ describe('Target export controller model', () => {
 
         expect(model.activeTarget?.id).toBe('codex')
         expect(model.activeSavePackageIds).toEqual(['planner'])
+        expect(model.activeTargetCurrentPackages).toEqual([])
         expect(model.activeTargetDefinitionByPackage.get('planner')?.id).toBe('managed-planner')
         expect(model.targetOnlyDefinitions.map((definition) => definition.id)).toEqual(['target-only'])
         expect(model.activeTargetCurrentByPackage.get('planner')?.artifactCount).toBe(1)
@@ -235,7 +236,7 @@ describe('Target export controller model', () => {
         expect(model.activeTargetPlanSteps).toContain('Write managed project files into .claude/rules/ + CLAUDE.md.')
     })
 
-    it('marks local packages without target ownership as unsynced and excludes managed local definitions from target-only rows', () => {
+    it('marks local packages without target ownership as unsynced and keeps managed current packages visible', () => {
         const syncedPkg = projectPackage({
             packageId: 'synced',
             name: 'Synced',
@@ -276,6 +277,8 @@ describe('Target export controller model', () => {
 
         expect(model.activeTargetPackageExportStateByPackage.get('synced')).toBe('synced')
         expect(model.activeTargetPackageExportStateByPackage.get('unsynced')).toBe('unsynced')
+        expect(model.activeTargetCurrentPackages.map((pkg) => pkg.packageId)).toEqual(['synced'])
+        expect(model.activeTargetDefinitionByPackage.get('synced')?.id).toBe('managed-synced')
         expect(model.unsyncedPackageIds).toEqual(['unsynced'])
         expect(model.targetOnlyDefinitions.map((definition) => definition.id)).toEqual(['manual-target-only'])
     })

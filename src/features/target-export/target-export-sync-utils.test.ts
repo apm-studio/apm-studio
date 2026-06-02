@@ -127,7 +127,7 @@ describe('Target export utils', () => {
 
         expect(packageReadiness(pkg, 'agents')).toEqual({
             label: 'Ready',
-            title: 'Agents can be injected from this package.',
+            title: 'Agents can be exported from this package.',
         })
     })
 

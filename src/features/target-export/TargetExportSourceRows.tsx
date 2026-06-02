@@ -107,7 +107,7 @@ function TargetExportSourceCard({
         disabled: running,
     })
     const title = allowTargetStage
-        ? availability.reason || `Drag to ${activeTarget?.label || 'target'} or stage ${unitLabel(selectedSyncUnit)} for injection.`
+        ? availability.reason || `Drag to ${activeTarget?.label || 'target'} or stage ${unitLabel(selectedSyncUnit)} for export.`
         : `Drag to ${packageScopeLabel(copyTargetScope)} or use ${copyActionLabel}.`
     const detail = usefulDetail(row.detail)
 
@@ -179,7 +179,7 @@ function TargetExportSourceCard({
                                 void stagePackageForActiveTarget(row.packageId, selectedSyncUnit)
                             }}
                             disabled={running}
-                            title={availability.reason || 'Stage inject changes for the selected target'}
+                            title={availability.reason || 'Stage export changes for the selected target'}
                         >
                             {targetStaged ? 'Remove' : 'Add'}
                         </button>

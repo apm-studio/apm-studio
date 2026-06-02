@@ -116,7 +116,7 @@ export function packageReadiness(pkg: ApmPackageSummary, syncUnit: ApmSyncUnit) 
     const warnings = pkg.microsoftApm?.warnings || []
     return warnings.length > 0
         ? { label: 'Check', title: warnings.join('\n') }
-        : { label: 'Ready', title: `${unitLabel(syncUnit)} can be injected from this package.` }
+        : { label: 'Ready', title: `${unitLabel(syncUnit)} can be exported from this package.` }
 }
 
 export function targetAvailability(

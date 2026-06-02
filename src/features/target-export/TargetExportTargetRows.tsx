@@ -13,6 +13,7 @@ import type { TargetExportAssetDetailRequest } from './target-export-detail-mode
 interface TargetExportTargetRowsProps {
     activeTarget: NonNullable<TargetExportControllerState['activeTarget']>
     activeTargetCurrentByPackage: TargetExportControllerState['activeTargetCurrentByPackage']
+    activeTargetCurrentPackages: TargetExportControllerState['activeTargetCurrentPackages']
     activeTargetDefinitionByPackage: TargetExportControllerState['activeTargetDefinitionByPackage']
     activeTargetResultByPackage: TargetExportControllerState['activeTargetResultByPackage']
     running: boolean
@@ -27,6 +28,7 @@ interface TargetExportTargetRowsProps {
 export function TargetExportTargetRows({
     activeTarget,
     activeTargetCurrentByPackage,
+    activeTargetCurrentPackages,
     activeTargetDefinitionByPackage,
     activeTargetResultByPackage,
     running,
@@ -38,10 +40,14 @@ export function TargetExportTargetRows({
     targetOnlyDefinitions,
 }: TargetExportTargetRowsProps) {
     const stagedItems = buildTargetExportSourcePrimitiveItems(stagedPackages, selectedSyncUnit)
+    const currentItems = buildTargetExportSourcePrimitiveItems(activeTargetCurrentPackages, selectedSyncUnit)
 
     return (
         <div className="target-export-selected-list target-export-target-list">
-            {stagedItems.map((item) => {
+            {[
+                ...stagedItems.map((item) => ({ item, staged: true })),
+                ...currentItems.map((item) => ({ item, staged: false })),
+            ].map(({ item, staged }) => {
                 const pkg = item.pkg
                 const currentItem = activeTargetCurrentByPackage.get(pkg.packageId)
                 const definition = activeTargetDefinitionByPackage.get(pkg.packageId)
@@ -53,6 +59,7 @@ export function TargetExportTargetRows({
                     pkg,
                     result,
                     exportChoice,
+                    staged,
                     syncUnit: selectedSyncUnit,
                     target: activeTarget,
                 })
@@ -64,7 +71,7 @@ export function TargetExportTargetRows({
 
                 return (
                     <article
-                        key={`${activeTarget.id}:${item.id}`}
+                        key={`${activeTarget.id}:${staged ? 'staged' : 'current'}:${item.id}`}
                         className="target-export-selected-chip target-export-target-item"
                         title={detailRow.detail}
                     >
@@ -95,23 +102,31 @@ export function TargetExportTargetRows({
                             </button>
                         </span>
                         {row.stateClass === 'is-warning' ? <small>{row.detail}</small> : null}
-                        <span className="target-export-action-choice" aria-label={`${item.primitiveName} inject action`}>
-                            <button
-                                type="button"
-                                className={`target-export-choice-btn ${row.exportChoice === 'save' ? 'is-active' : ''}`}
-                                onClick={() => setPackageExportChoice(row.packageId, 'save')}
-                                disabled={!row.availability.available || running}
-                            >
-                                Save
-                            </button>
-                            <button
-                                type="button"
-                                className={`target-export-choice-btn ${row.exportChoice === 'skip' ? 'is-active' : ''}`}
-                                onClick={() => setPackageExportChoice(row.packageId, 'skip')}
-                                disabled={running}
-                            >
-                                Skip
-                            </button>
+                        <span className="target-export-action-choice" aria-label={`${item.primitiveName} export action`}>
+                            {staged ? (
+                                <>
+                                    <button
+                                        type="button"
+                                        className={`target-export-choice-btn ${row.exportChoice === 'save' ? 'is-active' : ''}`}
+                                        onClick={() => setPackageExportChoice(row.packageId, 'save')}
+                                        disabled={!row.availability.available || running}
+                                    >
+                                        Save
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`target-export-choice-btn ${row.exportChoice === 'skip' ? 'is-active' : ''}`}
+                                        onClick={() => setPackageExportChoice(row.packageId, 'skip')}
+                                        disabled={running}
+                                    >
+                                        Skip
+                                    </button>
+                                </>
+                            ) : (
+                                <button type="button" className="target-export-choice-btn is-active" disabled>
+                                    Keep
+                                </button>
+                            )}
                         </span>
                     </article>
                 )

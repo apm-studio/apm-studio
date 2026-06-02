@@ -157,7 +157,7 @@ export function useTargetExportController() {
         setStagedPackageIds([])
         setStagedScopeCopies([])
         setExportChoices({})
-        setTargetMessage('Reverted staged inject changes.')
+        setTargetMessage('Reverted staged export changes.')
         setLastResult(null)
     }, [])
 
@@ -197,7 +197,7 @@ export function useTargetExportController() {
             const targetCount = model.activeSavePackageIds.length
             const messages = [
                 copyCount > 0 ? `Copied ${copyCount} package${copyCount === 1 ? '' : 's'} between User and Workspace.` : null,
-                targetCount > 0 ? `Saved inject changes to ${targetLabel}.` : null,
+                targetCount > 0 ? `Saved export changes to ${targetLabel}.` : null,
             ].filter((entry): entry is string => Boolean(entry))
             setTargetMessage(messages.join(' '))
         } catch (err) {
@@ -257,7 +257,7 @@ export function useTargetExportController() {
         if (!pkg) {
             const userPackage = userPackages.find((candidate) => candidate.packageId === packageId)
             setTargetMessage(userPackage
-                ? 'Copy this User package to Workspace before injecting into a target.'
+                ? 'Copy this User package to Workspace before exporting into a target.'
                 : 'Package is no longer available in this workspace.')
             return false
         }
@@ -322,7 +322,7 @@ export function useTargetExportController() {
     const toggleStagedPackage = useCallback((packageId: string) => {
         if (stagedPackageIds.includes(packageId)) {
             setStagedPackageIds((current) => current.filter((id) => id !== packageId))
-            setTargetMessage('Removed from staged inject changes.')
+            setTargetMessage('Removed from staged export changes.')
             setLastResult(null)
             return
         }

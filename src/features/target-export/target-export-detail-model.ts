@@ -216,7 +216,7 @@ export function buildTargetExportSourcePackageDetailModel(
             {
                 title: 'Primitives',
                 tab: 'other',
-                badges: primitiveBadges.length > 0 ? primitiveBadges : ['No primitives to inject'],
+                badges: primitiveBadges.length > 0 ? primitiveBadges : ['No primitives to export'],
             },
             packageFileSection(pkg),
             readPackageSection(readState),
@@ -266,7 +266,7 @@ export function buildTargetExportSourcePrimitiveDetailModel(
                     pkg.derivedFrom ? { label: 'Derived from', value: pkg.derivedFrom, mono: true } : null,
                     { label: 'Updated', value: formatUpdatedAt(pkg.updatedAt) },
                 ]),
-                badges: primitiveBadges.length > 0 ? primitiveBadges : ['No primitives to inject'],
+                badges: primitiveBadges.length > 0 ? primitiveBadges : ['No primitives to export'],
             },
             packageFileSection(pkg),
             readPackageSection(readState),
@@ -294,7 +294,7 @@ export function buildTargetExportTargetPackageDetailModel(
         result?.error ? { text: result.error, tone: 'danger' as const } : null,
         ...(result?.warnings || []).map((warning) => ({ text: warning, tone: 'warning' as const })),
         result?.modelOmitted || pkg.agentComponents?.model
-            ? { text: 'Studio-only model settings stay inside Studio and are not injected into target artifacts.', tone: 'muted' as const }
+            ? { text: 'Studio-only model settings stay inside Studio and are not exported into target artifacts.', tone: 'muted' as const }
             : null,
     ])
 
@@ -310,7 +310,7 @@ export function buildTargetExportTargetPackageDetailModel(
         ]),
         sections: [
             {
-                title: 'Inject Target',
+                title: 'Export Target',
                 tab: 'metadata',
                 rows: compactRows([
                     { label: 'Target', value: activeTarget.label },
@@ -336,7 +336,7 @@ export function buildTargetExportTargetPackageDetailModel(
                     { label: 'Package path', value: packagePath(pkg), mono: true },
                     pkg.manifestPath ? { label: 'Manifest path', value: pkg.manifestPath, mono: true } : null,
                 ]),
-                badges: primitiveBadges.length > 0 ? primitiveBadges : ['No primitives to inject'],
+                badges: primitiveBadges.length > 0 ? primitiveBadges : ['No primitives to export'],
             },
             {
                 title: 'Target State',

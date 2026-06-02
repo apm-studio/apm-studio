@@ -20,6 +20,7 @@ export function TargetExportTargetsColumn({ controller, onOpenDetails }: TargetE
         activeTarget,
         activeTargetAvailability,
         activeTargetCurrentByPackage,
+        activeTargetCurrentPackages,
         activeTargetDefinitionByPackage,
         activeTargetDefinitions,
         activeTargetPlanSteps,
@@ -77,7 +78,7 @@ export function TargetExportTargetsColumn({ controller, onOpenDetails }: TargetE
                 </div>
             </div>
 
-            <div className="target-export-target-tabs" role="tablist" aria-label="Inject target">
+            <div className="target-export-target-tabs" role="tablist" aria-label="Export target">
                 {targets.map((target) => {
                     const availability = targetStates.get(target.id) || { available: false, reason: 'Target unavailable.' }
                     const outputHint = targetOutputHint(target, selectedSyncUnit)
@@ -115,6 +116,7 @@ export function TargetExportTargetsColumn({ controller, onOpenDetails }: TargetE
                     >
                         {activeSavePackageIds.length > 0 ? <strong>{activeSavePackageIds.length} save</strong> : null}
                         <span>{activeTargetOutputHint}</span>
+                        {activeTargetCurrentPackages.length > 0 ? <span>{activeTargetCurrentPackages.length} current</span> : null}
                         {activeSavePackageIds.length === 0 ? <span>Nothing staged</span> : null}
                     </div>
 
@@ -134,6 +136,7 @@ export function TargetExportTargetsColumn({ controller, onOpenDetails }: TargetE
                     <TargetExportTargetRows
                         activeTarget={activeTarget}
                         activeTargetCurrentByPackage={activeTargetCurrentByPackage}
+                        activeTargetCurrentPackages={activeTargetCurrentPackages}
                         activeTargetDefinitionByPackage={activeTargetDefinitionByPackage}
                         activeTargetResultByPackage={activeTargetResultByPackage}
                         running={running}
@@ -145,10 +148,10 @@ export function TargetExportTargetsColumn({ controller, onOpenDetails }: TargetE
                         targetOnlyDefinitions={targetOnlyDefinitions}
                     />
 
-                    {stagedPackages.length === 0 && targetOnlyDefinitions.length === 0 && stagedScopeCopies.length === 0 ? (
+                    {stagedPackages.length === 0 && activeTargetCurrentPackages.length === 0 && targetOnlyDefinitions.length === 0 && stagedScopeCopies.length === 0 ? (
                         <div className="target-export-empty">
                             {apmPackageScope === 'user'
-                                ? 'Copy User packages to Workspace before target injection.'
+                                ? 'Copy User packages to Workspace before target export.'
                                 : 'Drop source cards here or use Add to target.'}
                         </div>
                     ) : null}
@@ -164,7 +167,7 @@ export function TargetExportTargetsColumn({ controller, onOpenDetails }: TargetE
                 </div>
             ) : (
                 <div className="target-export-empty">
-                    Select a target to preview injection.
+                    Select a target to preview export.
                 </div>
             )}
         </aside>

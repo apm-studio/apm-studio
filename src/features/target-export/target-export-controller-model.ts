@@ -191,11 +191,14 @@ export function buildTargetExportControllerModel(input: TargetExportControllerMo
         const definition = findManagedDefinitionForPackage(activeTargetDefinitions, pkg)
         if (definition) activeTargetManagedDefinitionByPackage.set(pkg.packageId, definition)
     }
-    const activeTargetDefinitionByPackage = new Map<string, ApmSyncTargetDefinitionSummary>()
-    for (const pkg of stagedPackages) {
-        const definition = activeTargetManagedDefinitionByPackage.get(pkg.packageId)
-        if (definition) activeTargetDefinitionByPackage.set(pkg.packageId, definition)
-    }
+    const activeTargetDefinitionByPackage = new Map(activeTargetManagedDefinitionByPackage)
+    const activeTargetCurrentPackages = projectSyncablePackages.filter((pkg) => (
+        !stagedPackageSet.has(pkg.packageId)
+        && (
+            activeTargetCurrentByPackage.has(pkg.packageId)
+            || activeTargetManagedDefinitionByPackage.has(pkg.packageId)
+        )
+    ))
     const matchedDefinitionIds = new Set(Array.from(activeTargetManagedDefinitionByPackage.values()).map((definition) => definition.id))
     const targetOnlyDefinitions = activeTargetDefinitions.filter((definition) => !matchedDefinitionIds.has(definition.id))
     const activeTargetPackageExportStateByPackage = new Map<string, TargetExportPackageState>()
@@ -243,6 +246,7 @@ export function buildTargetExportControllerModel(input: TargetExportControllerMo
         activeTarget,
         activeTargetAvailability,
         activeTargetCurrentByPackage,
+        activeTargetCurrentPackages,
         activeTargetDefinitionByPackage,
         activeTargetDefinitions,
         activeTargetPlanSteps,
