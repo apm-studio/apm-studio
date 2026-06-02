@@ -16,7 +16,7 @@
 
 APM Studio is a local editor for APM packages. It imports source references from GitHub, manages local packages in `packages/*`, runs Studio Agents with local runtime settings, and exports selected APM primitives into assistant target files when you choose to sync.
 
-The npm package is `apm-studio`. The first APM Studio package-line release is `0.3.0`.
+The npm package is `apm-studio`. The current APM Studio package-line release is `0.3.2`.
 
 ## Quick Start
 
