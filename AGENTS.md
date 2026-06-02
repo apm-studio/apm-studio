@@ -9,7 +9,7 @@ APM Studio helps users manage AI coding assistant packages as agents, instructio
 1. Import: discover community source references, presets, and compatibility metadata.
 2. Manage: edit local APM-backed packages in `packages/*`.
 3. Run: execute local agents and teams inside Studio without exporting Studio-only model settings.
-4. Inject: sync selected local packages into assistant-specific target files through target sync.
+4. Export: sync selected local packages into assistant-specific target files through target sync.
 
 Think about the codebase in this order:
 
@@ -22,19 +22,19 @@ Think about the codebase in this order:
 7. `.opencode/` holds generated OpenCode-facing runtime artifacts.
 8. OpenCode executes projected runtime artifacts outside the React app.
 
-If you need the OpenCode source, use `/Users/junhoyoon/tmp/opencode-source/opencode`.
+If you need the OpenCode source, use `<local-opencode-source>`.
 
-If you need the upstream Microsoft APM reference source for Studio development, use `/Users/junhoyoon/tmp/apm`.
+If you need the upstream Microsoft APM reference source for Studio development, use `<local-apm-source>`.
 
 The official Microsoft APM documentation is at `https://microsoft.github.io/apm/`.
 
-The sibling directory `/Users/junhoyoon/windsurfpjt/dance-of-tal/apm-registry` is the Cloudflare Worker registry project. Treat it as a separate project from this Studio repo.
+The sibling `<local-apm-registry>` checkout is the Cloudflare Worker registry project. Treat it as a separate project from this Studio repo.
 
 ## Top-Level Structure
 
 - `src/`
   - Frontend application.
-  - Main UI, canvas, local Packages drawer, Import page, Inject page, assistant chat, agent chat, team UI, Zustand store.
+  - Main UI, canvas, local Packages drawer, Import page, Export page, assistant chat, agent chat, team UI, Zustand store.
   - Treat this as the Studio interaction layer.
 - `shared/`
   - Shared contracts and runtime-safe types.
@@ -87,19 +87,19 @@ The sibling directory `/Users/junhoyoon/windsurfpjt/dance-of-tal/apm-registry` i
   - Build outputs.
   - Prefer changing source files, not generated output.
 
-## Import, Manage, Run, Inject Boundary
+## Import, Manage, Run, Export Boundary
 
 The core package flow is:
 
-`registry listing -> import adapter -> packages/<packageId>/apm.yml -> Manage edits -> Run in Studio or Inject target sync -> assistant files`
+`registry listing -> import adapter -> packages/<packageId>/apm.yml -> Manage edits -> Run in Studio or Export target sync -> assistant files`
 
 - Import is discovery/import, not the package source of truth after import.
 - The Packages drawer is local-only: show installed/draft packages and runtime primitives there, not registry Import search.
 - Registry listings should reference GitHub sources plus import recipes, trust/index metadata, and presets. They should not store user workspace state, private config, generated assistant files, or edited local package content.
 - Manage uses local APM packages under `packages/*` as the canonical editable source.
 - Run uses local package data plus Studio-only model settings; those model settings must not be emitted into external target artifacts.
-- Inject always reads local package data. Do not sync directly from a registry listing into Codex/Claude/Gemini/OpenCode.
-- External assistant target sync is manual through Inject.
+- Export always reads local package data. Do not sync directly from a registry listing into Codex/Claude/Gemini/OpenCode.
+- External assistant target sync is manual through Export.
 - Studio-internal OpenCode runtime projection remains automatic so local agent chat and team runtime can keep working.
 
 ## Frontend To Runtime Boundary
@@ -122,7 +122,7 @@ In short:
 - Product name: `APM Studio`.
 - npm package and CLI: `apm-studio`.
 - Assistant label: `APM Assistant`.
-- Use `agent`, `instruction`, `skill`, `team`, `workflow`, `package`, `Import`, `Manage`, `Run`, and `Inject` for user-facing copy.
+- Use `agent`, `instruction`, `skill`, `team`, `workflow`, `package`, `Import`, `Manage`, `Run`, and `Export` for user-facing copy.
 - Do not introduce old product names or old role vocabulary in user-facing copy.
 - Do not introduce old role vocabulary in new internal names; use Agent and Team naming unless an upstream protocol requires otherwise.
 - GitHub metadata/docs should target `github.com/apm-studio/apm-studio`.
