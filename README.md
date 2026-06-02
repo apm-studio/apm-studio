@@ -27,16 +27,18 @@ Requirements:
 - OpenCode for local Studio Agent runtime
 - Microsoft APM CLI for full target sync coverage
 
-One-click install:
+Install:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/apm-studio/apm-studio/main/public/install.sh | sh
+apm-studio /path/to/project
 ```
 
 Windows:
 
 ```powershell
 irm https://raw.githubusercontent.com/apm-studio/apm-studio/main/public/install.ps1 | iex
+apm-studio C:\path\to\project
 ```
 
 Manual npm install:
@@ -46,7 +48,7 @@ npm install -g apm-studio
 apm-studio /path/to/project
 ```
 
-The installer installs or updates `apm-studio`, checks for the upstream Microsoft APM CLI, delegates missing APM CLI setup to Microsoft APM, and runs `apm install` when the current workspace already has an `apm.yml`.
+The installer installs or updates `apm-studio`, checks for the upstream Microsoft APM CLI, delegates missing APM CLI setup to Microsoft APM, and runs `apm install` when the current workspace already has an `apm.yml`. It prints the `apm-studio` start command when installation finishes. To launch Studio immediately from the installer, pass `--start`.
 
 ## APM Studio Flow
 

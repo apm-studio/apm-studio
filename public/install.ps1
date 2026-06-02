@@ -6,6 +6,7 @@ param(
     [string]$Target = $env:APM_STUDIO_APM_TARGET,
     [switch]$NoApm,
     [switch]$NoApmInstall,
+    [switch]$Start,
     [switch]$NoStart
 )
 
@@ -134,11 +135,13 @@ function Invoke-WorkspaceApmInstall {
 }
 
 function Start-Studio {
-    if ($NoStart -or $env:APM_STUDIO_START -eq "0") {
-        Write-Step "APM Studio is ready. Start it with: apm-studio `"$Dir`""
+    $shouldStart = $Start -or $env:APM_STUDIO_START -eq "1"
+    if ($NoStart -or -not $shouldStart) {
+        Write-Step "APM Studio is ready."
+        Write-Step "Start it with: apm-studio `"$Dir`""
         return
     }
-    Write-Step "Starting APM Studio for $Dir..."
+    Write-Step "Starting APM Studio for $Dir in this terminal..."
     & apm-studio $Dir
     if ($LASTEXITCODE -ne 0) {
         throw "apm-studio exited with code $LASTEXITCODE."

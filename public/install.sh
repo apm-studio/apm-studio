@@ -7,7 +7,7 @@ WORK_DIR="${APM_STUDIO_WORK_DIR:-$(pwd)}"
 APM_INSTALLER_URL="${APM_STUDIO_APM_INSTALLER_URL:-https://aka.ms/apm-unix}"
 INSTALL_APM="${APM_STUDIO_INSTALL_APM:-1}"
 RUN_APM_INSTALL="${APM_STUDIO_RUN_APM_INSTALL:-1}"
-START_STUDIO="${APM_STUDIO_START:-1}"
+START_STUDIO="${APM_STUDIO_START:-0}"
 APM_TARGET="${APM_STUDIO_APM_TARGET:-}"
 
 usage() {
@@ -17,6 +17,7 @@ APM Studio installer
 Usage:
   curl -fsSL https://raw.githubusercontent.com/apm-studio/apm-studio/main/public/install.sh | sh
   curl -fsSL https://raw.githubusercontent.com/apm-studio/apm-studio/main/public/install.sh | sh -s -- --dir /path/to/project
+  curl -fsSL https://raw.githubusercontent.com/apm-studio/apm-studio/main/public/install.sh | sh -s -- --dir /path/to/project --start
 
 Options:
   --dir PATH             Workspace directory. Defaults to the current directory.
@@ -24,6 +25,7 @@ Options:
   --target TARGET        Run apm install with --target TARGET when apm.yml exists.
   --no-apm               Do not install the APM CLI if it is missing.
   --no-apm-install       Do not run apm install for the workspace.
+  --start                Start apm-studio after installation. Defaults to off.
   --no-start             Do not start apm-studio after installation.
   --apm-installer-url U  Override the upstream Microsoft APM installer URL.
   --help                 Show this help.
@@ -35,7 +37,7 @@ Environment:
   APM_STUDIO_APM_INSTALLER_URL
   APM_STUDIO_INSTALL_APM=0
   APM_STUDIO_RUN_APM_INSTALL=0
-  APM_STUDIO_START=0
+  APM_STUDIO_START=1
   APM_STUDIO_APM_TARGET
 EOF
 }
@@ -93,6 +95,9 @@ while [ "$#" -gt 0 ]; do
             ;;
         --no-apm-install)
             RUN_APM_INSTALL=0
+            ;;
+        --start)
+            START_STUDIO=1
             ;;
         --no-start)
             START_STUDIO=0
@@ -189,10 +194,11 @@ run_workspace_apm_install() {
 
 start_studio() {
     [ "$START_STUDIO" = "1" ] || {
-        log "APM Studio is ready. Start it with: apm-studio \"$WORK_DIR\""
+        log "APM Studio is ready."
+        log "Start it with: apm-studio \"$WORK_DIR\""
         return
     }
-    log "Starting APM Studio for $WORK_DIR..."
+    log "Starting APM Studio for $WORK_DIR in this terminal..."
     exec apm-studio "$WORK_DIR"
 }
 
