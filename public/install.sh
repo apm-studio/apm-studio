@@ -15,8 +15,8 @@ usage() {
 APM Studio installer
 
 Usage:
-  curl -fsSL https://apm.studio/install.sh | sh
-  curl -fsSL https://apm.studio/install.sh | sh -s -- --dir /path/to/project
+  curl -fsSL https://raw.githubusercontent.com/apm-studio/apm-studio/main/public/install.sh | sh
+  curl -fsSL https://raw.githubusercontent.com/apm-studio/apm-studio/main/public/install.sh | sh -s -- --dir /path/to/project
 
 Options:
   --dir PATH             Workspace directory. Defaults to the current directory.

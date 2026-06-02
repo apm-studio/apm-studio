@@ -30,13 +30,13 @@ Requirements:
 One-click install:
 
 ```bash
-curl -fsSL https://apm.studio/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/apm-studio/apm-studio/main/public/install.sh | sh
 ```
 
 Windows:
 
 ```powershell
-irm https://apm.studio/install.ps1 | iex
+irm https://raw.githubusercontent.com/apm-studio/apm-studio/main/public/install.ps1 | iex
 ```
 
 Manual npm install:
