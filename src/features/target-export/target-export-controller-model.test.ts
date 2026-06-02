@@ -258,6 +258,13 @@ describe('Target export controller model', () => {
                             managedPackageId: 'synced',
                         }),
                         definitionSummary({
+                            id: 'managed-synced-extra',
+                            managed: true,
+                            managedPackageId: 'synced',
+                            name: 'synced-extra',
+                            path: '.codex/agents/synced-extra.toml',
+                        }),
+                        definitionSummary({
                             id: 'manual-target-only',
                             managed: false,
                             name: 'manual-target-only',

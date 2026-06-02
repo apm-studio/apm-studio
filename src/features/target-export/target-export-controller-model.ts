@@ -13,7 +13,6 @@ import {
     sumApmPackageSyncPrimitiveCounts,
 } from '../../../shared/apm-sync-contracts'
 import {
-    findManagedDefinitionForPackage,
     packageHasSyncUnit,
     primitiveSummary,
     primitiveUnitForSidebar,
@@ -186,10 +185,16 @@ export function buildTargetExportControllerModel(input: TargetExportControllerMo
     const activeTargetDefinitions = definitions.filter((definition) =>
         !definition.syncUnit || definition.syncUnit === selectedSyncUnit,
     )
+    const projectSyncablePackageIds = new Set(projectSyncablePackages.map((pkg) => pkg.packageId))
     const activeTargetManagedDefinitionByPackage = new Map<string, ApmSyncTargetDefinitionSummary>()
-    for (const pkg of projectSyncablePackages) {
-        const definition = findManagedDefinitionForPackage(activeTargetDefinitions, pkg)
-        if (definition) activeTargetManagedDefinitionByPackage.set(pkg.packageId, definition)
+    const matchedDefinitionIds = new Set<string>()
+    for (const definition of activeTargetDefinitions) {
+        const managedPackageId = definition.managedPackageId
+        if (!managedPackageId || !projectSyncablePackageIds.has(managedPackageId)) continue
+        matchedDefinitionIds.add(definition.id)
+        if (!activeTargetManagedDefinitionByPackage.has(managedPackageId)) {
+            activeTargetManagedDefinitionByPackage.set(managedPackageId, definition)
+        }
     }
     const activeTargetDefinitionByPackage = new Map(activeTargetManagedDefinitionByPackage)
     const activeTargetCurrentPackages = projectSyncablePackages.filter((pkg) => (
@@ -199,7 +204,6 @@ export function buildTargetExportControllerModel(input: TargetExportControllerMo
             || activeTargetManagedDefinitionByPackage.has(pkg.packageId)
         )
     ))
-    const matchedDefinitionIds = new Set(Array.from(activeTargetManagedDefinitionByPackage.values()).map((definition) => definition.id))
     const targetOnlyDefinitions = activeTargetDefinitions.filter((definition) => !matchedDefinitionIds.has(definition.id))
     const activeTargetPackageExportStateByPackage = new Map<string, TargetExportPackageState>()
     for (const pkg of projectSyncablePackages) {

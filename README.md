@@ -4,7 +4,7 @@
   <img src="https://raw.githubusercontent.com/apm-studio/apm-studio/main/.github/apm-studio-icon.png" alt="APM Studio icon" width="112" />
 </p>
 
-**Import, manage, run, and inject APM-backed coding-agent packages from one local Studio.**
+**Import, manage, run, and export APM-backed coding-agent packages from one local Studio.**
 
 [![npm version](https://img.shields.io/npm/v/apm-studio?style=flat-square)](https://www.npmjs.com/package/apm-studio)
 ![Node.js >=20.19.0](https://img.shields.io/badge/Node.js-%3E%3D20.19.0-3c873a?style=flat-square)
@@ -14,7 +14,7 @@
 
 ![APM Studio interface](https://raw.githubusercontent.com/apm-studio/apm-studio/main/.github/screenshot.png)
 
-APM Studio is a local editor for APM packages. It imports source references from GitHub, manages local packages in `packages/*`, runs Studio Agents with local runtime settings, and injects selected APM primitives into assistant target files when you choose to sync.
+APM Studio is a local editor for APM packages. It imports source references from GitHub, manages local packages in `packages/*`, runs Studio Agents with local runtime settings, and exports selected APM primitives into assistant target files when you choose to sync.
 
 The npm package is `apm-studio`. The first APM Studio package-line release is `0.3.0`.
 
@@ -55,16 +55,16 @@ The installer installs or updates `apm-studio`, checks for the upstream Microsof
 | Import | Search source references or paste a GitHub repo, preview detected primitives, then install selected packages locally. |
 | Manage | Edit local APM package metadata and Studio Agent composition while keeping canonical package content under `packages/<packageId>/`. |
 | Run | Test Studio Agents locally with Studio-only model settings that are not emitted to target assistant files. |
-| Inject | Sync selected APM agents, instructions, skills, prompts, commands, hooks, or MCP config into supported assistant targets. |
+| Export | Sync selected APM agents, instructions, skills, prompts, commands, hooks, or MCP config into supported assistant targets. |
 
 APM Studio keeps source and output separate:
 
 ```text
 GitHub source -> packages/<packageId>/apm.yml -> Studio Agent runtime
-                                             -> Inject target sync -> assistant files
+                                             -> Export target sync -> assistant files
 ```
 
-Studio-only workspace state lives in `.apm-studio/`. Generated OpenCode runtime projection lives in `.opencode/`. Assistant target files are written only through Inject.
+Studio-only workspace state lives in `.apm-studio/`. Generated OpenCode runtime projection lives in `.opencode/`. Assistant target files are written only through Export.
 
 ## Microsoft APM
 
