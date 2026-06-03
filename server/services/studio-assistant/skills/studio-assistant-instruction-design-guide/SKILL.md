@@ -26,7 +26,7 @@ Use this skill when the task is not just "make an Instruction draft exist", but 
 - Highly specific workflow wiring that belongs to a Team.
 - Reusable optional capability bundles that belong in Skills.
 - Ephemeral environment details that may go stale quickly.
-- Agent identity, persona, or role design; that belongs in Agent Body.
+- Agent identity, persona, or role design; that belongs in Agent instructions.
 
 ## Compression Rule
 - Instruction content goes into target/project rule paths, so keep only high-value enduring guidance.
@@ -43,12 +43,12 @@ Use this skill when the task is not just "make an Instruction draft exist", but 
 
 ## Instruction vs Agent vs Skill vs Team
 - Instruction = standalone project/file rules and durable coding guidance.
-- Agent = runnable/editable role package with Agent Body, Skills, MCP, and Studio-only model settings.
+- Agent = runnable/editable role package with Agent instructions, Skills, MCP, and Studio-only model settings.
 - Skill = optional reusable skill or procedure the agent can bring in when relevant.
 - Team = multi-agent workflow, handoffs, and participant structure.
 - If a rule applies only in one workflow or relation, prefer Team.
 - If a capability is optional or specialized, prefer Skill.
-- If it defines role behavior, prefer Agent Body.
+- If it defines role behavior, prefer Agent instructions.
 - If it should shape project or file behavior across agents/targets, prefer Instruction.
 
 ## Recommended Instruction Shape
@@ -67,7 +67,7 @@ Use this skill when the task is not just "make an Instruction draft exist", but 
 
 ## Assistant Behavior
 - Do not propose Instruction as a dependency for new Agent creation.
-- If the user asks for an Agent role, use Agent Body guidance instead of Instruction.
+- If the user asks for an Agent role, use Agent instructions guidance instead of Instruction.
 - Ask first when the Instruction scope, policy, path, or convention choices are important and unclear.
 - When revising an Instruction, tighten and compress before expanding.
 - Prefer removing low-signal text over adding more text.

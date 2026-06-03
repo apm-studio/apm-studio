@@ -34,8 +34,16 @@ export type GitHubRepoMetadata = {
 }
 
 const REPO_METADATA_TTL_MS = 5 * 60_000
+const TREE_TTL_MS = 2 * 60_000
+const RAW_TEXT_TTL_MS = 2 * 60_000
 const MAX_TREE_TARBALL_BYTES = 32 * 1024 * 1024
+const MAX_RAW_TEXT_CACHE_CHARS = 1024 * 1024
+const MAX_RAW_TEXT_CACHE_ENTRIES = 400
 const REPO_METADATA_CACHE = new Map<string, { cachedAt: number; value: GitHubRepoMetadata }>()
+const TREE_CACHE = new Map<string, { cachedAt: number; value: string[] }>()
+const TREE_IN_FLIGHT = new Map<string, Promise<string[]>>()
+const RAW_TEXT_CACHE = new Map<string, { cachedAt: number; value: string }>()
+const RAW_TEXT_IN_FLIGHT = new Map<string, Promise<string>>()
 const gunzipAsync = promisify(gunzip)
 
 export const SOURCE_ADAPTERS: SourceAdapter[] = [
@@ -161,13 +169,52 @@ async function fetchGithubJson<T>(url: string): Promise<T> {
     return await response.json() as T
 }
 
-export async function fetchGithubText(repo: string, ref: string, sourcePath: string) {
+function cachedValue<T>(cache: Map<string, { cachedAt: number; value: T }>, key: string, ttlMs: number) {
+    const cached = cache.get(key)
+    if (cached && Date.now() - cached.cachedAt < ttlMs) {
+        return cached.value
+    }
+    if (cached) cache.delete(key)
+    return null
+}
+
+function rememberRawText(key: string, value: string) {
+    if (value.length > MAX_RAW_TEXT_CACHE_CHARS) return
+    RAW_TEXT_CACHE.set(key, { cachedAt: Date.now(), value })
+    while (RAW_TEXT_CACHE.size > MAX_RAW_TEXT_CACHE_ENTRIES) {
+        const oldestKey = RAW_TEXT_CACHE.keys().next().value
+        if (!oldestKey) break
+        RAW_TEXT_CACHE.delete(oldestKey)
+    }
+}
+
+async function fetchGithubTextUncached(repo: string, ref: string, sourcePath: string) {
     const encodedPath = sourcePath.split('/').map((segment) => encodeURIComponent(segment)).join('/')
     const response = await fetch(`https://raw.githubusercontent.com/${repo}/${ref}/${encodedPath}`)
     if (!response.ok) {
         throw new Error(`GitHub source fetch failed for ${sourcePath} with HTTP ${response.status}.`)
     }
     return await response.text()
+}
+
+export async function fetchGithubText(repo: string, ref: string, sourcePath: string) {
+    const key = `${repo}:${ref}:${normalizeRepoPath(sourcePath)}`
+    const cached = cachedValue(RAW_TEXT_CACHE, key, RAW_TEXT_TTL_MS)
+    if (cached !== null) return cached
+
+    const inFlight = RAW_TEXT_IN_FLIGHT.get(key)
+    if (inFlight) return inFlight
+
+    const request = fetchGithubTextUncached(repo, ref, sourcePath)
+        .then((value) => {
+            rememberRawText(key, value)
+            return value
+        })
+        .finally(() => {
+            RAW_TEXT_IN_FLIGHT.delete(key)
+        })
+    RAW_TEXT_IN_FLIGHT.set(key, request)
+    return request
 }
 
 export async function fetchGithubRawText(owner: string, repo: string, ref: string, sourcePath: string) {
@@ -267,7 +314,7 @@ async function fetchTreeFromTarball(owner: string, repo: string, ref: string) {
     return listTarballBlobPaths(await gunzipAsync(bytes))
 }
 
-export async function fetchTree(owner: string, repo: string, ref: string) {
+async function fetchTreeUncached(owner: string, repo: string, ref: string) {
     try {
         const response = await fetchGithubJson<GitHubTreeResponse>(
             `https://api.github.com/repos/${owner}/${repo}/git/trees/${encodeURIComponent(ref)}?recursive=1`,
@@ -280,4 +327,32 @@ export async function fetchTree(owner: string, repo: string, ref: string) {
             throw error
         }
     }
+}
+
+export async function fetchTree(owner: string, repo: string, ref: string) {
+    const key = `${owner}/${repo}:${ref}`.toLowerCase()
+    const cached = cachedValue(TREE_CACHE, key, TREE_TTL_MS)
+    if (cached) return cached
+
+    const inFlight = TREE_IN_FLIGHT.get(key)
+    if (inFlight) return inFlight
+
+    const request = fetchTreeUncached(owner, repo, ref)
+        .then((value) => {
+            TREE_CACHE.set(key, { cachedAt: Date.now(), value })
+            return value
+        })
+        .finally(() => {
+            TREE_IN_FLIGHT.delete(key)
+        })
+    TREE_IN_FLIGHT.set(key, request)
+    return request
+}
+
+export function clearGithubSourceCaches() {
+    REPO_METADATA_CACHE.clear()
+    TREE_CACHE.clear()
+    TREE_IN_FLIGHT.clear()
+    RAW_TEXT_CACHE.clear()
+    RAW_TEXT_IN_FLIGHT.clear()
 }

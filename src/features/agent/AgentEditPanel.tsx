@@ -4,7 +4,7 @@
  *
  * Drill-down pattern:
  *   Main view: Compose cards (DnD + "Drag & drop or click to configure")
- *   Click a card → detail view for that category (Agent Body, Skills, Model, MCP)
+ *   Click a card → detail view for that category (Agent Instructions, Skills, Model, MCP)
  *   Back button returns to main card view.
  */
 import { useCallback, useState } from 'react'
@@ -20,7 +20,7 @@ import type { WorkspaceModelConfig,
 
 import AgentComposeCards from './AgentComposeCards'
 import {
-    AgentBodyDetail,
+    AgentInstructionsDetail,
     AgentSkillsDetail,
     AgentMcpDetail,
     AgentModelDetail,
@@ -99,7 +99,7 @@ export default function AgentEditPanel({
 
     // ── Detail view titles ──
     const detailTitles: Record<string, string> = {
-        body: 'Agent Body',
+        body: 'Agent Instructions',
         skills: 'Skills',
         model: 'Models',
         mcp: 'MCP Servers',
@@ -164,7 +164,7 @@ export default function AgentEditPanel({
                             cards={[
                                 {
                                     key: 'body',
-                                    title: 'Agent Body',
+                                    title: 'Agent Instructions',
                                     description: bodyDesc,
                                     icon: <FileText size={12} />,
                                     onClick: () => setDetailView('body'),
@@ -211,7 +211,7 @@ export default function AgentEditPanel({
 
             {/* ── Detail Views ── */}
             {detailView === 'body' && (
-                <AgentBodyDetail
+                <AgentInstructionsDetail
                     agent={agent}
                     onNameChange={onNameChange}
                     onDescriptionChange={onDescriptionChange}

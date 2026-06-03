@@ -14,27 +14,49 @@ interface TargetExportPageProps {
     active?: boolean
 }
 
-function TargetExportHeader({ controller }: { controller: TargetExportControllerState }) {
+function TargetExportHeader({
+    controller,
+    userWorkspaceMode,
+}: {
+    controller: TargetExportControllerState
+    userWorkspaceMode: boolean
+}) {
     const {
-        revertDisabled,
         revertExportChanges,
         running,
-        saveDisabled,
         saveExport,
     } = controller
+    const revertDisabled = userWorkspaceMode ? controller.scopeCopyRevertDisabled : controller.targetSyncRevertDisabled
+    const saveDisabled = userWorkspaceMode ? controller.scopeCopySaveDisabled : controller.targetSyncSaveDisabled
 
     const headerActions = useMemo(() => (
         <>
-            <button className="btn" type="button" onClick={revertExportChanges} disabled={revertDisabled}>
+            <button
+                className="btn"
+                type="button"
+                onClick={() => revertExportChanges({
+                    copyScopes: userWorkspaceMode,
+                    syncTargets: !userWorkspaceMode,
+                })}
+                disabled={revertDisabled}
+            >
                 <RotateCcw size={13} />
                 Revert
             </button>
-            <button className="btn btn--primary" type="button" onClick={() => void saveExport()} disabled={saveDisabled}>
+            <button
+                className="btn btn--primary"
+                type="button"
+                onClick={() => void saveExport({
+                    copyScopes: userWorkspaceMode,
+                    syncTargets: !userWorkspaceMode,
+                })}
+                disabled={saveDisabled}
+            >
                 <Save size={13} />
                 {running ? 'Saving' : 'Save'}
             </button>
         </>
-    ), [revertDisabled, revertExportChanges, running, saveDisabled, saveExport])
+    ), [revertDisabled, revertExportChanges, running, saveDisabled, saveExport, userWorkspaceMode])
     const headerConfig = useMemo(() => ({
         actions: headerActions,
         hideContext: true,
@@ -47,6 +69,7 @@ function TargetExportHeader({ controller }: { controller: TargetExportController
 export function TargetExportPage({ active = true }: TargetExportPageProps) {
     const controller = useTargetExportController()
     const apmPackageScope = useStudioStore((state) => state.apmPackageScope)
+    const userWorkspaceMode = apmPackageScope === 'user'
     const [assetDetailRequest, setAssetDetailRequest] = useState<TargetExportAssetDetailRequest | null>(null)
     const {
         error,
@@ -54,7 +77,7 @@ export function TargetExportPage({ active = true }: TargetExportPageProps) {
 
     return (
         <>
-            {active ? <TargetExportHeader controller={controller} /> : null}
+            {active ? <TargetExportHeader controller={controller} userWorkspaceMode={userWorkspaceMode} /> : null}
             <main className="target-export-page">
                 {error ? (
                     <div className="alert alert--danger target-export-page__alert" role="alert">
@@ -68,12 +91,22 @@ export function TargetExportPage({ active = true }: TargetExportPageProps) {
                     <TargetExportSourceColumn
                         controller={controller}
                         onOpenDetails={setAssetDetailRequest}
-                        scope={apmPackageScope}
+                        scope={userWorkspaceMode ? 'user' : 'workspace'}
+                        targetStageEnabled={!userWorkspaceMode}
                     />
-                    <TargetExportTargetsColumn
-                        controller={controller}
-                        onOpenDetails={setAssetDetailRequest}
-                    />
+                    {userWorkspaceMode ? (
+                        <TargetExportSourceColumn
+                            controller={controller}
+                            onOpenDetails={setAssetDetailRequest}
+                            scope="workspace"
+                            targetStageEnabled={false}
+                        />
+                    ) : (
+                        <TargetExportTargetsColumn
+                            controller={controller}
+                            onOpenDetails={setAssetDetailRequest}
+                        />
+                    )}
                 </div>
                 <TargetExportAssetDetailsModal
                     request={assetDetailRequest}

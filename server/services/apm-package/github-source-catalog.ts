@@ -185,7 +185,7 @@ async function listPresetItems(adapter: SourceAdapter) {
             importRequest: {
                 source: repo,
                 format: 'auto',
-                limit: 24,
+                limit: 400,
             },
         } satisfies ApmGitHubSourceItem],
         totalCandidates: 1,

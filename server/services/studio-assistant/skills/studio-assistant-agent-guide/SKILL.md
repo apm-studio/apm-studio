@@ -35,18 +35,18 @@ Use this skill when the user wants an Agent created, revised, inspected, or atta
 ## Quality Bar
 - `name` should identify the actual role.
 - `description` should say what the Agent owns, how it reasons, or what handoff it produces.
-- Agent Body should carry the role's durable behavior. Keep one-off task instructions out of the Agent package.
+- Agent instructions should carry the role's durable behavior. Keep one-off task instructions out of the Agent package.
 - Skill should hold optional procedures or reusable capability, not always-on identity.
 - An Agent created for a Team should be distinct enough that nearby roles would behave differently.
 
 ## Good Agent Patterns
-- Single expert: one clear role, focused Agent Body, model only when requested or already known.
+- Single expert: one clear role, focused Agent instructions, model only when requested or already known.
 - Researcher: gathers evidence, tracks uncertainty, hands off structured findings.
 - Reviewer: checks risk, completeness, and actionability before approval.
 - Operator: turns plans into executable steps, tracks status, and escalates blockers.
 
 ## Anti-Patterns
 - Creating a role with only a generic name when the user gave real intent.
-- Stuffing whole workflow structure into Agent Body instead of Team rules and relations.
+- Stuffing whole workflow structure into Agent instructions instead of Team rules and relations.
 - Adding broad MCP or Skill dependencies without snapshot evidence.
 - Asking for extra setup details when the requested role is already clear enough to draft.

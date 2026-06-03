@@ -1,7 +1,7 @@
 /**
  * Agent configuration mutations for the workspace slice.
  *
- * Contains all Agent Body, Skill, Model, MCP, and agent-config setters.
+ * Contains all Agent instructions, Skill, Model, MCP, and agent-config setters.
  * Each function produces a Zustand partial that the workspace slice
  * spreads directly into its returned object.
  */

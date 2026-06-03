@@ -19,7 +19,7 @@ describe('agent prompt projection', () => {
         expect(getCompileRequestTargets({ skillRefs: [], model: { provider: 'openai', modelId: 'gpt-5' } })).toEqual([])
     })
 
-    it('compiles stable agent prompt sections into the agent body', async () => {
+    it('compiles stable agent prompt sections into the agent instructions', async () => {
         const compiled = await compileAgent(
             '/tmp/apm-studio',
             {

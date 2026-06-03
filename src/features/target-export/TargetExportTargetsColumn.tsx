@@ -1,7 +1,6 @@
 import { AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { useDndMonitor, useDroppable } from '@dnd-kit/core'
 import type { DragPrimitive, DropTargetData } from '../../lib/dnd-handlers'
-import { useStudioStore } from '../../store'
 import { TargetExportTargetLogo } from './TargetExportTargetLogo'
 import { TargetExportTargetRows } from './TargetExportTargetRows'
 import type { TargetExportControllerState } from './useTargetExportController'
@@ -14,7 +13,6 @@ interface TargetExportTargetsColumnProps {
 }
 
 export function TargetExportTargetsColumn({ controller, onOpenDetails }: TargetExportTargetsColumnProps) {
-    const apmPackageScope = useStudioStore((state) => state.apmPackageScope)
     const {
         activeSavePackageIds,
         activeTarget,
@@ -33,7 +31,6 @@ export function TargetExportTargetsColumn({ controller, onOpenDetails }: TargetE
         setPackageExportChoice,
         stagePackageForActiveTarget,
         stagedPackages,
-        stagedScopeCopies,
         exportChoices,
         targetOnlyDefinitions,
         targetMessage,
@@ -152,11 +149,9 @@ export function TargetExportTargetsColumn({ controller, onOpenDetails }: TargetE
                         targetOnlyDefinitions={targetOnlyDefinitions}
                     />
 
-                    {stagedPackages.length === 0 && activeTargetCurrentPackages.length === 0 && targetOnlyDefinitions.length === 0 && stagedScopeCopies.length === 0 ? (
+                    {stagedPackages.length === 0 && activeTargetCurrentPackages.length === 0 && targetOnlyDefinitions.length === 0 ? (
                         <div className="target-export-empty">
-                            {apmPackageScope === 'user'
-                                ? 'Copy User packages to Workspace before target export.'
-                                : 'Drop source cards here or use Add to target.'}
+                            Drop source cards here or use Add to target.
                         </div>
                     ) : null}
 

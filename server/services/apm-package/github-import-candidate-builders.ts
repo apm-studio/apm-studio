@@ -115,16 +115,19 @@ export function buildInstructionManifest(repo: string, ref: string, sourcePath: 
         targets: ALL_TARGET_LABELS,
         primitiveCounts: { instructions: 1 },
         manifest,
-        copyFiles: [{ sourcePath, targetPath }],
+        copyFiles: [{ sourcePath, targetPath, content: raw }],
     }
 }
 
 export function buildSkillManifest(repo: string, ref: string, sourcePath: string, raw: string, tree: string[]): ImportCandidate {
     const parsed = parseFrontmatter(raw)
+    const isCanonicalSkillFile = path.posix.basename(sourcePath).toLowerCase() === 'skill.md'
+    const fallbackName = isCanonicalSkillFile
+        ? path.posix.basename(path.posix.dirname(sourcePath)) || path.posix.basename(sourcePath, '.md')
+        : path.posix.basename(sourcePath, path.posix.extname(sourcePath))
     const name = slugify(
         (parsed?.data.name as string | undefined)
-            || path.posix.basename(path.posix.dirname(sourcePath))
-            || path.posix.basename(sourcePath, '.md'),
+            || fallbackName,
         'skill',
     )
     const description = (parsed?.data.description as string | undefined)
@@ -133,12 +136,15 @@ export function buildSkillManifest(repo: string, ref: string, sourcePath: string
     const skillRoot = path.posix.dirname(sourcePath)
     const copySourceRoot = skillRoot === '.' ? '' : `${skillRoot}/`
     const targetRoot = `.apm/skills/${name}`
-    const copyFiles = tree
-        .filter((entry) => entry === sourcePath || (copySourceRoot && entry.startsWith(copySourceRoot)))
-        .map((entry) => ({
-            sourcePath: entry,
-            targetPath: `${targetRoot}/${copySourceRoot ? entry.slice(copySourceRoot.length) : path.posix.basename(entry)}`,
-        }))
+    const copyFiles = isCanonicalSkillFile
+        ? tree
+            .filter((entry) => entry === sourcePath || (copySourceRoot && entry.startsWith(copySourceRoot)))
+            .map((entry) => ({
+                sourcePath: entry,
+                targetPath: `${targetRoot}/${copySourceRoot ? entry.slice(copySourceRoot.length) : path.posix.basename(entry)}`,
+                ...(entry === sourcePath ? { content: raw } : {}),
+            }))
+        : [{ sourcePath, targetPath: `${targetRoot}/SKILL.md`, content: raw }]
     const manifest: ApmPackageManifest = {
         name,
         version: '0.1.0',
@@ -278,7 +284,7 @@ export function buildMcpManifest(repo: string, ref: string, sourcePath: string, 
         targets: ALL_TARGET_LABELS,
         primitiveCounts: { mcp: mcpDependencies.length },
         manifest,
-        copyFiles: [{ sourcePath, targetPath }],
+        copyFiles: [{ sourcePath, targetPath, content: raw }],
     }
 }
 

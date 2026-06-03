@@ -53,12 +53,10 @@ function applyDevCors(app: Hono) {
     }))
 }
 
-function mountProductionClient(app: Hono) {
-    const clientDir = resolveClientDir()
+function mountProductionClient(app: Hono, clientDir = resolveClientDir()) {
+    app.use('*', serveStatic({ root: clientDir }))
 
-    app.use('/assets/*', serveStatic({ root: clientDir }))
-
-    app.get('*', async (c) => {
+    app.get('*', (c) => {
         const indexPath = path.join(clientDir, 'index.html')
         if (fs.existsSync(indexPath)) {
             const html = fs.readFileSync(indexPath, 'utf-8')
@@ -68,19 +66,25 @@ function mountProductionClient(app: Hono) {
     })
 }
 
-export function createServerApp() {
+interface CreateServerAppOptions {
+    clientDir?: string
+    production?: boolean
+}
+
+export function createServerApp(options: CreateServerAppOptions = {}) {
     const app = new Hono()
+    const production = options.production ?? IS_PRODUCTION
 
     app.use('*', requestLogger)
 
-    if (!IS_PRODUCTION) {
+    if (!production) {
         applyDevCors(app)
     }
 
     mountApiRoutes(app)
 
-    if (IS_PRODUCTION) {
-        mountProductionClient(app)
+    if (production) {
+        mountProductionClient(app, options.clientDir)
     }
 
     return app

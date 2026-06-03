@@ -17,6 +17,7 @@ interface TargetExportSourceColumnProps {
     controller: TargetExportControllerState
     onOpenDetails: (request: TargetExportAssetDetailRequest) => void
     scope: ApmPackageScope
+    targetStageEnabled?: boolean
 }
 
 interface TargetExportSourceControlsProps {
@@ -64,7 +65,12 @@ export function TargetExportSourceControls({ controller }: TargetExportSourceCon
     )
 }
 
-export function TargetExportSourceColumn({ controller, onOpenDetails, scope }: TargetExportSourceColumnProps) {
+export function TargetExportSourceColumn({
+    controller,
+    onOpenDetails,
+    scope,
+    targetStageEnabled = true,
+}: TargetExportSourceColumnProps) {
     const {
         activeTarget,
         apmPackagesLoading,
@@ -87,6 +93,7 @@ export function TargetExportSourceColumn({ controller, onOpenDetails, scope }: T
     } = controller
 
     const isProject = scope === 'workspace'
+    const allowTargetStage = targetStageEnabled && isProject
     const title = packageScopeLabel(scope)
     const destinationScope = oppositeScope(scope)
     const packages = isProject ? controller.syncableProjectPackages : controller.syncableUserPackages
@@ -97,6 +104,8 @@ export function TargetExportSourceColumn({ controller, onOpenDetails, scope }: T
     const copyToDestinationCount = controller.stagedScopeCopies
         .filter((copy) => copy.fromScope === scope && copy.toScope === destinationScope)
         .length
+    const targetStageCount = allowTargetStage ? stagedPackageIds.length : 0
+    const targetUnsyncedCount = allowTargetStage ? unsyncedPackageIds.length : 0
     const { isOver, setNodeRef } = useDroppable({
         id: `target-export-scope:${scope}`,
         data: {
@@ -135,20 +144,20 @@ export function TargetExportSourceColumn({ controller, onOpenDetails, scope }: T
             </div>
 
             <div className="target-export-source__summary" title={`${allPackages.length} packages · ${primitiveSummary(counts, selectedSyncUnit)}`}>
-                {isProject && stagedPackageIds.length > 0 ? <strong>{stagedPackageIds.length} staged</strong> : null}
-                {!isProject && copyToDestinationCount > 0 ? <strong>{copyToDestinationCount} copy</strong> : null}
-                {isProject && unsyncedPackageIds.length > 0 ? <span>{unsyncedPackageIds.length} unsynced</span> : null}
+                {targetStageCount > 0 ? <strong>{targetStageCount} staged</strong> : null}
+                {copyToDestinationCount > 0 ? <strong>{copyToDestinationCount} copy</strong> : null}
+                {targetUnsyncedCount > 0 ? <span>{targetUnsyncedCount} unsynced</span> : null}
                 {copyToDestinationCount > 0 ? <span>to {packageScopeLabel(destinationScope)}</span> : null}
                 {packageWarnings > 0 ? <span>{packageWarnings} warnings</span> : null}
-                {stagedPackageIds.length === 0 && copyToDestinationCount === 0 && unsyncedPackageIds.length === 0 && packageWarnings === 0 ? (
+                {targetStageCount === 0 && copyToDestinationCount === 0 && targetUnsyncedCount === 0 && packageWarnings === 0 ? (
                     <span>{sourceItems.length} available</span>
                 ) : null}
             </div>
 
             <TargetExportSourceRows
                 items={sourceItems}
-                activeTarget={activeTarget}
-                allowTargetStage={isProject}
+                activeTarget={allowTargetStage ? activeTarget : null}
+                allowTargetStage={allowTargetStage}
                 copyTargetScope={destinationScope}
                 copyActionLabel={`Copy to ${packageScopeLabel(destinationScope)}`}
                 packageExportStateByPackage={controller.activeTargetPackageExportStateByPackage}

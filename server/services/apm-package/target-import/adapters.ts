@@ -229,7 +229,7 @@ function primitiveMarkdownCandidate(context: TargetImportBuildContext, spec: Pat
         primitiveCounts: spec.manifestKind === 'instruction'
             ? { instructions: 1 }
             : { prompts: 1, commands: 1 },
-        copyFiles: [{ sourcePath: context.sourcePath, targetPath }],
+        copyFiles: [{ sourcePath: context.sourcePath, targetPath, content: context.raw }],
     })
 }
 

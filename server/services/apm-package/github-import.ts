@@ -23,17 +23,20 @@ import {
     previewCandidate,
     type ImportCandidate,
 } from './github-import-candidates.js'
+import { mapWithConcurrency } from './github-import-utils.js'
+
+const COPY_FILE_CONCURRENCY = 8
 
 async function copyCandidateFiles(workingDir: string, repo: string, ref: string, candidate: ImportCandidate) {
     if (candidate.copyFiles.length === 0) return
     const root = packageDir(workingDir, candidate.packageId)
-    for (const file of candidate.copyFiles) {
+    await mapWithConcurrency(candidate.copyFiles, COPY_FILE_CONCURRENCY, async (file) => {
         const raw = file.content ?? (file.sourcePath ? await fetchGithubText(repo, ref, file.sourcePath) : null)
-        if (raw === null) continue
+        if (raw === null) return
         const target = path.join(root, file.targetPath)
         await fs.mkdir(path.dirname(target), { recursive: true })
         await fs.writeFile(target, raw, 'utf-8')
-    }
+    })
 }
 
 async function canFetchTree(owner: string, repo: string, ref: string) {
@@ -149,10 +152,11 @@ export async function importApmPackagesFromGitHub(
     const { ref, subpath } = await resolveRefAndSubpath(parsed, request, metadata.defaultBranch)
     const format = request.format || 'auto'
     const limit = importLimit(request.limit)
-    const { candidates, totalMatched } = await buildImportCandidates(repo, ref, subpath, format, limit)
-    const selectedIds = new Set((request.candidateIds || []).filter(Boolean))
-    const selectedCandidates = selectedIds.size > 0
-        ? candidates.filter((candidate) => selectedIds.has(candidate.id))
+    const selectedIds = (request.candidateIds || []).filter(Boolean)
+    const { candidates, totalMatched } = await buildImportCandidates(repo, ref, subpath, format, limit, selectedIds)
+    const selectedIdSet = new Set(selectedIds)
+    const selectedCandidates = selectedIdSet.size > 0
+        ? candidates.filter((candidate) => selectedIdSet.has(candidate.id))
         : candidates
     const scope = normalizeApmPackageScope(request.scope)
     const targetWorkingDir = scope === 'user' ? getApmUserScopeCwd() : workingDir

@@ -5,6 +5,7 @@ import { promises as fs } from 'node:fs'
 import { gzipSync } from 'node:zlib'
 import { importApmPackagesFromGitHub, listApmGitHubSourceItems, previewApmPackagesFromGitHub } from './github-import.js'
 import { readApmPackage } from './repository.js'
+import { clearGithubSourceCaches } from './github-source.js'
 
 function jsonResponse(body: unknown) {
     return new Response(JSON.stringify(body), {
@@ -52,10 +53,12 @@ describe('APM GitHub source import', () => {
     let workingDir: string
 
     beforeEach(async () => {
+        clearGithubSourceCaches()
         workingDir = await fs.mkdtemp(path.join(os.tmpdir(), 'apm-github-'))
     })
 
     afterEach(async () => {
+        clearGithubSourceCaches()
         vi.restoreAllMocks()
         vi.unstubAllEnvs()
         await fs.rm(workingDir, { recursive: true, force: true }).catch(() => {})
@@ -386,6 +389,15 @@ describe('APM GitHub source import', () => {
                 args: ['-y', '@modelcontextprotocol/server-filesystem', '.'],
             }),
         ])
+        expect(fetchMock.mock.calls.filter(([url]) =>
+            url.toString() === 'https://api.github.com/repos/acme/target-kit/git/trees/main?recursive=1',
+        )).toHaveLength(1)
+        expect(fetchMock.mock.calls.filter(([url]) =>
+            url.toString() === 'https://raw.githubusercontent.com/acme/target-kit/main/.codex/hooks.json',
+        )).toHaveLength(1)
+        expect(fetchMock.mock.calls.filter(([url]) =>
+            url.toString() === 'https://raw.githubusercontent.com/acme/target-kit/main/nested/.claude/commands/release.md',
+        )).toHaveLength(1)
     })
 
     it('lists source primitives converted from supported GitHub preset repos', async () => {
@@ -583,6 +595,49 @@ describe('APM GitHub source import', () => {
                 sourcePath: 'skills/research/SKILL.md',
             }),
         ])
+    })
+
+    it('imports explicitly selected Markdown files as Skill packages', async () => {
+        const fetchMock = vi.fn(async (url: string | URL) => {
+            const href = url.toString()
+            if (href === 'https://api.github.com/repos/acme/agent-kit') {
+                return jsonResponse({ default_branch: 'main' })
+            }
+            if (href === 'https://api.github.com/repos/acme/agent-kit/git/trees/main?recursive=1') {
+                return jsonResponse({
+                    tree: [
+                        { type: 'blob', path: 'docs/research-guide.md' },
+                        { type: 'blob', path: 'docs/other.md' },
+                    ],
+                })
+            }
+            if (href === 'https://raw.githubusercontent.com/acme/agent-kit/main/docs/research-guide.md') {
+                return new Response('---\ndescription: Research workflow\n---\n\nRun a careful research pass.')
+            }
+            if (href === 'https://raw.githubusercontent.com/acme/agent-kit/main/docs/other.md') {
+                throw new Error('The explicit file import should not fetch sibling Markdown files.')
+            }
+            return new Response('not found', { status: 404 })
+        })
+        vi.stubGlobal('fetch', fetchMock)
+
+        const result = await importApmPackagesFromGitHub(workingDir, {
+            source: 'https://github.com/acme/agent-kit/blob/main/docs/research-guide.md',
+            format: 'skill-md',
+            limit: 10,
+        })
+
+        expect(result.packages).toEqual([
+            expect.objectContaining({
+                name: 'research-guide',
+                kind: 'skill',
+                sourcePath: 'docs/research-guide.md',
+            }),
+        ])
+        await expect(fs.readFile(
+            path.join(workingDir, result.packages[0].packagePath, '.apm/skills/research-guide/SKILL.md'),
+            'utf-8',
+        )).resolves.toContain('Run a careful research pass.')
     })
 
     it('falls back to codeload tarballs when GitHub tree API is rate-limited', async () => {

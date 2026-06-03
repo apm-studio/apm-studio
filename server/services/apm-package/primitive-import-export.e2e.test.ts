@@ -7,10 +7,16 @@ import type {
     ApmSyncTargetId,
     ApmSyncUnit,
 } from '../../../shared/apm-sync-contracts.js'
+import type {
+    WorkspaceAgentSnapshot,
+} from '../../../shared/workspace-contracts.js'
 import {
     importApmPackagesFromGitHub,
 } from './github-import.js'
+import { clearGithubSourceCaches } from './github-source.js'
+import { readManifestFile } from './package-files.js'
 import { readApmPackage } from './repository.js'
+import { writeApmPackagesForWorkspace } from './workspace.js'
 
 const execFileMock = vi.hoisted(() => vi.fn())
 
@@ -129,6 +135,60 @@ async function fileExists(filePath: string) {
     return stat?.isFile() === true
 }
 
+async function firstFileWithSuffix(dir: string, suffix: string) {
+    const entries = await fs.readdir(dir, { withFileTypes: true }).catch(() => [])
+    const match = entries
+        .filter((entry) => entry.isFile() && entry.name.endsWith(suffix))
+        .map((entry) => path.join(dir, entry.name))
+        .sort((left, right) => left.localeCompare(right))[0]
+    return match || null
+}
+
+function parsePrimitiveMarkdown(raw: string) {
+    const normalized = raw.replace(/\r\n/g, '\n').trim()
+    if (!normalized.startsWith('---\n')) {
+        return { data: {}, body: normalized }
+    }
+    const lines = normalized.split('\n')
+    const end = lines.findIndex((line, index) => index > 0 && line.trim() === '---')
+    if (end < 0) {
+        return { data: {}, body: normalized }
+    }
+    const data: Record<string, string> = {}
+    for (const line of lines.slice(1, end)) {
+        const match = line.match(/^([^:#]+):\s*(.*)$/)
+        if (!match) continue
+        data[match[1].trim()] = match[2].trim().replace(/^['"]|['"]$/g, '')
+    }
+    return {
+        data,
+        body: lines.slice(end + 1).join('\n').trim(),
+    }
+}
+
+function tomlString(value: string) {
+    return JSON.stringify(value)
+}
+
+function mcpDependencyNames(dependencies: unknown) {
+    if (!Array.isArray(dependencies)) return []
+    return dependencies
+        .map((entry) => {
+            if (typeof entry === 'string') return entry
+            if (entry && typeof entry === 'object' && 'name' in entry) {
+                const name = (entry as { name?: unknown }).name
+                return typeof name === 'string' ? name : null
+            }
+            return null
+        })
+        .filter((entry): entry is string => !!entry)
+}
+
+async function mcpServerNamesFromTempPackage(packageRoot: string) {
+    const manifest = await readManifestFile(path.join(packageRoot, 'apm.yml'))
+    return mcpDependencyNames(manifest?.dependencies?.mcp)
+}
+
 async function expectTempPackageForTarget(packageRoot: string, target: ApmSyncTargetId) {
     const source = (...segments: string[]) => path.join(packageRoot, '.apm', ...segments)
     const manifest = await fs.readFile(path.join(packageRoot, 'apm.yml'), 'utf-8')
@@ -138,9 +198,19 @@ async function expectTempPackageForTarget(packageRoot: string, target: ApmSyncTa
         return 'hooks'
     }
     if (target === 'codex') {
-        await expect(fs.readFile(source('agents', 'reviewer.agent.md'), 'utf-8')).resolves.toContain('Review with context')
-        await expect(fs.stat(source('prompts'))).rejects.toMatchObject({ code: 'ENOENT' })
-        return 'agents'
+        const agentFile = await firstFileWithSuffix(source('agents'), '.agent.md')
+        if (agentFile) {
+            await expect(fs.readFile(agentFile, 'utf-8')).resolves.toContain('---')
+            await expect(fs.stat(source('prompts'))).rejects.toMatchObject({ code: 'ENOENT' })
+            return 'agents'
+        }
+
+        const mcpServerNames = await mcpServerNamesFromTempPackage(packageRoot)
+        if (mcpServerNames.length > 0) {
+            expect(manifest).toContain(`name: ${mcpServerNames[0]}`)
+            await expect(fs.stat(source('agents'))).rejects.toMatchObject({ code: 'ENOENT' })
+            return 'mcp'
+        }
     }
     if (target === 'claude') {
         await expect(fs.readFile(source('instructions', 'security.instructions.md'), 'utf-8')).resolves.toContain('Prefer safe defaults')
@@ -173,12 +243,60 @@ async function expectTempPackageForTarget(packageRoot: string, target: ApmSyncTa
     throw new Error(`Unexpected fixture target: ${target}`)
 }
 
-async function writeFixtureArtifact(cwd: string, target: ApmSyncTargetId, syncUnit: ApmSyncUnit) {
-    const artifactByUnit: Partial<Record<ApmSyncUnit, { path: string; body: string }>> = {
-        agents: {
-            path: '.codex/agents/reviewer.toml',
-            body: 'name = "reviewer"\ndeveloper_instructions = "Review with context."\n',
+async function writeCodexAgentFixtureArtifact(cwd: string, packageRoot: string) {
+    const agentFile = await firstFileWithSuffix(path.join(packageRoot, '.apm', 'agents'), '.agent.md')
+    if (!agentFile) throw new Error('No APM agent primitive found for Codex fixture output.')
+    const slug = path.basename(agentFile).replace(/\.agent\.md$/, '')
+    const parsed = parsePrimitiveMarkdown(await fs.readFile(agentFile, 'utf-8'))
+    const targetPath = path.join(cwd, '.codex', 'agents', `${slug}.toml`)
+    await fs.mkdir(path.dirname(targetPath), { recursive: true })
+    await fs.writeFile(targetPath, [
+        `name = ${tomlString(parsed.data.name || slug)}`,
+        ...(parsed.data.description ? [`description = ${tomlString(parsed.data.description)}`] : []),
+        `developer_instructions = ${tomlString(parsed.body)}`,
+        '',
+    ].join('\n'), 'utf-8')
+    return `.codex/agents/${slug}.toml`
+}
+
+async function writeMcpFixtureArtifact(cwd: string, target: ApmSyncTargetId, packageRoot: string) {
+    const serverName = (await mcpServerNamesFromTempPackage(packageRoot))[0] || 'filesystem'
+    if (target === 'codex') {
+        const targetPath = path.join(cwd, '.codex', 'config.toml')
+        await fs.mkdir(path.dirname(targetPath), { recursive: true })
+        await fs.writeFile(targetPath, [
+            `[mcp_servers.${serverName}]`,
+            'command = "npx"',
+            `args = ["-y", "${serverName === 'playwright' ? '@playwright/mcp@latest' : serverName}"]`,
+            '',
+        ].join('\n'), 'utf-8')
+        return '.codex/config.toml'
+    }
+
+    const targetPath = path.join(cwd, '.cursor', 'mcp.json')
+    await fs.mkdir(path.dirname(targetPath), { recursive: true })
+    await fs.writeFile(targetPath, JSON.stringify({
+        mcpServers: {
+            [serverName]: { command: 'npx' },
         },
+    }), 'utf-8')
+    return '.cursor/mcp.json'
+}
+
+async function writeFixtureArtifact(
+    cwd: string,
+    target: ApmSyncTargetId,
+    syncUnit: ApmSyncUnit,
+    packageRoot: string,
+) {
+    if (target === 'codex' && syncUnit === 'agents') {
+        return writeCodexAgentFixtureArtifact(cwd, packageRoot)
+    }
+    if (syncUnit === 'mcp') {
+        return writeMcpFixtureArtifact(cwd, target, packageRoot)
+    }
+
+    const artifactByUnit: Partial<Record<ApmSyncUnit, { path: string; body: string }>> = {
         instructions: {
             path: '.claude/rules/security.md',
             body: 'Prefer safe defaults.\n',
@@ -198,10 +316,6 @@ async function writeFixtureArtifact(cwd: string, target: ApmSyncTargetId, syncUn
         hooks: {
             path: '.codex/hooks.json',
             body: JSON.stringify({ hooks: { Stop: [{ command: 'echo done' }] } }),
-        },
-        mcp: {
-            path: '.cursor/mcp.json',
-            body: JSON.stringify({ mcpServers: { filesystem: { command: 'npx' } } }),
         },
     }
     const artifact = artifactByUnit[syncUnit]
@@ -231,7 +345,7 @@ function mockApmCli() {
         const packageRoot = args[installIndex + 1]
         const target = args[targetIndex + 1] as ApmSyncTargetId
         void expectTempPackageForTarget(packageRoot, target)
-            .then((syncUnit) => writeFixtureArtifact(options.cwd || '', target, syncUnit as ApmSyncUnit))
+            .then((syncUnit) => writeFixtureArtifact(options.cwd || '', target, syncUnit as ApmSyncUnit, packageRoot))
             .then((artifact) => callback(null, `wrote ${artifact}`, ''))
             .catch((error) => callback(error as ExecFileException))
     })
@@ -241,12 +355,14 @@ describe('primitive import to export e2e', () => {
     let workingDir: string
 
     beforeEach(async () => {
+        clearGithubSourceCaches()
         workingDir = await fs.mkdtemp(path.join(os.tmpdir(), 'apm-primitive-e2e-'))
         vi.stubEnv('APM_STUDIO_APM_CLI', 'apm-fixture')
         mockApmCli()
     })
 
     afterEach(async () => {
+        clearGithubSourceCaches()
         vi.restoreAllMocks()
         vi.unstubAllEnvs()
         vi.unstubAllGlobals()
@@ -332,6 +448,146 @@ describe('primitive import to export e2e', () => {
             managed: true,
             managedPackageId: packageId,
         }))))
+    })
+
+    it('saves a Studio Agent and exports Codex agent plus Playwright MCP', async () => {
+        const { runApmTargetSync, getApmSyncTargets } = await import('./target-sync.js')
+        const packageId = 'studio-browser-agent'
+        const agentBody = [
+            'Use Playwright MCP to inspect browser-facing behavior before making recommendations.',
+            'Report only what you verified and call out unknowns clearly.',
+        ].join('\n')
+        const agent: WorkspaceAgentSnapshot = {
+            id: packageId,
+            name: 'Browser Researcher',
+            position: { x: 120, y: 80 },
+            width: 360,
+            height: 260,
+            model: {
+                provider: 'openai',
+                modelId: 'gpt-5.4',
+                temperature: 0.2,
+            },
+            modelVariant: 'reasoning-high',
+            agentBody,
+            skillRefs: [],
+            mcpServerNames: ['playwright'],
+            declaredMcpConfig: {
+                mcpServers: {
+                    playwright: {
+                        command: 'npx',
+                        args: ['-y', '@playwright/mcp@latest'],
+                    },
+                },
+            },
+            runtimeAgentId: 'runtime-browser-researcher',
+            planMode: true,
+            meta: {
+                authoring: {
+                    description: 'Researches browser behavior with Playwright.',
+                },
+            },
+        }
+
+        await expect(writeApmPackagesForWorkspace(workingDir, {
+            workingDir,
+            agents: [agent],
+        })).resolves.toEqual({ packageIds: [packageId] })
+
+        const pkg = await readApmPackage(workingDir, packageId)
+        expect(pkg?.manifest.dependencies?.mcp).toEqual([{ name: 'playwright' }])
+        expect(pkg?.manifest['x-apm']?.agent).toEqual(expect.objectContaining({
+            agentName: 'Browser Researcher',
+            agentBody,
+            mcpServerNames: ['playwright'],
+            model: expect.objectContaining({
+                modelId: 'gpt-5.4',
+            }),
+            modelVariant: 'reasoning-high',
+            runtimeAgentId: 'runtime-browser-researcher',
+            planMode: true,
+        }))
+        expect(pkg?.microsoftApm?.primitiveCounts).toEqual(expect.objectContaining({
+            agents: 1,
+            mcp: 1,
+        }))
+        await expect(fs.readFile(
+            path.join(workingDir, 'packages', packageId, '.apm', 'agents', 'browser-researcher.agent.md'),
+            'utf-8',
+        )).resolves.toContain(agentBody)
+
+        const agentExport = await runApmTargetSync(workingDir, {
+            targets: ['codex'],
+            syncUnit: 'agents',
+            packageIds: [packageId],
+        })
+        expect(agentExport.results).toEqual([
+            expect.objectContaining({
+                packageId,
+                target: 'codex',
+                syncUnit: 'agents',
+                status: 'synced',
+                artifacts: ['.codex/agents/browser-researcher.toml'],
+                modelOmitted: true,
+            }),
+        ])
+        const codexAgent = await fs.readFile(path.join(workingDir, '.codex', 'agents', 'browser-researcher.toml'), 'utf-8')
+        expect(codexAgent).toContain('developer_instructions')
+        expect(codexAgent).toContain('Use Playwright MCP')
+        expect(codexAgent).not.toContain('gpt-5.4')
+        expect(codexAgent).not.toContain('model')
+        expect(codexAgent).not.toContain('runtime-browser-researcher')
+
+        const mcpExport = await runApmTargetSync(workingDir, {
+            targets: ['codex'],
+            syncUnit: 'mcp',
+            packageIds: [packageId],
+        })
+        expect(mcpExport.results).toEqual([
+            expect.objectContaining({
+                packageId,
+                target: 'codex',
+                syncUnit: 'mcp',
+                status: 'synced',
+                artifacts: ['.codex/config.toml'],
+            }),
+        ])
+        const codexMcp = await fs.readFile(path.join(workingDir, '.codex', 'config.toml'), 'utf-8')
+        expect(codexMcp).toContain('[mcp_servers.playwright]')
+        expect(codexMcp).toContain('@playwright/mcp@latest')
+
+        const ownership = JSON.parse(await fs.readFile(path.join(workingDir, '.apm-studio', 'projections', 'apm-sync.json'), 'utf-8'))
+        expect(ownership.files['.codex/agents/browser-researcher.toml']).toEqual(expect.objectContaining({
+            packageId,
+            target: 'codex',
+            syncUnit: 'agents',
+            source: 'apm-cli',
+        }))
+        expect(ownership.files['.codex/config.toml']).toEqual(expect.objectContaining({
+            packageId,
+            target: 'codex',
+            syncUnit: 'mcp',
+            source: 'apm-cli',
+        }))
+
+        const targets = await getApmSyncTargets(workingDir)
+        const codexDefinitions = targets.targets.find((target) => target.id === 'codex')?.definitions || []
+        expect(codexDefinitions).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                path: '.codex/agents/browser-researcher.toml',
+                kind: 'agent',
+                managed: true,
+                managedPackageId: packageId,
+                managedSyncUnit: 'agents',
+            }),
+            expect.objectContaining({
+                path: '.codex/config.toml',
+                kind: 'mcp',
+                managed: true,
+                managedPackageId: packageId,
+                managedSyncUnit: 'mcp',
+            }),
+        ]))
     })
 
     it('imports standalone MCP configs with self-defined server details before export', async () => {

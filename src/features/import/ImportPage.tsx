@@ -22,10 +22,13 @@ import {
     countSelectedImportCandidates,
     filterImportCandidates,
     filterRegistryListings,
+    IMPORT_INSTALL_CHUNK_SIZE,
+    IMPORT_PREVIEW_LIMIT,
     importInstallTargetKey,
     readImportSearchHistory,
     registryListingSource,
     registryListingToGitHubImportRequest,
+    type ImportInstallProgress,
     type ImportSearchHistoryEntry,
     type ResultElementFilter,
     type ResultKindFilter,
@@ -49,6 +52,14 @@ function ImportPageHeader() {
     return null
 }
 
+function chunkValues<T>(values: T[], chunkSize: number) {
+    const chunks: T[][] = []
+    for (let index = 0; index < values.length; index += chunkSize) {
+        chunks.push(values.slice(index, index + chunkSize))
+    }
+    return chunks
+}
+
 export default function ImportPage({ active = true }: ImportPageProps) {
     const [manualSource, setManualSource] = useState('')
     const [manualFormat, setManualFormat] = useState<ApmGitHubImportFormat>('auto')
@@ -58,6 +69,7 @@ export default function ImportPage({ active = true }: ImportPageProps) {
     const [manualPreviewLoading, setManualPreviewLoading] = useState(false)
     const [manualPreviewError, setManualPreviewError] = useState<string | null>(null)
     const [manualImporting, setManualImporting] = useState(false)
+    const [installProgress, setInstallProgress] = useState<ImportInstallProgress | null>(null)
     const [registryListings, setRegistryListings] = useState<RegistryListing[]>([])
     const [registryLoading, setRegistryLoading] = useState(false)
     const [registryError, setRegistryError] = useState<string | null>(null)
@@ -193,11 +205,12 @@ export default function ImportPage({ active = true }: ImportPageProps) {
         const request: ApmGitHubImportRequest = {
             source,
             format,
-            limit: 24,
+            limit: IMPORT_PREVIEW_LIMIT,
             ...requestOverride,
         }
         setManualPreviewLoading(true)
         setManualPreviewError(null)
+        setInstallProgress(null)
         setManualPreviewResponse(null)
         setManualPreviewRequest(request)
         setResultQuery('')
@@ -292,21 +305,72 @@ export default function ImportPage({ active = true }: ImportPageProps) {
         }
         const scopeAtSubmit = installScope
         const installTargetKeyAtSubmit = installTargetKey
-        const candidatePackageIds = candidateIds
-            .map((candidateId) => resultCandidates.find((candidate) => candidate.id === candidateId)?.packageId)
-            .filter((packageId): packageId is string => Boolean(packageId))
-        if (candidateIdsOverride?.length === 1) {
+        const isSingleCandidateInstall = candidateIdsOverride?.length === 1
+        if (isSingleCandidateInstall) {
             setCandidateInstallingId(candidateIdsOverride[0])
         } else {
             setManualImporting(true)
+            setInstallProgress({
+                total: candidateIds.length,
+                completed: 0,
+                phase: 'installing',
+                message: `Preparing ${candidateIds.length} selected package${candidateIds.length === 1 ? '' : 's'}.`,
+            })
         }
         setManualPreviewError(null)
+        let completedCount = 0
+        let importedCount = 0
         try {
-            const result = await apmApi.importGitHub({
-                ...manualPreviewRequest,
-                candidateIds,
-                scope: scopeAtSubmit,
-            })
+            const chunks = isSingleCandidateInstall
+                ? [candidateIds]
+                : chunkValues(candidateIds, IMPORT_INSTALL_CHUNK_SIZE)
+            for (let index = 0; index < chunks.length; index += 1) {
+                const chunk = chunks[index]
+                if (!isSingleCandidateInstall) {
+                    setInstallProgress({
+                        total: candidateIds.length,
+                        completed: completedCount,
+                        phase: 'installing',
+                        message: `Installing ${completedCount + 1}-${Math.min(completedCount + chunk.length, candidateIds.length)} of ${candidateIds.length}.`,
+                    })
+                }
+                const chunkRequest: ApmGitHubImportRequest = {
+                    ...manualPreviewRequest,
+                    candidateIds: chunk,
+                    scope: scopeAtSubmit,
+                    limit: manualPreviewRequest.limit || IMPORT_PREVIEW_LIMIT,
+                    registryListingId: index === 0 ? manualPreviewRequest.registryListingId : undefined,
+                }
+                const result = await apmApi.importGitHub(chunkRequest)
+                importedCount += result.packages.length
+                completedCount += chunk.length
+                setOptimisticInstalledPackageKeys((current) => {
+                    const next = new Set(current)
+                    for (const pkg of result.packages) {
+                        next.add(candidateInstallKey(installTargetKeyAtSubmit, pkg.packageId))
+                    }
+                    return next
+                })
+                setManualSelectedCandidateIds((current) => (
+                    updateImportCandidateSelection(current, chunk, 'clear')
+                ))
+                if (!isSingleCandidateInstall) {
+                    setInstallProgress({
+                        total: candidateIds.length,
+                        completed: completedCount,
+                        phase: 'installing',
+                        message: `Installed ${completedCount} of ${candidateIds.length}.`,
+                    })
+                }
+            }
+            if (!isSingleCandidateInstall) {
+                setInstallProgress({
+                    total: candidateIds.length,
+                    completed: completedCount,
+                    phase: 'refreshing',
+                    message: 'Refreshing package library.',
+                })
+            }
             if (workingDir) {
                 await Promise.all([
                     queryClient.invalidateQueries({ queryKey: ['apm-packages'] }),
@@ -315,17 +379,16 @@ export default function ImportPage({ active = true }: ImportPageProps) {
             } else {
                 await queryClient.invalidateQueries({ queryKey: ['apm-packages'] })
             }
-            setOptimisticInstalledPackageKeys((current) => {
-                const next = new Set(current)
-                for (const packageId of candidatePackageIds) {
-                    next.add(candidateInstallKey(installTargetKeyAtSubmit, packageId))
-                }
-                return next
-            })
-            setManualSelectedCandidateIds((current) => (
-                updateImportCandidateSelection(current, candidateIds, 'clear')
-            ))
-            showToast(`Imported ${result.packages.length} APM package${result.packages.length === 1 ? '' : 's'} to ${scopeLabel(scopeAtSubmit)}.`, 'success', {
+            if (!isSingleCandidateInstall) {
+                setInstallProgress({
+                    total: candidateIds.length,
+                    completed: candidateIds.length,
+                    phase: 'complete',
+                    message: `Imported ${importedCount} package${importedCount === 1 ? '' : 's'}.`,
+                })
+                window.setTimeout(() => setInstallProgress(null), 1600)
+            }
+            showToast(`Imported ${importedCount} APM package${importedCount === 1 ? '' : 's'} to ${scopeLabel(scopeAtSubmit)}.`, 'success', {
                 title: 'APM import complete',
                 ...(scopeAtSubmit === 'workspace' ? {
                     actionLabel: 'Open Studio Agent',
@@ -333,6 +396,14 @@ export default function ImportPage({ active = true }: ImportPageProps) {
                 } : {}),
             })
         } catch (caught) {
+            if (!isSingleCandidateInstall) {
+                setInstallProgress({
+                    total: candidateIds.length,
+                    completed: completedCount,
+                    phase: 'failed',
+                    message: `Stopped after ${completedCount} of ${candidateIds.length}.`,
+                })
+            }
             showToast(caught instanceof Error ? caught.message : 'Unable to import selected package items.', 'error', {
                 title: 'Import failed',
                 dedupeKey: `import:github:${manualPreviewRequest.source}`,
@@ -407,6 +478,7 @@ export default function ImportPage({ active = true }: ImportPageProps) {
                         selectableCandidateCount={selectableCandidateIds.length}
                         selectedVisibleCandidateCount={selectedVisibleCandidateCount}
                         importing={manualImporting}
+                        installProgress={installProgress}
                         candidateInstallingId={candidateInstallingId}
                         installedPackageIds={installedPackageIds}
                         optimisticInstalledPackageKeys={optimisticInstalledPackageKeys}

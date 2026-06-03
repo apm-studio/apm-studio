@@ -28,8 +28,17 @@ export interface ImportSearchHistoryEntry {
     searchedAt: string
 }
 
+export interface ImportInstallProgress {
+    total: number
+    completed: number
+    phase: 'installing' | 'refreshing' | 'complete' | 'failed'
+    message: string
+}
+
 export const IMPORT_SEARCH_HISTORY_LIMIT = 8
 export const IMPORT_SEARCH_HISTORY_STORAGE_KEY = 'apm-studio:import-search-history'
+export const IMPORT_PREVIEW_LIMIT = 400
+export const IMPORT_INSTALL_CHUNK_SIZE = 25
 
 export const IMPORT_FORMATS: Array<{ value: ApmGitHubImportFormat; label: string }> = [
     { value: 'auto', label: 'Auto' },
@@ -283,7 +292,7 @@ export function registryListingToGitHubImportRequest(listing: RegistryListing): 
         source: registryListingSource(listing),
         ref: listing.source.ref,
         format,
-        limit: listing.source.path ? 1 : 24,
+        limit: listing.source.path ? 1 : IMPORT_PREVIEW_LIMIT,
         registryListingId: listing.id,
     }
 }

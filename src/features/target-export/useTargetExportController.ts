@@ -34,6 +34,11 @@ import {
 
 const EMPTY_APM_PACKAGES: ApmPackageSummary[] = []
 
+type TargetExportFlowOptions = {
+    copyScopes?: boolean
+    syncTargets?: boolean
+}
+
 export function useTargetExportController() {
     const workingDir = useStudioStore((state) => state.workingDir)
     const targetsRequestIdRef = useRef(0)
@@ -156,30 +161,41 @@ export function useTargetExportController() {
         }))
     }, [projectPackages, userPackages])
 
-    const revertExportChanges = useCallback(() => {
-        setStagedPackageIds([])
-        setStagedScopeCopies([])
-        setExportChoices({})
+    const revertExportChanges = useCallback((options: TargetExportFlowOptions = {}) => {
+        const copyScopes = options.copyScopes ?? true
+        const syncTargets = options.syncTargets ?? true
+        if (syncTargets) {
+            setStagedPackageIds([])
+            setExportChoices({})
+        }
+        if (copyScopes) {
+            setStagedScopeCopies([])
+        }
         setTargetMessage('Reverted staged export changes.')
         setLastResult(null)
     }, [])
 
-    const saveExport = useCallback(async () => {
-        if (model.activeSavePackageIds.length === 0 && model.stagedScopeCopies.length === 0) return
+    const saveExport = useCallback(async (options: TargetExportFlowOptions = {}) => {
+        const copyScopes = options.copyScopes ?? true
+        const syncTargets = options.syncTargets ?? true
+        const scopeCopiesToSave = copyScopes ? model.stagedScopeCopies : []
+        const targetPackageIdsToSave = syncTargets ? model.activeSavePackageIds : []
+        if (targetPackageIdsToSave.length > 0 && (selectedTargets.length === 0 || !model.targetsReady)) return
+        if (targetPackageIdsToSave.length === 0 && scopeCopiesToSave.length === 0) return
         const workingDirAtSubmit = useStudioStore.getState().workingDir
         setRunning(true)
         setError(null)
         setTargetMessage(null)
         setLastResult(null)
         try {
-            for (const copy of model.stagedScopeCopies) {
+            for (const copy of scopeCopiesToSave) {
                 await apmApi.copyPackage(copy)
             }
 
-            const response = model.activeSavePackageIds.length > 0
+            const response = targetPackageIdsToSave.length > 0
                 ? await apmApi.runTargetSync({
                     targets: selectedTargets,
-                    packageIds: model.activeSavePackageIds,
+                    packageIds: targetPackageIdsToSave,
                     syncUnit: selectedSyncUnit,
                 })
                 : null
@@ -191,13 +207,17 @@ export function useTargetExportController() {
             ])
             await refreshTargets()
             if (useStudioStore.getState().workingDir !== workingDirAtSubmit) return
-            setStagedPackageIds([])
-            setStagedScopeCopies([])
-            setExportChoices({})
+            if (syncTargets) {
+                setStagedPackageIds([])
+                setExportChoices({})
+            }
+            if (copyScopes) {
+                setStagedScopeCopies([])
+            }
 
             const targetLabel = model.activeTarget?.label || 'target'
-            const copyCount = model.stagedScopeCopies.length
-            const targetCount = model.activeSavePackageIds.length
+            const copyCount = scopeCopiesToSave.length
+            const targetCount = targetPackageIdsToSave.length
             const messages = [
                 copyCount > 0 ? `Copied ${copyCount} package${copyCount === 1 ? '' : 's'} between User and Workspace.` : null,
                 targetCount > 0 ? `Saved export changes to ${targetLabel}.` : null,
@@ -216,6 +236,7 @@ export function useTargetExportController() {
         model.activeSavePackageIds,
         model.activeTarget?.label,
         model.stagedScopeCopies,
+        model.targetsReady,
         refetchProjectPackages,
         refetchUserPackages,
         refreshTargets,

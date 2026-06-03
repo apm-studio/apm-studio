@@ -19,7 +19,7 @@ Use this skill for navigation, feature-discovery, and product-usage questions.
 ## Core Vocabulary
 - `Instruction`: standalone APM project/file rule primitive.
 - `Skill`: optional reusable capability.
-- `Agent`: an agent package on the canvas edited from Agent Body, Skills, MCP, and Studio-only model settings.
+- `Agent`: an agent package on the canvas edited from Agent instructions, Skills, MCP, and Studio-only model settings.
 - `Team`: a workflow that connects Agents as participants.
 - `Workspace`: the current project folder plus saved Studio state and visible Studio objects.
 - `Working directory`: the actual filesystem folder.

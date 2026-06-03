@@ -10,7 +10,7 @@
 ![Node.js >=20.19.0](https://img.shields.io/badge/Node.js-%3E%3D20.19.0-3c873a?style=flat-square)
 [![License: MIT](https://img.shields.io/badge/License-MIT-0f172a?style=flat-square)](./LICENSE)
 
-[Quick Start](#quick-start) | [APM Studio Flow](#apm-studio-flow) | [Microsoft APM](#microsoft-apm) | [CLI](#cli) | [Development](#development)
+[Quick Start](#quick-start) | [APM Studio Flow](#apm-studio-flow) | [Microsoft APM](#microsoft-apm) | [CLI](#cli) | [Development](#development) | [Deployment](./doc/DEPLOYMENT_GUIDE.md)
 
 ![APM Studio interface](https://raw.githubusercontent.com/apm-studio/apm-studio/main/.github/screenshot.png)
 
@@ -129,11 +129,13 @@ npm test
 Release check:
 
 ```bash
+npm run type-check
+npm test
 npm run pack:check
 npm publish --dry-run
 ```
 
-Publishing a fix requires a new npm version so `npm install -g apm-studio` and the installers' default `latest` tag can receive it.
+Publishing a fix requires a new npm version so `npm install -g apm-studio` and the installers' default `latest` tag can receive it. See [Deployment Guide](./doc/DEPLOYMENT_GUIDE.md) for the release gates, installer flow, npm `latest` verification, and deployed install smoke test.
 
 Important directories:
 

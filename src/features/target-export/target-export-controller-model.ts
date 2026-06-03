@@ -230,14 +230,15 @@ export function buildTargetExportControllerModel(input: TargetExportControllerMo
     const hasTargetExportChanges = stagedPackageIds.length > 0 || Object.keys(exportChoices).length > 0
     const hasExportChanges = hasTargetExportChanges || hasScopeCopyChanges
     const targetExportBlocked = activeSavePackageIds.length > 0 && (selectedTargets.length === 0 || !targetsReady)
+    const scopeCopySaveDisabled = running || !hasScopeCopyChanges
+    const scopeCopyRevertDisabled = running || !hasScopeCopyChanges
+    const targetSyncSaveDisabled = running || targetExportBlocked || activeSavePackageIds.length === 0
+    const targetSyncRevertDisabled = running || !hasTargetExportChanges
     const saveDisabled = running || targetExportBlocked || (activeSavePackageIds.length === 0 && !hasScopeCopyChanges)
     const revertDisabled = running || !hasExportChanges
     const activeTargetPlanSteps = !activeTarget
         ? []
         : [
-            stagedScopeCopies.length > 0
-                ? `Copy ${stagedScopeCopies.length} package${stagedScopeCopies.length === 1 ? '' : 's'} between User and Workspace.`
-                : null,
             activeSavePackageIds.length > 0 ? `Build a temp package from ${unitLabel(selectedSyncUnit)}.` : null,
             activeSavePackageIds.length > 0 ? `${activeSavePackageIds.length} Workspace item${activeSavePackageIds.length === 1 ? '' : 's'} marked Save.` : null,
             activeSavePackageIds.length > 0 ? `${toolingStatusLabel} install --target ${activeTarget.id}.` : null,
@@ -270,6 +271,8 @@ export function buildTargetExportControllerModel(input: TargetExportControllerMo
         sidebarSection,
         selectableTargetIds,
         selectableTargetIdsKey: selectableTargetIds.join('|'),
+        scopeCopyRevertDisabled,
+        scopeCopySaveDisabled,
         stagedScopeCopies,
         stagedScopeCopyKeys: Array.from(stagedScopeCopySet),
         stagedScopeCopySet,
@@ -283,7 +286,10 @@ export function buildTargetExportControllerModel(input: TargetExportControllerMo
         revertDisabled,
         saveDisabled,
         targetOnlyDefinitions,
+        targetExportBlocked,
         targetStates,
+        targetSyncRevertDisabled,
+        targetSyncSaveDisabled,
         targets,
         targetsReady,
         toolingStatusLabel,

@@ -19,6 +19,7 @@ import {
     candidateIsInstalled,
     githubSourceUrl,
     type ImportScope,
+    type ImportInstallProgress,
     RESULT_ELEMENT_FILTERS,
     RESULT_KIND_FILTERS,
     type ResultElementFilter,
@@ -46,6 +47,7 @@ interface ImportResultsPanelProps {
     selectableCandidateCount: number
     selectedVisibleCandidateCount: number
     importing: boolean
+    installProgress: ImportInstallProgress | null
     candidateInstallingId: string | null
     installedPackageIds?: Set<string>
     optimisticInstalledPackageKeys?: Set<string>
@@ -83,6 +85,7 @@ export function ImportResultsPanel({
     selectableCandidateCount,
     selectedVisibleCandidateCount,
     importing,
+    installProgress,
     candidateInstallingId,
     installedPackageIds,
     optimisticInstalledPackageKeys,
@@ -112,6 +115,9 @@ export function ImportResultsPanel({
     const previewSummary = previewResponse
         ? `${filteredCandidates.length}/${resultCandidates.length} packages`
         : ''
+    const installProgressPercent = installProgress
+        ? Math.max(0, Math.min(100, Math.round((installProgress.completed / Math.max(installProgress.total, 1)) * 100)))
+        : 0
     const openExternal = (url: string) => {
         window.open(url, '_blank', 'noopener,noreferrer')
     }
@@ -238,6 +244,20 @@ export function ImportResultsPanel({
                 ) : null}
                 {previewResponse?.warnings.length ? (
                     <div className="alert alert--muted import-parsed-alert">{previewResponse.warnings[0]}</div>
+                ) : null}
+                {installProgress ? (
+                    <div className={`import-install-progress import-install-progress--${installProgress.phase}`} role="status" aria-live="polite">
+                        <div className="import-install-progress__header">
+                            <span>{installProgress.message}</span>
+                            <span>{installProgress.completed}/{installProgress.total}</span>
+                        </div>
+                        <div className="import-install-progress__track" aria-hidden="true">
+                            <div
+                                className="import-install-progress__bar"
+                                style={{ width: `${installProgressPercent}%` }}
+                            />
+                        </div>
+                    </div>
                 ) : null}
 
                 {registryLoading && !previewResponse ? (

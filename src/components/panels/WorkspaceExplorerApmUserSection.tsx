@@ -7,6 +7,7 @@ export default function WorkspaceExplorerApmUserSection() {
     const scope = useStudioStore((state) => state.apmPackageScope)
     const setScope = useStudioStore((state) => state.setApmPackageScope)
     const { data: userPackages = [], isLoading } = useApmPackages(true, 'user')
+    const userScopeActive = scope === 'user'
     const packageCount = isLoading ? 'Loading packages' : `${userPackages.length} package${userPackages.length === 1 ? '' : 's'}`
 
     return (
@@ -16,11 +17,11 @@ export default function WorkspaceExplorerApmUserSection() {
             </div>
             <div className="explorer__tree explorer__tree--apm-user">
                 <LayerRow
-                    icon={<UserRound size={12} className={scope === 'user' ? 'icon-active' : 'icon-muted'} />}
+                    icon={<UserRound size={12} className={userScopeActive ? 'icon-active' : 'icon-muted'} />}
                     label="APM User"
                     meta={packageCount}
-                    active={scope === 'user'}
-                    onClick={() => setScope('user')}
+                    active={userScopeActive}
+                    onClick={() => setScope(userScopeActive ? 'workspace' : 'user')}
                 />
             </div>
         </section>

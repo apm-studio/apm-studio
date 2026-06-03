@@ -315,7 +315,7 @@ describe('apm package storage', () => {
                 agent: {
                     ...agentExtension,
                     agentName: 'Manifest Agent',
-                    agentBody: 'Manifest agent body wins.',
+                    agentBody: 'Manifest agent instructions win.',
                 },
             },
         })
@@ -336,7 +336,7 @@ describe('apm package storage', () => {
         expect(loadedAgent).toEqual(expect.objectContaining({
             id: 'agent-1',
             name: 'Manifest Agent',
-            agentBody: 'Manifest agent body wins.',
+            agentBody: 'Manifest agent instructions win.',
             position: { x: 120, y: 80 },
             width: 360,
             height: 260,
@@ -592,7 +592,7 @@ describe('apm package storage', () => {
         }))
         await fs.writeFile(
             path.join(workingDir, 'packages', 'agent-1', '.apm', 'agents', 'review-agent.agent.md'),
-            '---\nname: review-agent\ndescription: Updated external description.\n---\n\nUpdated external agent body.\n',
+            '---\nname: review-agent\ndescription: Updated external description.\n---\n\nUpdated external agent instructions.\n',
             'utf-8',
         )
 
@@ -604,9 +604,9 @@ describe('apm package storage', () => {
 
         expect(result.synced).toBe(true)
         expect(result.package?.manifest.description).toBe('Updated external description.')
-        expect(result.package?.manifest['x-apm']?.agent?.agentBody).toBe('Updated external agent body.')
+        expect(result.package?.manifest['x-apm']?.agent?.agentBody).toBe('Updated external agent instructions.')
         expect(result.package?.lockStatus.state).toBe('current')
         await expect(fs.readFile(path.join(workingDir, 'packages', 'agent-1', '.apm', 'agents', 'review-agent.agent.md'), 'utf-8'))
-            .resolves.toContain('Updated external agent body.')
+            .resolves.toContain('Updated external agent instructions.')
     })
 })

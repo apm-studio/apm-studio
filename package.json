@@ -1,6 +1,6 @@
 {
   "name": "apm-studio",
-  "version": "0.3.3",
+  "version": "0.3.5",
   "description": "APM Studio edits and runs Studio Agents, then manages APM target sync for coding assistants.",
   "license": "MIT",
   "author": "monarchjuno",

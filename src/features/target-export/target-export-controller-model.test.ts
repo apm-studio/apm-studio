@@ -194,6 +194,49 @@ describe('Target export controller model', () => {
         expect(model.saveDisabled).toBe(false)
     })
 
+    it('separates save and revert availability for scope copy and target sync flows', () => {
+        const pkg = projectPackage({ packageId: 'planner' })
+        const userPkg = userPackage({ packageId: 'shared-skill' })
+
+        const scopeCopyModel = buildTargetExportControllerModel({
+            projectPackages: [pkg],
+            userPackages: [userPkg],
+            targetsResponse: targetsResponse([targetSummary({})]),
+            selectedSyncUnit: 'agents',
+            selectedTargets: ['codex'],
+            stagedPackageIds: [],
+            stagedScopeCopies: [{ packageId: 'shared-skill', fromScope: 'user', toScope: 'workspace' }],
+            exportChoices: {},
+            loadingTargets: false,
+            running: false,
+            lastResult: null,
+        })
+
+        expect(scopeCopyModel.scopeCopySaveDisabled).toBe(false)
+        expect(scopeCopyModel.scopeCopyRevertDisabled).toBe(false)
+        expect(scopeCopyModel.targetSyncSaveDisabled).toBe(true)
+        expect(scopeCopyModel.targetSyncRevertDisabled).toBe(true)
+
+        const targetSyncModel = buildTargetExportControllerModel({
+            projectPackages: [pkg],
+            userPackages: [userPkg],
+            targetsResponse: targetsResponse([targetSummary({})]),
+            selectedSyncUnit: 'agents',
+            selectedTargets: ['codex'],
+            stagedPackageIds: ['planner'],
+            stagedScopeCopies: [],
+            exportChoices: {},
+            loadingTargets: false,
+            running: false,
+            lastResult: null,
+        })
+
+        expect(targetSyncModel.scopeCopySaveDisabled).toBe(true)
+        expect(targetSyncModel.scopeCopyRevertDisabled).toBe(true)
+        expect(targetSyncModel.targetSyncSaveDisabled).toBe(false)
+        expect(targetSyncModel.targetSyncRevertDisabled).toBe(false)
+    })
+
     it('uses primitive-specific target output hints in the save plan', () => {
         const model = buildTargetExportControllerModel({
             projectPackages: [projectPackage({
@@ -427,8 +470,8 @@ describe('Target export controller model', () => {
         expect(model.activeSavePackageIds).toEqual([])
         expect(model.syncableUserPackages.map((pkg) => pkg.packageId)).toEqual(['review-skill'])
         expect(model.saveDisabled).toBe(false)
-        expect(model.activeTargetPlanSteps).toEqual(expect.arrayContaining([
-            'Copy 1 package between User and Workspace.',
-        ]))
+        expect(model.scopeCopySaveDisabled).toBe(false)
+        expect(model.targetSyncSaveDisabled).toBe(true)
+        expect(model.activeTargetPlanSteps).toEqual([])
     })
 })

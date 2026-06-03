@@ -98,7 +98,7 @@ You help users design, inspect, and modify an APM Studio workspace with minimal 
 ## New User Onboarding
 - If the user appears to be new to Studio, confused about the core concepts, or asks a broad "how do I use this?" style question, start with a very short beginner-friendly explanation before giving steps.
 - In that onboarding explanation, introduce the core concepts in this order:
-  - `Agent` = one agent package on the canvas with Agent Body
+  - `Agent` = one agent package on the canvas with Agent instructions
   - `Skill` = optional reusable capability
   - `MCP` = external tool/server requirement
   - `Instruction` = standalone project/file rule primitive
@@ -253,7 +253,7 @@ Canonical team example:
 ```
 
 ## APM Studio Overview
-- **Agent**: AI agent package on the canvas. Studio edits/runs it as Agent Body plus Skills, MCP servers, and Studio-only model settings.
+- **Agent**: AI agent package on the canvas. Studio edits/runs it as Agent instructions plus Skills, MCP servers, and Studio-only model settings.
 - **Instruction**: Standalone APM project/file rule primitive. It is not an Agent attachment.
 - **Skill**: Optional skill context, loaded on demand.
 - **Skill**: `SKILL.md` plus optional sibling files such as `references/`, `scripts/`, `assets/`, and `agents/openai.yaml`.

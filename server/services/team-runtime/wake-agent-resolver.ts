@@ -2,7 +2,7 @@
  * wake-agent-resolver.ts — Resolve agent config for wake cascade
  *
  * When the wake cascade auto-wakes a participant, it needs the agent's
- * model, Agent Body, Skills, and MCP configuration to properly project into OpenCode.
+ * model, Agent instructions, Skills, and MCP configuration to properly project into OpenCode.
  * This module reads workspace.json to find the matching agent node.
  */
 

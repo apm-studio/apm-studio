@@ -13,7 +13,7 @@ function primitiveRefLabel(ref: SharedPrimitiveRef) {
         : primitiveUrnDisplayName(ref.urn)
 }
 
-export function AgentBodyDetail({
+export function AgentInstructionsDetail({
     agent,
     onNameChange,
     onDescriptionChange,
@@ -52,16 +52,16 @@ export function AgentBodyDetail({
             </div>
             <div className="adv-section adv-section--body-editor">
                 <div className="adv-section__head">
-                    <span className="section-title">Agent Body</span>
+                    <span className="section-title">Agent Instructions</span>
                 </div>
                 <div className="adv-section__body adv-section__body--fill">
                     <label className="adv-field adv-field--fill">
                         <textarea
                             className="input adv-field__textarea adv-field__textarea--body nodrag nowheel"
-                            aria-label="Agent Body"
+                            aria-label="Agent instructions"
                             value={agent?.agentBody || ''}
                             onChange={(event) => onAgentBodyChange(event.target.value)}
-                            placeholder="Write the target-agnostic body for this Agent package."
+                            placeholder="Write the target-agnostic instructions for this Agent package."
                             rows={10}
                         />
                     </label>
